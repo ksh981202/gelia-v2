@@ -1,0 +1,61 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
+import { deleteFromR2 } from '../admin-upload/api/uploadService'
+import { supabase } from '../../shared/api/supabaseClient'
+import type { NailDesignRow } from '../../shared/types/database.types'
+
+const NAIL_DESIGN_COLUMNS =
+  'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves'
+
+export function useAdminDashboard() {
+  const queryClient = useQueryClient()
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const listQuery = useQuery({
+    queryKey: ['admin', 'nail-designs', 'list'],
+    queryFn: async (): Promise<NailDesignRow[]> => {
+      const { data, error } = await supabase
+        .from('nail_designs')
+        .select(NAIL_DESIGN_COLUMNS)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as NailDesignRow[]
+    },
+  })
+
+  const handleDelete = useCallback(
+    async (id: string, imageR2Key: string) => {
+      setDeleteError(null)
+      setDeletingId(id)
+      try {
+        await deleteFromR2(imageR2Key)
+        const { error } = await supabase.from('nail_designs').delete().eq('id', id)
+        if (error) throw new Error(error.message)
+        await queryClient.invalidateQueries({ queryKey: ['admin', 'nail-designs', 'list'] })
+        await queryClient.invalidateQueries({ queryKey: ['nail-designs'] })
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : '삭제 중 알 수 없는 오류가 발생했습니다.'
+        setDeleteError(message)
+        throw e
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    [queryClient],
+  )
+
+  const clearDeleteError = useCallback(() => {
+    setDeleteError(null)
+  }, [])
+
+  return {
+    ...listQuery,
+    handleDelete,
+    deleteError,
+    deletingId,
+    clearDeleteError,
+  }
+}
