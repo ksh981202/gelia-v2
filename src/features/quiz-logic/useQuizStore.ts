@@ -1,46 +1,34 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export type QuizAnswers = Record<number, string>
-
-type QuizState = {
-  answers: QuizAnswers
-  currentStep: number
-  setAnswer: (step: number, answer: string) => void
-  nextStep: () => void
-  prevStep: () => void
-  resetQuiz: () => void
+interface QuizState {
+  currentStep: number;
+  answers: Record<number, string>;
+  nextStep: () => void;
+  prevStep: () => void;
+  resetQuiz: () => void;
+  setAnswer: (step: number, answer: string) => void;
 }
 
 export const useQuizStore = create<QuizState>()(
   persist(
     (set) => ({
+      currentStep: 0, // 0: 인트로, 1: 손톱 길이/타입, 2: 무드, 3: 컬러, 4: 결과
       answers: {},
-      currentStep: 0,
-      setAnswer: (step, answer) =>
-        set((s) => ({
-          answers: { ...s.answers, [step]: answer },
-        })),
-      nextStep: () =>
-        set((s) => ({
-          currentStep: s.currentStep + 1,
-        })),
-      prevStep: () =>
-        set((s) => ({
-          currentStep: Math.max(0, s.currentStep - 1),
-        })),
-      resetQuiz: () =>
-        set({
-          answers: {},
-          currentStep: 0,
-        }),
+      
+      nextStep: () => set((state) => ({ currentStep: state.currentStep + 1 })),
+      
+      prevStep: () => set((state) => ({ currentStep: Math.max(0, state.currentStep - 1) })),
+      
+      resetQuiz: () => set({ currentStep: 0, answers: {} }),
+      
+      setAnswer: (step, answer) => set((state) => ({
+        answers: { ...state.answers, [step]: answer }
+      })),
     }),
     {
-      name: 'gelia-quiz',
-      partialize: (s) => ({
-        answers: s.answers,
-        currentStep: s.currentStep,
-      }),
-    },
-  ),
-)
+      name: 'gelia-quiz', // 로컬 스토리지에 저장되어 새로고침해도 안 날아감
+      partialize: (state) => ({ currentStep: state.currentStep, answers: state.answers }),
+    }
+  )
+);

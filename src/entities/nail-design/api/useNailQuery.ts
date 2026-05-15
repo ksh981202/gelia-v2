@@ -4,6 +4,7 @@ import type { NailDesignRow } from '../../../shared/types/database.types'
 import { filterByTab, isAllTab } from '../lib/nailListSelectors'
 
 const PAGE_SIZE = 6
+const RANKING_MAX_ITEMS = 50
 
 const NAIL_DESIGN_COLUMNS =
   'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves'
@@ -21,7 +22,18 @@ function orderedNailDesignsQuery(sort: string) {
   return q.order('id', { ascending: false })
 }
 
-export type NailListQueryScope = 'theme' | 'gallery' | 'ranking'
+export type NailListQueryScope =
+  | 'theme'
+  | 'gallery'
+  | 'ranking'
+  | 'situation'
+  | 'style'
+  | 'season'
+  | 'season-popular'
+  | 'vacation'
+  | 'color'
+  | 'color-theme'
+  | 'color-popular'
 
 export function useNailQuery(
   tab: string,
@@ -36,7 +48,13 @@ export function useNailQuery(
     queryFn: async ({ pageParam, signal }) => {
       if (allTab) {
         const from = pageParam * PAGE_SIZE
-        const to = from + PAGE_SIZE - 1
+        if (scope === 'ranking' && from >= RANKING_MAX_ITEMS) {
+          return []
+        }
+        const to =
+          scope === 'ranking'
+            ? Math.min(from + PAGE_SIZE - 1, RANKING_MAX_ITEMS - 1)
+            : from + PAGE_SIZE - 1
         const { data, error } = await orderedNailDesignsQuery(sort)
           .range(from, to)
           .abortSignal(signal)
@@ -56,9 +74,19 @@ export function useNailQuery(
       if (error) throw error
       return filterByTab((data ?? []) as NailDesignRow[], tab)
     },
-    getNextPageParam: (lastPage, _pages, lastPageParam) => {
+    getNextPageParam: (lastPage, allPages, lastPageParam) => {
       if (allTab) {
+        const totalLoaded = allPages.reduce((sum, page) => sum + page.length, 0)
+        if (scope === 'ranking' && totalLoaded >= RANKING_MAX_ITEMS) {
+          return undefined
+        }
         if (lastPage.length < PAGE_SIZE) return undefined
+        if (
+          scope === 'ranking' &&
+          (lastPageParam + 1) * PAGE_SIZE >= RANKING_MAX_ITEMS
+        ) {
+          return undefined
+        }
         return lastPageParam + 1
       }
       return undefined

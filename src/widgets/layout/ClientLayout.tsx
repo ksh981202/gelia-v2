@@ -1,6 +1,12 @@
 import { BarChart2, Home, Languages, Search, User } from 'lucide-react'
-import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigationType,
+} from 'react-router-dom'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -13,10 +19,49 @@ const bottomNavItemInactive =
 
 export default function ClientLayout() {
   const [headerLang, setHeaderLang] = useState<'ko' | 'en'>('ko')
+  const { pathname } = useLocation()
+  const navigationType = useNavigationType()
+
+  useEffect(() => {
+    if (navigationType === 'POP') return
+    window.scrollTo(0, 0)
+  }, [pathname, navigationType])
+
+  const hideTopHeader =
+    pathname.includes('/client/detail/') ||
+    pathname === '/client/recommend' ||
+    pathname === '/client/color-curation' ||
+    pathname === '/client/color-list' ||
+    pathname === '/client/color-theme-list' ||
+    pathname === '/client/color-popular-list' ||
+    pathname === '/client/theme' ||
+    pathname === '/client/season-curation' ||
+    pathname === '/client/season-list' ||
+    pathname === '/client/vacation-list' ||
+    pathname === '/client/season-popular-list' ||
+    pathname === '/client/style-curation' ||
+    pathname === '/client/style-list' ||
+    pathname === '/client/style-best-list' ||
+    pathname === '/client/style-gallery-list' ||
+    pathname === '/client/theme-list' ||
+    pathname === '/client/situation-list' ||
+    pathname === '/client/gallery-explore-list' ||
+    pathname === '/client/today-special' ||
+    pathname === '/client/quiz'
+
+  const hideBottomNav =
+    pathname.includes('/client/detail/') ||
+    pathname === '/client/recommend' ||
+    pathname === '/client/theme'
+
+  const mainPbClass = hideBottomNav
+    ? 'pb-[env(safe-area-inset-bottom,0px)]'
+    : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]'
 
   return (
     <div className="min-h-screen bg-background">
       <div className="relative mx-auto min-h-screen w-full max-w-md">
+        {!hideTopHeader && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl">
           <NavLink
             to="/client"
@@ -61,11 +106,13 @@ export default function ClientLayout() {
             </NavLink>
           </div>
         </header>
+        )}
 
-        <main className="flex min-h-0 flex-1 flex-col pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        <main className={`flex min-h-0 flex-1 flex-col ${mainPbClass}`}>
           <Outlet />
         </main>
 
+        {!hideBottomNav && (
         <nav
           className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[64px] w-full max-w-md grid-cols-4 border-t border-gray-200 bg-white pb-safe"
           aria-label="하단 탭"
@@ -120,6 +167,7 @@ export default function ClientLayout() {
             <span className="text-[10px] font-medium leading-none">마이</span>
           </Link>
         </nav>
+        )}
       </div>
     </div>
   )

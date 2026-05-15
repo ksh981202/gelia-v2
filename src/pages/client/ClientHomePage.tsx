@@ -1,12 +1,13 @@
-import {
+﻿import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useClientHomeFeed } from '../../features/client-home/useClientHomeFeed'
+import { useQuizStore } from '../../features/quiz-logic/useQuizStore'
 import type { NailDesignRow } from '../../shared/types/database.types'
 
 const NAIL_THUMB_IMG_CLASS = 'h-full w-full object-cover object-center'
@@ -78,12 +79,6 @@ const CATEGORY_CHIPS: CategoryChip[] = [
     to: '/client/theme',
     imageUrl: '/images/maincategory/ic-category-season.png',
   },
-  {
-    label: '맞춤 네일',
-    nameEn: 'Custom Nail',
-    to: '/client/quiz',
-    imageUrl: '/images/maincategory/ic-category-custom.png',
-  },
 ]
 
 function pickNailTitle(nail: NailDesignRow): string {
@@ -93,6 +88,8 @@ function pickNailTitle(nail: NailDesignRow): string {
 }
 
 export default function ClientHomePage() {
+  const navigate = useNavigate()
+  const resetQuiz = useQuizStore((state) => state.resetQuiz)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isFooterOpen, setIsFooterOpen] = useState(false)
   const { data, isPending, isError } = useClientHomeFeed()
@@ -226,34 +223,41 @@ export default function ClientHomePage() {
         )}
       </section>
 
-      <div className="my-8 w-full px-4">
-        <Link
-          to="/client/quiz"
-          className="group relative flex cursor-pointer items-center justify-between overflow-hidden rounded-2xl border border-orange-100/50 bg-gradient-to-br from-rose-50 via-orange-50 to-pink-100 p-6 shadow-sm"
+      {/* 퍼스널 진단 퀴즈 배너 (내 손에 찰떡인 네일 찾기) */}
+      <section className="mb-2 mt-8 px-4">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            resetQuiz()
+            navigate('/client/quiz')
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              resetQuiz()
+              navigate('/client/quiz')
+            }
+          }}
+          className="relative flex w-full cursor-pointer items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-r from-[#fff5f5] to-[#ffeef2] p-5 shadow-sm transition-shadow hover:shadow-md"
         >
-          <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-white/60 blur-2xl" />
-          <div className="relative z-10 flex flex-col items-start">
-            <h3 className="text-[1.15rem] font-bold leading-snug tracking-tight text-gray-900">
+          <div className="z-10">
+            <h2 className="text-[16px] font-extrabold leading-snug text-gray-900">
               내 손에 찰떡인 네일 찾기
-            </h3>
-            <p className="mt-1.5 text-xs font-medium text-gray-500">
+            </h2>
+            <p className="mb-3 mt-1 text-[11px] text-gray-500">
               간단한 테스트로 인생 네일 찾기
             </p>
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-xs font-bold text-white shadow-md transition-transform group-hover:-translate-y-0.5">
-              테스트 시작하기{' '}
-              <span className="font-normal text-gray-400">→</span>
-            </span>
-          </div>
-          <div className="relative z-10 mr-2">
-            <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border border-white bg-white/90 shadow-lg backdrop-blur-md transition-transform duration-500 group-hover:rotate-6 group-hover:scale-105">
-              <span className="text-4xl drop-shadow-sm">💅</span>
-            </div>
-            <div className="absolute -right-3 -top-2 z-20 flex h-9 w-9 animate-bounce items-center justify-center rounded-full border border-white bg-white/95 shadow-md backdrop-blur-md delay-150">
-              <span className="text-lg">✨</span>
+            <div className="inline-flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[12px] font-bold text-white">
+              테스트 시작하기 <span className="ml-1 text-[10px]">→</span>
             </div>
           </div>
-        </Link>
-      </div>
+          <div className="absolute right-4 z-10 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md">
+            <span className="text-2xl">💅</span>
+            <span className="absolute -right-1 -top-1 text-lg">✨</span>
+          </div>
+        </div>
+      </section>
 
       <section className="mb-12 mt-8" aria-busy={showTrendSkeleton}>
         <div className="mb-5 flex items-center justify-between px-4">
@@ -387,7 +391,7 @@ export default function ClientHomePage() {
             <Link
               key={cat.label}
               to={cat.to}
-              className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card py-5 shadow-sm transition-colors hover:bg-secondary/40 active:scale-[0.93]"
+              className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-border bg-card py-5 shadow-sm transition-colors hover:bg-secondary/40 active:scale-[0.93]"
             >
               <div className="mb-3 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-white shadow-sm">
                 <img

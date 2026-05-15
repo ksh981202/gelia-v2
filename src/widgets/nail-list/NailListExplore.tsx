@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   DEFAULT_LIST_SORT,
@@ -16,6 +17,12 @@ import {
 import { isAllTab } from '../../entities/nail-design/lib/nailListSelectors'
 import { PageContainer } from '../../shared/ui/PageContainer'
 import { normalizeForFilter } from '../../shared/utils/normalizeForFilter'
+
+const SORT_MENU_OPTIONS = [
+  { value: DEFAULT_LIST_SORT, label: '인기순' },
+  { value: '최신순', label: '최신순' },
+  { value: '저장순', label: '저장 많은 순' },
+] as const
 
 export type NailListExploreProps = {
   tabs: readonly string[]
@@ -61,6 +68,48 @@ export function NailListExplore({
     !rankingSortTabs && flat.length === 0 && !isPending && !isAllTab(tab)
 
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null)
+  const sortMenuRef = useRef<HTMLDivElement | null>(null)
+  const [isSortOpen, setIsSortOpen] = useState(false)
+
+  const sortMenuSelection = useMemo(
+    () =>
+      SORT_MENU_OPTIONS.find((o) => o.value === sort) ?? SORT_MENU_OPTIONS[0],
+    [sort],
+  )
+
+  useEffect(() => {
+    setIsSortOpen(false)
+  }, [sort])
+
+  useEffect(() => {
+    if (!isSortOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      const root = sortMenuRef.current
+      if (!root || root.contains(e.target as Node)) return
+      setIsSortOpen(false)
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSortOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isSortOpen])
+
+  useEffect(() => {
+    if (tabs.length === 0) return
+    const el = activeTabButtonRef.current
+    if (!el) return
+    el.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [tab, sort, rankingSortTabs, tabs.length])
 
   useEffect(() => {
     const el = sentinelRef.current
@@ -81,13 +130,13 @@ export function NailListExplore({
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   return (
-    <PageContainer className="mx-auto max-w-full bg-white px-0 py-0 sm:px-0 lg:px-0">
-      <div className="w-full bg-white text-slate-900">
+    <PageContainer className="!mx-auto !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
+      <div className="w-full min-w-0 bg-white text-slate-900">
         <p className="sr-only">{tabsSectionLabel}</p>
-        <div className="sticky top-0 z-50 border-b border-gray-100 bg-white shadow-sm">
+        <div className="sticky top-0 z-50 w-full min-w-0 bg-white shadow-sm">
           {tabs.length > 0 && (
             <section
-              className="scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch]"
+              className="scrollbar-hide flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               aria-label={tabsSectionLabel}
             >
               {tabs.map((label) => {
@@ -97,6 +146,7 @@ export function NailListExplore({
                     tab === label
                 return (
                   <button
+                    ref={active ? activeTabButtonRef : undefined}
                     key={label}
                     type="button"
                     data-active-tab={active ? 'true' : 'false'}
@@ -122,32 +172,49 @@ export function NailListExplore({
           )}
 
           {!rankingSortTabs && (
-            <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
+            <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
               <span className="text-sm text-gray-500">
                 총{' '}
                 <span className="font-bold text-pink-500">{flat.length}</span>{' '}
                 개의 디자인
               </span>
-              <div className="flex flex-nowrap items-center gap-1">
-                {([DEFAULT_LIST_SORT, '최신순'] as const).map((label) => {
-                  const active = sort === label
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => {
-                        setSort(label)
-                      }}
-                      className={
-                        active
-                          ? 'rounded-md bg-gray-100 px-2 py-1.5 text-sm font-medium text-gray-900'
-                          : 'rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100'
-                      }
-                    >
-                      {label}
-                    </button>
-                  )
-                })}
+              <div ref={sortMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSortOpen((prev) => !prev)}
+                  className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100"
+                  aria-haspopup="menu"
+                  aria-expanded={isSortOpen}
+                  aria-label="정렬"
+                >
+                  <span>{sortMenuSelection.label}</span>
+                  <ChevronDown size={14} className="text-gray-500" />
+                </button>
+                {isSortOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-[calc(100%+6px)] z-[60] min-w-[148px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
+                  >
+                    {SORT_MENU_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setSort(opt.value)
+                          setIsSortOpen(false)
+                        }}
+                        className={`w-full px-3 py-2.5 text-left text-sm transition-colors ${
+                          sort === opt.value
+                            ? 'bg-gray-100 font-medium text-gray-900'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

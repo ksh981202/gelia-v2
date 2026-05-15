@@ -1,9 +1,15 @@
 import { ChevronLeft, Search } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 /** V1 `NailOverlayTitle` — 히어로 배너 제목 */
 const NAIL_HERO_BANNER_TITLE_CLASS =
   'text-white font-sans font-bold text-[18px] sm:text-[20px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+
+function formatTodayPickBadgeLabel(d = new Date()): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `TODAY. ${m}.${day}`
+}
 
 function publicAssetUrl(rootRelative: string): string {
   const path = rootRelative.replace(/^\//, '')
@@ -13,19 +19,12 @@ function publicAssetUrl(rootRelative: string): string {
   return `${prefix}/${path}`
 }
 
-/** V1 `formatTodayPickBadgeLabel` */
-function formatTodayPickBadgeLabel(d = new Date()): string {
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `TODAY. ${m}.${day}`
-}
-
 const categories = [
   {
     label: '봄 네일',
     nameEn: 'Spring Nails',
     bgColor: 'bg-red-50',
-    imageSrc: '/seasoncategory/ic-season-spring.png',
+    imageSrc: '/images/seasoncategory/ic-season-spring.png',
     imageAlt: '봄 네일',
     imageAltEn: 'Spring nails',
   },
@@ -33,7 +32,7 @@ const categories = [
     label: '여름 네일',
     nameEn: 'Summer Nails',
     bgColor: 'bg-blue-50',
-    imageSrc: '/seasoncategory/ic-season-summer.png',
+    imageSrc: '/images/seasoncategory/ic-season-summer.png',
     imageAlt: '여름 네일',
     imageAltEn: 'Summer nails',
   },
@@ -41,7 +40,7 @@ const categories = [
     label: '가을 네일',
     nameEn: 'Autumn Nails',
     bgColor: 'bg-orange-50',
-    imageSrc: '/seasoncategory/ic-season-autumn.png',
+    imageSrc: '/images/seasoncategory/ic-season-autumn.png',
     imageAlt: '가을 네일',
     imageAltEn: 'Autumn nails',
   },
@@ -50,7 +49,7 @@ const categories = [
     nameEn: 'Winter Nails',
     bgColor: 'bg-slate-50',
     cardBorderClass: 'border-gray-100',
-    imageSrc: '/seasoncategory/ic-season-winter.png',
+    imageSrc: '/images/seasoncategory/ic-season-winter.png',
     imageAlt: '겨울 네일',
     imageAltEn: 'Winter nails',
   },
@@ -90,6 +89,9 @@ const STYLE_HUB_UI = [
   { cardTitle: '그라데이션 네일', cardTitleEn: 'Gradient Nails', tabIndex: 5 },
 ] as const
 
+const H_SCROLLBAR_HIDE =
+  "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
+
 /**
  * V1 `RecommendPage.tsx` UI 이식 (framer-motion → active 스케일).
  * 썸네일·전체보기 네비는 추후 V2 라우트에 맞게 연결 가능; 현재는 갤러리 등으로 스텁.
@@ -102,18 +104,18 @@ export default function ClientRecommendPage() {
   const cardLabel = (name: string, nameEn?: string) =>
     isEnglish && nameEn ? nameEn : name
 
+  const goGallery = () => navigate('/client/gallery')
+
   const heroCard = {
     tag: formatTodayPickBadgeLabel(),
     title: isEnglish ? "Today's Recommended Nails" : '오늘의 추천 네일',
     image: null as string | null,
   }
 
-  const goGallery = () => navigate('/client/gallery')
-
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="relative mx-auto max-w-md">
-        <header className="sticky top-0 z-50 relative flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-background px-5">
+        <header className="sticky top-0 z-50 relative flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-white/95 px-5 backdrop-blur-md">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -147,15 +149,16 @@ export default function ClientRecommendPage() {
                   ? 'Shining Moments, Custom Nails'
                   : '빛나는 순간, 맞춤 네일'}
               </h2>
-              <button
-                type="button"
+              <Link
+                to="/client/theme"
                 className="cursor-pointer text-sm font-medium text-gray-500"
-                onClick={goGallery}
               >
                 {viewAllLabel} {'>'}
-              </button>
+              </Link>
             </div>
-            <div className="flex gap-4 overflow-x-auto px-4 pb-1 scrollbar-hide">
+            <div
+              className={`flex gap-4 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
+            >
               {OCCASION_HUB_UI.map((card) => (
                 <div
                   key={card.cardTitle}
@@ -194,15 +197,16 @@ export default function ClientRecommendPage() {
                   ? 'Style Perfect, Nails by Vibe'
                   : '취향 저격, 스타일별 네일'}
               </h2>
-              <button
-                type="button"
+              <Link
+                to="/client/style-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
-                onClick={goGallery}
               >
                 {viewAllLabel} {'>'}
-              </button>
+              </Link>
             </div>
-            <div className="flex gap-3 overflow-x-auto px-4 pb-1 scrollbar-hide">
+            <div
+              className={`flex gap-3 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
+            >
               {STYLE_HUB_UI.map((card) => (
                 <div
                   key={card.cardTitle}
@@ -241,13 +245,12 @@ export default function ClientRecommendPage() {
               >
                 {isEnglish ? 'Seasonal Custom Nails' : '계절별 맞춤 네일'}
               </button>
-              <button
-                type="button"
+              <Link
+                to="/client/season-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
-                onClick={goGallery}
               >
                 {viewAllLabel} {'>'}
-              </button>
+              </Link>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {categories.map((season) => (
@@ -273,40 +276,33 @@ export default function ClientRecommendPage() {
           {/* 추천 컬러 네일 */}
           <section className="mt-12">
             <div className="mb-5 flex items-center justify-between px-4">
-              <h2
-                className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={goGallery}
+              <Link
+                to="/client/color-curation"
+                className="text-[20px] font-bold tracking-tight text-gray-900"
               >
                 {isEnglish ? 'Recommended Colors' : '추천 컬러 네일'}
-              </h2>
-              <button
-                type="button"
+              </Link>
+              <Link
+                to="/client/color-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
-                onClick={goGallery}
               >
                 {viewAllLabel} {'>'}
-              </button>
+              </Link>
             </div>
-            <div className="scrollbar-hide flex gap-4 overflow-x-auto px-4">
+            <div
+              className={`flex gap-4 overflow-x-auto px-4 ${H_SCROLLBAR_HIDE}`}
+            >
               {colorChips.map((chip) => (
-                <button
+                <Link
                   key={chip.label}
-                  type="button"
+                  to={`/client/color-curation?color=${encodeURIComponent(chip.label)}`}
                   className="flex flex-shrink-0 cursor-pointer items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 shadow-sm active:scale-[0.95]"
-                  onClick={() =>
-                    navigate('/client/gallery', {
-                      state: {
-                        selectedColor: chip.label,
-                        from: 'recommend-color-chip',
-                      },
-                    })
-                  }
                 >
                   <span className={`h-3 w-3 rounded-full ${chip.dotClassName}`} />
                   <span className="whitespace-nowrap text-sm font-medium text-slate-700">
                     {isEnglish && chip.nameEn ? chip.nameEn : chip.label}
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           </section>
@@ -314,36 +310,27 @@ export default function ClientRecommendPage() {
           {/* 오늘의 특별한 네일 */}
           <section className="mb-0 mt-12 px-4">
             <div className="mb-5 flex items-center justify-between">
-              <h2
-                className="m-0 cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={goGallery}
+              <Link
+                to="/client/today-special"
+                className="m-0 text-[20px] font-bold tracking-tight text-gray-900"
               >
                 {isEnglish ? "Today's Special Nails" : '오늘의 특별한 네일'}
-              </h2>
-              <button
-                type="button"
+              </Link>
+              <Link
+                to="/client/today-special"
                 className="cursor-pointer text-sm font-medium text-gray-500"
-                onClick={goGallery}
               >
                 {viewAllLabel} {'>'}
-              </button>
+              </Link>
             </div>
             <div>
-              <div
-                className="relative aspect-[3/4] w-full cursor-pointer overflow-hidden rounded-2xl shadow-sm active:scale-[0.98]"
-                onClick={goGallery}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    goGallery()
-                  }
-                }}
+              <Link
+                to="/client/today-special"
+                className="relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-sm active:scale-[0.98]"
                 aria-label={
                   isEnglish
-                    ? "Today's special nails — move to editor pick list"
-                    : '오늘의 특별한 네일 — 에디터 픽 목록으로 이동'
+                    ? "Today's special nails — editor picks"
+                    : '오늘의 특별한 네일 — 에디터 픽 보기'
                 }
               >
                 {heroCard.image ? (
@@ -371,7 +358,7 @@ export default function ClientRecommendPage() {
                     </h4>
                   </div>
                 </div>
-              </div>
+              </Link>
             </div>
           </section>
         </main>
