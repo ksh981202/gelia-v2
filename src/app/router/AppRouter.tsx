@@ -6,6 +6,22 @@ import ClientNailDetailPage from '../../pages/client/ClientNailDetailPage'
 import ClientGalleryExploreListPage from '../../pages/client/ClientGalleryExploreListPage'
 import ClientGalleryPage from '../../pages/client/ClientGalleryPage'
 import ClientRankingPage from '../../pages/client/ClientRankingPage'
+import TrendPage from '../../pages/client/trend/TrendPage'
+import TexturePage from '../../pages/client/trend/TexturePage'
+import TextureListPage from '../../pages/client/trend/TextureListPage'
+import SyrupBestListPage from '../../pages/client/trend/SyrupBestListPage'
+import TextureGalleryListPage from '../../pages/client/trend/TextureGalleryListPage'
+import PartsPage from '../../pages/client/trend/PartsPage'
+import PartsListPage from '../../pages/client/trend/PartsListPage'
+import StoneBestListPage from '../../pages/client/trend/StoneBestListPage'
+import FullPartsListPage from '../../pages/client/trend/FullPartsListPage'
+import PopularDesignPage from '../../pages/client/trend/PopularDesignPage'
+import PeriodBestListPage from '../../pages/client/trend/PeriodBestListPage'
+import ReactionBestListPage from '../../pages/client/trend/ReactionBestListPage'
+import ShapeBestListPage from '../../pages/client/trend/ShapeBestListPage'
+import SearchTrendListPage from '../../pages/client/trend/SearchTrendListPage'
+import PatternPage from '../../pages/client/trend/PatternPage'
+import MoodPage from '../../pages/client/trend/MoodPage'
 import ClientHomePage from '../../pages/client/ClientHomePage'
 import ClientRecommendPage from '../../pages/client/ClientRecommendPage'
 import ClientPage from '../../pages/client/ClientPage'
@@ -65,6 +81,28 @@ const router = createBrowserRouter([
       { path: 'detail/:nailId', element: <ClientNailDetailPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
       { path: 'ranking', element: <ClientRankingPage /> },
+      { path: 'popular-design', element: <PopularDesignPage /> },
+      { path: 'period-best-list', element: <PeriodBestListPage /> },
+      { path: 'reaction-best-list', element: <ReactionBestListPage /> },
+      { path: 'shape-best-list', element: <ShapeBestListPage /> },
+      {
+        path: 'search-trend-list',
+        element: <SearchTrendListPage />,
+      },
+      { path: 'trend', element: <TrendPage /> },
+      { path: 'texture', element: <TexturePage /> },
+      {
+        path: 'texture-list',
+        element: <TextureListPage />,
+      },
+      { path: 'syrup-best', element: <SyrupBestListPage /> },
+      { path: 'texture-gallery', element: <TextureGalleryListPage /> },
+      { path: 'parts', element: <PartsPage /> },
+      { path: 'parts-list', element: <PartsListPage /> },
+      { path: 'stone-best-list', element: <StoneBestListPage /> },
+      { path: 'full-parts-list', element: <FullPartsListPage /> },
+      { path: 'pattern', element: <PatternPage /> },
+      { path: 'mood', element: <MoodPage /> },
       { path: 'quiz', element: <QuizPage /> },
     ],
   },

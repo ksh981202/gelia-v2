@@ -47,7 +47,19 @@ export default function ClientLayout() {
     pathname === '/client/situation-list' ||
     pathname === '/client/gallery-explore-list' ||
     pathname === '/client/today-special' ||
-    pathname === '/client/quiz'
+    pathname === '/client/quiz' ||
+    pathname === '/client/popular-design' ||
+    pathname === '/client/period-best-list' ||
+    pathname === '/client/reaction-best-list' ||
+    pathname === '/client/shape-best-list' ||
+    pathname === '/client/search-trend-list' ||
+    pathname === '/client/trend' ||
+    pathname === '/client/texture' ||
+    pathname === '/client/texture-list' ||
+    pathname === '/client/parts' ||
+    pathname === '/client/parts-list' ||
+    pathname === '/client/pattern' ||
+    pathname === '/client/mood'
 
   const hideBottomNav =
     pathname.includes('/client/detail/') ||

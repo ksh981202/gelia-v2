@@ -7,7 +7,6 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useClientHomeFeed } from '../../features/client-home/useClientHomeFeed'
-import { useQuizStore } from '../../features/quiz-logic/useQuizStore'
 import type { NailDesignRow } from '../../shared/types/database.types'
 
 const NAIL_THUMB_IMG_CLASS = 'h-full w-full object-cover object-center'
@@ -89,7 +88,6 @@ function pickNailTitle(nail: NailDesignRow): string {
 
 export default function ClientHomePage() {
   const navigate = useNavigate()
-  const resetQuiz = useQuizStore((state) => state.resetQuiz)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isFooterOpen, setIsFooterOpen] = useState(false)
   const { data, isPending, isError } = useClientHomeFeed()
@@ -223,53 +221,54 @@ export default function ClientHomePage() {
         )}
       </section>
 
-      {/* 퍼스널 진단 퀴즈 배너 (내 손에 찰떡인 네일 찾기) */}
-      <section className="mb-2 mt-8 px-4">
+      {/* --- 진단 퀴즈 진입 배너 (정적 UI) --- */}
+      <div className="w-full mt-10 mb-10 px-5">
         <div
           role="button"
           tabIndex={0}
-          onClick={() => {
-            resetQuiz()
-            navigate('/client/quiz')
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault()
-              resetQuiz()
-              navigate('/client/quiz')
-            }
-          }}
-          className="relative flex w-full cursor-pointer items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-r from-[#fff5f5] to-[#ffeef2] p-5 shadow-sm transition-shadow hover:shadow-md"
+          onClick={() => navigate('/client/quiz')}
+          className="relative w-full cursor-pointer overflow-hidden rounded-[24px] bg-gradient-to-br from-[#fff0f0] to-[#fffafa] px-6 py-7 shadow-sm"
         >
-          <div className="z-10">
-            <h2 className="text-[16px] font-extrabold leading-snug text-gray-900">
+          <div className="relative z-10 flex flex-col items-start w-[65%]">
+            <h3 className="text-[18px] font-bold text-gray-900 leading-tight">
               내 손에 찰떡인 네일 찾기
-            </h2>
-            <p className="mb-3 mt-1 text-[11px] text-gray-500">
+            </h3>
+            <p className="mt-1.5 text-[13px] text-gray-500 break-keep">
               간단한 테스트로 인생 네일 찾기
             </p>
-            <div className="inline-flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[12px] font-bold text-white">
-              테스트 시작하기 <span className="ml-1 text-[10px]">→</span>
-            </div>
+
+            <button
+              type="button"
+              className="mt-5 flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[13px] font-bold text-white transition-transform active:scale-95"
+            >
+              테스트 시작하기 <span className="ml-1 text-[10px]">➔</span>
+            </button>
           </div>
-          <div className="absolute right-4 z-10 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md">
-            <span className="text-2xl">💅</span>
-            <span className="absolute -right-1 -top-1 text-lg">✨</span>
+
+          <div className="absolute right-4 bottom-4 w-[100px] h-[100px] pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-[80px] h-[80px] rounded-full bg-white shadow-sm flex items-center justify-center text-[32px]">
+                💅
+              </div>
+            </div>
+            <div className="absolute top-0 right-0 text-[24px]">✨</div>
           </div>
         </div>
-      </section>
+      </div>
+      {/* --------------------------------- */}
 
       <section className="mb-12 mt-8" aria-busy={showTrendSkeleton}>
         <div className="mb-5 flex items-center justify-between px-4">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
             트렌드 네일
           </h2>
-          <Link
-            to="/client/ranking"
+          <button
+            type="button"
+            onClick={() => navigate('/client/trend')}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {viewAllLabel} {'>'}
-          </Link>
+          </button>
         </div>
         <div className="grid grid-cols-3 gap-2 px-4 pb-2 sm:gap-3">
           {showTrendSkeleton ? (
@@ -318,7 +317,7 @@ export default function ClientHomePage() {
 
       <section className="px-5" aria-busy={showPopularSkeleton}>
         <Link
-          to="/client/ranking"
+          to="/client/popular-design"
           className="mb-5 flex cursor-pointer items-center justify-between"
           aria-label="인기 네일 전체보기"
         >
