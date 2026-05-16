@@ -6,8 +6,19 @@
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useClientHomeFeed } from '../../features/client-home/useClientHomeFeed'
-import type { NailDesignRow } from '../../shared/types/database.types'
+
+type HomeNailItem = {
+  id: string
+  title: string
+  image_url: string
+}
+
+const dummyData: HomeNailItem[] = [
+  { id: '1', title: '발레코어 핑크 조개', image_url: 'https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80' },
+  { id: '2', title: '올드머니 레드 시럽', image_url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80' },
+  { id: '3', title: '영롱 마그넷', image_url: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80' },
+  { id: '4', title: '화이트 프렌치', image_url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80' },
+]
 
 const NAIL_THUMB_IMG_CLASS = 'h-full w-full object-cover object-center'
 
@@ -80,25 +91,22 @@ const CATEGORY_CHIPS: CategoryChip[] = [
   },
 ]
 
-function pickNailTitle(nail: NailDesignRow): string {
-  const ko = nail?.title?.trim() || ''
-  const en = nail?.title_en?.trim() || ''
-  return ko || en || 'Modern Chic'
+function pickNailTitle(nail: HomeNailItem): string {
+  return nail.title?.trim() || 'Modern Chic'
 }
 
 export default function ClientHomePage() {
   const navigate = useNavigate()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isFooterOpen, setIsFooterOpen] = useState(false)
-  const { data, isPending, isError } = useClientHomeFeed()
 
-  const recommendNails = data?.recommend ?? []
-  const trendNails = data?.trend ?? []
-  const popularNails = data?.popular ?? []
+  const recommendNails = dummyData
+  const trendNails = dummyData.slice(0, 3)
+  const popularNails = dummyData
 
-  const showRecommendSkeleton = isPending && recommendNails.length === 0
-  const showTrendSkeleton = isPending && trendNails.length === 0
-  const showPopularSkeleton = isPending && popularNails.length === 0
+  const showRecommendSkeleton = false
+  const showTrendSkeleton = false
+  const showPopularSkeleton = false
 
   const viewAllLabel = '전체보기'
 
@@ -212,13 +220,7 @@ export default function ClientHomePage() {
               )
             })}
           </div>
-        ) : (
-          <div className="rounded-2xl bg-secondary/60 px-4 py-10 text-center text-sm text-muted-foreground">
-            {isError
-              ? '목록을 불러오지 못했습니다.'
-              : '업로드된 사진이 아직 없어요. 관리자 페이지에서 먼저 업로드해 주세요.'}
-          </div>
-        )}
+        ) : null}
       </section>
 
       {/* --- 진단 퀴즈 진입 배너 (정적 UI) --- */}
@@ -379,7 +381,7 @@ export default function ClientHomePage() {
             카테고리 탐색
           </h2>
           <Link
-            to="/client/gallery"
+            to="/client/category"
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {viewAllLabel} {'>'}

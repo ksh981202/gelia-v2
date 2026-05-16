@@ -1,7 +1,6 @@
-import { BarChart2, Home, Languages, Search, User } from 'lucide-react'
+import { BarChart2, Home, Languages, Search, Settings, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
-  Link,
   NavLink,
   Outlet,
   useLocation,
@@ -13,9 +12,6 @@ const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-1 border-0 bg-transparent px-1 py-0 [-webkit-tap-highlight-color:transparent]',
     isActive ? 'text-[#FF7E67]' : 'text-gray-400',
   ].join(' ')
-
-const bottomNavItemInactive =
-  'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-1 border-0 bg-transparent px-1 py-0 text-gray-400 [-webkit-tap-highlight-color:transparent]'
 
 export default function ClientLayout() {
   const [headerLang, setHeaderLang] = useState<'ko' | 'en'>('ko')
@@ -29,6 +25,9 @@ export default function ClientLayout() {
 
   const hideTopHeader =
     pathname.includes('/client/detail/') ||
+    pathname === '/client/category' ||
+    pathname === '/client/search' ||
+    pathname === '/client/my' ||
     pathname === '/client/recommend' ||
     pathname === '/client/color-curation' ||
     pathname === '/client/color-list' ||
@@ -62,9 +61,8 @@ export default function ClientLayout() {
     pathname === '/client/mood'
 
   const hideBottomNav =
-    pathname.includes('/client/detail/') ||
     pathname === '/client/recommend' ||
-    pathname === '/client/theme'
+    pathname === '/client/my'
 
   const mainPbClass = hideBottomNav
     ? 'pb-[env(safe-area-inset-bottom,0px)]'
@@ -103,14 +101,21 @@ export default function ClientLayout() {
               <span>{headerLang === 'en' ? 'EN' : 'KO'}</span>
             </button>
             <NavLink
-              to="/client/gallery"
+              to="/client/search"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
               aria-label="검색"
             >
               <Search size={18} className="text-foreground" />
             </NavLink>
             <NavLink
-              to="/client/theme"
+              to="/admin"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
+              aria-label="관리자 페이지"
+            >
+              <Settings size={18} className="text-foreground" />
+            </NavLink>
+            <NavLink
+              to="/client/my"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
               aria-label="마이페이지"
             >
@@ -143,7 +148,7 @@ export default function ClientLayout() {
             <span className="text-[10px] font-medium leading-none">홈</span>
           </NavLink>
           <NavLink
-            to="/client/ranking"
+            to="/client/trend"
             className={bottomNavLinkClass}
             aria-label="트렌드 탭"
           >
@@ -155,7 +160,7 @@ export default function ClientLayout() {
             <span className="text-[10px] font-medium leading-none">트렌드</span>
           </NavLink>
           <NavLink
-            to="/client/gallery"
+            to="/client/search"
             className={bottomNavLinkClass}
             aria-label="검색 탭"
           >
@@ -166,9 +171,9 @@ export default function ClientLayout() {
             />
             <span className="text-[10px] font-medium leading-none">검색</span>
           </NavLink>
-          <Link
-            to="/client"
-            className={bottomNavItemInactive}
+          <NavLink
+            to="/client/my"
+            className={bottomNavLinkClass}
             aria-label="마이 탭"
           >
             <User
@@ -177,7 +182,7 @@ export default function ClientLayout() {
               aria-hidden
             />
             <span className="text-[10px] font-medium leading-none">마이</span>
-          </Link>
+          </NavLink>
         </nav>
         )}
       </div>

@@ -2,6 +2,8 @@ import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
 import AdminPage from '../../pages/admin/AdminPage'
 import AdminUploadPage from '../../pages/admin/AdminUploadPage'
+import AdminBoard from '../../pages/admin/AdminBoard'
+import AdminManagePage from '../../pages/admin/AdminManagePage'
 import ClientNailDetailPage from '../../pages/client/ClientNailDetailPage'
 import ClientGalleryExploreListPage from '../../pages/client/ClientGalleryExploreListPage'
 import ClientGalleryPage from '../../pages/client/ClientGalleryPage'
@@ -22,6 +24,9 @@ import ShapeBestListPage from '../../pages/client/trend/ShapeBestListPage'
 import SearchTrendListPage from '../../pages/client/trend/SearchTrendListPage'
 import PatternPage from '../../pages/client/trend/PatternPage'
 import MoodPage from '../../pages/client/trend/MoodPage'
+import CategoryPage from '../../pages/client/CategoryPage'
+import SearchMainPage from '../../pages/client/SearchMainPage'
+import ClientMyPage from '../../pages/client/ClientMyPage'
 import ClientHomePage from '../../pages/client/ClientHomePage'
 import ClientRecommendPage from '../../pages/client/ClientRecommendPage'
 import ClientPage from '../../pages/client/ClientPage'
@@ -54,6 +59,7 @@ const router = createBrowserRouter([
     element: <ClientLayout />,
     children: [
       { index: true, element: <ClientHomePage /> },
+      { path: 'category', element: <CategoryPage /> },
       { path: 'recommend', element: <ClientRecommendPage /> },
       { path: 'color-curation', element: <ClientColorCurationPage /> },
       { path: 'color-list', element: <ClientColorListPage /> },
@@ -80,6 +86,8 @@ const router = createBrowserRouter([
       },
       { path: 'detail/:nailId', element: <ClientNailDetailPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
+      { path: 'search', element: <SearchMainPage /> },
+      { path: 'my', element: <ClientMyPage /> },
       { path: 'ranking', element: <ClientRankingPage /> },
       { path: 'popular-design', element: <PopularDesignPage /> },
       { path: 'period-best-list', element: <PeriodBestListPage /> },
@@ -112,6 +120,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminPage /> },
       { path: 'upload', element: <AdminUploadPage /> },
+      { path: 'board', element: <AdminBoard /> },
+      { path: 'manage', element: <AdminManagePage /> },
     ],
   },
 ])
