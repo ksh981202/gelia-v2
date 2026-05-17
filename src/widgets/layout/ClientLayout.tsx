@@ -1,9 +1,10 @@
 import { BarChart2, Home, Languages, Search, Settings, User } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import {
   NavLink,
   Outlet,
   useLocation,
+  useNavigate,
   useNavigationType,
 } from 'react-router-dom'
 
@@ -14,7 +15,7 @@ const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(' ')
 
 export default function ClientLayout() {
-  const [headerLang, setHeaderLang] = useState<'ko' | 'en'>('ko')
+  const navigate = useNavigate()
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
 
@@ -57,12 +58,11 @@ export default function ClientLayout() {
     pathname === '/client/texture-list' ||
     pathname === '/client/parts' ||
     pathname === '/client/parts-list' ||
+    pathname === '/client/art' ||
     pathname === '/client/pattern' ||
     pathname === '/client/mood'
 
-  const hideBottomNav =
-    pathname === '/client/recommend' ||
-    pathname === '/client/my'
+  const hideBottomNav = pathname === '/client/my'
 
   const mainPbClass = hideBottomNav
     ? 'pb-[env(safe-area-inset-bottom,0px)]'
@@ -73,54 +73,46 @@ export default function ClientLayout() {
       <div className="relative mx-auto min-h-screen w-full max-w-md">
         {!hideTopHeader && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl">
-          <NavLink
-            to="/client"
-            end
+          <h1
             className="cursor-pointer whitespace-nowrap text-[28px] font-bold tracking-widest text-gray-900 sm:text-[30px]"
             style={{ fontFamily: "'Playfair Display', serif" }}
+            onClick={() => navigate('/client')}
           >
             GELIA
-          </NavLink>
+          </h1>
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() =>
-                setHeaderLang((prev) => (prev === 'ko' ? 'en' : 'ko'))
-              }
+              onClick={() => alert('다국어 변경 준비 중')}
               className="inline-flex h-10 min-w-[64px] items-center justify-center gap-1 rounded-full bg-secondary px-3 text-[12px] font-semibold text-foreground transition-opacity hover:opacity-90"
-              aria-label={
-                headerLang === 'en'
-                  ? 'Switch language to Korean'
-                  : '언어를 영어로 변경'
-              }
-              title={
-                headerLang === 'en' ? 'Switch to Korean' : 'Switch to English'
-              }
             >
               <Languages size={14} aria-hidden />
-              <span>{headerLang === 'en' ? 'EN' : 'KO'}</span>
+              <span>EN</span>
             </button>
-            <NavLink
-              to="/client/search"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"
+              onClick={() => navigate('/client/search')}
               aria-label="검색"
             >
               <Search size={18} className="text-foreground" />
-            </NavLink>
-            <NavLink
-              to="/admin"
+            </button>
+            <button
+              type="button"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
+              onClick={() => navigate('/admin')}
               aria-label="관리자 페이지"
             >
-              <Settings size={18} className="text-foreground" />
-            </NavLink>
-            <NavLink
-              to="/client/my"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
+              <Settings size={18} className="text-foreground" strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"
+              onClick={() => navigate('/client/my')}
               aria-label="마이페이지"
             >
               <User size={18} className="text-foreground" />
-            </NavLink>
+            </button>
           </div>
         </header>
         )}

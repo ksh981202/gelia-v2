@@ -23,6 +23,7 @@ import ReactionBestListPage from '../../pages/client/trend/ReactionBestListPage'
 import ShapeBestListPage from '../../pages/client/trend/ShapeBestListPage'
 import SearchTrendListPage from '../../pages/client/trend/SearchTrendListPage'
 import PatternPage from '../../pages/client/trend/PatternPage'
+import PatternCurationPage from '../../pages/client/PatternCurationPage'
 import MoodPage from '../../pages/client/trend/MoodPage'
 import CategoryPage from '../../pages/client/CategoryPage'
 import SearchMainPage from '../../pages/client/SearchMainPage'
@@ -109,6 +110,7 @@ const router = createBrowserRouter([
       { path: 'parts-list', element: <PartsListPage /> },
       { path: 'stone-best-list', element: <StoneBestListPage /> },
       { path: 'full-parts-list', element: <FullPartsListPage /> },
+      { path: 'art', element: <PatternCurationPage /> },
       { path: 'pattern', element: <PatternPage /> },
       { path: 'mood', element: <MoodPage /> },
       { path: 'quiz', element: <QuizPage /> },

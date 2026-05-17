@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Bookmark, Heart } from "lucide-react";
+import { Bell, Bookmark, Camera, Heart, X } from "lucide-react";
 
 type ActiveTab = "recent" | "liked" | "saved";
 
@@ -12,6 +12,9 @@ const DUMMY_ITEMS = [
 
 export default function ClientMyPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("recent");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [profileImg, setProfileImg] = useState("/avatar/default_profile_heart.png");
+  const [tempImg, setTempImg] = useState("/avatar/default_profile_heart.png");
 
   const statBoxClass = "flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]";
 
@@ -30,8 +33,14 @@ export default function ClientMyPage() {
 
       <main className="pb-24">
         <section className="flex flex-col items-center py-10 border-b border-gray-50">
-          <div className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded-full shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white bg-rose-50 flex items-center justify-center">
-             <img src="/avatars/default_profile_pearl.png" alt="프로필" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+          <div
+            className="relative flex h-[100px] w-[100px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-rose-50 shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
+            onClick={() => {
+              setTempImg(profileImg);
+              setIsModalOpen(true);
+            }}
+          >
+             <img src={profileImg} alt="프로필" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
              <span className="absolute text-5xl">🦪</span>
           </div>
           <div className="text-xl font-bold text-gray-900 mt-4">네일리버</div>
@@ -128,6 +137,53 @@ export default function ClientMyPage() {
           </div>
         </section>
       </main>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-center items-end bg-black/60">
+          <div className="w-full max-w-md bg-white rounded-t-[32px] p-6 pb-10 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-[17px] font-bold text-gray-900">프로필 사진 변경</h3>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="p-1 text-gray-500"><X size={22} /></button>
+            </div>
+
+            <div className="mb-6">
+              <p className="mb-3 text-[13px] font-medium text-gray-500">기본 프로필 선택</p>
+              <div className="flex gap-4">
+                {['tulip', 'pearl', 'heart', 'drop'].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setTempImg(`/avatar/default_profile_${type}.png`)}
+                    className={`relative h-16 w-16 overflow-hidden rounded-full border-[3px] transition-all ${tempImg.includes(type) ? 'border-blue-300 p-0.5' : 'border-transparent'}`}
+                  >
+                    <img src={`/avatar/default_profile_${type}.png`} alt={type} className="h-full w-full rounded-full bg-gray-50 object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button type="button" className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3.5 text-[14px] font-bold text-rose-500 transition-colors active:bg-rose-100">
+              <Camera size={18} /> 내 앨범에서 사진 선택
+            </button>
+
+            <div className="mb-8">
+              <p className="mb-2 text-[13px] font-medium text-gray-500">닉네임 변경</p>
+              <input type="text" defaultValue="수정가" className="w-full rounded-xl border border-gray-200 px-4 py-3.5 text-[15px] outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setProfileImg(tempImg);
+                setIsModalOpen(false);
+              }}
+              className="w-full rounded-2xl bg-gray-900 py-4 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
+            >
+              닉네임 저장
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -37,11 +37,11 @@ export default function PatternPage() {
           </div>
           <div className="flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
             {[
-              { label: "프렌치", img: "https://picsum.photos/100/100?random=20", active: true },
-              { label: "마블", img: "https://picsum.photos/100/100?random=21", active: false },
-              { label: "체크", img: "https://picsum.photos/100/100?random=22", active: false },
-              { label: "그라데이션", img: "https://picsum.photos/100/100?random=23", active: false },
-              { label: "트위드", img: "https://picsum.photos/100/100?random=24", active: false },
+              { label: "프렌치", img: "/pattern/french.jpg", active: true },
+              { label: "마블", img: "/pattern/marble.jpg", active: false },
+              { label: "체크", img: "/pattern/check.png", active: false },
+              { label: "그라데이션", img: "/pattern/gradient.jpg", active: false },
+              { label: "트위드", img: "/pattern/tweed.png", active: false },
             ].map((cat) => (
               <button key={cat.label} type="button" className="flex shrink-0 flex-col items-center gap-2.5">
                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${cat.active ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>

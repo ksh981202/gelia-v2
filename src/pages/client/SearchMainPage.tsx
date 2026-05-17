@@ -38,7 +38,7 @@ export default function SearchMainPage() {
           <div className="relative mx-auto mt-8 mb-6 flex h-[200px] w-full max-w-[220px] items-center justify-center">
             <div className="absolute left-1/2 top-1/2 h-[180px] w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-50" aria-hidden />
             <div className="relative z-10 w-[160px] h-[160px] rounded-full bg-gray-100 flex items-center justify-center shadow-sm overflow-hidden">
-                <img src="/images/patterns/GL-0000358.jpg" alt="검색 메인 네일" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <img src="/search/GL-0000358.jpg" alt="검색 메인 네일" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
             </div>
           </div>
 

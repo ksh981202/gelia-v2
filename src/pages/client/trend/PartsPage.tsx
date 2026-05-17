@@ -40,11 +40,11 @@ export default function PartsPage() {
           </div>
           <div className="flex items-start gap-4 overflow-x-auto px-5 pb-1.5 pt-1 scrollbar-hide [&::-webkit-scrollbar]:hidden">
             {[
-              { label: "스톤/큐빅", img: "https://picsum.photos/100/100?random=1", active: true },
-              { label: "리본", img: "https://picsum.photos/100/100?random=2", active: false },
-              { label: "진주", img: "https://picsum.photos/100/100?random=3", active: false },
-              { label: "메탈/체인", img: "https://picsum.photos/100/100?random=4", active: false },
-              { label: "나비", img: "https://picsum.photos/100/100?random=5", active: false },
+              { label: "스톤/큐빅", img: "/parts/cubic.jpg", active: true },
+              { label: "리본", img: "/parts/ribbon.jpg", active: false },
+              { label: "진주", img: "/parts/pearl.jpg", active: false },
+              { label: "메탈/체인", img: "/parts/metal.jpg", active: false },
+              { label: "나비", img: "/parts/butterfly.jpg", active: false },
             ].map((cat) => (
               <button key={cat.label} type="button" className="flex shrink-0 flex-col items-center gap-2.5">
                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${cat.active ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>

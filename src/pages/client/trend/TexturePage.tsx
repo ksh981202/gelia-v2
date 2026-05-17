@@ -41,11 +41,11 @@ export default function TexturePage() {
           </div>
           <div className="flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
             {[
-              { label: "시럽", img: "https://picsum.photos/100/100?random=1", active: true },
-              { label: "무광", img: "https://picsum.photos/100/100?random=2", active: false },
-              { label: "글리터", img: "https://picsum.photos/100/100?random=3", active: false },
-              { label: "자석", img: "https://picsum.photos/100/100?random=4", active: false },
-              { label: "미러파우더", img: "https://picsum.photos/100/100?random=5", active: false },
+              { label: "시럽", img: "/texture/syrup.jpg", active: true },
+              { label: "무광", img: "/texture/matte.jpg", active: false },
+              { label: "글리터", img: "/texture/glitter.jpg", active: false },
+              { label: "자석", img: "/texture/magnetic.jpg", active: false },
+              { label: "미러파우더", img: "/texture/mirror.jpg", active: false },
             ].map((cat) => (
               <button key={cat.label} type="button" className="flex shrink-0 flex-col items-center gap-2.5">
                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${cat.active ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>
