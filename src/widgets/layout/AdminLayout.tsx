@@ -1,4 +1,4 @@
-import { Database, FileText, LayoutDashboard, Upload } from 'lucide-react'
+import { Database, FileText, LayoutDashboard } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 const sidebarLink = ({ isActive }: { isActive: boolean }) =>
@@ -24,10 +24,6 @@ export default function AdminLayout() {
             <NavLink to="/admin" end className={sidebarLink}>
               <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden />
               대시보드
-            </NavLink>
-            <NavLink to="/admin/upload" className={sidebarLink}>
-              <Upload className="h-4 w-4 shrink-0" aria-hidden />
-              업로드
             </NavLink>
             <NavLink to="/admin/manage" className={sidebarLink}>
               <Database className="h-4 w-4 shrink-0" aria-hidden />

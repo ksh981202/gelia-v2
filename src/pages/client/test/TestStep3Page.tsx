@@ -1,35 +1,111 @@
 import { useState } from "react";
 import { ChevronLeft, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/shared/language/useLanguage";
 
 const COLOR_OPTIONS = [
-  { id: 'pink', title: '핑크', tone: '🎀 쿨톤 추천', tags: '#여리여리 #러블리', src: '/color/color-pink.png' },
-  { id: 'nude', title: '누드/베이지', tone: '🌞 웜톤 추천', tags: '#차분함 #오피스', src: '/color/color-nude.png' },
-  { id: 'red', title: '레드/버건디', tone: '🍓 매혹적인 포인트', tags: '#치명적 #섹시 #포인트', src: '/color/color-red.png' },
-  { id: 'black', title: '블랙/다크', tone: '🕶 시크한 매력', tags: '#시크 #도도 #걸크러쉬', src: '/color/color-black.png' },
-  { id: 'pastel', title: '파스텔', tone: '🌸 몽몽 수채화', tags: '#몽환적 #유니크', src: '/color/color-pastel.png' },
-  { id: 'glitter', title: '글리터', tone: '💎 화려한 끝판왕', tags: '#영롱 #반짝반짝 #시선집중', src: '/color/color-glitter.png' }
+  {
+    id: "pink",
+    titleKo: "핑크",
+    titleEn: "Pink",
+    toneKo: "🎀 쿨톤 추천",
+    toneEn: "🎀 Cool Tone",
+    tagsKo: "#여리여리 #러블리",
+    tagsEn: "#Delicate #Lovely",
+    src: "/color/color-pink.png",
+  },
+  {
+    id: "nude",
+    titleKo: "누드/베이지",
+    titleEn: "Nude/Beige",
+    toneKo: "🌞 웜톤 추천",
+    toneEn: "🌞 Warm Tone",
+    tagsKo: "#차분함 #오피스",
+    tagsEn: "#Calm #OfficeLook",
+    src: "/color/color-nude.png",
+  },
+  {
+    id: "red",
+    titleKo: "레드/버건디",
+    titleEn: "Red/Burgundy",
+    toneKo: "🍓 매혹적인 포인트",
+    toneEn: "🍓 Glamorous Point",
+    tagsKo: "#치명적 #섹시 #포인트",
+    tagsEn: "#Chic #Sexy #Point",
+    src: "/color/color-red.png",
+  },
+  {
+    id: "black",
+    titleKo: "블랙/다크",
+    titleEn: "Black/Dark",
+    toneKo: "🕶 시크한 매력",
+    toneEn: "🕶 Moody & Chic",
+    tagsKo: "#시크 #도도 #걸크러쉬",
+    tagsEn: "#Chic #Bold #GirlCrush",
+    src: "/color/color-black.png",
+  },
+  {
+    id: "pastel",
+    titleKo: "파스텔",
+    titleEn: "Pastel",
+    toneKo: "🌸 몽글몽글 수채화",
+    toneEn: "🌸 Soft Pastel",
+    tagsKo: "#몽환적 #유니크",
+    tagsEn: "#Dreamy #Unique",
+    src: "/color/color-pastel.png",
+  },
+  {
+    id: "glitter",
+    titleKo: "글리터",
+    titleEn: "Glitter",
+    toneKo: "💎 화려한 끝판왕",
+    toneEn: "💎 Fancy Glitter",
+    tagsKo: "#영롱 #반짝반짝 #시선집중",
+    tagsEn: "#Sparkle #Blings #Glam",
+    src: "/color/color-glitter.png",
+  },
 ];
 
-const COLOR_TIPS: Record<string, string> = {
-  pink: "여리여리한 핑크는 손끝에 생기를 더해줘요.",
-  nude: "차분한 누드/베이지는 데일리에 안성맞춤이에요.",
-  red: "강렬한 레드는 포인트 네일로 강추예요.",
-  black: "도도한 블랙은 시크한 무드를 완성해요.",
-  pastel: "파스텔 톤은 부드럽고 유니크한 인상을 줘요.",
-  glitter: "글리터는 특별한 날 분위기를 한껏 살려줘요.",
-  default: "평소 즐겨 입는 옷이나 자주 바르는 립스틱 색상을 떠올려보세요. 나와 가장 친숙하고 편안한 컬러가 손끝에도 잘 어울려요."
+const COLOR_TIPS: Record<string, { ko: string; en: string }> = {
+  pink: {
+    ko: "여리여리한 핑크는 손끝에 생기를 더해줘요.",
+    en: "Delicate pink adds a subtle, lovely vitality to your fingertips.",
+  },
+  nude: {
+    ko: "차분한 누드/베이지는 데일리에 안성맞춤이에요.",
+    en: "Calm nude and beige colors are perfect for your daily look.",
+  },
+  red: {
+    ko: "강렬한 레드는 포인트 네일로 강추예요.",
+    en: "Intense red is highly recommended as a statement point color.",
+  },
+  black: {
+    ko: "도도한 블랙은 시크한 무드를 완성해요.",
+    en: "Bold black perfectly completes a sleek, chic mood.",
+  },
+  pastel: {
+    ko: "파스텔 톤은 부드럽고 유니크한 인상을 줘요.",
+    en: "Soft pastel tones give a gentle yet unique impression.",
+  },
+  glitter: {
+    ko: "글리터는 특별한 날 분위기를 한껏 살려줘요.",
+    en: "Glitter instantly elevates your vibe for any special occasion.",
+  },
+  default: {
+    ko: "평소 즐겨 입는 옷이나 자주 바르는 립스틱 색상을 떠올려보세요. 나와 가장 친숙하고 편안한 컬러가 손끝에도 잘 어울려요.",
+    en: "Think of the clothes you love to wear or your favorite lipstick shade. The colors you feel most comfortable with will naturally look best on your nails.",
+  },
 };
 
 export default function TestStep3Page() {
   const navigate = useNavigate();
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const { isEn } = useLanguage();
 
-  const tipText = selectedColor ? COLOR_TIPS[selectedColor] : COLOR_TIPS.default;
+  const currentTip = selectedColor ? COLOR_TIPS[selectedColor] : COLOR_TIPS.default;
+  const tipText = isEn ? currentTip.en : currentTip.ko;
 
   return (
-    /* [최종 해결 구조] 최상위 컨테이너에 w-full max-w-md를 완전 고정하고 
-       하단 fixed 버튼까지 이 컨테이너 영역 내부 자식으로 귀속시켜 외부 폭 간섭을 완벽히 차단합니다. */
     <div className="relative mx-auto flex h-full min-h-screen w-full max-w-md flex-col bg-white pb-[140px] font-sans overflow-y-scroll overflow-x-hidden box-border">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white w-full">
         <div className="flex h-14 w-full items-center justify-between px-5">
@@ -41,7 +117,7 @@ export default function TestStep3Page() {
             <ChevronLeft className="w-6 h-6" />
           </button>
           <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
-            퍼스널 네일 진단
+            {isEn ? "Personal Nail Analysis" : "퍼스널 네일 진단"}
           </h1>
           <div className="w-8" />
         </div>
@@ -57,13 +133,14 @@ export default function TestStep3Page() {
 
       <main className="flex-1 px-5 pt-8 w-full box-border">
         <h2 className="mb-1 whitespace-pre-line font-sans text-[20px] font-bold leading-snug tracking-tight text-gray-900 sm:text-[22px]">
-          {"좋아하는 컬러를\n선택하세요"}
+          {isEn ? "Select Your\nFavorite Color" : "좋아하는 컬러를\n선택하세요"}
         </h2>
         <p className="mb-8 mt-2 font-sans text-[13px] font-medium tracking-tight text-gray-500 sm:text-[14px]">
-          가장 끌리는 네일 컬러 칩을 골라주세요.
+          {isEn
+            ? "Please choose the nail color chip that attracts you the most."
+            : "가장 끌리는 네일 컬러 칩을 골라주세요."}
         </p>
 
-        {/* --- 컬러 구슬 2열 그리드 --- */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 w-full box-border">
           {COLOR_OPTIONS.map((color) => {
             const isSelected = selectedColor === color.id;
@@ -74,24 +151,22 @@ export default function TestStep3Page() {
                 onClick={() => setSelectedColor(color.id)}
                 className="group flex w-full flex-col items-center outline-none relative box-border"
               >
-                <div className="relative mx-auto mb-3 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-transparent sm:h-28 sm:w-28">
+                <div className="relative mx-auto mb-3 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-transparent sm:h-28 sm:w-28 shadow-md">
                   <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                     <img
                       src={color.src}
-                      alt={color.title}
+                      alt={isEn ? color.titleEn : color.titleKo}
                       className="h-full w-full object-cover object-center transition-transform duration-200"
                     />
                   </div>
-                  
-                  {/* 테두리 오버레이 스타일 간소화 (그림자 간섭 배제) */}
-                  <div 
+
+                  <div
                     className={`pointer-events-none absolute inset-0 z-20 rounded-full border-[3.5px] border-[#FF826E] box-border transition-opacity duration-150 ${
                       isSelected ? "opacity-100" : "opacity-0"
-                    }`} 
+                    }`}
                   />
 
-                  {/* 우측 상단 체크 아이콘 */}
-                  <span 
+                  <span
                     className={`absolute -right-1 -top-1 z-30 flex items-center justify-center rounded-full bg-[#FF826E] p-1 text-white shadow-sm transition-opacity duration-150 ${
                       isSelected ? "opacity-100" : "opacity-0"
                     }`}
@@ -102,13 +177,13 @@ export default function TestStep3Page() {
 
                 <div className="flex w-full flex-col items-center text-center">
                   <p className="mt-1 rounded-full bg-gray-100 px-3 py-0.5 font-sans text-[11px] font-semibold tracking-tight text-gray-600 sm:text-[12px]">
-                    {color.tone}
+                    {isEn ? color.toneEn : color.toneKo}
                   </p>
                   <p className="mt-1 font-sans text-[16px] font-bold tracking-tight text-gray-900 sm:text-[17px]">
-                    {color.title}
+                    {isEn ? color.titleEn : color.titleKo}
                   </p>
                   <p className="mt-0.5 font-sans text-[12px] font-medium tracking-tight text-gray-400 sm:text-[13px]">
-                    {color.tags}
+                    {isEn ? color.tagsEn : color.tagsKo}
                   </p>
                 </div>
               </button>
@@ -119,7 +194,7 @@ export default function TestStep3Page() {
         <div className="mt-10 rounded-2xl border border-orange-100 bg-orange-50/60 p-5">
           <p className="mb-2 flex items-center gap-1 font-sans text-[15px] font-bold tracking-tight text-[#FF826E]">
             <span aria-hidden>💡</span>
-            수석 큐레이터의 컬러 팁
+            {isEn ? "Chief Curator's Color Tip" : "수석 큐레이터의 컬러 팁"}
           </p>
           <p className="break-keep font-sans text-[14px] font-medium leading-relaxed tracking-tight text-gray-700">
             {tipText}
@@ -127,8 +202,6 @@ export default function TestStep3Page() {
         </div>
       </main>
 
-      {/* [핵심 수정] 하단 고정 버튼을 fixed가 아닌 absolute 스타일의 레이아웃 구조로 묶어
-          최상위 max-w-md 프레임 밖의 뷰포트를 절대 건드리지 못하게 봉쇄합니다. */}
       <div className="absolute bottom-0 left-0 right-0 z-40 w-full bg-white px-5 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] box-border">
         <button
           type="button"
@@ -136,7 +209,7 @@ export default function TestStep3Page() {
           onClick={() => navigate("/client/test-result")}
           className="w-full rounded-xl bg-[#FF826E] py-3.5 font-sans text-[16px] font-bold tracking-tight text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
         >
-          결과 보기
+          {isEn ? "View Results" : "결과 보기"}
         </button>
       </div>
     </div>

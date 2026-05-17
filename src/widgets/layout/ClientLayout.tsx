@@ -25,6 +25,7 @@ export default function ClientLayout() {
   }, [pathname, navigationType])
 
   const hideTopHeader =
+    pathname.startsWith('/client/test') ||
     pathname.includes('/client/detail/') ||
     pathname === '/client/category' ||
     pathname === '/client/search' ||
