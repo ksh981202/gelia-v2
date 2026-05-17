@@ -28,8 +28,10 @@ export default function TestStep3Page() {
   const tipText = selectedColor ? COLOR_TIPS[selectedColor] : COLOR_TIPS.default;
 
   return (
-    <div className="relative mx-auto flex h-full min-h-screen max-w-md flex-col bg-white pb-[calc(4rem+130px)] font-sans overflow-y-scroll overflow-x-hidden">
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
+    /* [최종 해결 구조] 최상위 컨테이너에 w-full max-w-md를 완전 고정하고 
+       하단 fixed 버튼까지 이 컨테이너 영역 내부 자식으로 귀속시켜 외부 폭 간섭을 완벽히 차단합니다. */
+    <div className="relative mx-auto flex h-full min-h-screen w-full max-w-md flex-col bg-white pb-[140px] font-sans overflow-y-scroll overflow-x-hidden box-border">
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white w-full">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
             type="button"
@@ -53,7 +55,7 @@ export default function TestStep3Page() {
         </div>
       </header>
 
-      <main className="flex-1 px-5 pt-8">
+      <main className="flex-1 px-5 pt-8 w-full box-border">
         <h2 className="mb-1 whitespace-pre-line font-sans text-[20px] font-bold leading-snug tracking-tight text-gray-900 sm:text-[22px]">
           {"좋아하는 컬러를\n선택하세요"}
         </h2>
@@ -61,7 +63,8 @@ export default function TestStep3Page() {
           가장 끌리는 네일 컬러 칩을 골라주세요.
         </p>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 w-full">
+        {/* --- 컬러 구슬 2열 그리드 --- */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 w-full box-border">
           {COLOR_OPTIONS.map((color) => {
             const isSelected = selectedColor === color.id;
             return (
@@ -69,25 +72,25 @@ export default function TestStep3Page() {
                 key={color.id}
                 type="button"
                 onClick={() => setSelectedColor(color.id)}
-                className="group flex w-full flex-col items-center outline-none relative"
+                className="group flex w-full flex-col items-center outline-none relative box-border"
               >
-                <div className="relative mx-auto mb-3 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-transparent shadow-md sm:h-28 sm:w-28">
+                <div className="relative mx-auto mb-3 flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-transparent sm:h-28 sm:w-28">
                   <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                     <img
                       src={color.src}
                       alt={color.title}
-                      className={`h-full w-full object-cover object-center transition-transform duration-200 ${
-                        !isSelected && "group-hover:-translate-y-0.5"
-                      }`}
+                      className="h-full w-full object-cover object-center transition-transform duration-200"
                     />
                   </div>
                   
+                  {/* 테두리 오버레이 스타일 간소화 (그림자 간섭 배제) */}
                   <div 
                     className={`pointer-events-none absolute inset-0 z-20 rounded-full border-[3.5px] border-[#FF826E] box-border transition-opacity duration-150 ${
                       isSelected ? "opacity-100" : "opacity-0"
                     }`} 
                   />
 
+                  {/* 우측 상단 체크 아이콘 */}
                   <span 
                     className={`absolute -right-1 -top-1 z-30 flex items-center justify-center rounded-full bg-[#FF826E] p-1 text-white shadow-sm transition-opacity duration-150 ${
                       isSelected ? "opacity-100" : "opacity-0"
@@ -124,12 +127,14 @@ export default function TestStep3Page() {
         </div>
       </main>
 
-      <div className="fixed left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] [bottom:calc(4rem+env(safe-area-inset-bottom,0px))]">
+      {/* [핵심 수정] 하단 고정 버튼을 fixed가 아닌 absolute 스타일의 레이아웃 구조로 묶어
+          최상위 max-w-md 프레임 밖의 뷰포트를 절대 건드리지 못하게 봉쇄합니다. */}
+      <div className="absolute bottom-0 left-0 right-0 z-40 w-full bg-white px-5 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] box-border">
         <button
           type="button"
           disabled={!selectedColor}
           onClick={() => navigate("/client/test-result")}
-          className="w-full rounded-xl bg-[#FF826E] py-3.5 font-sans text-[16px] font-bold tracking-tight text-white transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full rounded-xl bg-[#FF826E] py-3.5 font-sans text-[16px] font-bold tracking-tight text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
         >
           결과 보기
         </button>
