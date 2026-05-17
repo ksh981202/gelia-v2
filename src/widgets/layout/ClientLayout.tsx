@@ -47,7 +47,6 @@ export default function ClientLayout() {
     pathname === '/client/situation-list' ||
     pathname === '/client/gallery-explore-list' ||
     pathname === '/client/today-special' ||
-    pathname === '/client/quiz' ||
     pathname === '/client/popular-design' ||
     pathname === '/client/period-best-list' ||
     pathname === '/client/reaction-best-list' ||
@@ -62,7 +61,7 @@ export default function ClientLayout() {
     pathname === '/client/pattern' ||
     pathname === '/client/mood'
 
-  const hideBottomNav = pathname === '/client/my'
+  const hideBottomNav = false
 
   const mainPbClass = hideBottomNav
     ? 'pb-[env(safe-area-inset-bottom,0px)]'

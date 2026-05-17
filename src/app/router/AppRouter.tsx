@@ -46,7 +46,11 @@ import ClientColorListPage from '../../pages/client/ClientColorListPage'
 import ClientColorThemeListPage from '../../pages/client/ClientColorThemeListPage'
 import ClientColorPopularListPage from '../../pages/client/ClientColorPopularListPage'
 import ClientTodaySpecialPage from '../../pages/client/ClientTodaySpecialPage'
-import QuizPage from '../../pages/quiz/QuizPage'
+import TestIntroPage from '../../pages/client/test/TestIntroPage'
+import TestStep1Page from '../../pages/client/test/TestStep1Page'
+import TestStep2Page from '../../pages/client/test/TestStep2Page'
+import TestStep3Page from '../../pages/client/test/TestStep3Page'
+import TestResultPage from '../../pages/client/test/TestResultPage'
 import {
   createBrowserRouter,
   Navigate,
@@ -113,7 +117,11 @@ const router = createBrowserRouter([
       { path: 'art', element: <PatternCurationPage /> },
       { path: 'pattern', element: <PatternPage /> },
       { path: 'mood', element: <MoodPage /> },
-      { path: 'quiz', element: <QuizPage /> },
+      { path: 'test-intro', element: <TestIntroPage /> },
+      { path: 'test-step1', element: <TestStep1Page /> },
+      { path: 'test-step2', element: <TestStep2Page /> },
+      { path: 'test-step3', element: <TestStep3Page /> },
+      { path: 'test-result', element: <TestResultPage /> },
     ],
   },
   {

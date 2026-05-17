@@ -79,11 +79,15 @@ export default function ClientHomePage() {
       </section>
 
       <div className="w-full mt-10 mb-10 px-5">
-        <div onClick={() => navigate('/client/quiz')} className="relative w-full cursor-pointer overflow-hidden rounded-[24px] bg-gradient-to-br from-[#fff5f5] to-[#fffafa] px-6 py-7 shadow-sm border border-rose-50">
+        <div className="relative w-full overflow-hidden rounded-[24px] bg-gradient-to-br from-[#fff5f5] to-[#fffafa] px-6 py-7 shadow-sm border border-rose-50">
           <div className="relative z-10 flex flex-col items-start w-[65%]">
             <h3 className="text-[18px] font-bold text-gray-900 leading-tight">내 손에 찰떡인 네일 찾기</h3>
             <p className="mt-1.5 text-[13px] text-gray-500">간단한 테스트로 인생 네일 찾기</p>
-            <button type="button" className="mt-5 flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[13px] font-bold text-white transition-transform active:scale-95">
+            <button
+              type="button"
+              onClick={() => navigate('/client/test-intro')}
+              className="mt-5 flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[13px] font-bold text-white transition-transform active:scale-95"
+            >
               테스트 시작하기 <span className="ml-1 text-[10px]">➔</span>
             </button>
           </div>

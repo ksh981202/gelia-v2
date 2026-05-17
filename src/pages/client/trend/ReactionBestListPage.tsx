@@ -34,7 +34,7 @@ export default function ReactionBestListPage() {
           <h1 className="whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
             유저 반응 BEST
           </h1>
-          <button type="button" className="p-1 text-gray-800" onClick={() => navigate("/search")}>
+          <button type="button" className="p-1 text-gray-800" onClick={() => navigate("/client/search")}>
             <Search className="w-5 h-5" />
           </button>
         </div>

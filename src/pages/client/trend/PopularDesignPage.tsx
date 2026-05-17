@@ -44,7 +44,7 @@ export default function PopularDesignPage() {
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
           인기 네일 디자인
         </h1>
-        <button type="button" aria-label="검색" className="z-10 p-1 -mr-1" onClick={() => navigate("/search")}>
+        <button type="button" aria-label="검색" className="z-10 p-1 -mr-1" onClick={() => navigate("/client/search")}>
           <Search className="w-6 h-6 text-gray-900" strokeWidth={2} />
         </button>
       </header>

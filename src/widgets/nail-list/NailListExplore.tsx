@@ -1,28 +1,20 @@
 import { ChevronDown } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import {
-  DEFAULT_LIST_SORT,
-  DEFAULT_LIST_TAB,
-  useListSearchParams,
-} from '../../features/list-url-state/useListSearchParams'
-import {
-  listInfiniteKey,
-  useListScrollRestore,
-} from '../../features/list-scroll-restore/useListScrollRestore'
-import {
-  type NailListQueryScope,
-  useNailQuery,
-} from '../../entities/nail-design/api/useNailQuery'
-import { isAllTab } from '../../entities/nail-design/lib/nailListSelectors'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PageContainer } from '../../shared/ui/PageContainer'
-import { normalizeForFilter } from '../../shared/utils/normalizeForFilter'
 
-const SORT_MENU_OPTIONS = [
-  { value: DEFAULT_LIST_SORT, label: '인기순' },
-  { value: '최신순', label: '최신순' },
-  { value: '저장순', label: '저장 많은 순' },
-] as const
+export type NailListQueryScope =
+  | 'theme'
+  | 'gallery'
+  | 'ranking'
+  | 'situation'
+  | 'style'
+  | 'season'
+  | 'season-popular'
+  | 'vacation'
+  | 'color'
+  | 'color-theme'
+  | 'color-popular'
 
 export type NailListExploreProps = {
   tabs: readonly string[]
@@ -34,53 +26,44 @@ export type NailListExploreProps = {
   showRankBadge?: boolean
 }
 
+const SORT_MENU_OPTIONS = [
+  { value: '인기순', label: '인기순' },
+  { value: '최신순', label: '최신순' },
+  { value: '저장순', label: '저장 많은 순' },
+] as const
+
+const DUMMY_ITEMS = Array.from({ length: 12 }, (_, index) => ({
+  id: `dummy-${index + 1}`,
+  title: `네일 디자인 ${index + 1}`,
+}))
+
 export function NailListExplore({
   tabs,
   tabsSectionLabel,
-  queryScope,
+  queryScope: _queryScope,
   rankingSortTabs = false,
   showRankBadge = false,
 }: NailListExploreProps) {
-  const location = useLocation()
-  const { tab, sort, setTab, setSort } = useListSearchParams()
-
-  const scrollKey = useMemo(
-    () => listInfiniteKey(location.pathname, location.search),
-    [location.pathname, location.search],
-  )
-  useListScrollRestore(scrollKey)
-
-  const {
-    data,
-    isPending,
-    isError,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-  } = useNailQuery(tab, sort, queryScope)
-
-  const flat = useMemo(
-    () => data?.pages.flatMap((p) => p) ?? [],
-    [data],
-  )
-
-  const showResetFilters =
-    !rankingSortTabs && flat.length === 0 && !isPending && !isAllTab(tab)
-
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
-  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null)
-  const sortMenuRef = useRef<HTMLDivElement | null>(null)
+  const [activeTab, setActiveTab] = useState(() => tabs[0] ?? '전체')
+  const [sort, setSort] = useState<(typeof SORT_MENU_OPTIONS)[number]['value']>('인기순')
   const [isSortOpen, setIsSortOpen] = useState(false)
 
-  const sortMenuSelection = useMemo(
-    () =>
-      SORT_MENU_OPTIONS.find((o) => o.value === sort) ?? SORT_MENU_OPTIONS[0],
-    [sort],
-  )
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null)
+  const sortMenuRef = useRef<HTMLDivElement | null>(null)
+
+  const sortMenuSelection =
+    SORT_MENU_OPTIONS.find((o) => o.value === sort) ?? SORT_MENU_OPTIONS[0]
 
   useEffect(() => {
-    setIsSortOpen(false)
-  }, [sort])
+    if (tabs.length === 0) return
+    const el = activeTabButtonRef.current
+    if (!el) return
+    el.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [activeTab, tabs.length])
 
   useEffect(() => {
     if (!isSortOpen) return
@@ -100,35 +83,6 @@ export function NailListExplore({
     }
   }, [isSortOpen])
 
-  useEffect(() => {
-    if (tabs.length === 0) return
-    const el = activeTabButtonRef.current
-    if (!el) return
-    el.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    })
-  }, [tab, sort, rankingSortTabs, tabs.length])
-
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const hit = entries.some((e) => e.isIntersecting)
-        if (hit && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage()
-        }
-      },
-      { root: null, rootMargin: '240px 0px', threshold: 0 },
-    )
-
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
   return (
     <PageContainer className="!mx-auto !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
       <div className="w-full min-w-0 bg-white text-slate-900">
@@ -140,23 +94,14 @@ export function NailListExplore({
               aria-label={tabsSectionLabel}
             >
               {tabs.map((label) => {
-                const active = rankingSortTabs
-                  ? sort === label
-                  : normalizeForFilter(tab) === normalizeForFilter(label) ||
-                    tab === label
+                const active = activeTab === label
                 return (
                   <button
                     ref={active ? activeTabButtonRef : undefined}
                     key={label}
                     type="button"
                     data-active-tab={active ? 'true' : 'false'}
-                    onClick={() => {
-                      if (rankingSortTabs) {
-                        setSort(label)
-                      } else {
-                        setTab(label)
-                      }
-                    }}
+                    onClick={() => setActiveTab(label)}
                     className={
                       active
                         ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white'
@@ -175,7 +120,7 @@ export function NailListExplore({
             <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
               <span className="text-sm text-gray-500">
                 총{' '}
-                <span className="font-bold text-pink-500">{flat.length}</span>{' '}
+                <span className="font-bold text-pink-500">{DUMMY_ITEMS.length}</span>{' '}
                 개의 디자인
               </span>
               <div ref={sortMenuRef} className="relative">
@@ -220,81 +165,30 @@ export function NailListExplore({
           )}
         </div>
 
-        {isPending && (
-          <p className="px-4 pt-4 text-sm text-gray-500">목록 불러오는 중…</p>
-        )}
-        {isError && (
-          <p className="px-4 pt-4 text-sm text-red-600">
-            목록을 불러오지 못했습니다.
-          </p>
-        )}
-
-        {showResetFilters && (
-          <div className="mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <p className="mb-2">조건에 맞는 디자인이 없습니다.</p>
-            <button
-              type="button"
-              className="rounded-md bg-amber-800 px-3 py-1 text-white hover:bg-amber-900"
-              onClick={() => {
-                setTab(DEFAULT_LIST_TAB)
-              }}
-            >
-              필터 초기화 (전체 보기)
-            </button>
-          </div>
-        )}
-
-        {!isPending && !isError && flat.length > 0 && (
-          <>
-            <ul className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
-              {flat.map((item, index) => (
-                <li key={item.id}>
-                  <Link
-                    to={`/client/detail/${item.id}`}
-                    className={`flex cursor-pointer flex-col gap-2 ${
-                      showRankBadge ? 'relative' : ''
-                    }`}
-                  >
-                    {showRankBadge && (
-                      <div className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-gray-900 text-xs font-semibold text-white shadow-sm">
-                        {index + 1}
-                      </div>
-                    )}
-                    <div className="aspect-[3/4] w-full min-h-0">
-                      <img
-                        src={item.image_url}
-                        alt=""
-                        width={400}
-                        height={400}
-                        loading={index < 6 ? 'eager' : 'lazy'}
-                        decoding="async"
-                        className="h-full w-full min-h-0 rounded-xl object-cover object-center"
-                      />
-                    </div>
-                    <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
-                      <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
-                        {item.title}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div
-              ref={sentinelRef}
-              className="flex h-10 items-center justify-center text-xs text-gray-400"
-              aria-hidden
-            >
-              {isFetchingNextPage ? '더 불러오는 중…' : '\u00a0'}
-            </div>
-          </>
-        )}
-
-        {!isPending && !isError && flat.length === 0 && !showResetFilters && (
-          <p className="px-4 py-12 text-center text-sm text-gray-500">
-            표시할 네일이 없습니다.
-          </p>
-        )}
+        <ul className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
+          {DUMMY_ITEMS.map((item, index) => (
+            <li key={item.id}>
+              <Link
+                to={`/client/detail/${item.id}`}
+                className={`flex cursor-pointer flex-col gap-2 ${
+                  showRankBadge ? 'relative' : ''
+                }`}
+              >
+                {showRankBadge && (
+                  <div className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-gray-900 text-xs font-semibold text-white shadow-sm">
+                    {index + 1}
+                  </div>
+                )}
+                <div className="aspect-[3/4] w-full min-h-0 rounded-xl bg-gray-200" />
+                <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                  <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
+                    {item.title}
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </PageContainer>
   )

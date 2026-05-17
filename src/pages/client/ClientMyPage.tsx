@@ -34,16 +34,19 @@ export default function ClientMyPage() {
       <main className="pb-24">
         <section className="flex flex-col items-center py-10 border-b border-gray-50">
           <div
-            className="relative flex h-[100px] w-[100px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-rose-50 shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
+            className="relative h-[100px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-full shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
             onClick={() => {
               setTempImg(profileImg);
               setIsModalOpen(true);
             }}
           >
-             <img src={profileImg} alt="프로필" className="h-full w-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
-             <span className="absolute text-5xl">🦪</span>
+            <img
+              src={profileImg}
+              alt="프로필"
+              className="h-full w-full rounded-full object-cover"
+            />
           </div>
-          <div className="text-xl font-bold text-gray-900 mt-4">네일리버</div>
+          <div className="mt-4 text-xl font-bold text-gray-900">네일리버</div>
           <span className="mt-1.5 inline-flex items-center justify-center rounded-full bg-rose-50 px-3.5 py-1 text-center text-[13px] font-semibold text-rose-400">
             좋은 하루 보내세요 🌷
           </span>
@@ -148,17 +151,27 @@ export default function ClientMyPage() {
 
             <div className="mb-6">
               <p className="mb-3 text-[13px] font-medium text-gray-500">기본 프로필 선택</p>
-              <div className="flex gap-4">
-                {['tulip', 'pearl', 'heart', 'drop'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setTempImg(`/avatar/default_profile_${type}.png`)}
-                    className={`relative h-16 w-16 overflow-hidden rounded-full border-[3px] transition-all ${tempImg.includes(type) ? 'border-blue-300 p-0.5' : 'border-transparent'}`}
-                  >
-                    <img src={`/avatar/default_profile_${type}.png`} alt={type} className="h-full w-full rounded-full bg-gray-50 object-cover" />
-                  </button>
-                ))}
+              <div className="flex items-center justify-between px-1">
+                {['tulip', 'pearl', 'heart', 'drop'].map((type) => {
+                  const isSelected = tempImg.includes(type);
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setTempImg(`/avatar/default_profile_${type}.png`)}
+                      className={`relative w-[68px] h-[68px] shrink-0 rounded-full transition-all outline-none ${
+                        isSelected
+                          ? 'ring-[2.5px] ring-[#9baef3] ring-offset-[3px] ring-offset-white'
+                          : 'border border-black/5'
+                      }`}
+                    >
+                      <img
+                        src={`/avatar/default_profile_${type}.png`}
+                        alt={type}
+                        className="w-full h-full object-cover rounded-full block"
+                      />
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

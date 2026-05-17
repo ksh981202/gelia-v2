@@ -30,7 +30,7 @@ export default function PeriodBestListPage() {
           <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
             기간별 BEST 네일
           </h1>
-          <button type="button" className="p-1 -mr-1" onClick={() => navigate("/search")}>
+          <button type="button" className="p-1 -mr-1" onClick={() => navigate("/client/search")}>
             <Search className="w-5 h-5 text-gray-900" />
           </button>
         </div>

@@ -2,21 +2,21 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Search } from "lucide-react";
 
 const colorNailChips = [
-  { label: "핑크", src: "/diagnosis/color-pink.png" },
-  { label: "레드", src: "/diagnosis/color-red.png" },
-  { label: "누드", src: "/diagnosis/color-nude.png" },
-  { label: "파스텔", src: "/diagnosis/color-pastel.png" },
-  { label: "블루", src: "/diagnosis/color-blue.png" },
-  { label: "화이트", src: "/diagnosis/color-white.png" },
-  { label: "블랙", src: "/diagnosis/color-black.png" },
-  { label: "글리터", src: "/diagnosis/color-glitter.png" },
+  { label: "핑크", src: "/color/color-pink.png" },
+  { label: "레드", src: "/color/color-red.png" },
+  { label: "누드", src: "/color/color-nude.png" },
+  { label: "파스텔", src: "/color/color-pastel.png" },
+  { label: "블루", src: "/color/color-blue.png" },
+  { label: "화이트", src: "/color/color-white.png" },
+  { label: "블랙", src: "/color/color-black.png" },
+  { label: "글리터", src: "/color/color-glitter.png" },
 ];
 
 const seasonItems = [
-  { label: "봄", bgColor: "bg-red-50", imageSrc: "/seasoncategory/ic-season-spring.png" },
-  { label: "여름", bgColor: "bg-blue-50", imageSrc: "/seasoncategory/ic-season-summer.png" },
-  { label: "가을", bgColor: "bg-orange-50", imageSrc: "/seasoncategory/ic-season-autumn.png" },
-  { label: "겨울", bgColor: "bg-slate-50", imageSrc: "/seasoncategory/ic-season-winter.png" },
+  { label: "봄", bgColor: "bg-red-50", imageSrc: "/season/ic-season-spring.png" },
+  { label: "여름", bgColor: "bg-blue-50", imageSrc: "/season/ic-season-summer.png" },
+  { label: "가을", bgColor: "bg-orange-50", imageSrc: "/season/ic-season-autumn.png" },
+  { label: "겨울", bgColor: "bg-slate-50", imageSrc: "/season/ic-season-winter.png" },
 ];
 
 const CUSTOM_THEME_PILLS = ["🌿 데일리", "💍 웨딩", "💖 데이트", "💼 오피스", "✈️ 여행", "🎉 파티"];
@@ -119,8 +119,13 @@ export default function CategoryPage() {
                 onClick={goSeasonCuration}
                 className={`${season.bgColor} border border-gray-100 rounded-2xl py-5 px-4 flex flex-col items-center justify-center gap-3 cursor-pointer`}
               >
-                <div className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center shadow-sm">
-                  <img src={season.imageSrc} alt={season.label} className="w-10 h-10 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/50 shadow-sm">
+                  <img
+                    src={season.imageSrc}
+                    alt={season.label}
+                    className="h-20 w-20 scale-110 object-contain"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
                 </div>
                 <span className="font-medium text-[14px] text-gray-800">{season.label}</span>
               </button>
