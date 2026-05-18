@@ -41,10 +41,10 @@ const TestStep1Page = () => {
         </div>
         <div className="px-5 pb-3">
           <div className="mb-2 flex items-center justify-end">
-            <span className="font-sans text-sm font-bold tracking-tight text-primary">STEP 1 / 3</span>
+            <span className="font-sans text-sm font-bold tracking-tight text-[#FF7D66]">STEP 1 / 3</span>
           </div>
           <div className="h-1 bg-gray-100 w-full rounded-full overflow-hidden">
-            <div className="h-full w-1/3 bg-primary rounded-full transition-all" />
+            <div className="h-full w-1/3 rounded-full bg-[#FF7D66] transition-all" />
           </div>
         </div>
       </header>
@@ -63,7 +63,7 @@ const TestStep1Page = () => {
               type="button"
               onClick={() => setSelectedLength(opt.id)}
               className={`overflow-hidden rounded-2xl border-2 transition-all ${
-                selectedLength === opt.id ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                selectedLength === opt.id ? "border-[#FF7D66] ring-2 ring-[#FF7D66]/20" : "border-transparent"
               }`}
             >
               <img
@@ -71,7 +71,11 @@ const TestStep1Page = () => {
                 alt=""
                 className="aspect-square w-full object-cover object-center"
               />
-              <span className="mt-2 block bg-white py-2 text-center font-sans text-[13px] font-medium tracking-tight text-gray-800 sm:text-[14px]">
+              <span
+                className={`mt-2 block bg-white py-2 text-center font-sans text-[13px] font-medium tracking-tight sm:text-[14px] ${
+                  selectedLength === opt.id ? "text-[#FF7D66]" : "text-gray-800"
+                }`}
+              >
                 {opt.label}
               </span>
             </button>
@@ -92,7 +96,7 @@ const TestStep1Page = () => {
               onClick={() => setSelectedType(t.id)}
               className={`w-full rounded-xl border px-5 py-4 text-left font-sans text-[15px] font-medium tracking-tight transition-colors sm:text-[16px] ${
                 selectedType === t.id
-                  ? "border-primary bg-primary/5 text-primary"
+                  ? "border-[#FF7D66] bg-[#FFF7F2] text-[#FF7D66]"
                   : "border-gray-200 text-gray-700"
               }`}
             >
@@ -107,7 +111,7 @@ const TestStep1Page = () => {
           type="button"
           disabled={!canNext}
           onClick={() => navigate("/client/test-step2")}
-          className="w-full rounded-xl bg-primary py-3.5 font-sans text-[16px] font-bold tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-sans text-[16px] font-bold tracking-wide text-white shadow-lg shadow-[#FF7D66]/30 disabled:cursor-not-allowed disabled:opacity-40"
         >
           다음
         </button>

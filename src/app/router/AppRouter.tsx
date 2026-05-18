@@ -1,6 +1,5 @@
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
-import AdminPage from '../../pages/admin/AdminPage'
 import AdminUploadPage from '../../pages/admin/AdminUploadPage'
 import AdminBoard from '../../pages/admin/AdminBoard'
 import AdminManagePage from '../../pages/admin/AdminManagePage'
@@ -128,7 +127,7 @@ const router = createBrowserRouter([
     path: '/admin',
     element: <AdminLayout />,
     children: [
-      { index: true, element: <AdminPage /> },
+      { index: true, element: <Navigate to="upload" replace /> },
       { path: 'upload', element: <AdminUploadPage /> },
       { path: 'board', element: <AdminBoard /> },
       { path: 'manage', element: <AdminManagePage /> },

@@ -37,7 +37,7 @@ export default function ClientHomePage() {
   const [isFooterOpen, setIsFooterOpen] = useState(false);
 
   return (
-    <div className="w-full bg-[#fdfaf7] pb-4">
+    <div className="w-full flex flex-col min-h-screen overflow-x-hidden bg-[#fdfaf7] pb-4">
       <section className="mt-2 px-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">

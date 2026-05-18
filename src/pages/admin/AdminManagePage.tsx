@@ -1,466 +1,947 @@
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { getSupabaseBrowserClient } from "@/lib/supabaseBrowserClient";
-import { editorPickNoteFromRow } from "@/lib/editorPickNote";
-import { mapRecordToAdminNailListRow, type AdminNailListRow } from "@/lib/nailPhotoApi";
-import imageCompression from "browser-image-compression";
+import { Label } from "@/components/ui/label";
 import {
-  AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-  Search,
-  UploadCloud,
-  XCircle,
-} from "lucide-react";
-import Papa from "papaparse";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  mapNailDesignToAdminListRow,
+  type AdminNailListRow,
+} from "@/features/admin-dashboard/mapNailDesignToAdminListRow";
+import { resolveSourceFilename } from "@/features/admin-dashboard/resolveSourceFilename";
+import { useAdminDashboard } from "@/features/admin-dashboard/useAdminDashboard";
+import { RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatTextArrayForDisplay } from "@/shared/lib/formatTextArrayField";
+import { toast } from "sonner";
 
-interface CsvRowData {
-  파일명: string;
-  썸네일제목: string;
-  "썸네일제목(EN)": string;
-  상세설명: string;
-  "상세설명(EN)": string;
-  컬러: string;
-  "컬러(EN)": string;
-  손톱길이: string;
-  "손톱길이(EN)": string;
-  추천손타입: string;
-  "추천손타입(EN)": string;
-  무드: string;
-  "무드(EN)": string;
-  상황: string;
-  "상황(EN)": string;
-  디자인기법: string;
-  "디자인기법(EN)": string;
-  디자인요소: string;
-  "디자인요소(EN)": string;
-  시술가이드: string;
-  "시술가이드(EN)": string;
+const PAGE_SIZE = 12;
+
+function listRowToEditForm(row: AdminNailListRow): AdminEditFormState {
+  return {
+    title: row.title?.trim() ?? "",
+    color: row.color?.trim() ?? "",
+    nail_length: row.nail_length?.trim() ?? "",
+    hand_type: row.hand_type?.trim() ?? "",
+    mood: row.mood?.trim() ?? "",
+    situationsCsv: formatTextArrayForDisplay(row.situations),
+    stylesCsv: formatTextArrayForDisplay(row.styles),
+    design_technique: row.design_technique?.trim() ?? "",
+    design_elements: row.design_elements?.trim() ?? "",
+    description: row.description?.trim() ?? "",
+    procedure_guide: row.procedure_guide?.trim() ?? "",
+    title_en: row.title_en?.trim() ?? "",
+    description_en: row.description_en?.trim() ?? "",
+    color_en: row.color_en?.trim() ?? "",
+    length_en: row.length_en?.trim() ?? "",
+    hand_type_en: row.hand_type_en?.trim() ?? "",
+    mood_en: row.mood_en?.trim() ?? "",
+    occasion_en: formatTextArrayForDisplay(row.occasion_en),
+    stylesEnCsv: formatTextArrayForDisplay(row.styles_en),
+    technique_en: row.technique_en?.trim() ?? "",
+    design_point_en: row.design_point_en?.trim() ?? "",
+    guide_en: row.guide_en?.trim() ?? "",
+  };
 }
 
-interface MergedMatchItem {
-  status: "matched" | "mismatched";
-  filename: string;
-  csvData?: CsvRowData;
-  imageFile?: File;
+type AdminEditFormState = {
+  title: string;
+  color: string;
+  nail_length: string;
+  hand_type: string;
+  mood: string;
+  situationsCsv: string;
+  stylesCsv: string;
+  design_technique: string;
+  design_elements: string;
+  description: string;
+  procedure_guide: string;
+  title_en: string;
+  description_en: string;
+  color_en: string;
+  length_en: string;
+  hand_type_en: string;
+  mood_en: string;
+  occasion_en: string;
+  stylesEnCsv: string;
+  technique_en: string;
+  design_point_en: string;
+  guide_en: string;
+};
+
+function emptyEditForm(): AdminEditFormState {
+  return {
+    title: "",
+    color: "",
+    nail_length: "",
+    hand_type: "",
+    mood: "",
+    situationsCsv: "",
+    stylesCsv: "",
+    design_technique: "",
+    design_elements: "",
+    description: "",
+    procedure_guide: "",
+    title_en: "",
+    description_en: "",
+    color_en: "",
+    length_en: "",
+    hand_type_en: "",
+    mood_en: "",
+    occasion_en: "",
+    stylesEnCsv: "",
+    technique_en: "",
+    design_point_en: "",
+    guide_en: "",
+  };
 }
 
+function displayFilename(row: AdminNailListRow): string {
+  const resolved =
+    resolveSourceFilename(row.source_filename, row.image_r2_key) ??
+    row.source_filename?.trim();
+  if (resolved) return resolved;
 
-function formatListDate(iso?: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  try {
+    const u = new URL(row.image_url);
+    const seg = u.pathname.split("/").filter(Boolean).pop();
+    if (seg) {
+      const decoded = decodeURIComponent(seg);
+      const fromUrl = resolveSourceFilename(null, decoded) ?? decoded;
+      if (fromUrl) return fromUrl;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  const r2Tail = row.image_r2_key?.split("/").filter(Boolean).pop()?.trim();
+  return r2Tail || "—";
+}
+
+function rowStatus(row: AdminNailListRow): { label: string; tone: "ok" | "warn" } {
+  if (!row.image_url?.trim()) return { label: "이미지 URL 없음", tone: "warn" };
+  if (!row.id) return { label: "ID 없음", tone: "warn" };
+  const category = (row.mood ?? row.color ?? "").trim();
+  return { label: category || "정상 노출", tone: "ok" };
+}
+
+/** 표시: YYYY.MM.DD */
+function formatRegisteredAt(iso: string | null | undefined): string {
+  const raw = typeof iso === "string" ? iso.trim() : "";
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}.${m}.${day}`;
 }
 
-export default function AdminManagePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [listRows, setListRows] = useState<AdminNailListRow[]>([]);
-  const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError] = useState<string | null>(null);
+function filterRowsBySearch(rows: AdminNailListRow[], searchQuery: string): AdminNailListRow[] {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter((row) => {
+    const title = (row.title ?? "").toLowerCase();
+    const titleEn = (row.title_en ?? "").toLowerCase();
+    const fname = displayFilename(row).toLowerCase();
+    const category = (row.mood ?? row.color ?? "").toLowerCase();
+    return (
+      title.includes(q) ||
+      titleEn.includes(q) ||
+      fname.includes(q) ||
+      category.includes(q)
+    );
+  });
+}
 
-  const fetchListRows = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      setListRows([]);
-      setListError("Supabase 연결이 설정되지 않았습니다.");
-      return;
-    }
-    setListLoading(true);
-    setListError(null);
-    try {
-      const { data, error } = await supabase
-        .from("nail_photo_uploads")
-        .select("id, source_filename, title, title_en, image_url, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setListRows((data ?? []).map((row) => mapRecordToAdminNailListRow(row as Record<string, unknown>)));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "목록을 불러오지 못했습니다.";
-      setListError(message);
-    } finally {
-      setListLoading(false);
-    }
-  }, []);
+/** 1 … 중간 … 마지막 형태 (총 페이지가 많을 때) */
+function paginationItems(current: number, total: number): Array<number | "ellipsis"> {
+  if (total <= 9) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const s = new Set<number>();
+  s.add(1);
+  s.add(total);
+  for (let p = current - 2; p <= current + 2; p++) {
+    if (p >= 1 && p <= total) s.add(p);
+  }
+  const sorted = [...s].sort((a, b) => a - b);
+  const out: Array<number | "ellipsis"> = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i]! - sorted[i - 1]! > 1) out.push("ellipsis");
+    out.push(sorted[i]!);
+  }
+  return out;
+}
+
+const AdminManagePage = () => {
+  const {
+    data: nailDesigns,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+    handleDelete: deleteNailDesign,
+    deletingId,
+    deleteError,
+    clearDeleteError,
+  } = useAdminDashboard();
+
+  const rows = useMemo(
+    () => (nailDesigns ?? []).map(mapNailDesignToAdminListRow),
+    [nailDesigns],
+  );
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingListRow, setEditingListRow] = useState<AdminNailListRow | null>(null);
+  const [editForm, setEditForm] = useState<AdminEditFormState>(() => emptyEditForm());
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  const filteredRows = useMemo(() => filterRowsBySearch(rows, searchQuery), [rows, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
 
   useEffect(() => {
-    void fetchListRows();
-  }, [fetchListRows]);
+    setCurrentPage(1);
+  }, [searchQuery]);
 
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
 
-  const [csvRows, setCsvRows] = useState<CsvRowData[]>([]);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState("");
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredRows.slice(start, start + PAGE_SIZE);
+  }, [filteredRows, currentPage]);
 
-  const csvInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const pageIds = useMemo(() => paginatedRows.map((r) => r.id), [paginatedRows]);
+  const selectedOnPageCount = useMemo(
+    () => pageIds.filter((id) => selectedIds.has(id)).length,
+    [pageIds, selectedIds],
+  );
+  const allOnPageSelected = pageIds.length > 0 && selectedOnPageCount === pageIds.length;
 
-  const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  useEffect(() => {
+    const el = selectAllRef.current;
+    if (!el) return;
+    el.indeterminate = selectedOnPageCount > 0 && selectedOnPageCount < pageIds.length;
+  }, [selectedOnPageCount, pageIds.length]);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const sanitized = (results.data as any[]).map((row) => {
-          const getVal = (keys: string[]) => {
-            for (const k of keys) {
-              if (row[k] !== undefined) return String(row[k]).trim();
-            }
-            return "";
-          };
-          return {
-            파일명: getVal(["파일명", "﻿파일명"]),
-            썸네일제목: getVal(["썸네일 제목", "썸네일제목"]),
-            "썸네일제목(EN)": getVal(["썸네일 제목(EN)", "썸네일제목(EN)"]),
-            상세설명: getVal(["상세 설명", "상세설명"]),
-            "상세설명(EN)": getVal(["상세 설명(EN)", "상세설명(EN)"]),
-            컬러: getVal(["컬러", "컬러(KR)"]),
-            "컬러(EN)": getVal(["컬러(EN)"]),
-            손톱길이: getVal(["손톱길이", "손톱 길이"]),
-            "손톱길이(EN)": getVal(["손톱길이(EN)"]),
-            추천손타입: getVal(["추천 손타입", "추천손타입"]),
-            "추천손타입(EN)": getVal(["추천 손타입(EN)"]),
-            무드: getVal(["무드"]),
-            "무드(EN)": getVal(["무드(EN)"]),
-            상황: getVal(["상황"]),
-            "상황(EN)": getVal(["상황(EN)"]),
-            디자인기법: getVal(["디자인 기법", "디자인기법"]),
-            "디자인기법(EN)": getVal(["디자인 기법(EN)", "디자인기법(EN)"]),
-            디자인요소: getVal(["디자인 요소", "디자인요소"]),
-            "디자인요소(EN)": getVal(["디자인 요소(EN)"]),
-            시술가이드: getVal(["시술 가이드", "시술가이드"]),
-            "시술가이드(EN)": getVal(["시술 가이드(EN)"]),
-          };
-        });
-        setCsvRows(sanitized);
-      },
-    });
-  };
+  const closeEditSheet = useCallback(() => {
+    setEditingId(null);
+    setEditingListRow(null);
+    setEditForm(emptyEditForm());
+  }, []);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setImageFiles(Array.from(e.target.files));
-    }
-  };
-
-  const imageMap = new Map<string, File>();
-  imageFiles.forEach((f) => imageMap.set(f.name.trim().toLowerCase(), f));
-
-  const mergedItems: MergedMatchItem[] = csvRows.map((row) => {
-    const targetName = row.파일명.trim().toLowerCase();
-    const imageFile = imageMap.get(targetName);
-    return {
-      status: imageFile ? "matched" : "mismatched",
-      filename: row.파일명,
-      csvData: row,
-      imageFile,
-    };
-  });
-
-  const matchCount = mergedItems.filter((i) => i.status === "matched").length;
-  const mismatchCount = mergedItems.length - matchCount;
-
-  const sortedMergedItems = [...mergedItems].sort((a, b) => {
-    if (a.status === b.status) return 0;
-    return a.status === "mismatched" ? -1 : 1;
-  });
-
-  const handleBulkUploadSubmit = async () => {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return alert("Supabase 연결 해제");
-
-    const targets = mergedItems.filter((item) => item.status === "matched" && item.imageFile && item.csvData);
-    if (targets.length === 0) return alert("매칭 완료된 에셋이 없습니다.");
-
-    if (!window.confirm(`정말 ${targets.length}건의 데이터를 공장에 일괄 입고하시겠습니까?`)) return;
-
-    setIsUploading(true);
-    try {
-      for (let i = 0; i < targets.length; i++) {
-        const item = targets[i]!;
-        setUploadProgress(`전체 ${targets.length}개 중 ${i + 1}번째 에셋 처리 중...`);
-
-        const compressedFile = await imageCompression(item.imageFile!, {
-          maxWidthOrHeight: 1024,
-          maxSizeMB: 0.4,
-          useWebWorker: true,
-        });
-
-        const storagePath = `uploads/${Date.now()}_${item.filename}`;
-        const { error: storageErr } = await supabase.storage
-          .from("nail-images")
-          .upload(storagePath, compressedFile, { contentType: "image/jpeg", upsert: true });
-
-        if (storageErr) throw new Error(`[R2 Error] ${item.filename}: ${storageErr.message}`);
-
-        const { data: urlData } = supabase.storage.from("nail-images").getPublicUrl(storagePath);
-        const publicUrl = urlData.publicUrl;
-
-        // 에디터 팁 자동 연동
-        const dummyRowForTip: any = {
-          title: item.csvData!.썸네일제목,
-          description: item.csvData!.상세설명,
-          styles: item.csvData!.디자인요소,
-        };
-        const autoGeneratedTip = editorPickNoteFromRow(dummyRowForTip, i);
-
-        const insertPayload = {
-          image_url: publicUrl,
-          source_filename: item.filename,
-          title: item.csvData!.썸네일제목,
-          description: item.csvData!.상세설명,
-          color: item.csvData!.컬러,
-          nail_length: item.csvData!.손톱길이,
-          hand_type: item.csvData!.추천손타입,
-          mood: item.csvData!.무드,
-          design_technique: item.csvData!.디자인기법,
-          design_elements: item.csvData!.디자인요소,
-          procedure_guide: item.csvData!.시술가이드,
-          occasion: item.csvData!.상황,
-          keyword: autoGeneratedTip,
-          
-          title_en: item.csvData!["썸네일제목(EN)"] || null,
-          description_en: item.csvData!["상세설명(EN)"] || null,
-          color_en: item.csvData!["컬러(EN)"] || null,
-          length_en: item.csvData!["손톱길이(EN)"] || null,
-          hand_type_en: item.csvData!["추천손타입(EN)"] || null,
-          mood_en: item.csvData!["무드(EN)"] || null,
-          occasion_en: item.csvData!["상황(EN)"] || null,
-          styles_en: item.csvData!["디자인요소(EN)"] || null,
-          technique_en: item.csvData!["디자인기법(EN)"] || null,
-          design_point_en: item.csvData!["디자인기법(EN)"] || null,
-          guide_en: item.csvData!["시술가이드(EN)"] || null,
-        };
-
-        const { error: dbErr } = await supabase.from("nail_photo_uploads").insert([insertPayload]);
-        if (dbErr) throw new Error(`[DB Error] ${item.filename}: ${dbErr.message}`);
+  const toggleSelectAllOnPage = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = pageIds.length > 0 && pageIds.every((id) => next.has(id));
+      if (allSelected) {
+        pageIds.forEach((id) => next.delete(id));
+      } else {
+        pageIds.forEach((id) => next.add(id));
       }
+      return next;
+    });
+  }, [pageIds]);
 
-      alert("모든 네일 사진 및 다국어 코드가 업로드 완료되었습니다.");
-      setCsvRows([]);
-      setImageFiles([]);
-      if (csvInputRef.current) csvInputRef.current.value = "";
-      if (imageInputRef.current) imageInputRef.current.value = "";
-      await fetchListRows();
-    } catch (err: any) {
-      alert(`공장 중단 에러 터짐: ${err.message}`);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress("");
-    }
-  };
-
-
-  const filteredRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return listRows;
-    return listRows.filter(
-      (row) =>
-        row.title.toLowerCase().includes(q) ||
-        (row.title_en?.toLowerCase().includes(q) ?? false) ||
-        row.filename.toLowerCase().includes(q),
-    );
-  }, [listRows, searchQuery]);
-
-  const toggleRowSelected = (id: string) => {
+  const toggleRowSelected = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  }, []);
+
+  const handleDelete = async (row: AdminNailListRow) => {
+    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    const r2Key = row.image_r2_key?.trim();
+    if (!r2Key) {
+      toast.error("R2 저장 키가 없어 삭제할 수 없습니다.");
+      return;
+    }
+    clearDeleteError();
+    try {
+      await deleteNailDesign(row.id, r2Key);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
+      toast.success("삭제되었습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "삭제에 실패했습니다.");
+    }
   };
 
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    if (!window.confirm(`선택한 ${ids.length}건을 삭제하시겠습니까?`)) return;
+    clearDeleteError();
+    let deleted = 0;
+    try {
+      for (const id of ids) {
+        const row = rows.find((r) => r.id === id);
+        if (!row?.image_r2_key?.trim()) continue;
+        await deleteNailDesign(row.id, row.image_r2_key.trim());
+        deleted += 1;
+      }
+      setSelectedIds(new Set());
+      toast.success(`${deleted}건 삭제되었습니다.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "일부 항목 삭제에 실패했습니다.");
+    }
+  };
+
+  const openEdit = (row: AdminNailListRow) => {
+    setEditingListRow(row);
+    setEditingId(row.id);
+    setEditForm(listRowToEditForm(row));
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    alert("저장되었습니다");
+    closeEditSheet();
+  };
+
+  const readonlyFilename = editingListRow ? displayFilename(editingListRow) : "—";
+
+  const previewImageUrl = editingListRow?.image_url?.trim() ?? "";
+
+  const pageList = useMemo(
+    () => paginationItems(currentPage, totalPages),
+    [currentPage, totalPages],
+  );
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 bg-slate-50 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-xl font-bold text-slate-900">데이터 관리</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          CSV와 이미지를 상단에서 매칭·검수한 뒤 일괄 업로드하고, 아래 목록에서 등록된 항목을 관리합니다.
-          Supabase <code className="rounded bg-slate-200 px-1">nail_photo_uploads</code> 및 R2 스토리지와 연동됩니다.
-        </p>
-      </div>
-
-      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex w-full flex-col gap-6">
-          <div
-            onClick={() => csvInputRef.current?.click()}
-            className="flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition-colors hover:border-slate-400 hover:bg-slate-100"
-          >
-            <UploadCloud className="h-9 w-9 text-slate-400" />
-            <span className="mt-3 text-sm font-semibold text-slate-700">CSV 파일을 여기에 놓거나 클릭</span>
-            <span className="mt-1 text-xs text-slate-400">
-              선택됨: {csvRows.length ? `${csvRows.length}행 데이터` : "없음"}
-            </span>
-            <input type="file" ref={csvInputRef} accept=".csv" className="hidden" onChange={handleCsvChange} />
-          </div>
-
-          <div className="w-full">
-            <p className="mb-2 text-sm font-semibold text-slate-700">다중 이미지</p>
-            <div
-              onClick={() => imageInputRef.current?.click()}
-              className="flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition-colors hover:border-slate-400 hover:bg-slate-100"
-            >
-              <UploadCloud className="h-9 w-9 text-slate-400" />
-              <span className="mt-3 text-sm font-semibold text-slate-700">이미지들을 여기에 놓거나 클릭</span>
-              <span className="mt-1 text-xs text-slate-400">등록된 이미지: {imageFiles.length}장</span>
-              <input type="file" ref={imageInputRef} multiple accept="image/*" className="hidden" onChange={handleImageChange} />
-            </div>
-          </div>
-
-          {sortedMergedItems.length > 0 && (
-            <div className="max-h-[min(20rem,50vh)] overflow-auto rounded-lg border border-slate-200">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 font-semibold text-slate-700">
-                  <tr>
-                    <th className="w-[100px] p-3">상태</th>
-                    <th className="min-w-[180px] p-3">파일명</th>
-                    <th className="min-w-[140px] p-3">썸네일 제목</th>
-                    <th className="min-w-[140px] p-3">썸네일 제목(EN)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-slate-600">
-                  {sortedMergedItems.map((item, index) => {
-                    const isMismatch = item.status === "mismatched";
-                    return (
-                      <tr key={`${item.filename}-${index}`} className={isMismatch ? "bg-rose-50/60 hover:bg-rose-50" : "hover:bg-slate-50"}>
-                        <td className="p-3">
-                          {isMismatch ? (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
-                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                              미매칭
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                              매칭
-                            </span>
-                          )}
-                        </td>
-                        <td className={`p-3 font-mono text-xs font-bold ${isMismatch ? "text-rose-600" : "text-slate-900"}`}>{item.filename}</td>
-                        <td className="max-w-[200px] truncate p-3">{item.csvData?.썸네일제목}</td>
-                        <td className="max-w-[200px] truncate p-3 font-mono text-xs">{item.csvData?.["썸네일제목(EN)"]}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-4 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                매칭 완료: {matchCount}건
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700">
-                <XCircle className="h-4 w-4 shrink-0" />
-                미매칭 오류: {mismatchCount}건
-              </span>
-            </div>
-            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
-              {isUploading && <p className="text-sm font-semibold text-[#FF7E67] animate-pulse">{uploadProgress}</p>}
-              <button
-                type="button"
-                disabled={isUploading || matchCount === 0}
-                onClick={() => void handleBulkUploadSubmit()}
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 sm:w-auto"
-              >
-                {isUploading ? "업로드 중..." : `일괄 업로드 실행 (${matchCount}건)`}
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
+    <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-10">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-6">
-        <div className="flex w-full flex-wrap items-center justify-between gap-2">
-          <div className="relative min-w-[200px] max-w-sm flex-1">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">등록 네일 관리</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Supabase nail_designs 테이블에 등록된 네일을 검색·페이지 단위로 확인하고 수정·삭제할 수 있습니다.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {selectedIds.size > 0 && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              className="shrink-0"
+            >
+              <>선택 삭제 ({selectedIds.size})</>
+            </Button>
+          )}
+          <div className="relative min-w-[10rem] max-w-xs flex-1 sm:min-w-[14rem]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input type="search" placeholder="제목·영문 제목·파일명 검색" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-10 border-slate-200 pl-9 bg-white" />
+            <Input
+              type="search"
+              placeholder="제목·영문 제목·파일명 검색"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 border-slate-200 pl-9"
+              aria-label="검색"
+            />
           </div>
-          <Button type="button" variant="outline" size="sm" className="shrink-0 border-slate-200 bg-white" disabled={listLoading} onClick={() => void fetchListRows()}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${listLoading ? "animate-spin" : ""}`} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 border-slate-200"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
             새로고침
           </Button>
         </div>
       </div>
 
-      {listError && (
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{listError}</p>
-      )}
+      {deleteError ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {deleteError}
+        </div>
+      ) : null}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed border-collapse text-left text-sm">
-            <colgroup>
-              <col className="w-12" /><col className="w-20" /><col className="w-32" /><col className="w-1/4" /><col className="w-28" /><col className="w-28" /><col className="w-28" />
-            </colgroup>
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/90 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400" /></th>
-                <th className="px-3 py-3 text-left">썸네일</th>
-                <th className="px-3 py-3 text-left">파일명</th>
-                <th className="px-3 py-3 text-left">썸네일 제목</th>
-                <th className="px-3 py-3 text-left">등록일</th>
-                <th className="px-3 py-3 text-left">상태</th>
-                <th className="px-3 py-3 text-right">작업</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {listLoading && filteredRows.length === 0 ? (
-                <tr><td colSpan={7} className="px-3 py-12 text-center text-slate-500">목록을 불러오는 중...</td></tr>
-              ) : filteredRows.length === 0 ? (
-                <tr><td colSpan={7} className="px-3 py-12 text-center text-slate-500">{searchQuery.trim() ? "검색 결과가 없습니다." : "등록된 항목이 없습니다."}</td></tr>
-              ) : (
-                filteredRows.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-3 py-3 text-center align-middle">
-                      <input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => toggleRowSelected(row.id)} className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400" />
-                    </td>
-                    <td className="px-3 py-3 align-middle">
-                      <div className="h-12 w-12 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                        {row.image_url ? <img src={row.image_url} alt="" className="h-full w-full object-cover object-center" /> : null}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 align-middle font-mono text-xs text-slate-700">{row.filename}</td>
-                    <td className="px-3 py-3 align-middle text-slate-900">
-                      <span className="block font-medium truncate">{row.title}</span>
-                      {row.title_en ? <span className="block text-sm text-gray-400 truncate mt-0.5">{row.title_en}</span> : null}
-                    </td>
-                    <td className="px-3 py-3 align-middle tabular-nums text-xs text-slate-600">{formatListDate(row.created_at)}</td>
-                    <td className="px-3 py-3 align-middle">
-                      <div className="flex flex-col items-start gap-1">
-                        <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600">정상 노출</span>
-                        {row.title_en ? <span className="inline-block rounded bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-500">EN</span> : null}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 align-middle text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button type="button" variant="outline" size="sm" className="h-8 px-3 text-xs bg-white">수정</Button>
-                        <Button type="button" variant="destructive" size="sm" className="h-8 px-3 text-xs bg-red-500 hover:bg-red-600">삭제</Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {isLoading ? (
+          <p className="py-16 text-center text-sm text-slate-500">목록을 불러오는 중…</p>
+        ) : isError ? (
+          <p className="py-16 text-center text-sm text-red-600">
+            {error instanceof Error ? error.message : "목록을 불러오지 못했습니다."}
+          </p>
+        ) : rows.length === 0 ? (
+          <p className="py-16 text-center text-sm text-slate-500">등록된 네일이 없습니다.</p>
+        ) : (
+          <>
+            {filteredRows.length === 0 ? (
+              <p className="py-16 text-center text-sm text-slate-500">검색 결과가 없습니다.</p>
+            ) : (
+              <>
+                <div className="overflow-x-hidden">
+                  <table className="w-full table-fixed border-collapse text-left text-sm">
+                    <colgroup>
+                      <col className="w-12" />
+                      <col className="w-20" />
+                      <col className="w-1/5" />
+                      <col />
+                      <col className="w-28" />
+                      <col className="w-24" />
+                      <col className="w-32" />
+                    </colgroup>
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/90 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <th className="px-1 py-2.5 text-center sm:px-2">
+                          <input
+                            ref={selectAllRef}
+                            type="checkbox"
+                            checked={allOnPageSelected}
+                            onChange={toggleSelectAllOnPage}
+                            disabled={pageIds.length === 0}
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                            aria-label="현재 페이지 전체 선택"
+                          />
+                        </th>
+                        <th className="whitespace-nowrap px-2 py-2.5 text-left">썸네일</th>
+                        <th className="whitespace-nowrap px-2 py-2.5 text-left">파일명</th>
+                        <th className="min-w-0 px-2 py-2.5 text-left">썸네일 제목</th>
+                        <th className="whitespace-nowrap px-2 py-2.5 text-left">등록일</th>
+                        <th className="min-w-0 px-2 py-2.5 text-left">상태</th>
+                        <th className="whitespace-nowrap px-2 py-2.5 text-right">작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedRows.map((row) => {
+                        const status = rowStatus(row);
+                        const checked = selectedIds.has(row.id);
+                        return (
+                          <tr key={row.id} className="border-b border-slate-50 last:border-0">
+                            <td className="px-1 py-2.5 text-center align-middle sm:px-2">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleRowSelected(row.id)}
+                                className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                                aria-label={`선택: ${row.title || row.id}`}
+                              />
+                            </td>
+                            <td className="px-2 py-2.5 align-middle">
+                              <div
+                                className="mx-auto block h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-200 sm:h-14 sm:w-14"
+                                aria-hidden={!row.image_url?.trim()}
+                              >
+                                {row.image_url?.trim() ? (
+                                  <a
+                                    href={row.image_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block h-full w-full"
+                                    title="원본 이미지 새 창에서 보기"
+                                  >
+                                    <img
+                                      src={row.image_url}
+                                      alt=""
+                                      className="h-full w-full object-cover object-center"
+                                      loading="lazy"
+                                    />
+                                  </a>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="max-w-[120px] min-w-0 truncate px-2 py-2.5 align-middle font-mono text-xs text-slate-700 sm:max-w-[150px]">
+                              <span className="block truncate" title={displayFilename(row)}>
+                                {displayFilename(row)}
+                              </span>
+                            </td>
+                            <td className="max-w-[150px] min-w-0 px-2 py-2.5 align-middle text-slate-900 md:max-w-[220px]">
+                              <span
+                                className="block truncate font-medium"
+                                title={row.title?.trim() || "(제목 없음)"}
+                              >
+                                {row.title?.trim() || "(제목 없음)"}
+                              </span>
+                              {row.title_en != null && String(row.title_en).trim() !== "" ? (
+                                <div
+                                  className="mt-0.5 truncate text-sm text-gray-400"
+                                  title={String(row.title_en).trim()}
+                                >
+                                  {String(row.title_en).trim()}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="whitespace-nowrap px-2 py-2.5 align-middle tabular-nums text-xs text-slate-600">
+                              {formatRegisteredAt(row.created_at)}
+                            </td>
+                            <td className="min-w-0 px-2 py-2.5 align-middle">
+                              <div className="flex min-w-0 flex-wrap items-center">
+                                <span
+                                  title={status.label}
+                                  className={
+                                    status.tone === "ok"
+                                      ? "inline-block max-w-full truncate rounded-full bg-emerald-50 px-2 py-0.5 text-left text-xs font-medium text-emerald-800"
+                                      : "inline-block max-w-full truncate rounded-full bg-amber-50 px-2 py-0.5 text-left text-xs font-medium text-amber-900"
+                                  }
+                                >
+                                  {status.label}
+                                </span>
+                                {row.title_en != null && String(row.title_en).trim() !== "" ? (
+                                  <span
+                                    className="ml-2 shrink-0 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-600"
+                                    title="영문 제목 있음"
+                                  >
+                                    EN
+                                  </span>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="px-1 py-2.5 align-middle text-right sm:px-2">
+                              <div className="flex flex-nowrap items-center justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 shrink-0 border-slate-200 px-2 text-xs"
+                                  onClick={() => openEdit(row)}
+                                >
+                                  수정
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="h-8 shrink-0 px-2 text-xs"
+                                  disabled={deletingId === row.id}
+                                  onClick={() => void handleDelete(row)}
+                                >
+                                  삭제
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-1 border-t border-slate-100 px-4 py-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="min-w-[4rem] border-slate-200"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    >
+                      이전
+                    </Button>
+                    <div className="flex flex-wrap items-center justify-center gap-1 px-2">
+                      {pageList.map((item, idx) =>
+                        item === "ellipsis" ? (
+                          <span
+                            key={`e-${idx}`}
+                            className="px-2 text-sm text-slate-400"
+                            aria-hidden
+                          >
+                            …
+                          </span>
+                        ) : (
+                          <Button
+                            key={item}
+                            type="button"
+                            variant={item === currentPage ? "default" : "outline"}
+                            size="sm"
+                            className={
+                              item === currentPage
+                                ? "h-9 min-w-9 px-2"
+                                : "h-9 min-w-9 border-slate-200 px-2"
+                            }
+                            onClick={() => setCurrentPage(item)}
+                          >
+                            {item}
+                          </Button>
+                        ),
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="min-w-[4rem] border-slate-200"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      다음
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
       </div>
 
-      <div className="text-center mt-4 text-xs text-slate-400">
-        총 {listRows.length}건{searchQuery.trim() ? ` · 검색 결과 ${filteredRows.length}건` : null}
-      </div>
+      {rows.length > 0 && (
+        <p className="mt-4 text-center text-xs text-slate-500">
+          {searchQuery.trim()
+            ? `검색 결과 ${filteredRows.length}건 (전체 ${rows.length}건)`
+            : `총 ${rows.length}건`}
+          {filteredRows.length > 0 && (
+            <span className="text-slate-400"> · {PAGE_SIZE}건씩</span>
+          )}
+        </p>
+      )}
+
+      <Sheet
+        open={editingId !== null}
+        onOpenChange={(open) => {
+          if (!open) closeEditSheet();
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex h-full !w-[90vw] !max-w-6xl flex-col gap-0 overflow-hidden border-l p-0 sm:!max-w-6xl"
+        >
+          <SheetHeader className="shrink-0 space-y-1 border-b border-slate-200 px-6 py-4 text-left">
+            <SheetTitle>네일 전체 상세 수정</SheetTitle>
+            <SheetDescription>
+              사용자 앱은 기본 한글 노출을 유지하고, 관리자에서만 한글·영문 메타를 함께 편집합니다. 파일명은 읽기 전용이며, 저장 시 한글·영문 필드가 한 번에 반영됩니다.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+            {editingListRow && (
+              <div className="space-y-5">
+                <div className="flex justify-center border-b border-slate-100 pb-4">
+                  <a
+                    href={previewImageUrl || undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block h-28 w-28 overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-sm sm:h-32 sm:w-32"
+                  >
+                    {previewImageUrl ? (
+                      <img
+                        src={previewImageUrl}
+                        alt=""
+                        className="h-full w-full object-cover object-center"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-slate-500">
+                        이미지 없음
+                      </div>
+                    )}
+                  </a>
+                </div>
+
+                {/* 좌·우 두 덩어리만: 항상 2열 (좁은 화면은 가로 스크롤) */}
+                <div className="min-w-0 overflow-x-auto pb-1">
+                  <div className="grid min-w-[720px] grid-cols-2 gap-8">
+                    {/* 🇰🇷 한국어 전용 */}
+                    <div className="min-w-0 space-y-5">
+                      <h3 className="border-b border-slate-200 pb-2 text-base font-semibold text-slate-900">
+                        🇰🇷 한국어 (원본)
+                      </h3>
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-700">파일명</Label>
+                        <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-600 break-all">
+                          {readonlyFilename}
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-title" className="text-slate-700">
+                          썸네일 제목
+                        </Label>
+                        <Input
+                          id="admin-edit-title"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-color" className="text-slate-700">
+                          컬러
+                        </Label>
+                        <Input
+                          id="admin-edit-color"
+                          value={editForm.color}
+                          onChange={(e) => setEditForm((f) => ({ ...f, color: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-nail-length" className="text-slate-700">
+                          손톱 길이
+                        </Label>
+                        <Input
+                          id="admin-edit-nail-length"
+                          value={editForm.nail_length}
+                          onChange={(e) => setEditForm((f) => ({ ...f, nail_length: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-hand-type" className="text-slate-700">
+                          추천 손타입
+                        </Label>
+                        <Input
+                          id="admin-edit-hand-type"
+                          value={editForm.hand_type}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hand_type: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-mood" className="text-slate-700">
+                          무드 / 분위기
+                        </Label>
+                        <Input
+                          id="admin-edit-mood"
+                          value={editForm.mood}
+                          onChange={(e) => setEditForm((f) => ({ ...f, mood: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-situations" className="text-slate-700">
+                          상황
+                        </Label>
+                        <Input
+                          id="admin-edit-situations"
+                          value={editForm.situationsCsv}
+                          onChange={(e) => setEditForm((f) => ({ ...f, situationsCsv: e.target.value }))}
+                          placeholder="쉼표로 구분 (예: 데이트, 오피스)"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-styles" className="text-slate-700">
+                          스타일 태그 (한글 · DB styles)
+                        </Label>
+                        <Input
+                          id="admin-edit-styles"
+                          value={editForm.stylesCsv}
+                          onChange={(e) => setEditForm((f) => ({ ...f, stylesCsv: e.target.value }))}
+                          placeholder="쉼표로 구분 (예: 글리터, 프렌치)"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-technique" className="text-slate-700">
+                          디자인 / 기법
+                        </Label>
+                        <Input
+                          id="admin-edit-technique"
+                          value={editForm.design_technique}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, design_technique: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-elements" className="text-slate-700">
+                          디자인 요소
+                        </Label>
+                        <Input
+                          id="admin-edit-elements"
+                          value={editForm.design_elements}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, design_elements: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-description" className="text-slate-700">
+                          상세 설명
+                        </Label>
+                        <Textarea
+                          id="admin-edit-description"
+                          value={editForm.description}
+                          onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                          className="min-h-[240px] h-[240px] w-full resize-y text-sm leading-relaxed"
+                          rows={12}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-procedure" className="text-slate-700">
+                          시술 가이드
+                        </Label>
+                        <Textarea
+                          id="admin-edit-procedure"
+                          value={editForm.procedure_guide}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, procedure_guide: e.target.value }))
+                          }
+                          className="min-h-[240px] h-[240px] w-full resize-y text-sm leading-relaxed"
+                          rows={12}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 🇺🇸 English 전용 */}
+                    <div className="min-w-0 space-y-5">
+                      <h3 className="border-b border-blue-100 pb-2 text-base font-semibold text-blue-900">
+                        🇺🇸 English
+                      </h3>
+                      {/* 왼쪽 «파일명» 블록 높이에 맞춤 (영문 컬럼 없음) */}
+                      <div className="space-y-1.5" aria-hidden>
+                        <Label className="pointer-events-none select-none text-transparent">파일명</Label>
+                        <div className="min-h-[2.75rem] rounded-md border border-transparent bg-transparent px-3 py-2" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-title-en" className="text-slate-600">
+                          Thumbnail title · title_en
+                        </Label>
+                        <Input
+                          id="admin-edit-title-en"
+                          value={editForm.title_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, title_en: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-color-en" className="text-slate-600">
+                          Color · color_en
+                        </Label>
+                        <Input
+                          id="admin-edit-color-en"
+                          value={editForm.color_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, color_en: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-length-en" className="text-slate-600">
+                          Nail length · length_en
+                        </Label>
+                        <Input
+                          id="admin-edit-length-en"
+                          value={editForm.length_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, length_en: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-hand-type-en" className="text-slate-600">
+                          Hand type · hand_type_en
+                        </Label>
+                        <Input
+                          id="admin-edit-hand-type-en"
+                          value={editForm.hand_type_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, hand_type_en: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-mood-en" className="text-slate-600">
+                          Mood · mood_en
+                        </Label>
+                        <Input
+                          id="admin-edit-mood-en"
+                          value={editForm.mood_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, mood_en: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-occasion-en" className="text-slate-600">
+                          Occasion · occasion_en
+                        </Label>
+                        <Input
+                          id="admin-edit-occasion-en"
+                          value={editForm.occasion_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, occasion_en: e.target.value }))}
+                          placeholder="e.g. Wedding, Office (free text)"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-styles-en" className="text-slate-600">
+                          Style tags · styles_en
+                        </Label>
+                        <Input
+                          id="admin-edit-styles-en"
+                          value={editForm.stylesEnCsv}
+                          onChange={(e) => setEditForm((f) => ({ ...f, stylesEnCsv: e.target.value }))}
+                          placeholder="e.g. Black, Short oval, Chic, Date"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-technique-en" className="text-slate-600">
+                          Design technique · technique_en
+                        </Label>
+                        <Input
+                          id="admin-edit-technique-en"
+                          value={editForm.technique_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, technique_en: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-design-point-en" className="text-slate-600">
+                          Design point · design_point_en
+                        </Label>
+                        <Input
+                          id="admin-edit-design-point-en"
+                          value={editForm.design_point_en}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, design_point_en: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-description-en" className="text-slate-600">
+                          Description · description_en
+                        </Label>
+                        <Textarea
+                          id="admin-edit-description-en"
+                          value={editForm.description_en}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, description_en: e.target.value }))
+                          }
+                          className="min-h-[240px] h-[240px] w-full resize-y text-sm leading-relaxed"
+                          rows={12}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="admin-edit-guide-en" className="text-slate-600">
+                          Procedure guide · guide_en
+                        </Label>
+                        <Textarea
+                          id="admin-edit-guide-en"
+                          value={editForm.guide_en}
+                          onChange={(e) => setEditForm((f) => ({ ...f, guide_en: e.target.value }))}
+                          className="min-h-[240px] h-[240px] w-full resize-y text-sm leading-relaxed"
+                          rows={12}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <SheetFooter className="shrink-0 gap-2 border-t border-slate-200 bg-background px-6 py-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEditSheet}
+            >
+              취소
+            </Button>
+            <Button type="button" onClick={saveEdit}>
+              저장
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
-}
+};
+
+export default AdminManagePage;

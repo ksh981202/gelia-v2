@@ -19,7 +19,7 @@ export default function ClientMyPage() {
   const statBoxClass = "flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]";
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white">
+    <div className="w-full flex flex-col min-h-screen bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-white px-5 border-b border-gray-50">
         <div className="w-8" />
         <h1 className="text-lg font-bold text-gray-900 whitespace-nowrap">

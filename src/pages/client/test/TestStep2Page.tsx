@@ -57,10 +57,10 @@ const TestStep2Page = () => {
         </div>
         <div className="px-5 pb-3">
           <div className="mb-2 flex items-center justify-end">
-            <span className="font-sans text-sm font-bold tracking-tight text-primary">STEP 2 / 3</span>
+            <span className="font-sans text-sm font-bold tracking-tight text-[#FF7D66]">STEP 2 / 3</span>
           </div>
           <div className="h-1 bg-gray-100 w-full rounded-full overflow-hidden">
-            <div className="h-full w-2/3 bg-primary rounded-full transition-all" />
+            <div className="h-full w-2/3 rounded-full bg-[#FF7D66] transition-all" />
           </div>
         </div>
       </header>
@@ -80,7 +80,7 @@ const TestStep2Page = () => {
               type="button"
               onClick={() => setSelectedStyle(s.id)}
               className={`relative aspect-square overflow-hidden rounded-2xl text-left ${
-                selectedStyle === s.id ? "ring-2 ring-primary ring-offset-2" : ""
+                selectedStyle === s.id ? "ring-2 ring-[#FF7D66] ring-offset-2" : ""
               }`}
             >
               <img
@@ -96,7 +96,7 @@ const TestStep2Page = () => {
                 {s.label}
               </span>
               {selectedStyle === s.id && (
-                <span className="absolute top-2 right-2 bg-primary text-white rounded-full p-1">
+                <span className="absolute top-2 right-2 rounded-full border border-[#FF7D66] bg-[#FF7D66] p-1 text-white">
                   <Check className="w-4 h-4" />
                 </span>
               )}
@@ -107,7 +107,7 @@ const TestStep2Page = () => {
         <div className="mt-6 w-full rounded-2xl border border-orange-100 bg-orange-50 p-5">
           <div className="mb-2 flex items-center gap-2 font-sans text-[15px] font-bold text-orange-500">
             <span aria-hidden>💡</span>
-            💡 수석 큐레이터의 무드 팁
+            수석 큐레이터의 무드 팁
           </div>
           <p className="break-keep font-sans text-[14px] font-medium leading-relaxed tracking-tight text-gray-700">
             {curatorTipBody}
@@ -120,7 +120,7 @@ const TestStep2Page = () => {
           type="button"
           disabled={!selectedStyle}
           onClick={() => navigate("/client/test-step3")}
-          className="w-full py-3.5 rounded-xl font-bold text-white bg-primary disabled:opacity-40"
+          className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-bold text-white shadow-lg shadow-[#FF7D66]/30 disabled:opacity-40"
         >
           다음
         </button>

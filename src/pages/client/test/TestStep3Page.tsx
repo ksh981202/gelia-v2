@@ -106,7 +106,7 @@ export default function TestStep3Page() {
   const tipText = isEn ? currentTip.en : currentTip.ko;
 
   return (
-    <div className="relative mx-auto flex h-full min-h-screen w-full max-w-md flex-col bg-white pb-[140px] font-sans overflow-y-scroll overflow-x-hidden box-border">
+    <div className="relative mx-auto flex h-full min-h-screen w-full flex-col overflow-y-scroll overflow-x-hidden box-border bg-white font-sans">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white w-full">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -131,7 +131,7 @@ export default function TestStep3Page() {
         </div>
       </header>
 
-      <main className="flex-1 px-5 pt-8 w-full box-border">
+      <main className="box-border w-full flex-1 px-5 pb-44 pt-8">
         <h2 className="mb-1 whitespace-pre-line font-sans text-[20px] font-bold leading-snug tracking-tight text-gray-900 sm:text-[22px]">
           {isEn ? "Select Your\nFavorite Color" : "좋아하는 컬러를\n선택하세요"}
         </h2>
@@ -202,12 +202,12 @@ export default function TestStep3Page() {
         </div>
       </main>
 
-      <div className="absolute bottom-0 left-0 right-0 z-40 w-full bg-white px-5 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] box-border">
+      <div className="sticky bottom-[140px] z-40 w-full shrink-0 bg-white px-5 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
           type="button"
           disabled={!selectedColor}
           onClick={() => navigate("/client/test-result")}
-          className="w-full rounded-xl bg-[#FF826E] py-3.5 font-sans text-[16px] font-bold tracking-tight text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
+          className="h-[56px] w-full shrink-0 rounded-xl bg-[#FF7D66] font-sans text-[16px] font-bold tracking-tight text-white shadow-lg shadow-[#FF7D66]/30 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isEn ? "View Results" : "결과 보기"}
         </button>

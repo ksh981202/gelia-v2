@@ -5,7 +5,8 @@ import {
   insertToSupabase,
   uploadToR2,
 } from './api/uploadService'
-import type { CsvDesignRow, MatchedRow } from './csvTypes'
+import { emptyCsvDesignRow, type CsvDesignRow, type MatchedRow } from './csvTypes'
+import { mapV1CsvRowToDesignRow } from './mapV1CsvRow'
 
 export type { CsvDesignRow, MatchedRow } from './csvTypes'
 
@@ -25,7 +26,7 @@ export function useAdminUpload() {
   const imageByName = useMemo(() => {
     const m = new Map<string, File>()
     for (const f of imageFiles) {
-      m.set(f.name, f)
+      m.set(f.name.trim(), f)
     }
     return m
   }, [imageFiles])
@@ -81,21 +82,24 @@ export function useAdminUpload() {
       complete: (results) => {
         const rows: CsvDesignRow[] = []
         for (const raw of results.data) {
-          const image_filename = String(
-            raw.image_filename ?? raw.Image_filename ?? '',
-          ).trim()
-          if (!image_filename) continue
-          rows.push({
-            image_filename,
-            title: String(raw.title ?? '').trim(),
-            category: String(raw.category ?? '').trim(),
-            tags: String(raw.tags ?? '').trim(),
-            title_en: String(raw.title_en ?? '').trim() || undefined,
-          })
+          const mapped = mapV1CsvRowToDesignRow(raw)
+          if (mapped) rows.push(mapped)
+          else {
+            const image_filename = String(
+              raw.image_filename ?? raw.Image_filename ?? '',
+            ).trim()
+            if (!image_filename) continue
+            rows.push({
+              ...emptyCsvDesignRow(image_filename),
+              title: String(raw.title ?? '').trim(),
+              title_en: String(raw.title_en ?? '').trim(),
+              mood: String(raw.category ?? raw.mood ?? '').trim(),
+            })
+          }
         }
         if (rows.length === 0) {
           setCsvError(
-            '유효한 CSV 행이 없습니다. 헤더에 image_filename 컬럼이 있는지 확인하세요.',
+            '유효한 CSV 행이 없습니다. V1 헤더(파일명) 또는 image_filename 컬럼을 확인하세요.',
           )
           setCsvRows([])
           setCsvParseState('error')
@@ -116,6 +120,13 @@ export function useAdminUpload() {
     setCsvRows([])
     setCsvError(null)
     setCsvParseState('idle')
+  }, [])
+
+  /** V1 업로드 UI 등 외부 CSV 파서 결과를 nail_designs 업로드 파이프라인에 주입 */
+  const importDesignRows = useCallback((rows: CsvDesignRow[]) => {
+    setCsvRows(rows)
+    setCsvError(null)
+    setCsvParseState(rows.length > 0 ? 'done' : 'error')
   }, [])
 
   const resetUpload = useCallback(() => {
@@ -166,6 +177,7 @@ export function useAdminUpload() {
     clearImageFiles,
     parseCsvFile,
     clearCsv,
+    importDesignRows,
     startUpload,
     resetUpload,
   }

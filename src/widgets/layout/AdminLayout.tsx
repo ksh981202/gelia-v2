@@ -21,7 +21,7 @@ export default function AdminLayout() {
             className="flex gap-1 md:flex-col md:gap-1"
             aria-label="관리자 메뉴"
           >
-            <NavLink to="/admin" end className={sidebarLink}>
+            <NavLink to="/admin/upload" end className={sidebarLink}>
               <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden />
               대시보드
             </NavLink>
