@@ -30,6 +30,9 @@ export default function ClientLayout() {
     pathname === '/client/category' ||
     pathname === '/client/search' ||
     pathname === '/client/my' ||
+    pathname.startsWith('/client/my/list') ||
+    pathname === '/client/notifications' ||
+    pathname === '/client/account' ||
     pathname === '/client/recommend' ||
     pathname === '/client/color-curation' ||
     pathname === '/client/color-list' ||

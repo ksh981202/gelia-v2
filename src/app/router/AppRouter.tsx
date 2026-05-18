@@ -26,7 +26,11 @@ import PatternCurationPage from '../../pages/client/PatternCurationPage'
 import MoodPage from '../../pages/client/trend/MoodPage'
 import CategoryPage from '../../pages/client/CategoryPage'
 import SearchMainPage from '../../pages/client/SearchMainPage'
+import ClientLoginPage from '../../pages/client/ClientLoginPage'
+import ClientAccountSettingsPage from '../../pages/client/ClientAccountSettingsPage'
+import ClientNotificationSettingsPage from '../../pages/client/ClientNotificationSettingsPage'
 import ClientMyPage from '../../pages/client/ClientMyPage'
+import ClientMyNailListPage from '../../pages/client/ClientMyNailListPage'
 import ClientHomePage from '../../pages/client/ClientHomePage'
 import ClientRecommendPage from '../../pages/client/ClientRecommendPage'
 import ClientPage from '../../pages/client/ClientPage'
@@ -88,10 +92,14 @@ const router = createBrowserRouter([
         path: 'gallery-explore-list',
         element: <ClientGalleryExploreListPage />,
       },
-      { path: 'detail/:nailId', element: <ClientNailDetailPage /> },
+      { path: 'detail/:id', element: <ClientNailDetailPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
       { path: 'search', element: <SearchMainPage /> },
+      { path: 'login', element: <ClientLoginPage /> },
+      { path: 'notifications', element: <ClientNotificationSettingsPage /> },
+      { path: 'account', element: <ClientAccountSettingsPage /> },
       { path: 'my', element: <ClientMyPage /> },
+      { path: 'my/list/:type', element: <ClientMyNailListPage /> },
       { path: 'ranking', element: <ClientRankingPage /> },
       { path: 'popular-design', element: <PopularDesignPage /> },
       { path: 'period-best-list', element: <PeriodBestListPage /> },

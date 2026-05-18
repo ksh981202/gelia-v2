@@ -1,26 +1,18 @@
-﻿import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-import { useRef, useState } from "react";
+﻿import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
+import type { NailDesignRow } from "@/shared/types/database.types";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const DUMMY_NAILS = [
-  { id: "1", title: "발레코어 핑크 조개", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=800&q=80" },
-  { id: "2", title: "올드머니 레드 시럽", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&q=80" },
-  { id: "3", title: "영롱 마그넷", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=800&q=80" },
-  { id: "4", title: "화이트 프렌치", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=800&q=80" },
-];
+type HomeNailCard = { id: string; title: string; image: string };
 
-const TREND_NAILS = [
-  { id: "t1", title: "유니크 실버 리본", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: "t2", title: "하객 유니크 코랄 생화", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-  { id: "t3", title: "트렌디 투명 무광 조개", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-];
-
-const POPULAR_NAILS = [
-  { id: "p1", title: "하객 유니크 코랄 생화", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-  { id: "p2", title: "다크 프렌치 조개", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-  { id: "p3", title: "올드머니 레드 시럽 글리터", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: "p4", title: "웨딩 핑크 조개", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-];
+function toHomeNailCard(row: NailDesignRow): HomeNailCard {
+  return {
+    id: row.id,
+    title: row.title,
+    image: row.image_url,
+  };
+}
 
 const CATEGORY_CHIPS = [
   { label: "컬러", to: "/client/color-curation", imageUrl: "/maincategory/ic-category-color.png" },
@@ -35,6 +27,17 @@ export default function ClientHomePage() {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isFooterOpen, setIsFooterOpen] = useState(false);
+  const { data: feed, isLoading } = useClientHomeFeed();
+
+  const recommendNails = useMemo(
+    () => (feed?.recommend ?? []).map(toHomeNailCard),
+    [feed?.recommend],
+  );
+  const trendNails = useMemo(() => (feed?.trend ?? []).map(toHomeNailCard), [feed?.trend]);
+  const popularNails = useMemo(
+    () => (feed?.popular ?? []).map(toHomeNailCard),
+    [feed?.popular],
+  );
 
   return (
     <div className="w-full flex flex-col min-h-screen overflow-x-hidden bg-[#fdfaf7] pb-4">
@@ -52,7 +55,17 @@ export default function ClientHomePage() {
           </button>
         </div>
         <div ref={scrollRef} className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {DUMMY_NAILS.map((nail, index) => (
+          {isLoading
+            ? [0, 1, 2, 3].map((i) => (
+                <div
+                  key={`rec-skel-${i}`}
+                  className="relative w-full flex-none snap-center"
+                  aria-hidden
+                >
+                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm bg-gray-200 animate-pulse" />
+                </div>
+              ))
+            : recommendNails.map((nail, index) => (
             <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/client/detail/${nail.id}`)}>
               <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                 <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
@@ -67,7 +80,7 @@ export default function ClientHomePage() {
                     <ChevronLeft size={18} strokeWidth={2} />
                   </button>
                 )}
-                {index < DUMMY_NAILS.length - 1 && (
+                {index < recommendNails.length - 1 && (
                   <button type="button" className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" }); }}>
                     <ChevronRight size={18} strokeWidth={2} />
                   </button>
@@ -106,14 +119,21 @@ export default function ClientHomePage() {
           <span onClick={() => navigate('/client/trend')} className="cursor-pointer text-sm font-medium text-gray-500">전체보기 {">"}</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          {TREND_NAILS.map((nail) => (
-            <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
-              <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
-              </div>
-              <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{nail.title}</span>
-            </div>
-          ))}
+          {isLoading
+            ? [0, 1, 2].map((i) => (
+                <div key={`trend-skel-${i}`} className="flex w-full flex-col items-center" aria-hidden>
+                  <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm bg-gray-200 animate-pulse" />
+                  <span className="mt-2.5 h-4 w-3/4 rounded bg-gray-200 animate-pulse" />
+                </div>
+              ))
+            : trendNails.map((nail) => (
+                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
+                  <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
+                    <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
+                  </div>
+                  <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{nail.title}</span>
+                </div>
+              ))}
         </div>
       </section>
 
@@ -123,14 +143,21 @@ export default function ClientHomePage() {
           <span onClick={() => navigate('/client/popular-design')} className="cursor-pointer text-sm font-medium text-gray-500">전체보기 {">"}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {POPULAR_NAILS.map((nail) => (
-            <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
-              <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
-              </div>
-              <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{nail.title}</span>
-            </div>
-          ))}
+          {isLoading
+            ? [0, 1, 2, 3].map((i) => (
+                <div key={`pop-skel-${i}`} className="flex w-full flex-col items-center" aria-hidden>
+                  <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm bg-gray-200 animate-pulse" />
+                  <span className="mt-2.5 h-4 w-2/3 rounded bg-gray-200 animate-pulse" />
+                </div>
+              ))
+            : popularNails.map((nail) => (
+                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
+                  <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
+                    <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
+                  </div>
+                  <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{nail.title}</span>
+                </div>
+              ))}
         </div>
       </section>
 

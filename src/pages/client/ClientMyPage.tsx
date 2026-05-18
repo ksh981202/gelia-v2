@@ -1,22 +1,117 @@
-import { useState } from "react";
-import { Bell, Bookmark, Camera, Heart, X } from "lucide-react";
+import { fetchNailDesignsByIds } from '@/entities/nail-design/api/fetchNailDesignsByIds'
+import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+import {
+  getLikedNailsCount,
+  LIKED_NAILS_CHANGED_EVENT,
+  readLikedNailEntries,
+} from '@/shared/lib/likedNailsStorage'
+import {
+  readRecentViewedIds,
+  RECENT_VIEWED_CHANGED_EVENT,
+} from '@/shared/lib/recentViewedStorage'
+import {
+  getSavedNailsCount,
+  readSavedNailEntries,
+  SAVED_NAILS_CHANGED_EVENT,
+} from '@/shared/lib/savedNailsStorage'
+import { supabase } from '@/shared/api/supabaseClient'
+import { useQuery } from '@tanstack/react-query'
+import { Bell, Bookmark, Camera, Heart, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-type ActiveTab = "recent" | "liked" | "saved";
+type ActiveTab = 'recent' | 'liked' | 'saved'
 
-const DUMMY_ITEMS = [
-  { id: 1, title: "힙 핑크 마그넷 체인", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-  { id: 2, title: "여행 투명 마블 자개", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-  { id: 3, title: "누드 프렌치 3D리본", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-  { id: 4, title: "누드 미러파우더 심플 진주", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-];
+const GALLERY_PREVIEW_LIMIT = 4
+
+function galleryIdsForTab(tab: ActiveTab, userId: string | null): string[] {
+  if (tab === 'recent') {
+    return readRecentViewedIds(userId).slice(0, GALLERY_PREVIEW_LIMIT)
+  }
+  if (tab === 'liked') {
+    return readLikedNailEntries(userId)
+      .sort((a, b) => b.likedAt.localeCompare(a.likedAt))
+      .map((e) => e.id)
+      .slice(0, GALLERY_PREVIEW_LIMIT)
+  }
+  return readSavedNailEntries(userId)
+    .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+    .map((e) => e.id)
+    .slice(0, GALLERY_PREVIEW_LIMIT)
+}
 
 export default function ClientMyPage() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("recent");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [profileImg, setProfileImg] = useState("/avatar/default_profile_heart.png");
-  const [tempImg, setTempImg] = useState("/avatar/default_profile_heart.png");
+  const navigate = useNavigate()
+  const currentUserId = useCurrentUserId()
+  const [activeTab, setActiveTab] = useState<ActiveTab>('recent')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [profileImg, setProfileImg] = useState('/avatar/default_profile_heart.png')
+  const [tempImg, setTempImg] = useState('/avatar/default_profile_heart.png')
+  const [recentCount, setRecentCount] = useState(0)
+  const [likedCount, setLikedCount] = useState(0)
+  const [savedCount, setSavedCount] = useState(0)
 
-  const statBoxClass = "flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]";
+  const statBoxClass =
+    'flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]'
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        navigate('/client/login', { replace: true })
+      }
+    }
+    void checkAuth()
+  }, [navigate])
+
+  const syncCounts = useCallback(() => {
+    setRecentCount(readRecentViewedIds(currentUserId).slice(0, 20).length)
+    setLikedCount(getLikedNailsCount(currentUserId))
+    setSavedCount(getSavedNailsCount(currentUserId))
+  }, [currentUserId])
+
+  useEffect(() => {
+    syncCounts()
+    const onChanged = () => syncCounts()
+    window.addEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
+    window.addEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
+    window.addEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
+    window.addEventListener('storage', onChanged)
+    return () => {
+      window.removeEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
+      window.removeEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
+      window.removeEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
+      window.removeEventListener('storage', onChanged)
+    }
+  }, [syncCounts])
+
+  const galleryIds = useMemo(
+    () => galleryIdsForTab(activeTab, currentUserId),
+    [activeTab, currentUserId, recentCount, likedCount, savedCount],
+  )
+
+  const { data: galleryNails = [] } = useQuery({
+    queryKey: ['my-page-gallery', activeTab, currentUserId, galleryIds],
+    queryFn: () => fetchNailDesignsByIds(galleryIds),
+    enabled: galleryIds.length > 0,
+    staleTime: 30_000,
+  })
+
+  const openDetail = (nailId: string, title: string, imageUrl: string) => {
+    navigate(`/client/detail/${nailId}`, {
+      state: {
+        initialNailData: {
+          id: nailId,
+          imageUrl,
+          title,
+          color: '',
+          mood: '',
+        },
+      },
+    })
+  }
 
   return (
     <div className="w-full flex flex-col min-h-screen bg-white">
@@ -36,8 +131,8 @@ export default function ClientMyPage() {
           <div
             className="relative h-[100px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-full shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
             onClick={() => {
-              setTempImg(profileImg);
-              setIsModalOpen(true);
+              setTempImg(profileImg)
+              setIsModalOpen(true)
             }}
           >
             <img
@@ -59,7 +154,7 @@ export default function ClientMyPage() {
             onClick={() => setActiveTab("recent")}
           >
             <span className="flex h-8 w-8 items-center justify-center text-[22px]" aria-hidden>⏱️</span>
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-gray-800">20</span>
+            <span className="text-[22px] font-extrabold tabular-nums leading-none text-gray-800">{recentCount}</span>
             <span className="text-[13px] font-semibold text-gray-600">최근 본 디자인</span>
           </button>
           
@@ -69,7 +164,7 @@ export default function ClientMyPage() {
             onClick={() => setActiveTab("liked")}
           >
             <Heart className="h-7 w-7 fill-rose-500 text-rose-500" strokeWidth={1.5} aria-hidden />
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-rose-500">12</span>
+            <span className="text-[22px] font-extrabold tabular-nums leading-none text-rose-500">{likedCount}</span>
             <span className="text-[13px] font-semibold text-rose-500">좋아요 한 네일</span>
           </button>
 
@@ -79,7 +174,7 @@ export default function ClientMyPage() {
             onClick={() => setActiveTab("saved")}
           >
             <Bookmark className="h-[26px] w-[26px] text-indigo-500" strokeWidth={2.5} aria-hidden />
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-indigo-500">10</span>
+            <span className="text-[22px] font-extrabold tabular-nums leading-none text-indigo-500">{savedCount}</span>
             <span className="text-[13px] font-semibold text-indigo-500">저장한 네일</span>
           </button>
         </section>
@@ -89,30 +184,56 @@ export default function ClientMyPage() {
             <h2 className="text-lg font-bold text-gray-900">
               {activeTab === 'recent' ? '최근 본 디자인' : activeTab === 'liked' ? '좋아요 한 네일' : '저장한 네일'}
             </h2>
-            <button type="button" className="text-sm font-medium text-gray-500">
+            <button
+              type="button"
+              className="text-sm font-medium text-gray-500"
+              onClick={() => navigate(`/client/my/list/${activeTab}`)}
+            >
               전체보기 {">"}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4 px-5">
-            {DUMMY_ITEMS.map((item) => (
-              <article key={item.id} className="flex flex-col cursor-pointer">
-                <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 border border-black/5 shadow-sm">
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-transform hover:scale-105" />
-                </div>
-                <div className="mt-2.5 flex w-full flex-col items-center justify-center">
-                  <span className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-1">
-                    {item.title}
-                  </span>
-                </div>
-              </article>
-            ))}
+            {galleryNails.map((item) => {
+              const title = String(item.title ?? '').trim() || '네일 디자인'
+              const imageUrl = String(item.image_url ?? '').trim()
+              return (
+                <article
+                  key={item.id}
+                  className="flex flex-col cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openDetail(item.id, title, imageUrl)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      openDetail(item.id, title, imageUrl)
+                    }
+                  }}
+                >
+                  <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 border border-black/5 shadow-sm">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={title} className="h-full w-full object-cover transition-transform hover:scale-105" />
+                    ) : null}
+                  </div>
+                  <div className="mt-2.5 flex w-full flex-col items-center justify-center">
+                    <span className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-1">
+                      {title}
+                    </span>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </section>
 
         <section className="pt-4">
           <div className="mb-8">
             <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">맞춤 설정</div>
-            <button type="button" className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+              onClick={() => navigate('/client/notifications')}
+            >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🔔</span>
                 <span className="text-[15px] font-semibold text-gray-800">알림 설정</span>
@@ -123,7 +244,11 @@ export default function ClientMyPage() {
           
           <div className="mb-8">
             <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">계정</div>
-            <button type="button" className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+              onClick={() => navigate('/client/account')}
+            >
               <div className="flex items-center gap-3">
                 <span className="text-xl">⚙️</span>
                 <span className="text-[15px] font-semibold text-gray-800">계정 관리</span>
@@ -198,5 +323,5 @@ export default function ClientMyPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

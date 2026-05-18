@@ -53,6 +53,8 @@ export type NailDesignRow = {
   tags: string[]
   tags_en: string[]
   popularity: number
+  views: number
+  likes: number
   saves: number
 } & NailDesignDetailFields
 
