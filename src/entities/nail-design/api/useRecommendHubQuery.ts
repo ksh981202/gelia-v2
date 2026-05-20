@@ -1,23 +1,23 @@
+import { supabase } from '@/shared/api/supabaseClient'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../../shared/api/supabaseClient'
-import type { NailDesignRow } from '../../shared/types/database.types'
 
-const GALLERY_COLUMNS =
-  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves'
+const RECOMMEND_HUB_COLUMNS =
+  'id,created_at,title,title_en,image_url,category,tags,situations'
 
-const GALLERY_FETCH_LIMIT = 300
+const RECOMMEND_HUB_POOL_SIZE = 50
 
-export function useGalleryNailsQuery() {
+export function useRecommendHubQuery() {
   return useQuery({
-    queryKey: ['nail-designs', 'gallery', 'latest', GALLERY_FETCH_LIMIT],
+    queryKey: ['nail-designs', 'recommend-hub', RECOMMEND_HUB_POOL_SIZE],
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
       const { data, error } = await supabase
         .from('nail_designs')
-        .select(GALLERY_COLUMNS)
+        .select(RECOMMEND_HUB_COLUMNS)
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
-        .limit(GALLERY_FETCH_LIMIT)
+        .limit(RECOMMEND_HUB_POOL_SIZE)
         .abortSignal(signal)
 
       if (error) throw error

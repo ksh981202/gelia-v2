@@ -1,9 +1,14 @@
-import { useGalleryNailsQuery } from '@/features/client-gallery/useGalleryNailsQuery'
+import {
+  DEFAULT_GALLERY_SORT,
+  DEFAULT_GALLERY_TAB,
+  normalizeGallerySort,
+  useGalleryCountQuery,
+  useGalleryInfiniteQuery,
+} from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import type { NailDesignRow } from '@/shared/types/database.types'
-import { normalizeForFilter } from '@/shared/utils/normalizeForFilter'
-import { ChevronDown, ChevronLeft, Loader2, Search } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const GALLERY_TABS = [
   { ko: '전체', en: 'All', keyword: '' },
@@ -14,35 +19,11 @@ const GALLERY_TABS = [
   { ko: '그라데이션', en: 'Gradient', keyword: '그라데이션' },
 ] as const
 
-type GalleryTab = (typeof GALLERY_TABS)[number]
-
 const SORT_VALUES = ['인기순', '최신순', '저장 많은 순'] as const
 type SortValue = (typeof SORT_VALUES)[number]
 
-function sortGalleryItems(items: NailDesignRow[], sort: SortValue): NailDesignRow[] {
-  const copy = [...items]
-  copy.sort((a, b) => {
-    if (sort === '최신순') {
-      const byTime = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      if (byTime !== 0) return byTime
-    } else if (sort === '저장 많은 순') {
-      if (b.saves !== a.saves) return b.saves - a.saves
-    } else {
-      if (b.popularity !== a.popularity) return b.popularity - a.popularity
-    }
-    return b.id.localeCompare(a.id)
-  })
-  return copy
-}
-
-function filterGalleryByTab(items: NailDesignRow[], tab: GalleryTab): NailDesignRow[] {
-  if (!tab.keyword) return items
-  const needle = normalizeForFilter(tab.keyword)
-  if (!needle) return items
-  return items.filter((item) => {
-    const haystacks = [item.category, item.title, item.title_en, ...item.tags]
-    return haystacks.some((h) => normalizeForFilter(h).includes(needle))
-  })
+function isSortValue(value: string): value is SortValue {
+  return (SORT_VALUES as readonly string[]).includes(value)
 }
 
 function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
@@ -54,25 +35,61 @@ function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
 
 export default function ClientGalleryPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isEnglish, setIsEnglish] = useState(false)
-  const [activeTabKo, setActiveTabKo] = useState<string>(GALLERY_TABS[0].ko)
-  const [sortType, setSortType] = useState<SortValue>('인기순')
   const [isSortOpen, setIsSortOpen] = useState(false)
 
   const tabContainerRef = useRef<HTMLDivElement>(null)
   const sortMenuRef = useRef<HTMLDivElement>(null)
+  const observerRef = useRef<HTMLDivElement>(null)
 
-  const { data: rows = [], isLoading, isError } = useGalleryNailsQuery()
+  const activeTabKo = searchParams.get('tab')?.trim() || DEFAULT_GALLERY_TAB
+  const sortType: SortValue = useMemo(() => {
+    const normalized = normalizeGallerySort(searchParams.get('sort'))
+    return isSortValue(normalized) ? normalized : '인기순'
+  }, [searchParams])
 
-  const activeTab = useMemo(
-    () => GALLERY_TABS.find((t) => t.ko === activeTabKo) ?? GALLERY_TABS[0],
-    [activeTabKo],
+  const setGalleryTab = useCallback(
+    (tabKo: string) => {
+      const next = new URLSearchParams(searchParams)
+      if (tabKo === DEFAULT_GALLERY_TAB) {
+        next.delete('tab')
+      } else {
+        next.set('tab', tabKo)
+      }
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams],
   )
 
-  const filteredItems = useMemo(() => {
-    const tabFiltered = filterGalleryByTab(rows, activeTab)
-    return sortGalleryItems(tabFiltered, sortType)
-  }, [rows, activeTab, sortType])
+  const setGallerySort = useCallback(
+    (sort: SortValue) => {
+      const next = new URLSearchParams(searchParams)
+      if (sort === DEFAULT_GALLERY_SORT) {
+        next.delete('sort')
+      } else {
+        next.set('sort', sort)
+      }
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams],
+  )
+
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGalleryInfiniteQuery(activeTabKo, sortType)
+
+  const galleryItems = useMemo(
+    () => data?.pages.flatMap((page) => page) ?? [],
+    [data],
+  )
+  const { data: totalCount } = useGalleryCountQuery(activeTabKo)
+  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const pageTitle = isEnglish ? 'Explore Gallery' : '갤러리 탐색'
 
@@ -108,10 +125,25 @@ export default function ClientGalleryPage() {
     }
   }, [isSortOpen])
 
+  useEffect(() => {
+    const target = observerRef.current
+    if (!target || !hasNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isFetchingNextPage) return
+        void fetchNextPage()
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, activeTabKo, sortType])
+
   return (
     <div className="mx-auto min-h-screen max-w-md bg-white text-slate-900">
-      <div className="sticky top-0 z-50 border-b border-gray-100 bg-white shadow-sm">
-        <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
+      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center justify-between border-b border-gray-100 bg-white px-5">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -141,8 +173,9 @@ export default function ClientGalleryPage() {
               <Search className="h-6 w-6 text-gray-900" />
             </button>
           </div>
-        </header>
+      </header>
 
+      <div className="pt-[56px]">
         <section
           ref={tabContainerRef}
           className="scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch]"
@@ -154,7 +187,7 @@ export default function ClientGalleryPage() {
                 key={tab.ko}
                 type="button"
                 data-active-tab={isActive ? 'true' : 'false'}
-                onClick={() => setActiveTabKo(tab.ko)}
+                onClick={() => setGalleryTab(tab.ko)}
                 className={
                   isActive
                     ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white'
@@ -171,7 +204,7 @@ export default function ClientGalleryPage() {
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
             {isEnglish ? 'Total ' : '총 '}
-            <span className="font-bold text-pink-500">{filteredItems.length}</span>{' '}
+            <span className="font-bold text-pink-500">{totalCountLabel}</span>{' '}
             {isEnglish ? 'designs' : '개의 디자인'}
           </span>
           <div ref={sortMenuRef} className="relative">
@@ -193,7 +226,7 @@ export default function ClientGalleryPage() {
                     key={option}
                     type="button"
                     onClick={() => {
-                      setSortType(option)
+                      setGallerySort(option)
                       setIsSortOpen(false)
                     }}
                     className={`w-full px-3 py-2 text-left text-sm ${
@@ -213,41 +246,35 @@ export default function ClientGalleryPage() {
 
       <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
         {isLoading ? (
-          <div className="col-span-2 flex flex-col items-center justify-center gap-2 py-16 text-gray-500">
-            <Loader2 className="h-8 w-8 animate-spin text-[#FF7E67]" aria-hidden />
-            <p className="text-sm">{isEnglish ? 'Loading designs…' : '디자인을 불러오는 중…'}</p>
-          </div>
+          <>
+            {Array.from({ length: 8 }, (_, i) => (
+              <article
+                key={`gallery-initial-skel-${i}`}
+                className="flex flex-col gap-2"
+                aria-hidden
+              >
+                <div className="aspect-[3/4] w-full min-h-0 animate-pulse rounded-xl bg-gray-100" />
+                <div className="mx-auto mt-2 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+              </article>
+            ))}
+          </>
         ) : isError ? (
           <p className="col-span-2 py-12 text-center text-sm text-gray-500">
             {isEnglish ? 'Could not load designs.' : '디자인을 불러오지 못했습니다.'}
           </p>
-        ) : filteredItems.length === 0 ? (
+        ) : galleryItems.length === 0 ? (
           <p className="col-span-2 py-12 text-center text-sm text-gray-500">
             {isEnglish ? 'No designs to show.' : '표시할 네일이 없습니다.'}
           </p>
         ) : (
-          filteredItems.map((item) => (
-            <article
-              key={item.id}
-              className="flex cursor-pointer flex-col gap-2"
-              role="button"
-              tabIndex={0}
-              onClick={() =>
-                navigate(`/client/detail/${item.id}`, {
-                  state: {
-                    initialNailData: {
-                      id: item.id,
-                      imageUrl: item.image_url,
-                      title: displayItemTitle(item, isEnglish),
-                      color: '',
-                      mood: '',
-                    },
-                  },
-                })
-              }
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
+          <>
+            {galleryItems.map((item) => (
+              <article
+                key={item.id}
+                className="flex cursor-pointer flex-col gap-2"
+                role="button"
+                tabIndex={0}
+                onClick={() =>
                   navigate(`/client/detail/${item.id}`, {
                     state: {
                       initialNailData: {
@@ -260,27 +287,58 @@ export default function ClientGalleryPage() {
                     },
                   })
                 }
-              }}
-            >
-              <div className="aspect-[3/4] w-full min-h-0 overflow-hidden rounded-xl bg-gray-100">
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
-                    className="h-full w-full min-h-0 object-cover object-center rounded-xl"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : null}
-              </div>
-              <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
-                <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
-                  {displayItemTitle(item, isEnglish)}
-                </p>
-              </div>
-            </article>
-          ))
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/client/detail/${item.id}`, {
+                      state: {
+                        initialNailData: {
+                          id: item.id,
+                          imageUrl: item.image_url,
+                          title: displayItemTitle(item, isEnglish),
+                          color: '',
+                          mood: '',
+                        },
+                      },
+                    })
+                  }
+                }}
+              >
+                <div className="aspect-[3/4] w-full min-h-0 overflow-hidden rounded-xl bg-gray-100">
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={displayItemTitle(item, isEnglish)}
+                      className="h-full w-full min-h-0 rounded-xl object-cover object-center"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : null}
+                </div>
+                <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                  <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
+                    {displayItemTitle(item, isEnglish)}
+                  </p>
+                </div>
+              </article>
+            ))}
+            {isFetchingNextPage ? (
+              <>
+                {[0, 1].map((i) => (
+                  <article
+                    key={`gallery-next-skel-${i}`}
+                    className="flex flex-col gap-2"
+                    aria-hidden
+                  >
+                    <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
+                    <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+                  </article>
+                ))}
+              </>
+            ) : null}
+          </>
         )}
+        <div ref={observerRef} className="col-span-2 h-10" aria-hidden />
       </main>
     </div>
   )

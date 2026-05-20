@@ -32,6 +32,12 @@ export default function ClientLayout() {
     pathname === '/client/my' ||
     pathname.startsWith('/client/my/list') ||
     pathname === '/client/notifications' ||
+    pathname === '/client/notification-list' ||
+    pathname === '/client/support' ||
+    pathname === '/client/faq' ||
+    pathname === '/client/terms' ||
+    pathname === '/client/privacy' ||
+    pathname === '/client/notice' ||
     pathname === '/client/account' ||
     pathname === '/client/recommend' ||
     pathname === '/client/color-curation' ||
@@ -49,7 +55,6 @@ export default function ClientLayout() {
     pathname === '/client/style-gallery-list' ||
     pathname === '/client/theme-list' ||
     pathname === '/client/situation-list' ||
-    pathname === '/client/gallery-explore-list' ||
     pathname === '/client/today-special' ||
     pathname === '/client/popular-design' ||
     pathname === '/client/period-best-list' ||

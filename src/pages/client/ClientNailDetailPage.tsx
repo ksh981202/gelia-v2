@@ -211,6 +211,27 @@ function formatCount(n: number): string {
   return String(x);
 }
 
+type NailActivityAction = "detail_view" | "save" | "unsave" | "share";
+
+async function trackNailActivity(
+  nailId: string,
+  action: NailActivityAction,
+  userId?: string | null,
+): Promise<void> {
+  const nailDesignId = nailId.trim();
+  if (!nailDesignId) return;
+
+  const { error } = await supabase.from("nail_activity_events").insert({
+    nail_id: nailDesignId,
+    action,
+    user_id: userId?.trim() || null,
+  });
+
+  if (error && import.meta.env.DEV) {
+    console.warn("[Detail] activity tracking failed", { action, error });
+  }
+}
+
 function buildTagChips(row: NailPhotoDetail): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
@@ -268,7 +289,7 @@ function splitDesignElements(raw: string | null | undefined): string[] {
   const s = raw != null && typeof raw === "string" ? raw : "";
   if (!s.trim()) return [];
   return s
-    .split(/[,\s?;\|/]+/)
+    .split(/[,\s・;\|/]+/)
     .map((x) => (x != null ? String(x).trim() : ""))
     .filter(Boolean)
     .slice(0, 4);
@@ -278,7 +299,7 @@ function splitLooseTokens(raw: unknown): string[] {
   const s = safeTrimText(raw);
   if (!s) return [];
   return s
-    .split(/[,\n\r\t?;\|/]+/)
+    .split(/[,\n\r\t・;\|/]+/)
     .map((x) => safeTrimText(x))
     .filter(Boolean);
 }
@@ -289,7 +310,7 @@ function expandTagTokensFromChips(chips: string[]): string[] {
     const t = String(chip ?? "").trim();
     if (!t) return [];
     return t
-      .split(/[,\s?;\|/]+/)
+      .split(/[,\s・;\|/]+/)
       .map((x) => x.replace(/^#+/, "").trim())
       .filter(Boolean);
   });
@@ -499,11 +520,10 @@ const Detail = () => {
     return localized || (isEnglish ? "Nail Design" : "네일 디자인");
   }, [displayRow, pickLocalized, isEnglish]);
 
-  const [viewsCount, setViewsCount] = useState<number | null>(null);
-  const views = viewsCount ?? displayRow?.views ?? 0;
+  const views = displayRow?.views ?? 0;
   const saveDisplayCount = (displayRow?.saves ?? 0) + (isSaved ? 1 : 0);
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
-  const viewIncrementedForIdRef = useRef<string | null>(null);
+  const detailViewTrackedForIdRef = useRef<string | null>(null);
 
   const similarExcludeId = displayRow?.id ?? nailId;
   const { data: similarNails = [] } = useSimilarNailsQuery(similarExcludeId || undefined);
@@ -549,36 +569,24 @@ const Detail = () => {
   }, [displayRow?.id, currentUserId]);
 
   useEffect(() => {
-    setViewsCount(null);
-    viewIncrementedForIdRef.current = null;
+    detailViewTrackedForIdRef.current = null;
   }, [nailId]);
 
   useEffect(() => {
     const nailDesignId = displayRow?.id;
     if (!nailDesignId) return;
-    if (viewIncrementedForIdRef.current === nailDesignId) return;
-    viewIncrementedForIdRef.current = nailDesignId;
+    if (currentUserId === undefined) return;
+    if (detailViewTrackedForIdRef.current === nailDesignId) return;
+    detailViewTrackedForIdRef.current = nailDesignId;
 
     void (async () => {
       try {
-        const { data, error: readError } = await supabase
-          .from("nail_designs")
-          .select("views")
-          .eq("id", nailDesignId)
-          .single();
-        if (readError) return;
-
-        const nextViews = Math.max(0, Number(data?.views ?? 0)) + 1;
-        const { error: updateError } = await supabase
-          .from("nail_designs")
-          .update({ views: nextViews })
-          .eq("id", nailDesignId);
-        if (!updateError) setViewsCount(nextViews);
+        await trackNailActivity(nailDesignId, "detail_view", currentUserId);
       } catch {
-        /* ignore view increment failures */
+        /* ignore activity tracking failures */
       }
     })();
-  }, [displayRow?.id]);
+  }, [displayRow?.id, currentUserId]);
 
   useEffect(() => {
     return () => {
@@ -645,6 +653,7 @@ const Detail = () => {
   }, []);
 
   const handleShareDesign = useCallback(async () => {
+    const nailDesignId = displayRow?.id;
     const url = window.location.href;
     const shareTitle = displayTitle;
     try {
@@ -656,19 +665,22 @@ const Detail = () => {
             : "마음에 쏙 드는 네일 디자인! 젤리아에서 자세히 확인해 보세요. 💅",
           url,
         });
+        if (nailDesignId) void trackNailActivity(nailDesignId, "share", currentUserId);
         return;
       }
       await navigator.clipboard.writeText(url);
+      if (nailDesignId) void trackNailActivity(nailDesignId, "share", currentUserId);
       showCopiedToast();
     } catch {
       try {
         await navigator.clipboard.writeText(url);
+        if (nailDesignId) void trackNailActivity(nailDesignId, "share", currentUserId);
         showCopiedToast();
       } catch {
         // Clipboard unavailable: keep silent to avoid noisy UX.
       }
     }
-  }, [displayTitle, isEnglish, showCopiedToast]);
+  }, [currentUserId, displayRow?.id, displayTitle, isEnglish, showCopiedToast]);
 
   const toggleLike = useCallback(() => {
     if (!displayRow?.id) return;
@@ -692,6 +704,7 @@ const Detail = () => {
     setIsSaved((v) => {
       const next = !v;
       persistNailSaveState(displayRow.id, next, currentUserId);
+      void trackNailActivity(displayRow.id, next ? "save" : "unsave", currentUserId);
       return next;
     });
   }, [displayRow, currentUserId]);
@@ -837,7 +850,7 @@ const Detail = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-5">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
               <h3 className="text-[22px] font-bold tracking-tight text-gray-900">
-                {isEnglish ? "Login required ?" : "로그인이 필요해요 ✨"}
+                {isEnglish ? "Login required ✨" : "로그인이 필요해요 ✨"}
               </h3>
               <p className="mt-2 text-[14px] text-gray-500">
                 {isEnglish ? "Would you like to save your favorite nail styles?" : "나만의 네일 스타일을 모아보시겠어요?"}
@@ -1133,7 +1146,7 @@ const Detail = () => {
                 <div className="mt-5 border-t border-gray-200 pt-4">
                   <div className="flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-400">
                     <span className="shrink-0" aria-hidden>
-                      ??
+                      💡
                     </span>
                     <span>
                       {isEnglish

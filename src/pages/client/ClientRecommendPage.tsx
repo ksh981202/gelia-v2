@@ -1,4 +1,7 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 /** V1 `NailOverlayTitle` — 히어로 배너 제목 */
@@ -92,25 +95,93 @@ const STYLE_HUB_UI = [
 const H_SCROLLBAR_HIDE =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
 
+function hubFieldIncludesKeyword(value: string, keyword: string): boolean {
+  return String(value ?? '').includes(keyword)
+}
+
+function findFirstHubMatch(pool: NailDesignRow[], keyword: string): NailDesignRow | undefined {
+  const needle = keyword.trim()
+  if (!needle || pool.length === 0) return undefined
+
+  return pool.find((item) => {
+    if (hubFieldIncludesKeyword(item.category, needle)) return true
+    if (hubFieldIncludesKeyword(item.title, needle)) return true
+    if ((item.tags ?? []).some((tag) => hubFieldIncludesKeyword(tag, needle))) return true
+    if ((item.situations ?? []).some((situation) => hubFieldIncludesKeyword(situation, needle))) {
+      return true
+    }
+    return false
+  })
+}
+
+function styleKeywordFromCardTitle(cardTitle: string): string {
+  return cardTitle.replace(/\s*네일\s*$/i, '').trim()
+}
+
+function HubThumbnail({
+  nail,
+  aspectClassName,
+  alt,
+}: {
+  nail?: NailDesignRow
+  aspectClassName: string
+  alt: string
+}) {
+  const imageUrl = nail?.image_url?.trim()
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={alt}
+        className={`${aspectClassName} w-full rounded-2xl object-cover object-center shadow-sm`}
+        loading="lazy"
+        decoding="async"
+      />
+    )
+  }
+  return (
+    <div
+      className={`${aspectClassName} w-full animate-pulse rounded-2xl bg-gray-100 shadow-sm`}
+      aria-hidden
+    />
+  )
+}
+
 /**
  * V1 `RecommendPage.tsx` UI 이식 (framer-motion → active 스케일).
- * 썸네일·전체보기 네비는 추후 V2 라우트에 맞게 연결 가능; 현재는 갤러리 등으로 스텁.
  */
 export default function ClientRecommendPage() {
   const navigate = useNavigate()
   const isEnglish = false
 
+  const { data: hubData = [] } = useRecommendHubQuery()
+
   const viewAllLabel = isEnglish ? 'View All' : '전체보기'
   const cardLabel = (name: string, nameEn?: string) =>
     isEnglish && nameEn ? nameEn : name
 
-  const goGallery = () => navigate('/client/gallery')
+  const todayNail = hubData[0]
 
   const heroCard = {
     tag: formatTodayPickBadgeLabel(),
     title: isEnglish ? "Today's Recommended Nails" : '오늘의 추천 네일',
-    image: null as string | null,
+    image: todayNail?.image_url?.trim() ?? null,
   }
+
+  const heroLinkTo = todayNail
+    ? `/client/detail/${todayNail.id}`
+    : '/client/today-special'
+
+  const occasionMatches = useMemo(
+    () => OCCASION_HUB_UI.map((card) => findFirstHubMatch(hubData, card.tabQueryValue)),
+    [hubData],
+  )
+
+  const styleMatches = useMemo(
+    () =>
+      STYLE_HUB_UI.map((card) => findFirstHubMatch(hubData, styleKeywordFromCardTitle(card.cardTitle))),
+    [hubData],
+  )
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -131,7 +202,7 @@ export default function ClientRecommendPage() {
             type="button"
             className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-primary/10"
             aria-label={isEnglish ? 'Search' : '검색'}
-            onClick={goGallery}
+            onClick={() => navigate('/client/search')}
           >
             <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
@@ -143,7 +214,7 @@ export default function ClientRecommendPage() {
             <div className="mb-5 flex items-center justify-between px-4">
               <h2
                 className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={goGallery}
+                onClick={() => navigate('/client/theme')}
               >
                 {isEnglish
                   ? 'Shining Moments, Custom Nails'
@@ -159,24 +230,25 @@ export default function ClientRecommendPage() {
             <div
               className={`flex gap-4 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
             >
-              {OCCASION_HUB_UI.map((card) => (
+              {OCCASION_HUB_UI.map((card, index) => (
                 <div
                   key={card.cardTitle}
                   className="flex w-[45%] flex-shrink-0 cursor-pointer flex-col active:scale-[0.97]"
-                  onClick={goGallery}
+                  onClick={() => navigate(`/client/theme?tab=${card.tabQueryValue}`)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      goGallery()
+                      navigate(`/client/theme?tab=${card.tabQueryValue}`)
                     }
                   }}
                   aria-label={`${cardLabel(card.cardTitle, card.cardTitleEn)} — ${isEnglish ? 'move to custom nail theme page' : '맞춤 네일 테마 페이지로 이동'}`}
                 >
-                  <div
-                    className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100 shadow-sm"
-                    aria-hidden
+                  <HubThumbnail
+                    nail={occasionMatches[index]}
+                    aspectClassName="aspect-[4/5]"
+                    alt={cardLabel(card.cardTitle, card.cardTitleEn)}
                   />
                   <span className="mt-3 line-clamp-2 w-full text-center text-sm font-medium text-gray-800">
                     {cardLabel(card.cardTitle, card.cardTitleEn)}
@@ -191,7 +263,7 @@ export default function ClientRecommendPage() {
             <div className="mb-5 flex items-center justify-between px-4">
               <h2
                 className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={goGallery}
+                onClick={() => navigate('/client/style-curation')}
               >
                 {isEnglish
                   ? 'Style Perfect, Nails by Vibe'
@@ -207,24 +279,25 @@ export default function ClientRecommendPage() {
             <div
               className={`flex gap-3 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
             >
-              {STYLE_HUB_UI.map((card) => (
+              {STYLE_HUB_UI.map((card, index) => (
                 <div
                   key={card.cardTitle}
                   className="flex w-32 flex-shrink-0 cursor-pointer flex-col active:scale-[0.95]"
-                  onClick={goGallery}
+                  onClick={() => navigate(`/client/style-curation?tab=${card.cardTitle}`)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      goGallery()
+                      navigate(`/client/style-curation?tab=${card.cardTitle}`)
                     }
                   }}
                   aria-label={`${cardLabel(card.cardTitle, card.cardTitleEn)} — ${isEnglish ? 'move to style nail page' : '스타일별 네일 페이지로 이동'}`}
                 >
-                  <div
-                    className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100 shadow-sm"
-                    aria-hidden
+                  <HubThumbnail
+                    nail={styleMatches[index]}
+                    aspectClassName="aspect-[3/4]"
+                    alt={cardLabel(card.cardTitle, card.cardTitleEn)}
                   />
                   <p className="mt-3 line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
                     {cardLabel(card.cardTitle, card.cardTitleEn)}
@@ -240,7 +313,7 @@ export default function ClientRecommendPage() {
               <button
                 type="button"
                 className="m-0 cursor-pointer bg-transparent p-0 text-left text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={goGallery}
+                onClick={() => navigate('/client/season-curation')}
                 aria-label="계절별 맞춤 네일 페이지로 이동"
               >
                 {isEnglish ? 'Seasonal Custom Nails' : '계절별 맞춤 네일'}
@@ -258,7 +331,7 @@ export default function ClientRecommendPage() {
                   key={season.label}
                   type="button"
                   className={`${season.bgColor} ${season.cardBorderClass ?? 'border-primary/5'} flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border px-4 py-5 active:scale-[0.95]`}
-                  onClick={goGallery}
+                  onClick={() => navigate('/client/season-curation')}
                 >
                   <img
                     src={publicAssetUrl(season.imageSrc)}
@@ -325,7 +398,7 @@ export default function ClientRecommendPage() {
             </div>
             <div>
               <Link
-                to="/client/today-special"
+                to={heroLinkTo}
                 className="relative block aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-sm active:scale-[0.98]"
                 aria-label={
                   isEnglish

@@ -4,7 +4,6 @@ import AdminUploadPage from '../../pages/admin/AdminUploadPage'
 import AdminBoard from '../../pages/admin/AdminBoard'
 import AdminManagePage from '../../pages/admin/AdminManagePage'
 import ClientNailDetailPage from '../../pages/client/ClientNailDetailPage'
-import ClientGalleryExploreListPage from '../../pages/client/ClientGalleryExploreListPage'
 import ClientGalleryPage from '../../pages/client/ClientGalleryPage'
 import ClientRankingPage from '../../pages/client/ClientRankingPage'
 import TrendPage from '../../pages/client/trend/TrendPage'
@@ -29,6 +28,12 @@ import SearchMainPage from '../../pages/client/SearchMainPage'
 import ClientLoginPage from '../../pages/client/ClientLoginPage'
 import ClientAccountSettingsPage from '../../pages/client/ClientAccountSettingsPage'
 import ClientNotificationSettingsPage from '../../pages/client/ClientNotificationSettingsPage'
+import ClientNotificationPage from '../../pages/client/ClientNotificationPage'
+import ClientNoticePage from '../../pages/client/ClientNoticePage'
+import ClientSupportPage from '../../pages/client/ClientSupportPage'
+import ClientFaqPage from '../../pages/client/ClientFaqPage'
+import ClientTermsPage from '../../pages/client/ClientTermsPage'
+import ClientPrivacyPage from '../../pages/client/ClientPrivacyPage'
 import ClientMyPage from '../../pages/client/ClientMyPage'
 import ClientMyNailListPage from '../../pages/client/ClientMyNailListPage'
 import ClientHomePage from '../../pages/client/ClientHomePage'
@@ -88,15 +93,17 @@ const router = createBrowserRouter([
         path: 'season-popular-list',
         element: <ClientSeasonPopularListPage />,
       },
-      {
-        path: 'gallery-explore-list',
-        element: <ClientGalleryExploreListPage />,
-      },
       { path: 'detail/:id', element: <ClientNailDetailPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
       { path: 'search', element: <SearchMainPage /> },
       { path: 'login', element: <ClientLoginPage /> },
       { path: 'notifications', element: <ClientNotificationSettingsPage /> },
+      { path: 'notification-list', element: <ClientNotificationPage /> },
+      { path: 'support', element: <ClientSupportPage /> },
+      { path: 'faq', element: <ClientFaqPage /> },
+      { path: 'terms', element: <ClientTermsPage /> },
+      { path: 'privacy', element: <ClientPrivacyPage /> },
+      { path: 'notice', element: <ClientNoticePage /> },
       { path: 'account', element: <ClientAccountSettingsPage /> },
       { path: 'my', element: <ClientMyPage /> },
       { path: 'my/list/:type', element: <ClientMyNailListPage /> },

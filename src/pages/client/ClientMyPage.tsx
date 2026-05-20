@@ -120,7 +120,12 @@ export default function ClientMyPage() {
         <h1 className="text-lg font-bold text-gray-900 whitespace-nowrap">
           마이페이지
         </h1>
-        <button type="button" aria-label="알림" className="relative p-2 text-gray-600">
+        <button
+          type="button"
+          aria-label="알림"
+          className="relative p-2 text-gray-600"
+          onClick={() => navigate('/client/notification-list')}
+        >
           <Bell className="h-6 w-6 text-current" strokeWidth={2} />
           <span className="absolute right-1.5 top-1.5 h-[9px] w-[9px] rounded-full border-[2px] border-white bg-red-500" />
         </button>
@@ -255,7 +260,11 @@ export default function ClientMyPage() {
               </div>
               <span className="text-gray-300 font-bold">{">"}</span>
             </button>
-            <button type="button" className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+              onClick={() => navigate('/client/support')}
+            >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🎧</span>
                 <span className="text-[15px] font-semibold text-gray-800">고객센터 / 공지사항</span>

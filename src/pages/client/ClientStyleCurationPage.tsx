@@ -1,6 +1,15 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  useSearchParams,
+} from 'react-router-dom'
+import { STYLE_TAB_LABELS } from './styleTabs'
 
 /** V1 `NailOverlayTitle` 히어로 제목 — `ClientPage`와 동일 */
 const NAIL_HERO_BANNER_TITLE_CLASS =
@@ -9,30 +18,75 @@ const NAIL_HERO_BANNER_TITLE_CLASS =
 const STYLE_HERO_BANNER_FRAME =
   'relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg'
 
-type StyleCurationTab = {
-  id: string
-  label: string
-  nameEn: string
+const bestStyleCaptions = ['✨ 심플', '💎 화려한', '💅 트렌디', '🌸 로맨틱'] as const
+
+function extractPureStyleKeyword(raw: string): string {
+  return String(raw ?? '')
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
-const STYLE_TABS: StyleCurationTab[] = [
-  { id: 'all', label: '전체', nameEn: 'All' },
-  { id: 'simple', label: '✨ 심플', nameEn: '✨ Simple' },
-  { id: 'glam', label: '💎 화려한', nameEn: '💎 Glam' },
-  { id: 'trendy', label: '💅 트렌디', nameEn: '💅 Trendy' },
-  { id: 'chic', label: '🌙 시크', nameEn: '🌙 Chic' },
-  { id: 'romantic', label: '🌸 로맨틱', nameEn: '🌸 Romantic' },
-  { id: 'casual', label: '☕ 캐주얼', nameEn: '☕ Casual' },
-]
+function hubFieldIncludesKeyword(value: string, keyword: string): boolean {
+  return String(value ?? '').includes(keyword)
+}
+
+function hubItemMatchesKeyword(item: NailDesignRow, keyword: string): boolean {
+  const needle = keyword.trim()
+  if (!needle || needle === '전체') return true
+  if (hubFieldIncludesKeyword(item.category, needle)) return true
+  if (hubFieldIncludesKeyword(item.title, needle)) return true
+  if (hubFieldIncludesKeyword(item.title_en ?? '', needle)) return true
+  if ((item.tags ?? []).some((tag) => hubFieldIncludesKeyword(tag, needle))) return true
+  if ((item.situations ?? []).some((situation) => hubFieldIncludesKeyword(situation, needle))) {
+    return true
+  }
+  return false
+}
+
+function findFirstHubMatch(pool: NailDesignRow[], keyword: string): NailDesignRow | undefined {
+  const needle = keyword.trim()
+  if (pool.length === 0) return undefined
+  if (!needle || needle === '전체') return pool[0]
+  return pool.find((item) => hubItemMatchesKeyword(item, needle))
+}
+
+function nailDisplayTitle(nail: NailDesignRow | undefined, isEnglish: boolean): string | null {
+  if (!nail) return null
+  const en = nail.title_en?.trim()
+  const ko = nail.title?.trim()
+  if (isEnglish && en) return en
+  return ko || en || null
+}
+
+function resolveStyleTabIndex(searchParams: URLSearchParams): number {
+  const rawTab = searchParams.get('tab')?.trim()
+  if (!rawTab) return 0
+
+  const pureTab = extractPureStyleKeyword(rawTab)
+  const byTab = STYLE_TAB_LABELS.findIndex((label) => {
+    const pureLabel = extractPureStyleKeyword(label)
+    return (
+      label === rawTab ||
+      pureLabel === pureTab ||
+      (pureLabel !== '전체' &&
+        (pureTab.includes(pureLabel) || pureLabel.includes(pureTab)))
+    )
+  })
+
+  return byTab >= 0 ? byTab : 0
+}
 
 /** V1 `OccasionNailThumb` — `ClientPage`와 동일 퍼블리싱 */
 function StyleNailThumbShell({
-  caption,
+  title,
   variant,
+  imageUrl,
   onActivate,
 }: {
-  caption: string
+  title: string
   variant: 'carousel' | 'grid'
+  imageUrl?: string | null
   onActivate: () => void
 }) {
   const FRAME =
@@ -63,12 +117,22 @@ function StyleNailThumbShell({
       }}
     >
       <div className={`${FRAME} ${frameExtra}`}>
-        <div className="h-full w-full animate-pulse bg-gray-100" aria-hidden />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="h-full w-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="h-full w-full animate-pulse bg-gray-100" aria-hidden />
+        )}
       </div>
       <div
         className={`${CAPTION_GAP} flex w-full min-w-0 flex-col items-center justify-center`}
       >
-        <span className={CAPTION}>{caption}</span>
+        <span className={CAPTION}>{title}</span>
       </div>
     </div>
   )
@@ -76,15 +140,27 @@ function StyleNailThumbShell({
 
 /**
  * V1 스타일 큐레이션 서브 홈 UI (`/client/style-curation`).
- * 데이터·필터·목록 API 미연결 — 플레이스홀더만.
  */
 export default function ClientStyleCurationPage() {
   const navigate = useNavigate()
-  const [active, setActive] = useState(0)
+  const location = useLocation()
+  const navigationType = useNavigationType()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [active, setActive] = useState(() => resolveStyleTabIndex(searchParams))
   const tabContainerRef = useRef<HTMLDivElement | null>(null)
+  const { data: hubData = [] } = useRecommendHubQuery()
 
   const isEnglish = false
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
+
+  useEffect(() => {
+    if (navigationType === 'POP') return
+    window.scrollTo(0, 0)
+  }, [location.pathname, navigationType])
+
+  useEffect(() => {
+    setActive(resolveStyleTabIndex(searchParams))
+  }, [searchParams])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -104,12 +180,56 @@ export default function ClientStyleCurationPage() {
   }, [active])
 
   const tabIndex =
-    active >= 0 && active < STYLE_TABS.length ? active : 0
-  const activeTabDef = STYLE_TABS[tabIndex]!
+    active >= 0 && active < STYLE_TAB_LABELS.length ? active : 0
+  const activeTabLabel = STYLE_TAB_LABELS[tabIndex]!
 
-  const stubGallery = () => navigate('/client/gallery')
+  const activeKeyword = extractPureStyleKeyword(activeTabLabel)
 
-  const bestStyleCaptions = ['✨ 심플', '💎 화려한', '💅 트렌디', '🌸 로맨틱']
+  const heroNail = useMemo(
+    () => findFirstHubMatch(hubData, activeKeyword),
+    [hubData, activeKeyword],
+  )
+
+  const bestStyleMatches = useMemo(
+    () =>
+      bestStyleCaptions.map((cap) =>
+        findFirstHubMatch(hubData, extractPureStyleKeyword(cap)),
+      ),
+    [hubData],
+  )
+
+  const galleryItems = useMemo(
+    () =>
+      hubData
+        .filter((item) => hubItemMatchesKeyword(item, activeKeyword))
+        .slice(0, 4),
+    [hubData, activeKeyword],
+  )
+
+  const gallerySlots = useMemo<(NailDesignRow | undefined)[]>(() => {
+    const slots: (NailDesignRow | undefined)[] = [...galleryItems]
+    while (slots.length < 4) slots.push(undefined)
+    return slots
+  }, [galleryItems])
+
+  const goDetail = (nail?: NailDesignRow) => {
+    if (!nail?.id) return
+    navigate(`/client/detail/${nail.id}`, {
+      state: {
+        initialNailData: {
+          id: nail.id,
+          imageUrl: nail.image_url,
+          title: nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? 'Nail Design' : '네일 디자인'),
+          color: '',
+          mood: '',
+        },
+      },
+    })
+  }
+
+  const heroImageUrl = heroNail?.image_url?.trim() ?? null
+  const heroTitle =
+    nailDisplayTitle(heroNail, isEnglish) ?? (isEnglish ? 'Style preview' : '스타일 미리보기')
 
   return (
     <div className="relative mx-auto max-w-md bg-white pb-24">
@@ -146,7 +266,10 @@ export default function ClientStyleCurationPage() {
             {isEnglish ? 'Browse by Style' : '스타일별 모아보기'}
           </h2>
           <Link
-            to="/client/style-list"
+            to={{
+              pathname: '/client/style-list',
+              search: searchParams.toString() ? `?${searchParams.toString()}` : '',
+            }}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {viewAllLabel}
@@ -157,22 +280,36 @@ export default function ClientStyleCurationPage() {
           ref={tabContainerRef}
           className="flex w-full flex-nowrap gap-2 overflow-x-auto whitespace-nowrap border-b border-gray-100 px-4 pb-1 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
-          {STYLE_TABS.map((tab, idx) => {
+          {STYLE_TAB_LABELS.map((label, idx) => {
             const isActive = active === idx
             return (
               <button
-                key={tab.id}
+                key={label}
                 type="button"
                 data-active-tab={isActive ? 'true' : 'false'}
-                onClick={() => setActive(idx)}
+                onClick={() => {
+                  setActive(idx)
+                  setSearchParams(
+                    (prev) => {
+                      const next = new URLSearchParams(prev)
+                      if (label === '전체') {
+                        next.delete('tab')
+                      } else {
+                        next.set('tab', extractPureStyleKeyword(label))
+                      }
+                      return next
+                    },
+                    { replace: true },
+                  )
+                }}
                 className={`shrink-0 px-2 py-2 text-sm font-medium transition-colors ${
                   isActive
                     ? 'border-b-2 border-gray-900 text-gray-900'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
-                aria-label={`${isEnglish ? tab.nameEn : tab.label} ${isEnglish ? 'tab' : '탭'}`}
+                aria-label={`${label} ${isEnglish ? 'tab' : '탭'}`}
               >
-                {isEnglish ? tab.nameEn : tab.label}
+                {label}
               </button>
             )
           })}
@@ -182,30 +319,38 @@ export default function ClientStyleCurationPage() {
         <section className="mb-0 mt-5 px-4" aria-label="스타일 히어로">
           <div
             className={`${STYLE_HERO_BANNER_FRAME} cursor-pointer`}
-            onClick={stubGallery}
+            onClick={() => goDetail(heroNail)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                stubGallery()
+                goDetail(heroNail)
               }
             }}
             role="button"
             tabIndex={0}
           >
             <div className="absolute inset-0">
-              <div
-                className="h-full w-full animate-pulse bg-gray-200"
-                aria-hidden
-              />
+              {heroImageUrl ? (
+                <img
+                  src={heroImageUrl}
+                  alt={heroTitle}
+                  className="h-full w-full object-cover object-center"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div
+                  className="h-full w-full animate-pulse bg-gray-200"
+                  aria-hidden
+                />
+              )}
             </div>
             <div className="absolute inset-x-5 bottom-5 z-10">
               <div className="relative z-10">
                 <h2
                   className={`${NAIL_HERO_BANNER_TITLE_CLASS} truncate leading-tight`}
                 >
-                  {isEnglish
-                    ? `Style preview — ${activeTabDef.nameEn}`
-                    : `스타일 미리보기 — ${activeTabDef.label}`}
+                  {heroTitle}
                 </h2>
               </div>
             </div>
@@ -220,7 +365,10 @@ export default function ClientStyleCurationPage() {
                 : '가장 많이 찾은 스타일 BEST ✨'}
             </h2>
             <Link
-              to="/client/style-best-list"
+              to={{
+                pathname: '/client/style-best-list',
+                search: searchParams.toString() ? `?${searchParams.toString()}` : '',
+              }}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {viewAllLabel}
@@ -229,14 +377,19 @@ export default function ClientStyleCurationPage() {
 
           <section className="mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             <div className="mb-0 flex items-center gap-4 pb-0">
-              {bestStyleCaptions.map((cap) => (
-                <StyleNailThumbShell
-                  key={cap}
-                  variant="carousel"
-                  caption={cap}
-                  onActivate={stubGallery}
-                />
-              ))}
+              {bestStyleCaptions.map((cap, index) => {
+                const nail = bestStyleMatches[index]
+                const title = nailDisplayTitle(nail, isEnglish) ?? cap
+                return (
+                  <StyleNailThumbShell
+                    key={cap}
+                    variant="carousel"
+                    title={title}
+                    imageUrl={nail?.image_url?.trim() ?? null}
+                    onActivate={() => goDetail(nail)}
+                  />
+                )
+              })}
             </div>
           </section>
         </div>
@@ -247,7 +400,10 @@ export default function ClientStyleCurationPage() {
               {isEnglish ? 'Style Nail Gallery' : '스타일별 네일 갤러리'}
             </h2>
             <Link
-              to="/client/style-gallery-list"
+              to={{
+                pathname: '/client/style-gallery-list',
+                search: searchParams.toString() ? `?${searchParams.toString()}` : '',
+              }}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {viewAllLabel}
@@ -255,14 +411,16 @@ export default function ClientStyleCurationPage() {
           </div>
 
           <div className="mb-0 grid grid-cols-2 gap-4 px-4 pb-0">
-            {[0, 1, 2, 3].map((i) => (
+            {gallerySlots.map((nail, index) => (
               <StyleNailThumbShell
-                key={i}
+                key={nail?.id ?? `style-placeholder-${index}`}
                 variant="grid"
-                caption={
-                  isEnglish ? `Style gallery ${i + 1}` : `스타일 갤러리 ${i + 1}`
+                title={
+                  nailDisplayTitle(nail, isEnglish) ??
+                  (isEnglish ? `Style gallery ${index + 1}` : `스타일 갤러리 ${index + 1}`)
                 }
-                onActivate={stubGallery}
+                imageUrl={nail?.image_url?.trim() ?? null}
+                onActivate={() => goDetail(nail)}
               />
             ))}
           </div>

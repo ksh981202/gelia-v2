@@ -1,14 +1,195 @@
-import { ChevronLeft, Search } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
-import { NailListExplore } from '../../widgets/nail-list/NailListExplore'
-import { STYLE_GALLERY_TAB_LABELS } from './styleGalleryTabs'
+import {
+  DEFAULT_GALLERY_SORT,
+  DEFAULT_GALLERY_TAB,
+  normalizeGallerySort,
+  useGalleryCountQuery,
+  useGalleryInfiniteQuery,
+} from '@/entities/nail-design/api/useGalleryInfiniteQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
+import { PageContainer } from '@/shared/ui/PageContainer'
+import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  useSearchParams,
+} from 'react-router-dom'
+import { STYLE_GALLERY_TAB_LABELS, type StyleGalleryTabLabel } from './styleGalleryTabs'
+
+const SORT_MENU_OPTIONS = [
+  { value: '인기순', label: '인기순' },
+  { value: '최신순', label: '최신순' },
+  { value: '저장 많은 순', label: '저장 많은 순' },
+] as const
+
+type SortValue = (typeof SORT_MENU_OPTIONS)[number]['value']
+
+function isSortValue(value: string): value is SortValue {
+  return (SORT_MENU_OPTIONS as readonly { value: string }[]).some((o) => o.value === value)
+}
+
+function extractPureThemeKeyword(raw: string): string {
+  return String(raw ?? '')
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function resolveActiveStyleGalleryTabLabel(rawTab: string | null): StyleGalleryTabLabel {
+  const trimmed = rawTab?.trim()
+  if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return STYLE_GALLERY_TAB_LABELS[0]
+
+  const pure = extractPureThemeKeyword(trimmed)
+  const found = STYLE_GALLERY_TAB_LABELS.find(
+    (label) =>
+      label === trimmed ||
+      extractPureThemeKeyword(label) === pure ||
+      extractPureThemeKeyword(label) === trimmed ||
+      (extractPureThemeKeyword(label) !== DEFAULT_GALLERY_TAB &&
+        pure.includes(extractPureThemeKeyword(label))),
+  )
+  return found ?? STYLE_GALLERY_TAB_LABELS[0]
+}
+
+function styleGalleryTabKeywordForQuery(label: StyleGalleryTabLabel): string {
+  const pure = extractPureThemeKeyword(label)
+  if (pure === DEFAULT_GALLERY_TAB) return DEFAULT_GALLERY_TAB
+  return pure
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? '').trim()
+  const en = String(item.title_en ?? '').trim()
+  return ko || en || '네일 디자인'
+}
 
 export default function ClientStyleGalleryListPage() {
   const navigate = useNavigate()
+  const navigationType = useNavigationType()
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [isSortOpen, setIsSortOpen] = useState(false)
+
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null)
+  const sortMenuRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<HTMLDivElement | null>(null)
+
+  const activeTabLabel = useMemo(
+    () => resolveActiveStyleGalleryTabLabel(searchParams.get('tab')),
+    [searchParams],
+  )
+  const activeTabKeyword = styleGalleryTabKeywordForQuery(activeTabLabel)
+
+  const sortType: SortValue = useMemo(() => {
+    const normalized = normalizeGallerySort(searchParams.get('sort'))
+    return isSortValue(normalized) ? normalized : '인기순'
+  }, [searchParams])
+
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
+
+  const galleryItems = useMemo(
+    () => data?.pages.flatMap((page) => page) ?? [],
+    [data],
+  )
+  const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
+  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
+
+  // PUSH/REPLACE로 새 메뉴 진입 시에만 위로 올리고, POP(뒤로가기) 시에는 앱이 스크롤을 건드리지 않는다.
+  useEffect(() => {
+    if (navigationType === 'POP') return
+    window.scrollTo(0, 0)
+  }, [location.pathname, navigationType])
+
+  const sortMenuSelection =
+    SORT_MENU_OPTIONS.find((o) => o.value === sortType) ?? SORT_MENU_OPTIONS[0]
+
+  const setStyleGalleryTab = useCallback(
+    (label: StyleGalleryTabLabel) => {
+      const next = new URLSearchParams(searchParams)
+      const pure = extractPureThemeKeyword(label)
+      if (pure === DEFAULT_GALLERY_TAB) {
+        next.delete('tab')
+      } else {
+        next.set('tab', pure)
+      }
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams],
+  )
+
+  const setGallerySort = useCallback(
+    (sort: SortValue) => {
+      const next = new URLSearchParams(searchParams)
+      if (sort === DEFAULT_GALLERY_SORT) {
+        next.delete('sort')
+      } else {
+        next.set('sort', sort)
+      }
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams],
+  )
+
+  useEffect(() => {
+    const el = activeTabButtonRef.current
+    if (!el) return
+    el.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [activeTabLabel])
+
+  useEffect(() => {
+    if (!isSortOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      const root = sortMenuRef.current
+      if (!root || root.contains(e.target as Node)) return
+      setIsSortOpen(false)
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSortOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isSortOpen])
+
+  useEffect(() => {
+    const target = observerRef.current
+    if (!target || !hasNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isFetchingNextPage) return
+        void fetchNextPage()
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  ])
 
   return (
     <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-white">
-      <header className="sticky top-0 z-50 relative flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
+      <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -32,11 +213,153 @@ export default function ClientStyleGalleryListPage() {
       </header>
 
       <div className="min-h-0 flex-1">
-        <NailListExplore
-          tabs={[...STYLE_GALLERY_TAB_LABELS]}
-          tabsSectionLabel="갤러리"
-          queryScope="gallery"
-        />
+        <PageContainer className="!mx-auto !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
+          <div className="w-full min-w-0 bg-white text-slate-900">
+            <p className="sr-only">갤러리</p>
+            <div className="sticky top-[56px] z-40 w-full min-w-0 bg-white shadow-sm">
+              <section
+                className="scrollbar-hide flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                aria-label="갤러리"
+              >
+                {STYLE_GALLERY_TAB_LABELS.map((label) => {
+                  const active = activeTabLabel === label
+                  return (
+                    <button
+                      ref={active ? activeTabButtonRef : undefined}
+                      key={label}
+                      type="button"
+                      data-active-tab={active ? 'true' : 'false'}
+                      onClick={() => setStyleGalleryTab(label)}
+                      className={
+                        active
+                          ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white'
+                          : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
+                      }
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+                <div className="w-10 shrink-0" aria-hidden="true" />
+              </section>
+
+              <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
+                <span className="text-sm text-gray-500">
+                  총{' '}
+                  <span className="font-bold text-pink-500">{totalCountLabel}</span>{' '}
+                  개의 디자인
+                </span>
+                <div ref={sortMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsSortOpen((prev) => !prev)}
+                    className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100"
+                    aria-haspopup="menu"
+                    aria-expanded={isSortOpen}
+                    aria-label="정렬"
+                  >
+                    <span>{sortMenuSelection.label}</span>
+                    <ChevronDown size={14} className="text-gray-500" />
+                  </button>
+                  {isSortOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-[calc(100%+6px)] z-[60] min-w-[148px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
+                    >
+                      {SORT_MENU_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setGallerySort(opt.value)
+                            setIsSortOpen(false)
+                          }}
+                          className={`w-full px-3 py-2.5 text-left text-sm transition-colors ${
+                            sortType === opt.value
+                              ? 'bg-gray-100 font-medium text-gray-900'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <ul className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
+              {isLoading ? (
+                Array.from({ length: 8 }, (_, i) => (
+                  <li key={`style-gallery-list-skel-${i}`} aria-hidden>
+                    <div className="flex flex-col gap-2">
+                      <div className="aspect-[3/4] w-full min-h-0 animate-pulse rounded-xl bg-gray-100" />
+                      <div className="mx-auto mt-2 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+                    </div>
+                  </li>
+                ))
+              ) : isError ? (
+                <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+                  디자인을 불러오지 못했습니다.
+                </li>
+              ) : galleryItems.length === 0 ? (
+                <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+                  표시할 네일이 없습니다.
+                </li>
+              ) : (
+                <>
+                  {galleryItems.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        to={`/client/detail/${item.id}`}
+                        state={{
+                          initialNailData: {
+                            id: item.id,
+                            imageUrl: item.image_url,
+                            title: displayItemTitle(item),
+                            color: '',
+                            mood: '',
+                          },
+                        }}
+                        className="flex cursor-pointer flex-col gap-2"
+                      >
+                        <div className="aspect-[3/4] w-full min-h-0 overflow-hidden rounded-xl bg-gray-100">
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={displayItemTitle(item)}
+                              className="h-full w-full min-h-0 rounded-xl object-cover object-center"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                          <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
+                            {displayItemTitle(item)}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                  {isFetchingNextPage
+                    ? [0, 1].map((i) => (
+                        <li key={`style-gallery-list-next-skel-${i}`} aria-hidden>
+                          <div className="flex flex-col gap-2">
+                            <div className="aspect-[3/4] w-full min-h-0 animate-pulse rounded-xl bg-gray-100" />
+                            <div className="mx-auto mt-2 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+                          </div>
+                        </li>
+                      ))
+                    : null}
+                </>
+              )}
+            </ul>
+            <div ref={observerRef} className="h-10 px-4 pb-4" aria-hidden />
+          </div>
+        </PageContainer>
       </div>
     </div>
   )

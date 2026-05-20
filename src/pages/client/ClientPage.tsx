@@ -1,6 +1,9 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { THEME_TAB_LABELS, type ThemeTabLabel } from './themeTabs'
 
 /** V1 `NailOverlayTitle` 히어로 제목 */
 const NAIL_HERO_BANNER_TITLE_CLASS =
@@ -11,50 +14,11 @@ const OCCASION_HERO_BANNER_FRAME =
 
 type OccasionThemeTab = {
   id: string
-  label: string
-  nameEn: string
+  label: ThemeTabLabel
   filterKeywords: string[]
 }
 
-const THEME_TABS: OccasionThemeTab[] = [
-  { id: 'all', label: '전체', nameEn: 'All', filterKeywords: ['전체'] },
-  {
-    id: 'daily',
-    label: '🌿 데일리',
-    nameEn: '🌿 Daily',
-    filterKeywords: ['데일리', 'daily'],
-  },
-  {
-    id: 'wedding',
-    label: '💍 웨딩',
-    nameEn: '💍 Wedding',
-    filterKeywords: ['웨딩'],
-  },
-  {
-    id: 'date',
-    label: '💖 데이트',
-    nameEn: '💖 Date',
-    filterKeywords: ['데이트'],
-  },
-  {
-    id: 'office',
-    label: '💼 오피스',
-    nameEn: '💼 Office',
-    filterKeywords: ['오피스', '면접'],
-  },
-  {
-    id: 'travel',
-    label: '✈️ 여행',
-    nameEn: '✈️ Travel',
-    filterKeywords: ['여행', '트립', '바캉스'],
-  },
-  {
-    id: 'party',
-    label: '🎉 파티',
-    nameEn: '🎉 Party',
-    filterKeywords: ['파티'],
-  },
-]
+const SITUATION_DEMO_CAPTIONS = ['🌿 데일리', '✈️ 여행', '🎉 파티'] as const
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? '')
@@ -63,14 +27,101 @@ function extractPureThemeKeyword(raw: string): string {
     .trim()
 }
 
+const THEME_TABS: OccasionThemeTab[] = THEME_TAB_LABELS.map((label) => {
+  const keyword = extractPureThemeKeyword(label)
+  return {
+    id: label === '전체' ? 'all' : keyword,
+    label,
+    filterKeywords: [keyword],
+  }
+})
+
+function hubFieldIncludesKeyword(value: string, keyword: string): boolean {
+  return String(value ?? '').includes(keyword)
+}
+
+function hubItemMatchesKeyword(item: NailDesignRow, keyword: string): boolean {
+  const needle = keyword.trim()
+  if (!needle) return false
+  if (hubFieldIncludesKeyword(item.category, needle)) return true
+  if (hubFieldIncludesKeyword(item.title, needle)) return true
+  if ((item.tags ?? []).some((tag) => hubFieldIncludesKeyword(tag, needle))) return true
+  if ((item.situations ?? []).some((situation) => hubFieldIncludesKeyword(situation, needle))) {
+    return true
+  }
+  return false
+}
+
+function themeFilterKeywords(tab: OccasionThemeTab): string[] {
+  return tab.filterKeywords.filter((k) => k !== '전체')
+}
+
+function hubItemMatchesThemeTab(item: NailDesignRow, tab: OccasionThemeTab): boolean {
+  const keywords = themeFilterKeywords(tab)
+  if (keywords.length === 0) return true
+  return keywords.some((keyword) => hubItemMatchesKeyword(item, keyword))
+}
+
+function findFirstHubMatch(pool: NailDesignRow[], keyword: string): NailDesignRow | undefined {
+  const needle = keyword.trim()
+  if (!needle || pool.length === 0) return undefined
+  return pool.find((item) => hubItemMatchesKeyword(item, needle))
+}
+
+function findFirstHubMatchByTab(pool: NailDesignRow[], tab: OccasionThemeTab): NailDesignRow | undefined {
+  if (pool.length === 0) return undefined
+  const keywords = themeFilterKeywords(tab)
+  if (keywords.length === 0) return pool[0]
+  return pool.find((item) => hubItemMatchesThemeTab(item, tab))
+}
+
+function nailDisplayTitle(nail: NailDesignRow | undefined, isEnglish: boolean): string | null {
+  if (!nail) return null
+  const en = nail.title_en?.trim()
+  const ko = nail.title?.trim()
+  if (isEnglish && en) return en
+  return ko || en || null
+}
+
+function resolveThemeTabIndex(searchParams: URLSearchParams): number {
+  const rawTheme = searchParams.get('theme')?.trim()
+  if (rawTheme) {
+    const pureTheme = extractPureThemeKeyword(rawTheme)
+    const byTheme = THEME_TABS.findIndex(
+      (tab) =>
+        tab.label === pureTheme ||
+        tab.filterKeywords.includes(rawTheme) ||
+        tab.filterKeywords.includes(pureTheme),
+    )
+    if (byTheme >= 0) return byTheme
+  }
+
+  const rawTab = searchParams.get('tab')?.trim()
+  if (rawTab) {
+    const pureTab = extractPureThemeKeyword(rawTab)
+    const byTab = THEME_TABS.findIndex(
+      (tab) =>
+        tab.label === pureTab ||
+        tab.id === rawTab ||
+        tab.filterKeywords.includes(rawTab) ||
+        tab.filterKeywords.includes(pureTab),
+    )
+    if (byTab >= 0) return byTab
+  }
+
+  return 0
+}
+
 /** V1 `OccasionNailThumb` — 퍼블리싱만 (이미지 영역은 플레이스홀더) */
 function OccasionNailThumbShell({
   caption,
   variant,
+  imageUrl,
   onActivate,
 }: {
   caption: string
   variant: 'carousel' | 'grid'
+  imageUrl?: string | null
   onActivate: () => void
 }) {
   const FRAME =
@@ -100,7 +151,17 @@ function OccasionNailThumbShell({
       }}
     >
       <div className={`${FRAME} ${frameExtra}`}>
-        <div className="h-full w-full animate-pulse bg-gray-100" aria-hidden />
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={caption}
+            className="h-full w-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="h-full w-full animate-pulse bg-gray-100" aria-hidden />
+        )}
       </div>
       <div
         className={`${CAPTION_GAP} flex w-full min-w-0 flex-col items-center justify-center`}
@@ -113,55 +174,21 @@ function OccasionNailThumbShell({
 
 /**
  * V1 `OccasionPage.tsx` UI 이식 — `/client/theme`.
- * 데이터·필터·목록 API는 연결하지 않음(플레이스홀더). 전체보기/검색은 갤러리 스텁.
  */
 export default function ClientPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [active, setActive] = useState<number | null>(0)
+  const [active, setActive] = useState<number | null>(() =>
+    resolveThemeTabIndex(searchParams),
+  )
   const tabContainerRef = useRef<HTMLDivElement | null>(null)
+  const { data: hubData = [] } = useRecommendHubQuery()
 
   const isEnglish = false
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   useEffect(() => {
-    const rawTheme = searchParams.get('theme')?.trim()
-    if (rawTheme) {
-      const pureTheme = extractPureThemeKeyword(rawTheme)
-      const byTheme = THEME_TABS.findIndex(
-        (tab) =>
-          tab.label === pureTheme ||
-          tab.filterKeywords.includes(rawTheme) ||
-          tab.filterKeywords.includes(pureTheme),
-      )
-      if (byTheme >= 0) {
-        setActive(byTheme)
-        return
-      }
-    }
-
-    const rawTab = searchParams.get('tab')?.trim()
-    if (rawTab) {
-      const pureTab = extractPureThemeKeyword(rawTab)
-      const byTab = THEME_TABS.findIndex(
-        (tab) =>
-          tab.label === pureTab ||
-          tab.id === rawTab ||
-          tab.filterKeywords.includes(rawTab) ||
-          tab.filterKeywords.includes(pureTab),
-      )
-      if (byTab >= 0) {
-        setActive(byTab)
-        return
-      }
-    }
-
-    if (!rawTab) {
-      setActive(0)
-      return
-    }
-
-    setActive(0)
+    setActive(resolveThemeTabIndex(searchParams))
   }, [searchParams])
 
   useEffect(() => {
@@ -179,19 +206,52 @@ export default function ClientPage() {
       }
     }, 150)
     return () => window.clearTimeout(timer)
-  })
+  }, [active])
 
   const tabIndex =
     active !== null && active >= 0 && active < THEME_TABS.length ? active : 0
   const activeTabDef = THEME_TABS[tabIndex]!
 
-  const stubGallery = () => navigate('/client/gallery')
+  const heroNail = useMemo(
+    () => findFirstHubMatchByTab(hubData, activeTabDef),
+    [hubData, activeTabDef],
+  )
 
-  const situationDemoCaptions = ['🌿 데일리', '✈️ 여행', '🎉 파티']
+  const situationMatches = useMemo(
+    () =>
+      SITUATION_DEMO_CAPTIONS.map((cap) =>
+        findFirstHubMatch(hubData, extractPureThemeKeyword(cap)),
+      ),
+    [hubData],
+  )
+
+  const galleryItems = useMemo(
+    () => hubData.filter((item) => hubItemMatchesThemeTab(item, activeTabDef)).slice(0, 4),
+    [hubData, activeTabDef],
+  )
+
+  const goDetail = (nail?: NailDesignRow) => {
+    if (!nail?.id) return
+    navigate(`/client/detail/${nail.id}`, {
+      state: {
+        initialNailData: {
+          id: nail.id,
+          imageUrl: nail.image_url,
+          title: nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? 'Nail Design' : '네일 디자인'),
+          color: '',
+          mood: '',
+        },
+      },
+    })
+  }
+
+  const heroImageUrl = heroNail?.image_url?.trim() ?? null
+  const heroTitle =
+    nailDisplayTitle(heroNail, isEnglish) ?? (isEnglish ? 'Recommended nails' : '추천 네일')
 
   return (
     <div className="relative mx-auto max-w-md bg-white pb-24">
-      <header className="sticky top-0 z-50 relative flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-md">
+      <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -211,7 +271,7 @@ export default function ClientPage() {
           type="button"
           aria-label={isEnglish ? 'Search' : '검색'}
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-          onClick={stubGallery}
+          onClick={() => navigate('/client/gallery')}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
@@ -223,7 +283,7 @@ export default function ClientPage() {
             {isEnglish ? 'View by Theme' : '테마별 모아보기'}
           </h2>
           <Link
-            to="/client/theme-list"
+            to={`/client/theme-list?tab=${extractPureThemeKeyword(activeTabDef?.label || '전체')}`}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {viewAllLabel}
@@ -246,8 +306,12 @@ export default function ClientPage() {
                   setSearchParams(
                     (prev) => {
                       const next = new URLSearchParams(prev)
-                      const tabValue = tab.label
-                      next.set('tab', tabValue)
+                      const tabValue = extractPureThemeKeyword(tab.label)
+                      if (tab.id === 'all') {
+                        next.delete('tab')
+                      } else {
+                        next.set('tab', tabValue)
+                      }
                       next.delete('theme')
                       return next
                     },
@@ -259,9 +323,9 @@ export default function ClientPage() {
                     ? 'border-b-2 border-gray-900 text-gray-900'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
-                aria-label={`${isEnglish && tab.nameEn ? tab.nameEn : tab.label} ${isEnglish ? 'tab' : '탭'}`}
+                aria-label={`${tab.label} ${isEnglish ? 'tab' : '탭'}`}
               >
-                {isEnglish && tab.nameEn ? tab.nameEn : tab.label}
+                {tab.label}
               </button>
             )
           })}
@@ -271,30 +335,38 @@ export default function ClientPage() {
         <section className="mb-0 mt-5 px-4" aria-label="테마 히어로">
           <div
             className={`${OCCASION_HERO_BANNER_FRAME} cursor-pointer`}
-            onClick={stubGallery}
+            onClick={() => goDetail(heroNail)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                stubGallery()
+                goDetail(heroNail)
               }
             }}
             role="button"
             tabIndex={0}
           >
             <div className="absolute inset-0">
-              <div
-                className="h-full w-full animate-pulse bg-gray-200"
-                aria-hidden
-              />
+              {heroImageUrl ? (
+                <img
+                  src={heroImageUrl}
+                  alt={heroTitle}
+                  className="h-full w-full object-cover object-center"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div
+                  className="h-full w-full animate-pulse bg-gray-200"
+                  aria-hidden
+                />
+              )}
             </div>
             <div className="absolute inset-x-5 bottom-5 z-10">
               <div className="relative z-10">
                 <h2
                   className={`${NAIL_HERO_BANNER_TITLE_CLASS} truncate leading-tight`}
                 >
-                  {isEnglish
-                    ? `Theme preview — ${activeTabDef.nameEn}`
-                    : `테마 미리보기 — ${extractPureThemeKeyword(activeTabDef.label)}`}
+                  {heroTitle}
                 </h2>
               </div>
             </div>
@@ -307,7 +379,7 @@ export default function ClientPage() {
               {isEnglish ? 'Recommended by Occasion' : '상황별 추천 네일'}
             </h2>
             <Link
-              to="/client/situation-list"
+              to="/client/situation-list?tab=전체"
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {viewAllLabel}
@@ -316,14 +388,19 @@ export default function ClientPage() {
 
           <section className="mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide">
             <div className="mb-0 flex items-center gap-4 pb-0">
-              {situationDemoCaptions.map((cap) => (
-                <OccasionNailThumbShell
-                  key={cap}
-                  variant="carousel"
-                  caption={cap}
-                  onActivate={stubGallery}
-                />
-              ))}
+              {SITUATION_DEMO_CAPTIONS.map((cap, index) => {
+                const nail = situationMatches[index]
+                const caption = nailDisplayTitle(nail, isEnglish) ?? cap
+                return (
+                  <OccasionNailThumbShell
+                    key={cap}
+                    variant="carousel"
+                    caption={caption}
+                    imageUrl={nail?.image_url?.trim() ?? null}
+                    onActivate={() => goDetail(nail)}
+                  />
+                )
+              })}
             </div>
           </section>
         </div>
@@ -333,21 +410,23 @@ export default function ClientPage() {
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Explore Gallery' : '갤러리 탐색'}
             </h2>
-            <Link
-              to="/client/gallery-explore-list"
+            <button
+              type="button"
               className="cursor-pointer text-sm font-medium text-gray-500"
+              onClick={() => navigate('/client/theme-list?tab=전체')}
             >
               {viewAllLabel}
-            </Link>
+            </button>
           </div>
 
           <div className="mb-0 grid grid-cols-2 gap-4 px-4 pb-0">
-            {[0, 1, 2, 3].map((i) => (
+            {galleryItems.map((nail) => (
               <OccasionNailThumbShell
-                key={i}
+                key={nail.id}
                 variant="grid"
-                caption={isEnglish ? `Gallery ${i + 1}` : `갤러리 ${i + 1}`}
-                onActivate={stubGallery}
+                caption={nail.title?.trim() || (isEnglish ? 'Gallery' : '갤러리')}
+                imageUrl={nail.image_url?.trim() ?? null}
+                onActivate={() => goDetail(nail)}
               />
             ))}
           </div>
