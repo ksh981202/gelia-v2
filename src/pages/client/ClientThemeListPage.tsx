@@ -347,7 +347,7 @@ export default function ClientThemeListPage() {
                 </li>
               ) : (
                 <>
-                  {galleryItems.map((item) => (
+                  {galleryItems.map((item, index) => (
                     <li key={item.id}>
                       <Link
                         to={`/client/detail/${item.id}`}
@@ -369,7 +369,8 @@ export default function ClientThemeListPage() {
                               src={item.image_url}
                               alt={displayItemTitle(item)}
                               className="h-full w-full min-h-0 rounded-xl object-cover object-center"
-                              loading="lazy"
+                              loading={index < 4 ? 'eager' : 'lazy'}
+                              fetchPriority={index < 4 ? 'high' : undefined}
                               decoding="async"
                             />
                           ) : null}

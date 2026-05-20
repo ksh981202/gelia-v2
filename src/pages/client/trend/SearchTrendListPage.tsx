@@ -1,33 +1,157 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  DEFAULT_GALLERY_SORT,
+  useGalleryCountQuery,
+  useGalleryInfiniteQuery,
+} from "@/entities/nail-design/api/useGalleryInfiniteQuery";
+import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
+import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
-// 사진 2 기반 탭 데이터 (메인 화면의 순위 데이터 활용)
-const TREND_TABS = [
-  "1위 시럽 네일",
-  "2위 누드 톤",
-  "3위 마그넷",
-  "4위 화이트 프렌치",
-  "5위 글리터 포인트",
-];
+const TREND_LIMIT = 20;
+const SEARCH_TREND_SCROLL_Y_KEY = "gelia_search_trend_scroll_y";
+const SEARCH_TREND_SCROLL_ITEMS_KEY = "gelia_search_trend_scroll_items";
 
-// 더미 데이터
-const DUMMY_ITEMS = [
-  { id: 1, title: "웨딩 핑크 조개", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-  { id: 2, title: "올드머니 레드 시럽 글리터", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 3, title: "발레코어 투명 풀스톤", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-  { id: 4, title: "여행 투명 마블 자개", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: 5, title: "투명 마블 웨딩 라인테이프", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-  { id: 6, title: "블랙 시럽 자개", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-];
+function normalizeKeyword(raw: string | null | undefined): string {
+  return String(raw ?? "").trim();
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
 
 export default function SearchTrendListPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("1위 시럽 네일");
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    data: popularTrends = [],
+    isLoading: isTrendsLoading,
+    isError: isTrendsError,
+  } = usePopularSearchTrends(TREND_LIMIT);
+
+  const firstKeyword = useMemo(
+    () => normalizeKeyword(popularTrends.find((trend) => normalizeKeyword(trend.keyword))?.keyword),
+    [popularTrends],
+  );
+  const keywordParam = normalizeKeyword(searchParams.get("keyword"));
+  const activeKeyword = keywordParam || firstKeyword;
+  const isGalleryEnabled = activeKeyword.length > 0;
+
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGalleryInfiniteQuery(activeKeyword, DEFAULT_GALLERY_SORT, { enabled: isGalleryEnabled });
+
+  const galleryItems = useMemo(
+    () => data?.pages.flatMap((page) => page) ?? [],
+    [data],
+  );
+  const { data: totalCount } = useGalleryCountQuery(activeKeyword, { enabled: isGalleryEnabled });
+  const totalCountLabel = totalCount == null ? "-" : totalCount.toLocaleString();
+
+  const setActiveKeyword = useCallback(
+    (keyword: string) => {
+      const nextKeyword = normalizeKeyword(keyword);
+      if (!nextKeyword) return;
+      const next = new URLSearchParams(searchParams);
+      next.set("keyword", nextKeyword);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const saveListScrollPosition = useCallback(() => {
+    try {
+      sessionStorage.setItem(SEARCH_TREND_SCROLL_Y_KEY, window.scrollY.toString());
+      sessionStorage.setItem(SEARCH_TREND_SCROLL_ITEMS_KEY, galleryItems.length.toString());
+    } catch {
+      // sessionStorage may be unavailable in private or restricted contexts.
+    }
+  }, [galleryItems.length]);
+
+  useEffect(() => {
+    if (keywordParam || !firstKeyword) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("keyword", firstKeyword);
+    setSearchParams(next, { replace: true });
+  }, [firstKeyword, keywordParam, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const el = activeTabButtonRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeKeyword]);
+
+  useEffect(() => {
+    const target = observerRef.current;
+    if (!target || !hasNextPage || !isGalleryEnabled) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isFetchingNextPage) return;
+        void fetchNextPage();
+      },
+      { root: null, rootMargin: "200px", threshold: 0 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeKeyword, fetchNextPage, hasNextPage, isFetchingNextPage, isGalleryEnabled]);
+
+  useEffect(() => {
+    if (navigationType !== "POP") return;
+
+    const savedY = sessionStorage.getItem(SEARCH_TREND_SCROLL_Y_KEY);
+    if (!savedY) return;
+
+    const savedItemsRaw = sessionStorage.getItem(SEARCH_TREND_SCROLL_ITEMS_KEY);
+    const savedItems = savedItemsRaw ? Number.parseInt(savedItemsRaw, 10) : 0;
+    const hasEnoughItems =
+      galleryItems.length > 0 &&
+      (Number.isNaN(savedItems) || savedItems <= 0 || galleryItems.length >= savedItems);
+
+    if (!hasEnoughItems && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+      return;
+    }
+
+    if (!hasEnoughItems) return;
+
+    const y = Number.parseInt(savedY, 10);
+    if (Number.isNaN(y)) return;
+
+    const timer = window.setTimeout(() => {
+      window.scrollTo(0, y);
+      sessionStorage.removeItem(SEARCH_TREND_SCROLL_Y_KEY);
+      sessionStorage.removeItem(SEARCH_TREND_SCROLL_ITEMS_KEY);
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    fetchNextPage,
+    galleryItems.length,
+    hasNextPage,
+    isFetchingNextPage,
+    location.pathname,
+    location.search,
+    navigationType,
+  ]);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white text-slate-900 pb-20">
-      <div className="sticky top-0 z-50 border-b border-gray-100 bg-white shadow-sm">
+    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900 pb-20">
+      <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
@@ -35,56 +159,119 @@ export default function SearchTrendListPage() {
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
             인기 검색어 트렌드
           </h1>
-          <button type="button" className="z-10 p-2 -mr-2">
+          <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/client/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>
         </header>
 
-        {/* 상단 탭: 비활성 탭은 흰색 배경에 테두리 적용 */}
         <section className="w-full flex flex-nowrap gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 pb-2 pt-3 whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch]">
-          {TREND_TABS.map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={
-                  isActive
-                    ? "shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white transition-colors"
-                    : "shrink-0 whitespace-nowrap rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
-                }
-              >
-                {tab}
-              </button>
-            );
-          })}
+          {isTrendsLoading ? (
+            Array.from({ length: 5 }, (_, index) => (
+              <div key={`trend-tab-skel-${index}`} className="h-8 w-24 shrink-0 animate-pulse rounded-full bg-gray-100" aria-hidden />
+            ))
+          ) : (
+            popularTrends.map((trend, index) => {
+              const keyword = normalizeKeyword(trend.keyword);
+              if (!keyword) return null;
+              const isActive = activeKeyword === keyword;
+              return (
+                <button
+                  ref={isActive ? activeTabButtonRef : undefined}
+                  key={`${index + 1}-${keyword}`}
+                  type="button"
+                  onClick={() => setActiveKeyword(keyword)}
+                  className={
+                    isActive
+                      ? "shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-4 py-1.5 text-sm font-medium text-white transition-colors"
+                      : "shrink-0 whitespace-nowrap rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                  }
+                >
+                  {index + 1}위 {keyword}
+                </button>
+              );
+            })
+          )}
           <div className="w-4 shrink-0" aria-hidden="true" />
         </section>
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">78</span> 개의 디자인
+            총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> 개의 디자인
           </span>
-          <button type="button" className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
+          <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
             <span>인기순</span>
             <ChevronDown size={14} className="text-gray-500" />
-          </button>
+          </span>
         </div>
       </div>
 
-      <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
-        {DUMMY_ITEMS.map((item) => (
-          <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
-            <div className="w-full aspect-[3/4] rounded-[20px] overflow-hidden bg-gray-100 border border-black/5">
-              <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center transition-transform hover:scale-105" />
-            </div>
-            <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
-              <p className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-2">{item.title}</p>
-            </div>
-          </article>
-        ))}
-      </main>
+      <ul className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+        {isTrendsError ? (
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">인기 검색어를 불러오지 못했습니다.</li>
+        ) : !isGalleryEnabled && !isTrendsLoading ? (
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">아직 집계된 인기 검색어가 없습니다.</li>
+        ) : isLoading || (isTrendsLoading && !isGalleryEnabled) ? (
+          Array.from({ length: 8 }, (_, index) => (
+            <li key={`search-trend-skel-${index}`} aria-hidden>
+              <div className="flex w-full min-w-0 flex-col gap-2">
+                <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
+                <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+              </div>
+            </li>
+          ))
+        ) : isError ? (
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</li>
+        ) : galleryItems.length === 0 ? (
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</li>
+        ) : (
+          <>
+            {galleryItems.map((item, index) => {
+              const title = displayItemTitle(item);
+              return (
+                <li key={item.id}>
+                  <Link
+                    to={`/client/detail/${item.id}`}
+                    state={{ initialNailData: { ...item, imageUrl: item.image_url, title } }}
+                    onClick={saveListScrollPosition}
+                    className="flex min-w-0 cursor-pointer flex-col gap-2"
+                  >
+                    <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 border border-black/5">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={title}
+                          className="h-full w-full object-cover object-center transition-transform hover:scale-105"
+                          loading={index < 4 ? "eager" : "lazy"}
+                          decoding="async"
+                          fetchPriority={index < 4 ? "high" : undefined}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.parentElement?.classList.add("animate-pulse", "bg-gray-100");
+                          }}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                      <p className="w-full truncate text-center text-sm font-medium tracking-tight text-gray-800">{title}</p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+            {isFetchingNextPage
+              ? [0, 1].map((index) => (
+                  <li key={`search-trend-next-skel-${index}`} aria-hidden>
+                    <div className="flex w-full min-w-0 flex-col gap-2">
+                      <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
+                      <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+                    </div>
+                  </li>
+                ))
+              : null}
+          </>
+        )}
+      </ul>
+      <div ref={observerRef} className="h-10 px-4 pb-4" aria-hidden />
     </div>
   );
 }

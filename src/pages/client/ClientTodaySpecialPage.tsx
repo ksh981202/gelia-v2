@@ -1,39 +1,74 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { Bookmark, ChevronLeft, Search } from 'lucide-react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { editorPickNoteFromRow } from '../../lib/editorPickNote'
 
-function formatTodayBadgeLabel(d = new Date()): string {
+type EditorPick = NailDesignRow & { editorNote: string }
+
+function formatTodayPickBadgeLabel(d = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `TODAY. ${m}.${day}`
 }
 
-const img = (w: number, h: number) => `https://placehold.co/${w}x${h}/e8e8e8/666666?text=+`
+function dateSeed(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
-const EDITOR_PICKS = [
-  {
-    id: 1,
-    title: '심플 피치 마블',
-    comment:
-      '중요한 하객으로 참석하는 날, 단정하면서도 고급스러움을 잃지 않는 심플 피치 마블 디자인을 만나보세요.',
-  },
-  {
-    id: 2,
-    title: '로맨틱 로즈 글리터',
-    comment:
-      '은은한 로즈 톤과 글리터 포인트가 어우러져 데이트나 기념일에도 부담 없이 어울리는 조합이에요.',
-  },
-  {
-    id: 3,
-    title: '클린 누드 프렌치',
-    comment:
-      '오피스부터 일상까지 두루 활용하기 좋은 누드 프렌치로, 손끝을 깔끔하고 세련되게 연출해 보세요.',
-  },
-] as const
+function hashString(value: string): number {
+  let hash = 2166136261
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? '').trim()
+  const en = String(item.title_en ?? '').trim()
+  return ko || en || '네일 디자인'
+}
+
+function pickDailySpecialNails(
+  rows: NailDesignRow[],
+  count: number,
+  d = new Date(),
+): EditorPick[] {
+  const seed = dateSeed(d)
+  return rows
+    .filter((row) => row.id && row.image_url)
+    .map((row, index) => ({
+      ...row,
+      editorNote: editorPickNoteFromRow(
+        {
+          title: row.title,
+          description: row.description,
+          styles: (row.styles ?? []).join(', '),
+        },
+        index,
+      ),
+      dailyScore: hashString(`${seed}:${row.id}`),
+    }))
+    .sort((a, b) => a.dailyScore - b.dailyScore)
+    .slice(0, count)
+}
 
 /** V1 에디토리얼 — 정적 매거진 UI (탭·무한 스크롤 없음) */
 export default function ClientTodaySpecialPage() {
   const navigate = useNavigate()
-  const todayLabel = formatTodayBadgeLabel()
+  const today = useMemo(() => new Date(), [])
+  const todayLabel = formatTodayPickBadgeLabel(today)
+  const { data: hubData = [] } = useRecommendHubQuery()
+  const editorPicks = useMemo(
+    () => pickDailySpecialNails(hubData, 3, today),
+    [hubData, today],
+  )
 
   return (
     <div className="relative mx-auto w-full max-w-md bg-white pb-20">
@@ -75,36 +110,42 @@ export default function ClientTodaySpecialPage() {
       </div>
 
       <div className="flex flex-col gap-10">
-        {EDITOR_PICKS.map((pick) => (
+        {editorPicks.map((pick, index) => (
           <article key={pick.id} className="px-4">
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl">
+            <Link
+              to={`/client/detail/${pick.id}`}
+              state={{ initialNailData: pick }}
+              className="relative block aspect-[4/5] w-full overflow-hidden rounded-2xl"
+            >
               <img
-                src={img(600, 800)}
-                alt=""
+                src={pick.image_url}
+                alt={displayItemTitle(pick)}
                 className="h-full w-full object-cover"
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                fetchPriority={index === 0 ? 'high' : undefined}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <button
-                type="button"
+              <span
                 className="absolute right-4 top-4 rounded-full bg-white/70 p-2 backdrop-blur-sm"
                 aria-label="북마크"
               >
                 <Bookmark className="h-4 w-4 text-gray-800" strokeWidth={2} />
-              </button>
+              </span>
               <span className="absolute bottom-10 left-4 rounded-sm bg-orange-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 PICK
               </span>
               <h3 className="absolute bottom-4 left-4 text-lg font-bold text-white">
-                {pick.title}
+                {displayItemTitle(pick)}
               </h3>
-            </div>
+            </Link>
 
             <div className="mt-4 rounded-xl border border-orange-50 bg-[#fdfaf8] p-4">
               <h4 className="mb-2 text-sm font-bold text-gray-900">
                 💅 추천 포인트
               </h4>
               <p className="text-[13px] leading-relaxed text-gray-600">
-                &ldquo;{pick.comment}&rdquo;
+                &ldquo;{pick.description || pick.editorNote}&rdquo;
               </p>
             </div>
           </article>

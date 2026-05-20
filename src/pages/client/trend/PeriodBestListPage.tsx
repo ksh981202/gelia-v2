@@ -1,28 +1,104 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/shared/api/supabaseClient";
+import type { NailDesignRow } from "@/shared/types/database.types";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
-const PERIOD_TABS = ["🔥 일간", "👑 주간", "🏆 월간"];
+const PERIOD_TABS = ["🔥 일간", "👑 주간", "🏆 월간"] as const;
+const PERIOD_SCROLL_Y_KEY = "gelia_period_best_scroll_y";
 
-// 더미 데이터
-const DUMMY_ITEMS = [
-  { id: 1, title: "하객 유니크 코랄 생화", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-  { id: 2, title: "다크 프렌치 조개", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-  { id: 3, title: "웨딩 핑크 조개", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-  { id: 4, title: "올드머니 레드 시럽 글리터", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 5, title: "라벤더 마블 풀스톤", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: 6, title: "발레코어 투명 풀스톤", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-  { id: 7, title: "우아한 화이트 3D 하트", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: 8, title: "청순 누드 트위드", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-];
+type RankingNailRow = NailDesignRow & { ranking_score?: number };
+
+function extractPureThemeKeyword(raw: string): string {
+  return String(raw ?? "")
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveActiveTab(rawTab: string | null): (typeof PERIOD_TABS)[number] {
+  const pure = extractPureThemeKeyword(rawTab ?? "");
+  return PERIOD_TABS.find((tab) => extractPureThemeKeyword(tab) === pure) ?? PERIOD_TABS[0];
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
+
+function useStyleBestRankingQuery(period: string, maxLimit: number) {
+  return useQuery({
+    queryKey: ["nail-designs", "period-best-ranking", { period, maxLimit }],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async ({ signal }): Promise<RankingNailRow[]> => {
+      const { data, error } = await supabase
+        .rpc("get_style_ranking_nails", { p_period: period, p_limit: maxLimit })
+        .abortSignal(signal);
+      if (error) throw error;
+      return (data ?? []) as RankingNailRow[];
+    },
+  });
+}
 
 export default function PeriodBestListPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("🔥 일간");
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const activeTab = useMemo(() => resolveActiveTab(searchParams.get("tab")), [searchParams]);
+  const rankingPeriod = extractPureThemeKeyword(activeTab);
+  const maxLimit = 30;
+  const { data = [], isLoading, isError } = useStyleBestRankingQuery(rankingPeriod, maxLimit);
+  const rankingItems = data.slice(0, maxLimit);
+
+  const setActiveTab = useCallback(
+    (tab: (typeof PERIOD_TABS)[number]) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("tab", extractPureThemeKeyword(tab));
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const saveListScrollPosition = useCallback(() => {
+    try {
+      sessionStorage.setItem(PERIOD_SCROLL_Y_KEY, window.scrollY.toString());
+    } catch {
+      // sessionStorage may be unavailable in private or restricted contexts.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get("tab")) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", extractPureThemeKeyword(PERIOD_TABS[0]));
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    activeTabButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (navigationType !== "POP" || isLoading || rankingItems.length === 0) return;
+    const savedY = sessionStorage.getItem(PERIOD_SCROLL_Y_KEY);
+    if (!savedY) return;
+    const y = Number.parseInt(savedY, 10);
+    if (Number.isNaN(y)) return;
+    const timer = window.setTimeout(() => {
+      window.scrollTo(0, y);
+      sessionStorage.removeItem(PERIOD_SCROLL_Y_KEY);
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [navigationType, location.pathname, isLoading, rankingItems.length]);
 
   return (
-    <div className="relative mx-auto max-w-md bg-gray-50 pb-20 min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
+    <div className="relative mx-auto w-full min-w-0 max-w-md bg-gray-50 pb-20 min-h-screen">
+      <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white backdrop-blur-sm">
         <div className="relative flex h-14 w-full items-center justify-between px-5">
           <button type="button" onClick={() => navigate(-1)} className="p-1 -ml-1">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
@@ -34,13 +110,13 @@ export default function PeriodBestListPage() {
             <Search className="w-5 h-5 text-gray-900" />
           </button>
         </div>
-        
-        {/* 상단 탭: 기존 주황색이 아닌 V1의 둥근 검은색(slate-900) 스타일 적용 */}
+
         <div className="flex flex-nowrap gap-2 overflow-x-auto px-4 pb-2 pt-1 mt-2 mb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth [-webkit-overflow-scrolling:touch]">
           {PERIOD_TABS.map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
+                ref={isActive ? activeTabButtonRef : undefined}
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
@@ -59,33 +135,66 @@ export default function PeriodBestListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <strong className="text-gray-900">20</strong>개의 디자인
+            총 <strong className="text-gray-900">{maxLimit}</strong>개의 디자인
           </span>
-          <button type="button" className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-700 hover:bg-gray-100">
+          <span className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-700">
             <span>인기순</span>
             <ChevronDown className="h-4 w-4 text-gray-500" />
-          </button>
+          </span>
         </div>
       </header>
 
-      {/* 2열 그리드 리스트 */}
-      <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
-        {DUMMY_ITEMS.map((item, index) => (
-          <article key={item.id} className="flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-0">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm">
-              <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center transition-transform hover:scale-105" />
-              {/* 좌측 상단 랭킹 뱃지 */}
-              <span className="absolute left-2 top-2 flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-gray-900/85 px-2 text-xs font-bold text-white shadow-sm backdrop-blur-[2px]">
-                {index + 1}
-              </span>
-            </div>
-            <div className="mt-2 flex w-full min-w-0 justify-center text-center px-1">
-              <span className="block w-full min-w-0 truncate text-center text-sm font-medium tracking-tight text-gray-800">
-                {item.title}
-              </span>
-            </div>
-          </article>
-        ))}
+      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+        {isLoading ? (
+          Array.from({ length: 8 }, (_, index) => (
+            <article key={`period-skel-${index}`} className="flex w-full min-w-0 flex-col gap-2" aria-hidden>
+              <div className="aspect-[3/4] w-full animate-pulse rounded-[20px] bg-gray-100" />
+              <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+            </article>
+          ))
+        ) : isError ? (
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+        ) : rankingItems.length === 0 ? (
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+        ) : (
+          rankingItems.map((item, index) => {
+            const title = displayItemTitle(item);
+            return (
+              <article key={item.id} className="flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-0">
+                <Link
+                  to={`/client/detail/${item.id}`}
+                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title } }}
+                  onClick={saveListScrollPosition}
+                >
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={title}
+                        className="h-full w-full object-cover object-center transition-transform hover:scale-105"
+                        loading={index < 4 ? "eager" : "lazy"}
+                        decoding="async"
+                        fetchPriority={index < 4 ? "high" : undefined}
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.parentElement?.classList.add("animate-pulse", "bg-gray-100");
+                        }}
+                      />
+                    ) : null}
+                    <span className="absolute left-2 top-2 flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-gray-900/85 px-2 text-xs font-bold text-white shadow-sm backdrop-blur-[2px]">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex w-full min-w-0 justify-center text-center px-1">
+                    <span className="block w-full min-w-0 truncate text-center text-sm font-medium tracking-tight text-gray-800">
+                      {title}
+                    </span>
+                  </div>
+                </Link>
+              </article>
+            );
+          })
+        )}
       </main>
     </div>
   );

@@ -7,7 +7,8 @@ export const DEFAULT_GALLERY_TAB = '전체'
 export const DEFAULT_GALLERY_SORT = '인기순'
 
 const GALLERY_COLUMNS =
-  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length'
+  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length,color,mood,design_elements'
+const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const
 
 /** PostgREST `.or()` 구분자(`,`) 및 `ilike` 와일드카드 충돌 방지 */
 function escapePostgrestIlikePattern(raw: string): string {
@@ -16,16 +17,6 @@ function escapePostgrestIlikePattern(raw: string): string {
     .replace(/%/g, '\\%')
     .replace(/_/g, '\\_')
     .replace(/,/g, ' ')
-    .trim()
-}
-
-/** PostgREST `.or()` 구분자(`,`) 및 `cs` 배열 원소 토큰 안전 처리 */
-function escapePostgrestCsToken(raw: string): string {
-  return String(raw ?? '')
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '')
-    .replace(/,/g, ' ')
-    .replace(/\s+/g, ' ')
     .trim()
 }
 
@@ -41,29 +32,30 @@ function buildTabOrFilter(tab: string): string {
     ...new Set(
       normalized
         .split(' ')
-        .map((part) => ({
-          ilike: escapePostgrestIlikePattern(part),
-          cs: escapePostgrestCsToken(part),
-        }))
-        .filter(({ ilike, cs }) => ilike.length > 0 && cs.length > 0 && cs !== DEFAULT_GALLERY_TAB)
-        .map(({ ilike, cs }) => `${ilike}\u0000${cs}`),
+        .map((part) => escapePostgrestIlikePattern(part))
+        .filter((ilike) => ilike.length > 0 && ilike !== DEFAULT_GALLERY_TAB),
     ),
-  ].map((token) => {
-    const [ilike, cs] = token.split('\u0000')
-    return { ilike, cs }
-  })
+  ]
 
   if (tokens.length === 0) return ''
 
   const parts: string[] = []
-  for (const { ilike, cs } of tokens) {
+  for (const ilike of tokens) {
     parts.push(
       `title.ilike.%${ilike}%`,
       `category.ilike.%${ilike}%`,
-      `situations.cs.{${cs}}`,
-      `styles.cs.{${cs}}`,
       `nail_length.ilike.%${ilike}%`,
+      `color.ilike.%${ilike}%`,
+      `mood.ilike.%${ilike}%`,
+      `design_elements.ilike.%${ilike}%`,
     )
+    for (const index of ARRAY_TEXT_FILTER_INDEXES) {
+      parts.push(
+        `situations->>${index}.ilike.%${ilike}%`,
+        `styles->>${index}.ilike.%${ilike}%`,
+        `tags->>${index}.ilike.%${ilike}%`,
+      )
+    }
   }
   return parts.join(',')
 }
@@ -89,12 +81,15 @@ export function normalizeGallerySort(raw: string | null): string {
   return DEFAULT_GALLERY_SORT
 }
 
-export function useGalleryInfiniteQuery(tab: string, sort: string) {
+export function useGalleryInfiniteQuery(tab: string, sort: string, options?: { enabled?: boolean }) {
   const normalizedTab = tab.trim() || DEFAULT_GALLERY_TAB
   const normalizedSort = normalizeGallerySort(sort)
 
   return useInfiniteQuery({
     queryKey: ['nail-designs', 'gallery', 'infinite', { tab: normalizedTab, sort: normalizedSort }],
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: options?.enabled ?? true,
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
       const page = pageParam as number
@@ -121,12 +116,13 @@ export function useGalleryInfiniteQuery(tab: string, sort: string) {
   })
 }
 
-export function useGalleryCountQuery(tab: string) {
+export function useGalleryCountQuery(tab: string, options?: { enabled?: boolean }) {
   const normalizedTab = tab.trim() || DEFAULT_GALLERY_TAB
 
   return useQuery({
     queryKey: ['nail-designs', 'gallery', 'count', { tab: normalizedTab }],
     staleTime: 60 * 1000,
+    enabled: options?.enabled ?? true,
     queryFn: async ({ signal }) => {
       let query = supabase
         .from('nail_designs')

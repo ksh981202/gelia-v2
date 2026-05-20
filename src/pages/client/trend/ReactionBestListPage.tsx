@@ -1,53 +1,137 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/shared/api/supabaseClient";
+import type { NailDesignRow } from "@/shared/types/database.types";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
-// V1 탭 데이터 추출
 const TAB_ITEMS = [
-  { id: "save", name: "📌 압도적 저장" },
-  { id: "like", name: "❤️ 독보적 하트" },
-];
+  { id: "save", name: "📌 압도적 저장", period: "압도적 저장" },
+  { id: "like", name: "❤️ 독보적 하트", period: "독보적 하트" },
+] as const;
+const REACTION_SCROLL_Y_KEY = "gelia_reaction_best_scroll_y";
 
-// 더미 데이터
-const DUMMY_ITEMS = [
-  { id: 1, title: "라벤더 마블 풀스톤", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=800&q=80" }, // 1위 (고화질 권장)
-  { id: 2, title: "블랙 화이트프렌치 스톤", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-  { id: 3, title: "심플 누드 무광 진주", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-  { id: 4, title: "올드머니 레드 시럽 글리터", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 5, title: "우아한 카키 드로잉", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-];
+type ReactionBestSortColumn = "saves" | "likes";
+
+function extractPureThemeKeyword(raw: string): string {
+  return String(raw ?? "")
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
+
+function resolveActiveTab(rawTab: string | null): (typeof TAB_ITEMS)[number] {
+  const pure = extractPureThemeKeyword(rawTab ?? "");
+  return TAB_ITEMS.find((tab) => tab.id === rawTab || extractPureThemeKeyword(tab.name) === pure || tab.period === pure) ?? TAB_ITEMS[0];
+}
+
+function useReactionBestQuery(sortBy: ReactionBestSortColumn, maxLimit: number) {
+  return useQuery({
+    queryKey: ["nail-designs", "reaction-best", { sortBy, maxLimit }],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
+      const { data, error } = await supabase
+        .from("nail_designs")
+        .select("*")
+        .order(sortBy, { ascending: false })
+        .order("id", { ascending: false })
+        .limit(maxLimit)
+        .abortSignal(signal);
+      if (error) throw error;
+      return (data ?? []) as NailDesignRow[];
+    },
+  });
+}
 
 export default function ReactionBestListPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("save");
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const top1 = DUMMY_ITEMS[0];
-  const gridItems = DUMMY_ITEMS.slice(1);
+  const activeTab = useMemo(() => resolveActiveTab(searchParams.get("tab")), [searchParams]);
+  const maxLimit = 30;
+  const sortBy: ReactionBestSortColumn = activeTab.id === "like" ? "likes" : "saves";
+  const { data = [], isLoading, isError } = useReactionBestQuery(sortBy, maxLimit);
+  const top1 = data[0];
+  const remainingList = data.slice(1);
+
+  const setActiveTab = useCallback(
+    (tab: (typeof TAB_ITEMS)[number]) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("tab", extractPureThemeKeyword(tab.name));
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const saveListScrollPosition = useCallback(() => {
+    try {
+      sessionStorage.setItem(REACTION_SCROLL_Y_KEY, window.scrollY.toString());
+    } catch {
+      // sessionStorage may be unavailable in private or restricted contexts.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get("tab")) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", extractPureThemeKeyword(TAB_ITEMS[0].name));
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    activeTabButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (navigationType !== "POP" || isLoading || data.length === 0) return;
+    const savedY = sessionStorage.getItem(REACTION_SCROLL_Y_KEY);
+    if (!savedY) return;
+    const y = Number.parseInt(savedY, 10);
+    if (Number.isNaN(y)) return;
+    const timer = window.setTimeout(() => {
+      window.scrollTo(0, y);
+      sessionStorage.removeItem(REACTION_SCROLL_Y_KEY);
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [navigationType, location.pathname, isLoading, data.length]);
+
+  const detailState = (item: NailDesignRow) => ({
+    initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) },
+  });
 
   return (
-    <div className="max-w-md mx-auto bg-gray-50 min-h-screen flex flex-col pb-20">
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
-        <div className="flex h-14 w-full items-center justify-between px-5">
-          <button type="button" className="p-1 text-gray-800" onClick={() => navigate(-1)}>
+    <div className="max-w-md mx-auto w-full min-w-0 bg-gray-50 min-h-screen flex flex-col pb-20">
+      <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
+        <div className="relative flex h-14 w-full items-center justify-between px-5">
+          <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
+          <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
             유저 반응 BEST
           </h1>
-          <button type="button" className="p-1 text-gray-800" onClick={() => navigate("/client/search")}>
+          <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate("/client/search")}>
             <Search className="w-5 h-5" />
           </button>
         </div>
-        
-        {/* V1 밑줄형 탭 유지 */}
+
         <div className="mb-6 mt-2 flex w-full border-t border-gray-50 px-2 sm:px-4">
           {TAB_ITEMS.map((tab) => (
             <button
+              ref={activeTab.id === tab.id ? activeTabButtonRef : undefined}
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab)}
               className={`flex min-h-[3rem] min-w-0 flex-1 items-center justify-center px-2 py-3 text-center text-sm font-medium leading-tight transition-colors ${
-                activeTab === tab.id
+                activeTab.id === tab.id
                   ? "border-b-2 border-gray-900 text-gray-900"
                   : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
               }`}
@@ -58,49 +142,115 @@ export default function ReactionBestListPage() {
         </div>
       </header>
 
-      <main className="flex-1 pt-4">
-        {/* 1위 카드: 화면 전체 너비 + 내부 텍스트 그라데이션 처리 */}
-        <div className="px-4">
-          <div className="relative block w-full cursor-pointer overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm aspect-[3/4] text-left">
-            <img alt={top1.title} className="h-full w-full object-cover object-center" src={top1.image} />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] min-h-[45%] bg-gradient-to-t from-black/70 via-black/20 to-transparent" aria-hidden />
-            
-            {/* 왕관 뱃지 */}
-            <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-gray-900 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
-              <span>👑</span>
-              <span>1</span>
+      <main className="w-full min-w-0 flex-1 pt-4">
+        {isLoading ? (
+          <>
+            <div className="px-4" aria-hidden>
+              <div className="aspect-[3/4] w-full animate-pulse rounded-[20px] bg-gray-100 shadow-sm" />
             </div>
-            
-            <div className="absolute bottom-4 left-4 z-10 flex w-[calc(100%-2rem)] flex-col items-start">
-              <h2 className="w-full min-w-0 text-left text-lg font-bold leading-snug tracking-tight text-white">
-                {top1.title}
-              </h2>
-            </div>
-          </div>
-        </div>
 
-        {/* 2위 이하: 2열 그리드 리스트 */}
-        <div className="mt-6 grid grid-cols-2 gap-3 px-4">
-          {gridItems.map((item, idx) => {
-            const rank = idx + 2;
-            return (
-              <div key={item.id} className="group flex min-w-0 cursor-pointer flex-col gap-0 text-left">
-                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm">
-                  <img alt={item.title} className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105" src={item.image} />
-                  {/* 일반 숫자 뱃지 */}
-                  <div className="absolute left-2 top-2 z-10 flex h-7 min-w-[1.75rem] items-center justify-center rounded-md bg-gray-900/85 px-1.5 text-xs font-semibold text-white backdrop-blur-sm">
-                    {rank}
-                  </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+              {Array.from({ length: 6 }, (_, index) => (
+                <div key={`reaction-skel-${index}`} className="flex w-full min-w-0 flex-col gap-2" aria-hidden>
+                  <div className="aspect-[3/4] w-full animate-pulse rounded-[20px] bg-gray-100" />
+                  <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
                 </div>
-                <div className="mt-2 flex w-full flex-col items-center justify-center">
-                  <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
-                    {item.title}
-                  </span>
+              ))}
+            </div>
+          </>
+        ) : isError ? (
+          <>
+            <div className="px-4" aria-hidden>
+              <div className="aspect-[3/4] w-full rounded-[20px] bg-gray-100 shadow-sm" />
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+              <p className="col-span-2 py-6 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+            </div>
+          </>
+        ) : !top1 ? (
+          <>
+            <div className="px-4" aria-hidden>
+              <div className="aspect-[3/4] w-full rounded-[20px] bg-gray-100 shadow-sm" />
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+              <p className="col-span-2 py-6 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="px-4">
+              <Link
+                to={`/client/detail/${top1.id}`}
+                state={detailState(top1)}
+                onClick={saveListScrollPosition}
+                className="relative block w-full cursor-pointer overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm aspect-[3/4] text-left"
+              >
+                <img
+                  alt={displayItemTitle(top1)}
+                  className="h-full w-full object-cover object-center"
+                  src={top1.image_url}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    e.currentTarget.parentElement?.classList.add("animate-pulse", "bg-gray-100");
+                  }}
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] min-h-[45%] bg-gradient-to-t from-black/70 via-black/20 to-transparent" aria-hidden />
+                <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-gray-900 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+                  <span>👑</span>
+                  <span>1</span>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                <div className="absolute bottom-4 left-4 z-10 flex w-[calc(100%-2rem)] flex-col items-start">
+                  <h2 className="w-full min-w-0 text-left text-lg font-bold leading-snug tracking-tight text-white">
+                    {displayItemTitle(top1)}
+                  </h2>
+                </div>
+              </Link>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+              {remainingList.map((item, index) => {
+                const rank = index + 2;
+                const title = displayItemTitle(item);
+                return (
+                  <Link
+                    key={item.id}
+                    to={`/client/detail/${item.id}`}
+                    state={detailState(item)}
+                    onClick={saveListScrollPosition}
+                    className="group flex min-w-0 cursor-pointer flex-col gap-0 text-left"
+                  >
+                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm">
+                      <img
+                        alt={title}
+                        className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                        src={item.image_url}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.parentElement?.classList.add("animate-pulse", "bg-gray-100");
+                        }}
+                      />
+                      <div className="absolute left-2 top-2 z-10 flex h-7 min-w-[1.75rem] items-center justify-center rounded-md bg-gray-900/85 px-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+                        {rank}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex w-full flex-col items-center justify-center">
+                      <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
+                        {title}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

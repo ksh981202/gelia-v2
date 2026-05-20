@@ -1,31 +1,115 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams, type To } from 'react-router-dom'
 import {
   COLOR_CURATION_TABS,
   COLOR_HERO_CAPTIONS,
   DEFAULT_COLOR_CURATION,
-  resolveColorCurationIndex,
 } from './colorCurationTabs'
 
 const H_SCROLLBAR_HIDE =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
 
-const img = (w: number, h: number) => `https://placehold.co/${w}x${h}/e8e8e8/666666?text=+`
+const SPRING_THEME_KEYWORDS = ['봄', '핑크', '피치', '벚꽃', '플라워', '코랄'] as const
 
-const THEME_SCROLL_ITEMS = [
-  { id: 1, label: '벚꽃 핑크 그라데이션' },
-  { id: 2, label: '피치 코랄 프렌치' },
-  { id: 3, label: '로맨틱 플라워 아트' },
-  { id: 4, label: '파스텔 핑크 글리터' },
-] as const
+function extractPureThemeKeyword(raw: string | null): string {
+  return String(raw ?? '')
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-const POPULAR_GRID_ITEMS = [
-  { id: 1, label: '인기 핑크 네일' },
-  { id: 2, label: '트렌드 누드 베이지' },
-  { id: 3, label: '화이트 프렌치' },
-  { id: 4, label: '레드 포인트' },
-] as const
+function resolveColorIndex(searchParams: URLSearchParams): number {
+  const raw = searchParams.get('color') ?? searchParams.get('tab')
+  const pure = extractPureThemeKeyword(raw)
+  const idx = COLOR_CURATION_TABS.findIndex(
+    (tab) =>
+      tab.value === pure ||
+      tab.label === raw ||
+      extractPureThemeKeyword(tab.label) === pure,
+  )
+  return idx >= 0 ? idx : 0
+}
+
+function itemFieldIncludesKeyword(
+  value: string | string[] | null | undefined,
+  keyword: string,
+): boolean {
+  const needle = keyword.trim()
+  if (!needle) return false
+  if (Array.isArray(value)) {
+    return value.some((part) => String(part ?? '').includes(needle))
+  }
+  return String(value ?? '').includes(needle)
+}
+
+function itemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): boolean {
+  return keywords.some((keyword) => {
+    if (itemFieldIncludesKeyword(item.color, keyword)) return true
+    if (itemFieldIncludesKeyword(item.mood, keyword)) return true
+    if (itemFieldIncludesKeyword(item.category, keyword)) return true
+    if (itemFieldIncludesKeyword(item.title, keyword)) return true
+    if (itemFieldIncludesKeyword(item.title_en ?? '', keyword)) return true
+    if (itemFieldIncludesKeyword(item.tags ?? [], keyword)) return true
+    if (itemFieldIncludesKeyword(item.situations ?? [], keyword)) return true
+    if (itemFieldIncludesKeyword(item.styles ?? [], keyword)) return true
+    if (itemFieldIncludesKeyword(item.nail_length, keyword)) return true
+    if (itemFieldIncludesKeyword(item.design_elements, keyword)) return true
+    return false
+  })
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? '').trim()
+  const en = String(item.title_en ?? '').trim()
+  return ko || en || '네일 디자인'
+}
+
+function detailState(item: NailDesignRow) {
+  return {
+    initialNailData: {
+      id: item.id,
+      imageUrl: item.image_url,
+      title: displayItemTitle(item),
+      color: item.color ?? '',
+      mood: item.mood ?? '',
+    },
+  }
+}
+
+function EmptyPreviewCards({
+  count,
+  variant,
+}: {
+  count: number
+  variant: 'carousel' | 'grid'
+}) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, index) => (
+        <div
+          key={`color-curation-empty-${variant}-${index}`}
+          className={
+            variant === 'carousel'
+              ? 'flex w-[120px] flex-shrink-0 flex-col gap-2'
+              : 'flex flex-col gap-2'
+          }
+          aria-hidden
+        >
+          <div
+            className={
+              variant === 'carousel'
+                ? 'aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100'
+                : 'aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100'
+            }
+          />
+        </div>
+      ))}
+    </>
+  )
+}
 
 function HorizontalPreviewSection({
   title,
@@ -34,8 +118,8 @@ function HorizontalPreviewSection({
   ariaLabel,
 }: {
   title: string
-  viewAllTo: string
-  items: readonly { id: number; label: string }[]
+  viewAllTo: To
+  items: readonly NailDesignRow[]
   ariaLabel: string
 }) {
   const viewAllLabel = '전체보기 >'
@@ -49,58 +133,97 @@ function HorizontalPreviewSection({
         </Link>
       </div>
       <div className={`flex gap-3 overflow-x-auto px-4 pb-2 ${H_SCROLLBAR_HIDE}`}>
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="flex w-[120px] flex-shrink-0 flex-col gap-2"
-          >
-            <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
-              <img
-                src={img(300, 400)}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <p className="truncate text-center text-[13px] text-gray-800">
-              {item.label}
-            </p>
-          </div>
-        ))}
+        {items.length > 0 ? (
+          items.map((item) => (
+            <Link
+              key={item.id}
+              to={`/client/detail/${item.id}`}
+              state={detailState(item)}
+              className="flex w-[120px] flex-shrink-0 flex-col gap-2"
+            >
+              <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
+                {item.image_url ? (
+                  <img
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : null}
+              </div>
+              <p className="truncate text-center text-[13px] text-gray-800">
+                {displayItemTitle(item)}
+              </p>
+            </Link>
+          ))
+        ) : (
+          <EmptyPreviewCards count={4} variant="carousel" />
+        )}
       </div>
     </section>
   )
 }
 
 /**
- * V1 `ColorPage.tsx` 큐레이션 서브 홈 — 미리보기·더미만 (리스트는 전체보기 → 별도 페이지).
+ * V1 `ColorPage.tsx` 큐레이션 서브 홈 — 기존 UI에 추천 허브 실데이터를 연결한다.
  */
 export default function ClientColorCurationPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabContainerRef = useRef<HTMLElement | null>(null)
+  const { data: hubData = [] } = useRecommendHubQuery()
 
-  const colorParam = searchParams.get('color')
   const activeIdx = useMemo(
-    () => resolveColorCurationIndex(colorParam),
-    [colorParam],
+    () => resolveColorIndex(searchParams),
+    [searchParams],
   )
   const currentColor =
     COLOR_CURATION_TABS[activeIdx]?.value ?? DEFAULT_COLOR_CURATION
   const heroCaption =
     COLOR_HERO_CAPTIONS[currentColor] ?? COLOR_HERO_CAPTIONS['핑크']
+  const currentTabSearch = `?tab=${encodeURIComponent(currentColor)}`
 
-  const colorListHref = `/client/color-list?tab=${encodeURIComponent(currentColor)}`
+  const colorListHref: To = {
+    pathname: '/client/color-list',
+    search: currentTabSearch,
+  }
+  const colorThemeListHref: To = {
+    pathname: '/client/color-theme-list',
+  }
+  const colorPopularListHref: To = {
+    pathname: '/client/color-popular-list',
+  }
+
+  const colorItems = useMemo(
+    () => hubData.filter((item) => itemMatchesKeywords(item, [currentColor])),
+    [hubData, currentColor],
+  )
+  const heroNail = colorItems[0]
+  const themeItems = useMemo(
+    () =>
+      hubData
+        .filter((item) => itemMatchesKeywords(item, SPRING_THEME_KEYWORDS))
+        .slice(0, 4),
+    [hubData],
+  )
+  const popularItems = useMemo(
+    () =>
+      [...hubData]
+        .sort((a, b) => {
+          const aScore = Number(a.popularity ?? 0) + Number(a.views ?? 0)
+          const bScore = Number(b.popularity ?? 0) + Number(b.views ?? 0)
+          return bScore - aScore
+        })
+        .slice(0, 4),
+    [hubData],
+  )
 
   const setColorTab = (idx: number) => {
     const next = COLOR_CURATION_TABS[idx]
     if (!next) return
-    setSearchParams({ color: next.value }, { replace: true })
+    setSearchParams({ tab: next.value }, { replace: true })
   }
-
-  useEffect(() => {
-    if (colorParam && resolveColorCurationIndex(colorParam) >= 0) return
-    setSearchParams({ color: DEFAULT_COLOR_CURATION }, { replace: true })
-  }, [colorParam, setSearchParams])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -189,25 +312,37 @@ export default function ClientColorCurationPage() {
             <div className="w-10 shrink-0" aria-hidden="true" />
           </nav>
 
-          <div className="relative mx-4 aspect-[3/4] w-[calc(100%-2rem)] overflow-hidden rounded-2xl bg-gray-100 shadow-xl sm:aspect-[4/5]">
-            <img
-              src={img(600, 800)}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+          <Link
+            to={heroNail ? `/client/detail/${heroNail.id}` : '#'}
+            state={heroNail ? detailState(heroNail) : undefined}
+            onClick={(e) => {
+              if (!heroNail) e.preventDefault()
+            }}
+            className="relative mx-4 block aspect-[3/4] w-[calc(100%-2rem)] overflow-hidden rounded-2xl bg-gray-100 shadow-xl sm:aspect-[4/5]"
+            aria-disabled={!heroNail}
+          >
+            {heroNail?.image_url ? (
+              <img
+                src={heroNail.image_url}
+                alt={displayItemTitle(heroNail)}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-4 left-4 right-4">
               <p className="truncate text-lg font-bold text-white drop-shadow-md md:text-xl">
-                {heroCaption}
+                {heroNail ? displayItemTitle(heroNail) : heroCaption}
               </p>
             </div>
-          </div>
+          </Link>
         </section>
 
         <HorizontalPreviewSection
           title="올봄을 강타한, 벚꽃 핑크 & 피치"
-          viewAllTo="/client/color-theme-list"
-          items={THEME_SCROLL_ITEMS}
+          viewAllTo={colorThemeListHref}
+          items={themeItems}
           ariaLabel="특정 테마 추천"
         />
 
@@ -219,26 +354,39 @@ export default function ClientColorCurationPage() {
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               실시간 인기 컬러 네일
             </h2>
-            <Link to="/client/color-popular-list" className="text-sm text-gray-500">
+            <Link to={colorPopularListHref} className="text-sm text-gray-500">
               {viewAllLabel}
             </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {POPULAR_GRID_ITEMS.map((item) => (
-              <div key={item.id} className="flex flex-col gap-2">
-                <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100">
-                  <img
-                    src={img(400, 500)}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <p className="truncate text-center text-sm text-gray-800">
-                  {item.label}
-                </p>
-              </div>
-            ))}
+            {popularItems.length > 0 ? (
+              popularItems.map((item) => (
+                <Link
+                  key={item.id}
+                  to={`/client/detail/${item.id}`}
+                  state={detailState(item)}
+                  className="flex flex-col gap-2"
+                >
+                  <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={displayItemTitle(item)}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : null}
+                  </div>
+                  <p className="truncate text-center text-sm text-gray-800">
+                    {displayItemTitle(item)}
+                  </p>
+                </Link>
+              ))
+            ) : (
+              <EmptyPreviewCards count={4} variant="grid" />
+            )}
           </div>
         </section>
       </main>

@@ -1,27 +1,149 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/shared/api/supabaseClient";
+import type { NailDesignRow } from "@/shared/types/database.types";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
-// 사진 2 기반 탭 데이터
-const SHAPE_TABS = ["전체", "⚪ 라운드", "🧊 스퀘어", "🌰 오발/아몬드"];
+const SHAPE_TABS = ["전체", "⚪ 라운드", "🧊 스퀘어", "🌰 오발/아몬드"] as const;
+const SHAPE_SCROLL_Y_KEY = "gelia_shape_best_scroll_y";
+const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 
-// 더미 데이터
-const DUMMY_ITEMS = [
-  { id: 1, title: "심플 피치 마블", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-  { id: 2, title: "청순 수채화 체인", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-  { id: 3, title: "발레코어 화이트", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-  { id: 4, title: "올드머니 생화", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 5, title: "화려한 라벤더 스톤", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: 6, title: "우아한 카키 드로잉", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-];
+function extractPureThemeKeyword(raw: string): string {
+  return String(raw ?? "")
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function escapePostgrestIlikePattern(raw: string): string {
+  return raw
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/,/g, " ")
+    .trim();
+}
+
+function buildShapeOrFilter(shapeKeyword: string): string {
+  const tokens = [
+    ...new Set(
+      shapeKeyword
+        .split(/\s+/)
+        .map((part) => escapePostgrestIlikePattern(part))
+        .filter((part) => part.length > 0 && part !== "전체"),
+    ),
+  ];
+
+  const parts: string[] = [];
+  for (const token of tokens) {
+    parts.push(
+      `nail_length.ilike.%${token}%`,
+      `title.ilike.%${token}%`,
+      `design_elements.ilike.%${token}%`,
+    );
+
+    for (const index of ARRAY_TEXT_FILTER_INDEXES) {
+      parts.push(`tags->>${index}.ilike.%${token}%`);
+    }
+  }
+
+  return parts.join(",");
+}
+
+function resolveActiveTab(rawTab: string | null): (typeof SHAPE_TABS)[number] {
+  const pure = extractPureThemeKeyword(rawTab ?? "");
+  return SHAPE_TABS.find((tab) => tab === rawTab || extractPureThemeKeyword(tab) === pure) ?? SHAPE_TABS[0];
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
+
+function useShapeBestQuery(shapeKeyword: string, maxLimit: number) {
+  return useQuery({
+    queryKey: ["nail-designs", "shape-best-ranking", { shapeKeyword, maxLimit }],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
+      let query = supabase.from("nail_designs").select("*");
+
+      if (shapeKeyword !== "전체") {
+        const shapeFilter = buildShapeOrFilter(shapeKeyword);
+        if (shapeFilter) query = query.or(shapeFilter);
+      }
+
+      const { data, error } = await query
+        .order("popularity", { ascending: false })
+        .order("saves", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(maxLimit)
+        .abortSignal(signal);
+
+      if (error) throw error;
+      return (data ?? []) as NailDesignRow[];
+    },
+  });
+}
 
 export default function ShapeBestListPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("전체");
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const activeTab = useMemo(() => resolveActiveTab(searchParams.get("tab")), [searchParams]);
+  const rankingPeriod = extractPureThemeKeyword(activeTab);
+  const maxLimit = 30;
+  const { data = [], isLoading, isError } = useShapeBestQuery(rankingPeriod, maxLimit);
+  const rankingItems = data.slice(0, maxLimit);
+
+  const setActiveTab = useCallback(
+    (tab: (typeof SHAPE_TABS)[number]) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("tab", extractPureThemeKeyword(tab));
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const saveListScrollPosition = useCallback(() => {
+    try {
+      sessionStorage.setItem(SHAPE_SCROLL_Y_KEY, window.scrollY.toString());
+    } catch {
+      // sessionStorage may be unavailable in private or restricted contexts.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get("tab")) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", extractPureThemeKeyword(SHAPE_TABS[0]));
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    activeTabButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (navigationType !== "POP" || isLoading || rankingItems.length === 0) return;
+    const savedY = sessionStorage.getItem(SHAPE_SCROLL_Y_KEY);
+    if (!savedY) return;
+    const y = Number.parseInt(savedY, 10);
+    if (Number.isNaN(y)) return;
+    const timer = window.setTimeout(() => {
+      window.scrollTo(0, y);
+      sessionStorage.removeItem(SHAPE_SCROLL_Y_KEY);
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [navigationType, location.pathname, isLoading, rankingItems.length]);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white text-slate-900 pb-20">
-      <div className="sticky top-0 z-50 border-b border-gray-100 bg-white shadow-sm">
+    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900 pb-20">
+      <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
@@ -29,17 +151,17 @@ export default function ShapeBestListPage() {
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
             손톱 형태별 인기 네일
           </h1>
-          <button type="button" className="z-10 p-2 -mr-2">
+          <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/client/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>
         </header>
 
-        {/* 상단 탭: 비활성 탭은 흰색 배경에 테두리 적용 */}
         <section className="w-full flex flex-nowrap gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 pb-2 pt-3 whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch]">
           {SHAPE_TABS.map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
+                ref={isActive ? activeTabButtonRef : undefined}
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
@@ -58,26 +180,61 @@ export default function ShapeBestListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">600</span> 개의 디자인
+            총 <span className="font-bold text-[#FF7E67]">{maxLimit}</span> 개의 디자인
           </span>
-          <button type="button" className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
+          <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
             <span>인기순</span>
             <ChevronDown size={14} className="text-gray-500" />
-          </button>
+          </span>
         </div>
       </div>
 
-      <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
-        {DUMMY_ITEMS.map((item) => (
-          <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
-            <div className="w-full aspect-[3/4] rounded-[20px] overflow-hidden bg-gray-100 border border-black/5">
-              <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center transition-transform hover:scale-105" />
-            </div>
-            <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
-              <p className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-2">{item.title}</p>
-            </div>
-          </article>
-        ))}
+      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+        {isLoading ? (
+          Array.from({ length: 8 }, (_, index) => (
+            <article key={`shape-skel-${index}`} className="flex w-full min-w-0 flex-col gap-2" aria-hidden>
+              <div className="aspect-[3/4] w-full animate-pulse rounded-[20px] bg-gray-100" />
+              <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+            </article>
+          ))
+        ) : isError ? (
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+        ) : rankingItems.length === 0 ? (
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+        ) : (
+          rankingItems.map((item, index) => {
+            const title = displayItemTitle(item);
+            return (
+              <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
+                <Link
+                  to={`/client/detail/${item.id}`}
+                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title } }}
+                  onClick={saveListScrollPosition}
+                >
+                  <div className="w-full aspect-[3/4] rounded-[20px] overflow-hidden bg-gray-100 border border-black/5">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={title}
+                        className="h-full w-full object-cover object-center transition-transform hover:scale-105"
+                        loading={index < 4 ? "eager" : "lazy"}
+                        decoding="async"
+                        fetchPriority={index < 4 ? "high" : undefined}
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.parentElement?.classList.add("animate-pulse", "bg-gray-100");
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                    <p className="w-full truncate text-center text-sm font-medium tracking-tight text-gray-800">{title}</p>
+                  </div>
+                </Link>
+              </article>
+            );
+          })
+        )}
       </main>
     </div>
   );

@@ -6,15 +6,15 @@ export type PopularSearchTrendRow = {
   search_count: number
 }
 
-export function usePopularSearchTrends() {
+export function usePopularSearchTrends(limit = 5) {
   return useQuery({
-    queryKey: ['popular-search-trends'],
+    queryKey: ['popular-search-trends', { limit }],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('search_stats')
         .select('keyword, search_count')
         .order('search_count', { ascending: false })
-        .limit(5)
+        .limit(limit)
 
       if (error) throw error
       return (data ?? []) as PopularSearchTrendRow[]

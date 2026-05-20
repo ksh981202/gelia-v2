@@ -301,7 +301,7 @@ export default function ClientGalleryExploreListPage() {
           </p>
         ) : (
           <>
-            {galleryItems.map((item) => (
+            {galleryItems.map((item, index) => (
               <article
                 key={item.id}
                 className="flex cursor-pointer flex-col gap-2"
@@ -321,7 +321,8 @@ export default function ClientGalleryExploreListPage() {
                       src={item.image_url}
                       alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full min-h-0 rounded-xl object-cover object-center"
-                      loading="lazy"
+                      loading={index < 4 ? 'eager' : 'lazy'}
+                      fetchPriority={index < 4 ? 'high' : undefined}
                       decoding="async"
                     />
                   ) : null}

@@ -1,45 +1,93 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 const SEASON_TABS = ['🌸 봄', '🌊 여름', '🍁 가을', '❄️ 겨울'] as const
 
 const SEASON_KEYS = ['봄', '여름', '가을', '겨울'] as const
 
-const SEASON_HERO_CAPTIONS = [
-  '귀여운 소라 트위드',
-  '시원한 오션 블루',
-  '가을 무드 체크',
-  '윈터 실버 글리터',
-] as const
-
-const VACATION_ITEMS = [
-  { id: 1, label: '선셋 코랄 네일' },
-  { id: 2, label: '바다 블루 그라데이션' },
-  { id: 3, label: '트로피컬 파인 네일' },
-  { id: 4, label: '리조트 골드 글리터' },
-] as const
-
-const POPULAR_ITEMS = [
-  { id: 1, label: '봄벚꽃 핑크 네일' },
-  { id: 2, label: '민트 그린 프렌치' },
-  { id: 3, label: '코랄 오렌지 포인트' },
-  { id: 4, label: '라벤더 파스텔 네일' },
-] as const
-
 const H_SCROLLBAR_HIDE =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
 
-const img = (w: number, h: number) => `https://placehold.co/${w}x${h}/e8e8e8/666666?text=+`
+const VACATION_KEYWORDS = ['바캉스', '휴양지', '여행', '여름'] as const
+
+function extractPureSeasonKeyword(raw: string | null): string {
+  return String(raw ?? '')
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function resolveSeasonIndex(rawTab: string | null): number {
+  const pure = extractPureSeasonKeyword(rawTab)
+  const index = SEASON_KEYS.findIndex((season) => season === pure)
+  return index >= 0 ? index : 0
+}
+
+function itemFieldIncludesKeyword(value: string | string[] | null | undefined, keyword: string): boolean {
+  if (Array.isArray(value)) return value.some((part) => String(part ?? '').includes(keyword))
+  return String(value ?? '').includes(keyword)
+}
+
+function itemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): boolean {
+  return keywords.some((keyword) => {
+    if (itemFieldIncludesKeyword(item.category, keyword)) return true
+    if (itemFieldIncludesKeyword(item.title, keyword)) return true
+    if (itemFieldIncludesKeyword(item.title_en ?? '', keyword)) return true
+    if (itemFieldIncludesKeyword(item.tags ?? [], keyword)) return true
+    if (itemFieldIncludesKeyword(item.situations ?? [], keyword)) return true
+    return false
+  })
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? '').trim()
+  const en = String(item.title_en ?? '').trim()
+  return ko || en || '네일 디자인'
+}
 
 export default function ClientSeasonCurationPage() {
   const navigate = useNavigate()
-  const [activeIdx, setActiveIdx] = useState(0)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { data: hubData = [] } = useRecommendHubQuery()
 
   const viewAllLabel = '전체보기 >'
+  const activeIdx = resolveSeasonIndex(searchParams.get('tab'))
   const currentSeason = SEASON_KEYS[activeIdx] ?? SEASON_KEYS[0]
-  const heroCaption =
-    SEASON_HERO_CAPTIONS[activeIdx] ?? SEASON_HERO_CAPTIONS[0]
+  const currentTabSearch = `?tab=${encodeURIComponent(currentSeason)}`
+  const seasonPopularSearch = `?season=${encodeURIComponent(currentSeason)}&tab=${encodeURIComponent(currentSeason)}`
+
+  const seasonItems = useMemo(
+    () => hubData.filter((item) => itemMatchesKeywords(item, [currentSeason])),
+    [hubData, currentSeason],
+  )
+  const heroNail = seasonItems[0]
+  const vacationItems = useMemo(
+    () => hubData.filter((item) => itemMatchesKeywords(item, VACATION_KEYWORDS)).slice(0, 4),
+    [hubData],
+  )
+  const popularItems = useMemo(() => seasonItems.slice(0, 4), [seasonItems])
+
+  const setSeasonTab = (season: string) => {
+    setSearchParams({ tab: season }, { replace: true })
+  }
+
+  const goDetail = (item?: NailDesignRow) => {
+    if (!item?.id) return
+    navigate(`/client/detail/${item.id}`, {
+      state: {
+        initialNailData: {
+          id: item.id,
+          imageUrl: item.image_url,
+          title: displayItemTitle(item),
+          color: '',
+          mood: '',
+        },
+      },
+    })
+  }
 
   return (
     <div className="relative mx-auto max-w-md bg-white pb-24">
@@ -72,7 +120,10 @@ export default function ClientSeasonCurationPage() {
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               시즌별 모아보기
             </h2>
-            <Link to="/client/season-list" className="text-sm text-gray-500">
+            <Link
+              to={{ pathname: '/client/season-list', search: currentTabSearch }}
+              className="text-sm text-gray-500"
+            >
               {viewAllLabel}
             </Link>
           </div>
@@ -88,7 +139,7 @@ export default function ClientSeasonCurationPage() {
                   key={t}
                   type="button"
                   data-active-tab={isActive ? 'true' : 'false'}
-                  onClick={() => setActiveIdx(idx)}
+                  onClick={() => setSeasonTab(SEASON_KEYS[idx] ?? SEASON_KEYS[0])}
                   className="group relative flex flex-col items-center justify-center pb-2"
                 >
                   <span
@@ -110,18 +161,36 @@ export default function ClientSeasonCurationPage() {
             })}
           </nav>
 
-          <div className="relative mt-5 aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-100 sm:aspect-[4/5]">
-            <img
-              src={img(600, 800)}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+          <div
+            className={`${heroNail ? 'cursor-pointer' : ''} relative mt-5 aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-100 sm:aspect-[4/5]`}
+            role={heroNail ? 'button' : undefined}
+            tabIndex={heroNail ? 0 : undefined}
+            onClick={() => goDetail(heroNail)}
+            onKeyDown={(e) => {
+              if (!heroNail) return
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                goDetail(heroNail)
+              }
+            }}
+          >
+            {heroNail?.image_url ? (
+              <img
+                src={heroNail.image_url}
+                alt={displayItemTitle(heroNail)}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4">
-              <p className="truncate text-lg font-bold text-white drop-shadow-md md:text-xl">
-                {heroCaption}
-              </p>
-            </div>
+            {heroNail ? (
+              <div className="absolute bottom-4 left-4 right-4">
+                <p className="truncate text-lg font-bold text-white drop-shadow-md md:text-xl">
+                  {displayItemTitle(heroNail)}
+                </p>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -133,7 +202,10 @@ export default function ClientSeasonCurationPage() {
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               휴양지에서 인생샷 보장! 바캉스 네일 ✈️
             </h2>
-            <Link to="/client/vacation-list" className="text-sm text-gray-500">
+            <Link
+              to={{ pathname: '/client/vacation-list', search: currentTabSearch }}
+              className="text-sm text-gray-500"
+            >
               {viewAllLabel}
             </Link>
           </div>
@@ -141,22 +213,26 @@ export default function ClientSeasonCurationPage() {
           <div
             className={`flex gap-3 overflow-x-auto pb-2 ${H_SCROLLBAR_HIDE}`}
           >
-            {VACATION_ITEMS.map((item) => (
-              <div
+            {vacationItems.map((item) => (
+              <button
                 key={item.id}
-                className="flex w-[120px] flex-shrink-0 flex-col gap-2"
+                type="button"
+                onClick={() => goDetail(item)}
+                className="flex w-[120px] flex-shrink-0 flex-col gap-2 text-left"
               >
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
-                    src={img(300, 400)}
-                    alt=""
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
                     className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 <p className="truncate text-center text-[13px] text-gray-800">
-                  {item.label}
+                  {displayItemTitle(item)}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -170,7 +246,7 @@ export default function ClientSeasonCurationPage() {
               내 손끝에 찰떡, 계절 인기 네일 모음
             </h2>
             <Link
-              to={`/client/season-popular-list?season=${encodeURIComponent(currentSeason)}`}
+              to={{ pathname: '/client/season-popular-list', search: seasonPopularSearch }}
               className="text-sm text-gray-500"
             >
               {viewAllLabel}
@@ -178,19 +254,26 @@ export default function ClientSeasonCurationPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {POPULAR_ITEMS.map((item) => (
-              <div key={item.id} className="flex flex-col gap-2">
+            {popularItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => goDetail(item)}
+                className="flex flex-col gap-2 text-left"
+              >
                 <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
-                    src={img(400, 500)}
-                    alt=""
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
                     className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 <p className="truncate text-center text-sm text-gray-800">
-                  {item.label}
+                  {displayItemTitle(item)}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         </section>

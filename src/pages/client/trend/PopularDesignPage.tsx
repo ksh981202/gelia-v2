@@ -1,3 +1,6 @@
+import { useRecommendHubQuery } from "@/entities/nail-design/api/useRecommendHubQuery";
+import type { NailDesignRow } from "@/shared/types/database.types";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -5,23 +8,17 @@ import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-rea
 const NAIL_THUMB_IMAGE_FRAME = "aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5";
 const NAIL_THUMB_TITLE = "block w-full min-w-0 max-w-full text-center text-sm font-medium tracking-tight text-gray-800 truncate mt-2";
 
-// 각 섹션별 하드코딩 더미 데이터 (사진 2, 3 기반)
-const PERIOD_BEST = [
-  { id: 1, title: "하객 유니크 코랄 생화", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-  { id: 2, title: "다크 프렌치 조개", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-  { id: 3, title: "웨딩 핑크 조개", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-];
-
-const REACTION_BEST = [
-  { id: 4, title: "올드머니 레드 시럽 글리터", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 5, title: "라벤더 마블 풀스톤", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-];
-
-const SHAPE_BEST = [
-  { id: 6, title: "올드머니 레드 시럽 글리터", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 7, title: "라벤더 마블 풀스톤", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: 8, title: "발레코어 투명 풀스톤", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-];
+const SHAPE_KEYWORDS = [
+  "숏",
+  "미디엄",
+  "롱",
+  "오발",
+  "라운드",
+  "스퀘어",
+  "코핀",
+  "아몬드",
+  "발레리나",
+] as const;
 
 const SEARCH_TRENDS = [
   { rank: 1, text: "시럽 네일", status: "up" },
@@ -31,8 +28,99 @@ const SEARCH_TRENDS = [
   { rank: 5, text: "글리터 포인트", status: "down" },
 ];
 
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
+
+function metric(value: unknown): number {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function engagementScore(item: NailDesignRow): number {
+  return Math.max(metric(item.views), metric(item.saves), metric(item.likes));
+}
+
+function compareByEngagementThenNewest(a: NailDesignRow, b: NailDesignRow): number {
+  const byEngagement = engagementScore(b) - engagementScore(a);
+  if (byEngagement !== 0) return byEngagement;
+
+  const aTime = new Date(a.created_at ?? 0).getTime();
+  const bTime = new Date(b.created_at ?? 0).getTime();
+  return bTime - aTime;
+}
+
+function itemMatchesShapeKeyword(item: NailDesignRow): boolean {
+  const haystack = [
+    item.nail_length,
+    item.design_elements,
+    item.title,
+    item.category,
+    ...(item.tags ?? []),
+    ...(item.styles ?? []),
+  ]
+    .map((part) => String(part ?? ""))
+    .join(" ");
+
+  return SHAPE_KEYWORDS.some((keyword) => haystack.includes(keyword));
+}
+
+function initialNailData(item: NailDesignRow) {
+  return {
+    ...item,
+    imageUrl: item.image_url,
+    title: displayItemTitle(item),
+  };
+}
+
 export default function PopularDesignPage() {
   const navigate = useNavigate();
+  const { data: hubData = [] } = useRecommendHubQuery();
+
+  const periodBest = useMemo(
+    () => [...hubData].sort(compareByEngagementThenNewest).slice(0, 6),
+    [hubData],
+  );
+
+  const engagementFallback = useMemo(
+    () => [...hubData].sort(compareByEngagementThenNewest),
+    [hubData],
+  );
+
+  const reactionBest = useMemo(
+    () => {
+      const liked = [...hubData]
+        .filter((item) => metric(item.likes) > 0)
+        .sort((a, b) => metric(b.likes) - metric(a.likes))
+        .slice(0, 6);
+
+      if (liked.length >= 4) return liked;
+
+      const seen = new Set(liked.map((item) => item.id));
+      const fallback = engagementFallback
+        .slice(2, 8)
+        .filter((item) => !seen.has(item.id));
+      return [...liked, ...fallback].slice(0, 6);
+    },
+    [hubData, engagementFallback],
+  );
+
+  const shapeBest = useMemo(
+    () =>
+      [...hubData]
+        .filter(itemMatchesShapeKeyword)
+        .sort(compareByEngagementThenNewest)
+        .slice(0, 6),
+    [hubData],
+  );
+
+  const goDetail = (item: NailDesignRow) => {
+    navigate(`/client/detail/${item.id}`, {
+      state: { initialNailData: initialNailData(item) },
+    });
+  };
 
   return (
     <div className="relative mx-auto min-h-screen max-w-md bg-white pb-24 font-sans text-slate-900 antialiased">
@@ -64,12 +152,23 @@ export default function PopularDesignPage() {
           </div>
           {/* 스크롤바 완벽 숨김 처리 */}
           <div className="flex snap-x gap-4 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {PERIOD_BEST.map((item) => (
-              <article key={item.id} className="flex w-32 flex-none cursor-pointer flex-col snap-start">
+            {periodBest.map((item, index) => (
+              <article
+                key={item.id}
+                className="flex w-32 flex-none cursor-pointer flex-col snap-start"
+                onClick={() => goDetail(item)}
+              >
                 <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center" />
+                  <img
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
+                    className="h-full w-full object-cover object-center"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchPriority={index === 0 ? "high" : undefined}
+                  />
                 </div>
-                <span className={NAIL_THUMB_TITLE}>{item.title}</span>
+                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item)}</span>
               </article>
             ))}
           </div>
@@ -88,12 +187,22 @@ export default function PopularDesignPage() {
             </button>
           </div>
           <div className="flex gap-3 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {REACTION_BEST.map((item) => (
-              <article key={item.id} className="flex w-[260px] shrink-0 cursor-pointer flex-col">
+            {reactionBest.map((item) => (
+              <article
+                key={item.id}
+                className="flex w-[260px] shrink-0 cursor-pointer flex-col"
+                onClick={() => goDetail(item)}
+              >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center" />
+                  <img
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
+                    className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
-                <span className={NAIL_THUMB_TITLE}>{item.title}</span>
+                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item)}</span>
               </article>
             ))}
           </div>
@@ -112,12 +221,22 @@ export default function PopularDesignPage() {
             </button>
           </div>
           <div className="flex snap-x gap-4 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {SHAPE_BEST.map((item) => (
-              <article key={item.id} className="flex w-32 flex-none cursor-pointer flex-col snap-start">
+            {shapeBest.map((item) => (
+              <article
+                key={item.id}
+                className="flex w-32 flex-none cursor-pointer flex-col snap-start"
+                onClick={() => goDetail(item)}
+              >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                  <img src={item.image} alt={item.title} className="h-full w-full object-cover object-center" />
+                  <img
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
+                    className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
-                <span className={NAIL_THUMB_TITLE}>{item.title}</span>
+                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item)}</span>
               </article>
             ))}
           </div>

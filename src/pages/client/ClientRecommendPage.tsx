@@ -122,10 +122,12 @@ function HubThumbnail({
   nail,
   aspectClassName,
   alt,
+  loading = 'lazy',
 }: {
   nail?: NailDesignRow
   aspectClassName: string
   alt: string
+  loading?: 'lazy' | 'eager'
 }) {
   const imageUrl = nail?.image_url?.trim()
   if (imageUrl) {
@@ -134,8 +136,9 @@ function HubThumbnail({
         src={imageUrl}
         alt={alt}
         className={`${aspectClassName} w-full rounded-2xl object-cover object-center shadow-sm`}
-        loading="lazy"
+        loading={loading}
         decoding="async"
+        fetchPriority={loading === 'eager' ? 'high' : undefined}
       />
     )
   }
@@ -249,6 +252,7 @@ export default function ClientRecommendPage() {
                     nail={occasionMatches[index]}
                     aspectClassName="aspect-[4/5]"
                     alt={cardLabel(card.cardTitle, card.cardTitleEn)}
+                    loading={index < 2 ? 'eager' : 'lazy'}
                   />
                   <span className="mt-3 line-clamp-2 w-full text-center text-sm font-medium text-gray-800">
                     {cardLabel(card.cardTitle, card.cardTitleEn)}
@@ -298,6 +302,7 @@ export default function ClientRecommendPage() {
                     nail={styleMatches[index]}
                     aspectClassName="aspect-[3/4]"
                     alt={cardLabel(card.cardTitle, card.cardTitleEn)}
+                    loading={index < 3 ? 'eager' : 'lazy'}
                   />
                   <p className="mt-3 line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
                     {cardLabel(card.cardTitle, card.cardTitleEn)}
@@ -411,6 +416,9 @@ export default function ClientRecommendPage() {
                     src={heroCard.image}
                     alt={heroCard.title}
                     className="absolute inset-0 h-full w-full object-cover"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                   />
                 ) : (
                   <div
