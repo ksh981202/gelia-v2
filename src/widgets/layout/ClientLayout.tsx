@@ -68,6 +68,8 @@ export default function ClientLayout() {
     pathname === '/client/parts-list' ||
     pathname === '/client/art' ||
     pathname === '/client/pattern' ||
+    pathname === '/client/pattern-list' ||
+    pathname === '/client/mood-list' ||
     pathname === '/client/mood'
 
   const hideBottomNav = false

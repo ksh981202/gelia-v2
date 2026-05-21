@@ -1,8 +1,81 @@
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
+import type { NailDesignRow } from '@/shared/types/database.types';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
+const TEXTURE_CAPTIONS = ['시럽 네일', '자석 네일', '미러파우더 네일'] as const;
+const PARTS_CAPTIONS = ['스톤/큐빅 네일', '리본 네일', '진주 네일', '메탈/체인 네일'] as const;
+const PATTERN_CAPTIONS = ['프렌치 네일', '마블 네일', '그라데이션 네일'] as const;
+
+type TrendCardItem = {
+  id: string;
+  name: string;
+  item?: NailDesignRow;
+};
+
+function captionKeyword(caption: string): string {
+  return caption.replace(/\s*네일\s*$/g, '').trim();
+}
+
+function itemSearchText(item: NailDesignRow): string {
+  return [
+    item.title,
+    item.title_en,
+    item.category,
+    item.color,
+    item.mood,
+    item.nail_length,
+    item.design_elements,
+    item.description,
+    ...(item.tags ?? []),
+    ...(item.situations ?? []),
+    ...(item.styles ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function findMatchingNail(pool: NailDesignRow[], caption: string): NailDesignRow | undefined {
+  const keyword = captionKeyword(caption).toLowerCase();
+  const tokens = keyword.split(/[\/\s]+/).filter(Boolean);
+  return pool.find((item) => {
+    const haystack = itemSearchText(item);
+    return haystack.includes(keyword) || tokens.some((token) => haystack.includes(token));
+  });
+}
+
+function buildTrendCards(captions: readonly string[], pool: NailDesignRow[]): TrendCardItem[] {
+  return captions.map((caption) => ({
+    id: caption,
+    name: caption,
+    item: findMatchingNail(pool, caption),
+  }));
+}
+
+function findMoodHero(pool: NailDesignRow[]): NailDesignRow | undefined {
+  return pool.find((item) => {
+    const haystack = itemSearchText(item);
+    return haystack.includes('힙한') || haystack.includes('유니크');
+  });
+}
+
 export default function TrendPage() {
   const navigate = useNavigate();
+  const { data: hubData = [] } = useRecommendHubQuery();
+
+  const textureItems = useMemo(() => buildTrendCards(TEXTURE_CAPTIONS, hubData), [hubData]);
+  const partsItems = useMemo(() => buildTrendCards(PARTS_CAPTIONS, hubData), [hubData]);
+  const patternItems = useMemo(() => buildTrendCards(PATTERN_CAPTIONS, hubData), [hubData]);
+  const moodHeroItem = useMemo(() => findMoodHero(hubData), [hubData]);
+
+  const openDetail = (item?: NailDesignRow) => {
+    if (!item) return;
+    navigate(`/client/detail/${item.id}`, {
+      state: { initialNailData: item },
+    });
+  };
 
   return (
     <div className="relative mx-auto min-h-screen max-w-md bg-gray-50 pb-20 text-gray-900">
@@ -21,6 +94,7 @@ export default function TrendPage() {
         <button
           type="button"
           className="p-2 -mr-2 text-gray-900 transition-colors hover:bg-gray-100 rounded-full"
+          onClick={() => navigate('/client/search')}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
@@ -43,13 +117,20 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
-            {[
-              { id: 1, name: '시럽 네일', img: 'https://picsum.photos/300/400?random=1' },
-              { id: 2, name: '자석 네일', img: 'https://picsum.photos/300/400?random=2' },
-              { id: 3, name: '미러파우더 네일', img: 'https://picsum.photos/300/400?random=3' }
-            ].map(item => (
-              <button key={item.id} type="button" className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
-                <img src={item.img} alt={item.name} className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm" />
+            {textureItems.map(item => (
+              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
+                <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
+                  {item.item?.image_url ? (
+                    <img
+                      src={item.item.image_url}
+                      alt={item.name}
+                      className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                </div>
                 <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
                   {item.name}
                 </span>
@@ -73,14 +154,20 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
-            {[
-              { id: 1, name: '스톤/큐빅 네일', img: 'https://picsum.photos/300/400?random=4' },
-              { id: 2, name: '리본 네일', img: 'https://picsum.photos/300/400?random=5' },
-              { id: 3, name: '진주 네일', img: 'https://picsum.photos/300/400?random=6' },
-              { id: 4, name: '메탈/체인 네일', img: 'https://picsum.photos/300/400?random=7' }
-            ].map(item => (
-              <button key={item.id} type="button" className="flex w-32 shrink-0 snap-start flex-col bg-transparent p-0 text-left">
-                <img src={item.img} alt={item.name} className="w-full aspect-[3/4] rounded-2xl object-cover object-center shadow-sm" />
+            {partsItems.map(item => (
+              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 snap-start flex-col bg-transparent p-0 text-left">
+                <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
+                  {item.item?.image_url ? (
+                    <img
+                      src={item.item.image_url}
+                      alt={item.name}
+                      className="w-full aspect-[3/4] rounded-2xl object-cover object-center shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                </div>
                 <p className="font-sans font-medium text-[13px] sm:text-[14px] text-gray-800 tracking-tight text-center mt-2.5">
                   {item.name}
                 </p>
@@ -104,13 +191,20 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
-            {[
-              { id: 1, name: '프렌치 네일', img: 'https://picsum.photos/300/400?random=8' },
-              { id: 2, name: '마블 네일', img: 'https://picsum.photos/300/400?random=9' },
-              { id: 3, name: '그라데이션 네일', img: 'https://picsum.photos/300/400?random=10' }
-            ].map(item => (
-              <button key={item.id} type="button" className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
-                <img src={item.img} alt={item.name} className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm" />
+            {patternItems.map(item => (
+              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
+                <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
+                  {item.item?.image_url ? (
+                    <img
+                      src={item.item.image_url}
+                      alt={item.name}
+                      className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                </div>
                 <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
                   {item.name}
                 </span>
@@ -134,8 +228,17 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="w-full">
-            <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-gray-100 shadow-sm">
-              <img src="https://picsum.photos/600/300?random=11" alt="핫 트렌드 무드" className="absolute inset-0 w-full h-full object-cover object-center" />
+            <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-gray-100 shadow-sm" onClick={() => openDetail(moodHeroItem)}>
+              {moodHeroItem?.image_url ? (
+                <img
+                  src={moodHeroItem.image_url}
+                  alt="핫 트렌드 무드"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
               <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center">
                 <span className="font-sans font-bold text-[13px] tracking-widest text-white/90 drop-shadow-md mb-1.5">
