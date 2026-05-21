@@ -1,35 +1,199 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  DEFAULT_GALLERY_SORT,
+  DEFAULT_GALLERY_TAB,
+  normalizeGallerySort,
+  useGalleryCountQuery,
+  useGalleryInfiniteQuery,
+} from '@/entities/nail-design/api/useGalleryInfiniteQuery';
+import type { NailDesignRow } from '@/shared/types/database.types';
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
-// V1의 복잡한 로직을 걷어내고 순수 UI 구성을 위한 하드코딩 더미 데이터
-const PARTS_STYLE_TABS = [
-  "전체",
-  "💎 스톤/큐빅",
-  "🎀 리본",
-  "⚪ 진주",
-  "⛓️ 메탈/체인",
-  "🦋 나비",
-];
+const PARTS_TAB_LABELS = ['전체', '💎 스톤/큐빅', '🎀 리본', '⚪ 진주', '⛓️ 메탈/체인', '🦋 나비'] as const;
+const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
+const PARTS_LIST_SCROLL_Y_KEY = 'gelia_parts_list_scroll_y';
+const PARTS_LIST_SCROLL_ITEMS_KEY = 'gelia_parts_list_scroll_items';
+type SortValue = (typeof SORT_OPTIONS)[number];
 
-const DUMMY_ITEMS = [
-  { id: 1, title: "웨딩 핑크 조개", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?w=400&q=80" },
-  { id: 2, title: "발레코어 투명 풀스톤", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&q=80" },
-  { id: 3, title: "라벤더 마블 풀스톤", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=400&q=80" },
-  { id: 4, title: "청순 누드 트위드", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614c3a?w=400&q=80" },
-  { id: 5, title: "청순 파스텔 오피스", image: "https://images.unsplash.com/photo-1516975080661-460ce4178550?w=400&q=80" },
-  { id: 6, title: "발레코어 소라 치크", image: "https://images.unsplash.com/photo-1505330592283-e14b8a213e48?w=400&q=80" },
-];
+function extractPureThemeKeyword(raw: string): string {
+  return String(raw ?? "")
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveActivePartsTab(rawTab: string | null): (typeof PARTS_TAB_LABELS)[number] {
+  const trimmed = rawTab?.trim();
+  if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return '전체';
+  const pure = extractPureThemeKeyword(trimmed);
+  return PARTS_TAB_LABELS.find((tab) => tab === trimmed || extractPureThemeKeyword(tab) === pure) ?? '전체';
+}
+
+function partsTabKeywordForQuery(tab: (typeof PARTS_TAB_LABELS)[number]): string {
+  if (tab === '전체') return DEFAULT_GALLERY_TAB;
+  return extractPureThemeKeyword(tab);
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
+
+function isSortValue(value: string): value is SortValue {
+  return (SORT_OPTIONS as readonly string[]).includes(value);
+}
 
 export default function PartsListPage() {
   const navigate = useNavigate();
-  // 정적 UI 테스트를 위해 '💎 스톤/큐빅' 탭을 기본 선택 상태로 둡니다. (두번째 사진 기준)
-  const [activeTab, setActiveTab] = useState("💎 스톤/큐빅");
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<HTMLDivElement | null>(null);
+
+  const activeTab = useMemo(() => resolveActivePartsTab(searchParams.get('tab')), [searchParams]);
+  const activeTabKeyword = partsTabKeywordForQuery(activeTab);
+  const normalizedSort = normalizeGallerySort(searchParams.get('sort'));
+  const sortType: SortValue = isSortValue(normalizedSort) ? normalizedSort : DEFAULT_GALLERY_SORT;
+
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
+
+  const galleryItems = useMemo(
+    () => data?.pages.flatMap((page) => page) ?? [],
+    [data],
+  );
+  const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
+  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
+
+  const setActiveTab = useCallback(
+    (tab: (typeof PARTS_TAB_LABELS)[number]) => {
+      const next = new URLSearchParams(searchParams);
+      if (tab === '전체') {
+        next.delete('tab');
+      } else {
+        next.set('tab', extractPureThemeKeyword(tab));
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const setGallerySort = useCallback(
+    (sort: SortValue) => {
+      const next = new URLSearchParams(searchParams);
+      if (sort === DEFAULT_GALLERY_SORT) {
+        next.delete('sort');
+      } else {
+        next.set('sort', sort);
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const saveListScrollPosition = useCallback(() => {
+    try {
+      sessionStorage.setItem(PARTS_LIST_SCROLL_Y_KEY, window.scrollY.toString());
+      sessionStorage.setItem(PARTS_LIST_SCROLL_ITEMS_KEY, galleryItems.length.toString());
+    } catch {
+      // sessionStorage may be unavailable in private or restricted contexts.
+    }
+  }, [galleryItems.length]);
+
+  useEffect(() => {
+    const el = activeTabButtonRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!isSortOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const root = sortMenuRef.current;
+      if (!root || root.contains(event.target as Node)) return;
+      setIsSortOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsSortOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isSortOpen]);
+
+  useEffect(() => {
+    const target = observerRef.current;
+    if (!target || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isFetchingNextPage) return;
+        void fetchNextPage();
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeTabKeyword, fetchNextPage, hasNextPage, isFetchingNextPage, sortType]);
+
+  useEffect(() => {
+    if (navigationType !== 'POP') return;
+
+    const savedY = sessionStorage.getItem(PARTS_LIST_SCROLL_Y_KEY);
+    if (!savedY) return;
+
+    const savedItemsRaw = sessionStorage.getItem(PARTS_LIST_SCROLL_ITEMS_KEY);
+    const savedItems = savedItemsRaw ? Number.parseInt(savedItemsRaw, 10) : 0;
+    const hasEnoughItems =
+      galleryItems.length > 0 &&
+      (Number.isNaN(savedItems) || savedItems <= 0 || galleryItems.length >= savedItems);
+
+    if (!hasEnoughItems && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+      return;
+    }
+
+    if (!hasEnoughItems) return;
+
+    const y = Number.parseInt(savedY, 10);
+    if (Number.isNaN(y)) return;
+
+    const timer = window.setTimeout(() => {
+      window.scrollTo(0, y);
+      sessionStorage.removeItem(PARTS_LIST_SCROLL_Y_KEY);
+      sessionStorage.removeItem(PARTS_LIST_SCROLL_ITEMS_KEY);
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    fetchNextPage,
+    galleryItems.length,
+    hasNextPage,
+    isFetchingNextPage,
+    location.pathname,
+    location.search,
+    navigationType,
+  ]);
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-white text-slate-900 pb-20">
-      {/* 상단 헤더 */}
-      <div className="sticky top-0 z-50 border-b border-gray-100 bg-white shadow-sm">
+      {/* 상단 고정 영역 */}
+      <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button
             type="button"
@@ -41,13 +205,13 @@ export default function PartsListPage() {
           </button>
           
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            {/* 탭 이름에 따라 유동적으로 헤더 타이틀이 바뀌게 (사진과 일치시킴) */}
-            {activeTab.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim()}
+            파츠별 모아보기
           </h1>
           
           <button
             type="button"
             className="z-10 p-2 -mr-2"
+            onClick={() => navigate('/client/search')}
             aria-label="검색"
           >
             <Search className="w-6 h-6 text-gray-900" />
@@ -56,10 +220,11 @@ export default function PartsListPage() {
 
         {/* 카테고리 칩 (가로 스크롤) */}
         <section className="w-full flex flex-nowrap gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 pb-2 pt-1 whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch]">
-          {PARTS_STYLE_TABS.map((tab) => {
+          {PARTS_TAB_LABELS.map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
+                ref={isActive ? activeTabButtonRef : undefined}
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
@@ -79,41 +244,103 @@ export default function PartsListPage() {
         {/* 총 디자인 개수 및 정렬 필터 */}
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">289</span> 개의 디자인
+            총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> 개의 디자인
           </span>
-          <button
-            type="button"
-            className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100"
-          >
-            <span>인기순</span>
-            <ChevronDown size={14} className="text-gray-500" />
-          </button>
+          <div ref={sortMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSortOpen((prev) => !prev)}
+              className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100"
+              aria-haspopup="menu"
+              aria-expanded={isSortOpen}
+              aria-label="정렬"
+            >
+              <span>{sortType}</span>
+              <ChevronDown size={14} className="text-gray-500" />
+            </button>
+            {isSortOpen && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-[60] min-w-[120px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setGallerySort(option);
+                      setIsSortOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm ${
+                      sortType === option
+                        ? 'bg-gray-100 font-medium text-gray-900'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 2열 그리드 네일 카드 리스트 (픽셀 퍼펙트 V1 클래스 유지) */}
+      {/* 2열 그리드 네일 카드 리스트 */}
       <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
-        {DUMMY_ITEMS.map((item) => (
-          <article
-            key={item.id}
-            className="flex flex-col gap-2 cursor-pointer"
-          >
-            {/* 사진 2와 동일한 3:4 비율 (V1 클래스: aspect-[3/4]) */}
-            <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100">
-              <img
-                src={item.image}
-                alt={item.title}
-                className="h-full w-full object-cover object-center transition-transform duration-300 hover:scale-105"
-              />
-            </div>
-            <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
-              <p className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-2">
-                {item.title}
-              </p>
-            </div>
-          </article>
-        ))}
+        {isLoading ? (
+          Array.from({ length: 8 }, (_, index) => (
+            <article key={`parts-list-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
+              <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 animate-pulse" />
+              <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+            </article>
+          ))
+        ) : isError ? (
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</p>
+        ) : galleryItems.length === 0 ? (
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 파츠 네일이 없습니다.</p>
+        ) : (
+          <>
+            {galleryItems.map((item, index) => (
+              <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
+                <Link
+                  to={`/client/detail/${item.id}`}
+                  state={{ initialNailData: item }}
+                  onClick={saveListScrollPosition}
+                >
+                  <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={displayItemTitle(item)}
+                        className="h-full w-full object-cover object-center transition-transform duration-300 hover:scale-105"
+                        loading={index < 4 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        fetchPriority={index < 4 ? 'high' : undefined}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement?.classList.add('animate-pulse', 'bg-gray-100');
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                  <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                    <p className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-2">
+                      {displayItemTitle(item)}
+                    </p>
+                  </div>
+                </Link>
+              </article>
+            ))}
+            {isFetchingNextPage
+              ? [0, 1].map((index) => (
+                  <article key={`parts-list-next-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
+                    <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 animate-pulse" />
+                    <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+                  </article>
+                ))
+              : null}
+          </>
+        )}
       </main>
+      <div ref={observerRef} className="h-10 px-4 pb-4" aria-hidden />
     </div>
   );
 }

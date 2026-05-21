@@ -64,12 +64,19 @@ export default function ClientLayout() {
     pathname === '/client/trend' ||
     pathname === '/client/texture' ||
     pathname === '/client/texture-list' ||
+    pathname === '/client/syrup-best' ||
     pathname === '/client/parts' ||
     pathname === '/client/parts-list' ||
+    pathname === '/client/stone-best-list' ||
+    pathname === '/client/marble-best-list' ||
+    pathname === '/client/popular-art-list' ||
+    pathname === '/client/chic-best-list' ||
+    pathname === '/client/full-parts-list' ||
     pathname === '/client/art' ||
     pathname === '/client/pattern' ||
     pathname === '/client/pattern-list' ||
     pathname === '/client/mood-list' ||
+    pathname === '/client/popular-mood-list' ||
     pathname === '/client/mood'
 
   const hideBottomNav = false

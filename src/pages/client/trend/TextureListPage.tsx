@@ -6,12 +6,14 @@ import {
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
 
 const TEXTURE_LIST_TABS = ['전체', '💧 시럽', '☁️ 무광', '✨ 글리터', '🧲 자석', '🪞 미러파우더'] as const;
+const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
 const TEXTURE_LIST_SCROLL_Y_KEY = 'gelia_texture_list_scroll_y';
 const TEXTURE_LIST_SCROLL_ITEMS_KEY = 'gelia_texture_list_scroll_items';
+type SortValue = (typeof SORT_OPTIONS)[number];
 
 function extractPureTextureKeyword(raw: string): string {
   return String(raw ?? '')
@@ -38,17 +40,25 @@ function displayItemTitle(item: NailDesignRow): string {
   return ko || en || '네일 디자인';
 }
 
+function isSortValue(value: string): value is SortValue {
+  return (SORT_OPTIONS as readonly string[]).includes(value);
+}
+
 export default function TextureListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isSortOpen, setIsSortOpen] = useState(false);
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   const activeTab = useMemo(() => resolveActiveTextureTab(searchParams.get('tab')), [searchParams]);
+  const customTitle = searchParams.get('title');
   const activeTabKeyword = textureTabKeywordForQuery(activeTab);
-  const sortType = normalizeGallerySort(searchParams.get('sort'));
+  const normalizedSort = normalizeGallerySort(searchParams.get('sort'));
+  const sortType: SortValue = isSortValue(normalizedSort) ? normalizedSort : '인기순';
 
   const {
     data,
@@ -79,6 +89,19 @@ export default function TextureListPage() {
     [searchParams, setSearchParams],
   );
 
+  const setGallerySort = useCallback(
+    (sort: SortValue) => {
+      const next = new URLSearchParams(searchParams);
+      if (sort === '인기순') {
+        next.delete('sort');
+      } else {
+        next.set('sort', sort);
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const saveListScrollPosition = useCallback(() => {
     try {
       sessionStorage.setItem(TEXTURE_LIST_SCROLL_Y_KEY, window.scrollY.toString());
@@ -93,6 +116,24 @@ export default function TextureListPage() {
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!isSortOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const root = sortMenuRef.current;
+      if (!root || root.contains(event.target as Node)) return;
+      setIsSortOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsSortOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isSortOpen]);
 
   useEffect(() => {
     const target = observerRef.current;
@@ -160,7 +201,7 @@ export default function TextureListPage() {
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[72%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            텍스처별 모아보기
+            {customTitle || '텍스처별 모아보기'}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/client/search')}>
             <Search className="h-6 w-6 text-gray-900" />
@@ -195,10 +236,40 @@ export default function TextureListPage() {
           <span className="text-sm text-gray-500">
             총 <span className="font-bold text-pink-500">{totalCountLabel}</span>개의 디자인
           </span>
-          <span className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700">
-            <span>인기순</span>
-            <ChevronDown size={14} className="text-gray-500" />
-          </span>
+          <div ref={sortMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSortOpen((prev) => !prev)}
+              className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100"
+              aria-haspopup="menu"
+              aria-expanded={isSortOpen}
+              aria-label="정렬"
+            >
+              <span>{sortType}</span>
+              <ChevronDown size={14} className="text-gray-500" />
+            </button>
+            {isSortOpen && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-[60] min-w-[120px] overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setGallerySort(option);
+                      setIsSortOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm ${
+                      sortType === option
+                        ? 'bg-gray-100 font-medium text-gray-900'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

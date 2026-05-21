@@ -14,6 +14,9 @@ import TextureGalleryListPage from '../../pages/client/trend/TextureGalleryListP
 import PartsPage from '../../pages/client/trend/PartsPage'
 import PartsListPage from '../../pages/client/trend/PartsListPage'
 import StoneBestListPage from '../../pages/client/trend/StoneBestListPage'
+import MarbleBestListPage from '../../pages/client/trend/MarbleBestListPage'
+import PopularArtListPage from '../../pages/client/trend/PopularArtListPage'
+import ChicBestListPage from '../../pages/client/trend/ChicBestListPage'
 import FullPartsListPage from '../../pages/client/trend/FullPartsListPage'
 import PopularDesignPage from '../../pages/client/trend/PopularDesignPage'
 import PeriodBestListPage from '../../pages/client/trend/PeriodBestListPage'
@@ -21,8 +24,11 @@ import ReactionBestListPage from '../../pages/client/trend/ReactionBestListPage'
 import ShapeBestListPage from '../../pages/client/trend/ShapeBestListPage'
 import SearchTrendListPage from '../../pages/client/trend/SearchTrendListPage'
 import PatternPage from '../../pages/client/trend/PatternPage'
+import PatternListPage from '../../pages/client/trend/PatternListPage'
 import PatternCurationPage from '../../pages/client/PatternCurationPage'
 import MoodPage from '../../pages/client/trend/MoodPage'
+import MoodListPage from '../../pages/client/trend/MoodListPage'
+import PopularMoodListPage from '../../pages/client/trend/PopularMoodListPage'
 import CategoryPage from '../../pages/client/CategoryPage'
 import SearchMainPage from '../../pages/client/SearchMainPage'
 import ClientLoginPage from '../../pages/client/ClientLoginPage'
@@ -127,12 +133,16 @@ const router = createBrowserRouter([
       { path: 'parts', element: <PartsPage /> },
       { path: 'parts-list', element: <PartsListPage /> },
       { path: 'stone-best-list', element: <StoneBestListPage /> },
+      { path: 'marble-best-list', element: <MarbleBestListPage /> },
+      { path: 'popular-art-list', element: <PopularArtListPage /> },
+      { path: 'chic-best-list', element: <ChicBestListPage /> },
       { path: 'full-parts-list', element: <FullPartsListPage /> },
       { path: 'art', element: <PatternCurationPage /> },
       { path: 'pattern', element: <PatternPage /> },
-      { path: 'pattern-list', element: <ClientThemeListPage /> },
+      { path: 'pattern-list', element: <PatternListPage /> },
       { path: 'mood', element: <MoodPage /> },
-      { path: 'mood-list', element: <ClientSituationListPage /> },
+      { path: 'mood-list', element: <MoodListPage /> },
+      { path: 'popular-mood-list', element: <PopularMoodListPage /> },
       { path: 'test-intro', element: <TestIntroPage /> },
       { path: 'test-step1', element: <TestStep1Page /> },
       { path: 'test-step2', element: <TestStep2Page /> },

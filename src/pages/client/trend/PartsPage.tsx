@@ -1,8 +1,96 @@
-import { useNavigate } from 'react-router-dom';
+import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
+import type { NailDesignRow } from '@/shared/types/database.types';
+import { useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
+
+const PARTS_CATEGORIES = [
+  { label: "스톤/큐빅", img: "/parts/cubic.jpg" },
+  { label: "리본", img: "/parts/ribbon.jpg" },
+  { label: "진주", img: "/parts/pearl.jpg" },
+  { label: "메탈/체인", img: "/parts/metal.jpg" },
+  { label: "나비", img: "/parts/butterfly.jpg" },
+] as const;
+
+function extractPurePartsKeyword(raw: string): string {
+  return String(raw ?? "")
+    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveActivePartsTab(rawTab: string | null): (typeof PARTS_CATEGORIES)[number]["label"] {
+  const pure = extractPurePartsKeyword(rawTab ?? "");
+  return PARTS_CATEGORIES.find((category) => category.label === rawTab || extractPurePartsKeyword(category.label) === pure)?.label ?? "스톤/큐빅";
+}
+
+function displayItemTitle(item: NailDesignRow): string {
+  const ko = String(item.title ?? "").trim();
+  const en = String(item.title_en ?? "").trim();
+  return ko || en || "네일 디자인";
+}
+
+function itemSearchText(item: NailDesignRow): string {
+  return [
+    item.title,
+    item.title_en,
+    item.category,
+    item.color,
+    item.mood,
+    item.nail_length,
+    item.design_elements,
+    item.description,
+    ...(item.tags ?? []),
+    ...(item.situations ?? []),
+    ...(item.styles ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function matchesAnyKeyword(item: NailDesignRow, keywords: string[]): boolean {
+  const haystack = itemSearchText(item);
+  return keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
+}
+
+function filterPartsItems(items: NailDesignRow[], keyword: string): NailDesignRow[] {
+  const tokens = extractPurePartsKeyword(keyword).toLowerCase().split(" ").filter(Boolean);
+  if (tokens.length === 0) return items;
+  return items.filter((item) => matchesAnyKeyword(item, tokens));
+}
 
 export default function PartsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = useMemo(() => resolveActivePartsTab(searchParams.get("tab")), [searchParams]);
+  const activeTabKeyword = extractPurePartsKeyword(activeTab);
+  const { data: hubData = [] } = useRecommendHubQuery();
+
+  const filteredItems = useMemo(() => filterPartsItems(hubData, activeTab), [activeTab, hubData]);
+  const heroItem = filteredItems[0];
+  const stoneBestItems = useMemo(() => hubData.filter((item) => matchesAnyKeyword(item, ["스톤", "큐빅"])).slice(0, 3), [hubData]);
+  const fullPartsItems = useMemo(() => hubData.filter((item) => matchesAnyKeyword(item, ["풀파츠", "파츠", "스와로브스키"])).slice(0, 4), [hubData]);
+
+  useEffect(() => {
+    if (searchParams.get("tab")) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", activeTabKeyword);
+    setSearchParams(next, { replace: true });
+  }, [activeTabKeyword, searchParams, setSearchParams]);
+
+  const setActiveTab = (tab: (typeof PARTS_CATEGORIES)[number]["label"]) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", extractPurePartsKeyword(tab));
+    setSearchParams(next, { replace: true });
+  };
+
+  const openDetail = (item?: NailDesignRow) => {
+    if (!item) return;
+    navigate(`/client/detail/${item.id}`, {
+      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } },
+    });
+  };
 
   return (
     <div className="relative mx-auto min-h-screen max-w-md bg-white pb-28 text-[#1A1A1A]">
@@ -32,40 +120,47 @@ export default function PartsPage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate('/client/parts-list')}
+              onClick={() => navigate(`/client/parts-list?tab=${encodeURIComponent(activeTabKeyword)}`)}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               전체보기 {'>'}
             </button>
           </div>
           <div className="flex items-start gap-4 overflow-x-auto px-5 pb-1.5 pt-1 scrollbar-hide [&::-webkit-scrollbar]:hidden">
-            {[
-              { label: "스톤/큐빅", img: "/parts/cubic.jpg", active: true },
-              { label: "리본", img: "/parts/ribbon.jpg", active: false },
-              { label: "진주", img: "/parts/pearl.jpg", active: false },
-              { label: "메탈/체인", img: "/parts/metal.jpg", active: false },
-              { label: "나비", img: "/parts/butterfly.jpg", active: false },
-            ].map((cat) => (
-              <button key={cat.label} type="button" className="flex shrink-0 flex-col items-center gap-2.5">
-                <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${cat.active ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>
+            {PARTS_CATEGORIES.map((cat) => {
+              const isActive = activeTab === cat.label;
+              return (
+              <button key={cat.label} type="button" onClick={() => setActiveTab(cat.label)} className="flex shrink-0 flex-col items-center gap-2.5">
+                <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${isActive ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>
                   <img alt={cat.label} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} />
                 </div>
-                <span className={`font-sans text-[13px] tracking-tight ${cat.active ? "font-semibold text-gray-900" : "font-medium text-gray-800"}`}>
+                <span className={`font-sans text-[13px] tracking-tight ${isActive ? "font-semibold text-gray-900" : "font-medium text-gray-800"}`}>
                   {cat.label}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* 섹션 2: 히어로 배너 */}
         <section className="mb-0 px-4">
-          <div className="group relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-[20px] shadow-lg">
-            <img alt="발레코어 화이트" className="h-full w-full object-cover object-center" src="https://picsum.photos/600/800?random=6" />
+          <div className="group relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-[20px] shadow-lg" onClick={() => openDetail(heroItem)}>
+            {heroItem?.image_url ? (
+              <img
+                alt={displayItemTitle(heroItem)}
+                className="h-full w-full object-cover object-center"
+                src={heroItem.image_url}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentElement?.classList.add("bg-gray-100");
+                }}
+              />
+            ) : null}
             <div className="absolute inset-x-5 bottom-5">
               <div className="relative z-10">
                 <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
-                  발레코어 화이트
+                  {heroItem ? displayItemTitle(heroItem) : `${activeTab} 네일`}
                 </h2>
               </div>
             </div>
@@ -87,17 +182,21 @@ export default function PartsPage() {
             </button>
           </div>
           <div className="mb-0 flex gap-4 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
-            {[
-              { id: 1, name: '발레코어 화이트', img: 'https://picsum.photos/300/400?random=7' },
-              { id: 2, name: '화려한 라벤더 스톤', img: 'https://picsum.photos/300/400?random=8' },
-              { id: 3, name: '청순 블랙 펄 드로잉', img: 'https://picsum.photos/300/400?random=9' }
-            ].map((item) => (
-              <button key={item.id} type="button" className="flex w-32 shrink-0 flex-col text-center bg-transparent p-0">
+            {stoneBestItems.map((item) => (
+              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-32 shrink-0 flex-col text-center bg-transparent p-0">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
-                  <img src={item.img} alt={item.name} className="h-full w-full object-cover object-center" />
+                  <img
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
+                    className="h-full w-full object-cover object-center"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.parentElement?.classList.add("bg-gray-100");
+                    }}
+                  />
                 </div>
                 <span className="w-full min-w-0 text-[14px] font-medium tracking-tight truncate text-gray-800 px-1">
-                  {item.name}
+                  {displayItemTitle(item)}
                 </span>
               </button>
             ))}
@@ -119,18 +218,21 @@ export default function PartsPage() {
             </button>
           </div>
           <div className="mb-0 grid grid-cols-2 gap-4 pb-10">
-            {[
-              { id: 1, name: '우아한 카키 드로잉', img: 'https://picsum.photos/300/400?random=10' },
-              { id: 2, name: '유니크 실버 리본', img: 'https://picsum.photos/300/400?random=11' },
-              { id: 3, name: '심플 버건디 트위드 진주', img: 'https://picsum.photos/300/400?random=12' },
-              { id: 4, name: '레드 수채화 풀파츠', img: 'https://picsum.photos/300/400?random=13' }
-            ].map((item) => (
-              <article key={item.id} className="flex flex-col gap-0 cursor-pointer">
+            {fullPartsItems.map((item) => (
+              <article key={item.id} className="flex flex-col gap-0 cursor-pointer" onClick={() => openDetail(item)}>
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
-                  <img src={item.img} alt={item.name} className="h-full w-full object-cover object-center" />
+                  <img
+                    src={item.image_url}
+                    alt={displayItemTitle(item)}
+                    className="h-full w-full object-cover object-center"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.parentElement?.classList.add("bg-gray-100");
+                    }}
+                  />
                 </div>
                 <span className="w-full min-w-0 text-center text-[14px] font-medium tracking-tight truncate text-gray-800 px-1">
-                  {item.name}
+                  {displayItemTitle(item)}
                 </span>
               </article>
             ))}

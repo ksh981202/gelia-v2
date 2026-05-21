@@ -119,7 +119,10 @@ const TestStep2Page = () => {
         <button
           type="button"
           disabled={!selectedStyle}
-          onClick={() => navigate("/client/test-step3")}
+          onClick={() => {
+            if (selectedStyle) sessionStorage.setItem("diagnosis.moodId", selectedStyle);
+            navigate("/client/test-step3");
+          }}
           className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-bold text-white shadow-lg shadow-[#FF7D66]/30 disabled:opacity-40"
         >
           다음

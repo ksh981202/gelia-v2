@@ -178,7 +178,7 @@ export default function TexturePage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate(textureListPath)}
+              onClick={() => navigate('/client/syrup-best')}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               전체보기 {'>'}
@@ -215,7 +215,7 @@ export default function TexturePage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate(textureListPath)}
+              onClick={() => navigate('/client/texture-list?title=' + encodeURIComponent('추천 갤러리'))}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               전체보기 {'>'}
