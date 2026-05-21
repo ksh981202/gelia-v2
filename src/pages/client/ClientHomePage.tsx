@@ -1,33 +1,43 @@
 ﻿import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-type HomeNailCard = { id: string; title: string; image: string };
+type HomeNailCard = { id: string; title: string; titleEn: string; image: string };
 
 function toHomeNailCard(row: NailDesignRow): HomeNailCard {
   return {
     id: row.id,
     title: row.title,
+    titleEn: row.title_en,
     image: row.image_url,
   };
 }
 
 const CATEGORY_CHIPS = [
-  { label: "컬러", to: "/client/color-curation", imageUrl: "/maincategory/ic-category-color.png" },
-  { label: "스타일", to: "/client/style-curation", imageUrl: "/maincategory/ic-category-style.png" },
-  { label: "텍스처", to: "/client/texture", imageUrl: "/maincategory/ic-category-texture.png" },
-  { label: "아트&패턴", to: "/client/pattern", imageUrl: "/maincategory/ic-category-art-pattern.png" },
-  { label: "계절", to: "/client/season-curation", imageUrl: "/maincategory/ic-category-season.png" },
-  { label: "맞춤 네일", to: "/client/theme", imageUrl: "/maincategory/ic-category-custom.png" },
+  { label: "컬러", labelEn: "Color", to: "/client/color-curation", imageUrl: "/maincategory/ic-category-color.png" },
+  { label: "스타일", labelEn: "Style", to: "/client/style-curation", imageUrl: "/maincategory/ic-category-style.png" },
+  { label: "텍스처", labelEn: "Texture", to: "/client/texture", imageUrl: "/maincategory/ic-category-texture.png" },
+  { label: "아트&패턴", labelEn: "Art & Pattern", to: "/client/pattern", imageUrl: "/maincategory/ic-category-art-pattern.png" },
+  { label: "계절", labelEn: "Season", to: "/client/season-curation", imageUrl: "/maincategory/ic-category-season.png" },
+  { label: "맞춤 네일", labelEn: "Custom Nails", to: "/client/theme", imageUrl: "/maincategory/ic-category-custom.png" },
 ];
+
+function homeNailTitle(nail: HomeNailCard, isEnglish: boolean) {
+  const en = nail.titleEn?.trim();
+  const ko = nail.title?.trim();
+  return isEnglish && en ? en : ko || en || "";
+}
 
 export default function ClientHomePage() {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isFooterOpen, setIsFooterOpen] = useState(false);
   const { data: feed, isLoading } = useClientHomeFeed();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
 
   const recommendNails = useMemo(
     () => (feed?.recommend ?? []).map(toHomeNailCard),
@@ -44,14 +54,14 @@ export default function ClientHomePage() {
       <section className="mt-2 px-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
-            추천 네일
+            {isEnglish ? "Recommended Nails" : "추천 네일"}
           </h2>
           <button
             type="button"
             onClick={() => navigate('/client/recommend')}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
-            전체보기 {">"}
+            {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
         <div ref={scrollRef} className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -68,11 +78,11 @@ export default function ClientHomePage() {
             : recommendNails.map((nail, index) => (
             <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/client/detail/${nail.id}`)}>
               <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
+                <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} className="h-full w-full object-cover object-center" />
                 <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-5 pt-12">
                   <div className="flex w-full flex-col items-start text-left">
                     <span className="mb-2 inline-block rounded-full bg-[#FF7E67] px-3 py-1 text-[11px] font-bold text-white shadow-sm">PICK</span>
-                    <h3 className="w-full truncate text-[22px] font-bold text-white drop-shadow-md">{nail.title}</h3>
+                    <h3 className="w-full truncate text-[22px] font-bold text-white drop-shadow-md">{homeNailTitle(nail, isEnglish)}</h3>
                   </div>
                 </div>
                 {index > 0 && (
@@ -94,14 +104,14 @@ export default function ClientHomePage() {
       <div className="w-full mt-10 mb-10 px-5">
         <div className="relative w-full overflow-hidden rounded-[24px] bg-gradient-to-br from-[#fff5f5] to-[#fffafa] px-6 py-7 shadow-sm border border-rose-50">
           <div className="relative z-10 flex flex-col items-start w-[65%]">
-            <h3 className="text-[18px] font-bold text-gray-900 leading-tight">내 손에 찰떡인 네일 찾기</h3>
-            <p className="mt-1.5 text-[13px] text-gray-500">간단한 테스트로 인생 네일 찾기</p>
+            <h3 className="text-[18px] font-bold text-gray-900 leading-tight">{isEnglish ? "Find Nails Made for Your Hands" : "내 손에 찰떡인 네일 찾기"}</h3>
+            <p className="mt-1.5 text-[13px] text-gray-500">{isEnglish ? "Discover your perfect nail style with a quick test" : "간단한 테스트로 인생 네일 찾기"}</p>
             <button
               type="button"
               onClick={() => navigate('/client/test-intro')}
               className="mt-5 flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[13px] font-bold text-white transition-transform active:scale-95"
             >
-              테스트 시작하기 <span className="ml-1 text-[10px]">➔</span>
+              {isEnglish ? "Start Test" : "테스트 시작하기"} <span className="ml-1 text-[10px]">➔</span>
             </button>
           </div>
           <div className="absolute right-4 bottom-4 w-[100px] h-[100px] pointer-events-none">
@@ -115,8 +125,8 @@ export default function ClientHomePage() {
 
       <section className="mb-12 px-5">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-[20px] font-bold tracking-tight text-gray-900">트렌드 네일</h2>
-          <span onClick={() => navigate('/client/trend')} className="cursor-pointer text-sm font-medium text-gray-500">전체보기 {">"}</span>
+          <h2 className="text-[20px] font-bold tracking-tight text-gray-900">{isEnglish ? "Trending Nails" : "트렌드 네일"}</h2>
+          <span onClick={() => navigate('/client/trend')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {isLoading
@@ -129,9 +139,9 @@ export default function ClientHomePage() {
             : trendNails.map((nail) => (
                 <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
+                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} className="h-full w-full object-cover object-center" />
                   </div>
-                  <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{nail.title}</span>
+                  <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{homeNailTitle(nail, isEnglish)}</span>
                 </div>
               ))}
         </div>
@@ -139,8 +149,8 @@ export default function ClientHomePage() {
 
       <section className="mb-12 px-5">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-[20px] font-bold tracking-tight text-gray-900">인기 네일 디자인</h2>
-          <span onClick={() => navigate('/client/popular-design')} className="cursor-pointer text-sm font-medium text-gray-500">전체보기 {">"}</span>
+          <h2 className="text-[20px] font-bold tracking-tight text-gray-900">{isEnglish ? "Popular Nail Designs" : "인기 네일 디자인"}</h2>
+          <span onClick={() => navigate('/client/popular-design')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {isLoading
@@ -153,9 +163,9 @@ export default function ClientHomePage() {
             : popularNails.map((nail) => (
                 <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={nail.title} className="h-full w-full object-cover object-center" />
+                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} className="h-full w-full object-cover object-center" />
                   </div>
-                  <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{nail.title}</span>
+                  <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{homeNailTitle(nail, isEnglish)}</span>
                 </div>
               ))}
         </div>
@@ -164,14 +174,14 @@ export default function ClientHomePage() {
       <section className="mb-10 mt-8 px-5">
         <div className="mb-5 flex w-full items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
-            카테고리 탐색
+            {isEnglish ? "Explore Categories" : "카테고리 탐색"}
           </h2>
           <button
             type="button"
             onClick={() => navigate('/client/category')}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
-            전체보기 {">"}
+            {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -185,14 +195,14 @@ export default function ClientHomePage() {
               <div className="mb-3 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-white shadow-sm">
                 <img
                   src={cat.imageUrl}
-                  alt={cat.label}
+                  alt={isEnglish ? cat.labelEn : cat.label}
                   loading="lazy"
                   decoding="async"
                   className="h-full w-full object-cover"
                 />
               </div>
               <span className="mt-3 text-[14px] font-semibold tracking-tight text-gray-800 font-sans">
-                {cat.label}
+                {isEnglish ? cat.labelEn : cat.label}
               </span>
             </button>
           ))}
@@ -202,25 +212,25 @@ export default function ClientHomePage() {
       <footer className="w-full border-t border-gray-200 bg-gray-50 px-5 pb-8 pt-10 text-left font-sans">
         <div className="mb-8 rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-sm">
           <p className="text-center text-[13px] font-medium leading-[1.6] text-gray-700">
-            젤리아의 모든 이미지는 AI로 만든 디자인이에요 😉<br />나만의 네일 스타일 찾는 데 참고해보세요!
+            {isEnglish ? "All GELIA images are AI-created designs 😉" : "젤리아의 모든 이미지는 AI로 만든 디자인이에요 😉"}<br />{isEnglish ? "Use them as inspiration to find your own nail style!" : "나만의 네일 스타일 찾는 데 참고해보세요!"}
           </p>
         </div>
         <div className="mb-6">
           <button type="button" onClick={() => setIsFooterOpen(!isFooterOpen)} className="flex items-center gap-1 text-[14px] font-bold text-gray-800">
-            젤리아 스튜디오 (GELIA Studio)
+            {isEnglish ? "GELIA Studio" : "젤리아 스튜디오 (GELIA Studio)"}
             {isFooterOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {isFooterOpen && (
             <div className="mt-2 space-y-1.5">
-              <p className="text-[13px] text-gray-500">나만의 네일 스타일을 찾는 새로운 기준, 젤리아</p>
-              <p className="text-[13px] text-gray-500">문의: k981202@naver.com</p>
+              <p className="text-[13px] text-gray-500">{isEnglish ? "A new standard for finding your own nail style, GELIA" : "나만의 네일 스타일을 찾는 새로운 기준, 젤리아"}</p>
+              <p className="text-[13px] text-gray-500">{isEnglish ? "Contact: k981202@naver.com" : "문의: k981202@naver.com"}</p>
             </div>
           )}
         </div>
         <div className="mb-4 flex items-center gap-3 text-[13px] text-gray-500">
-          <span className="font-semibold text-gray-500">이용약관</span>
+          <span className="font-semibold text-gray-500">{isEnglish ? "Terms" : "이용약관"}</span>
           <span className="text-gray-300">|</span>
-          <span className="font-bold text-gray-800">개인정보처리방침</span>
+          <span className="font-bold text-gray-800">{isEnglish ? "Privacy Policy" : "개인정보처리방침"}</span>
         </div>
         <p className="text-[11px] font-medium text-gray-400">&copy; 2026 GELIA Studio. All rights reserved.</p>
       </footer>

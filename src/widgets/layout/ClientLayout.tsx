@@ -1,4 +1,4 @@
-import { BarChart2, Home, Languages, Search, Settings, User } from 'lucide-react'
+import { BarChart2, Home, Search, Settings, User } from 'lucide-react'
 import { useEffect } from 'react'
 import {
   NavLink,
@@ -7,6 +7,8 @@ import {
   useNavigate,
   useNavigationType,
 } from 'react-router-dom'
+import { LanguageProvider } from '@/contexts/LanguageContext'
+import LanguageToggle from '@/components/LanguageToggle'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -15,6 +17,14 @@ const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(' ')
 
 export default function ClientLayout() {
+  return (
+    <LanguageProvider>
+      <ClientLayoutContent />
+    </LanguageProvider>
+  )
+}
+
+function ClientLayoutContent() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
@@ -98,14 +108,7 @@ export default function ClientLayout() {
             GELIA
           </h1>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => alert('다국어 변경 준비 중')}
-              className="inline-flex h-10 min-w-[64px] items-center justify-center gap-1 rounded-full bg-secondary px-3 text-[12px] font-semibold text-foreground transition-opacity hover:opacity-90"
-            >
-              <Languages size={14} aria-hidden />
-              <span>EN</span>
-            </button>
+            <LanguageToggle compact />
             <button
               type="button"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"

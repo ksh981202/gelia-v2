@@ -23,6 +23,7 @@ import { pushRecentViewedNailId } from "@/shared/lib/recentViewedStorage";
 import { isNailSavedInStorage, persistNailSaveState } from "@/shared/lib/savedNailsStorage";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import { supabase } from "@/shared/api/supabaseClient";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 
 type NailPhotoDetail = {
   id: string;
@@ -414,7 +415,7 @@ function upsertMetaTag(
 }
 
 const Detail = () => {
-  const [language, setLanguage] = useState<"ko" | "en">("ko");
+  const { language, setLanguage } = useLanguageContext();
   const isEnglish = language === "en";
   const navigate = useNavigate();
   const handleTagClick = (tag: string) => {
@@ -784,7 +785,7 @@ const Detail = () => {
           <div className="flex items-center gap-1">
             <button
             type="button"
-            onClick={() => setLanguage((l) => (l === "ko" ? "en" : "ko"))}
+            onClick={() => setLanguage(language === "ko" ? "en" : "ko")}
             className="mr-1 flex h-7 min-h-[28px] min-w-[44px] items-center justify-center gap-1 rounded-full bg-gray-100 px-2.5 text-[11px] font-bold text-gray-700"
             aria-label={isEnglish ? "Switch to Korean" : "Switch to English"}
           >
