@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -19,6 +20,24 @@ type OccasionThemeTab = {
 }
 
 const SITUATION_DEMO_CAPTIONS = ['🌿 데일리', '✈️ 여행', '🎉 파티'] as const
+
+const THEME_TAB_LABEL_EN: Record<ThemeTabLabel, string> = {
+  전체: 'All',
+  '🌿 데일리': '🌿 Daily',
+  '💖 데이트': '💖 Date',
+  '💼 오피스': '💼 Office',
+  '💐 하객': '💐 Guest',
+  '✈️ 여행': '✈️ Travel',
+  '🌴 바캉스': '🌴 Vacation',
+  '🎪 페스티벌': '🎪 Festival',
+  '🎉 파티': '🎉 Party',
+}
+
+const SITUATION_DEMO_CAPTION_EN: Record<(typeof SITUATION_DEMO_CAPTIONS)[number], string> = {
+  '🌿 데일리': '🌿 Daily',
+  '✈️ 여행': '✈️ Travel',
+  '🎉 파티': '🎉 Party',
+}
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? '')
@@ -81,6 +100,10 @@ function nailDisplayTitle(nail: NailDesignRow | undefined, isEnglish: boolean): 
   const ko = nail.title?.trim()
   if (isEnglish && en) return en
   return ko || en || null
+}
+
+function themeTabDisplayLabel(label: ThemeTabLabel, isEnglish: boolean): string {
+  return isEnglish ? THEME_TAB_LABEL_EN[label] : label
 }
 
 function resolveThemeTabIndex(searchParams: URLSearchParams): number {
@@ -183,8 +206,9 @@ export default function ClientPage() {
   )
   const tabContainerRef = useRef<HTMLDivElement | null>(null)
   const { data: hubData = [] } = useRecommendHubQuery()
+  const { language } = useLanguageContext()
 
-  const isEnglish = false
+  const isEnglish = language === 'en'
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   useEffect(() => {
@@ -323,9 +347,9 @@ export default function ClientPage() {
                     ? 'border-b-2 border-gray-900 text-gray-900'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
-                aria-label={`${tab.label} ${isEnglish ? 'tab' : '탭'}`}
+                aria-label={`${themeTabDisplayLabel(tab.label, isEnglish)} ${isEnglish ? 'tab' : '탭'}`}
               >
-                {tab.label}
+                {themeTabDisplayLabel(tab.label, isEnglish)}
               </button>
             )
           })}
@@ -376,7 +400,7 @@ export default function ClientPage() {
         <div className="mb-0">
           <div className="mb-5 mt-12 flex items-center justify-between px-4">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              {isEnglish ? 'Recommended by Occasion' : '상황별 추천 네일'}
+              {isEnglish ? 'Occasion Recommended Nails' : '상황별 추천 네일'}
             </h2>
             <Link
               to="/client/situation-list?tab=전체"
@@ -390,7 +414,8 @@ export default function ClientPage() {
             <div className="mb-0 flex items-center gap-4 pb-0">
               {SITUATION_DEMO_CAPTIONS.map((cap, index) => {
                 const nail = situationMatches[index]
-                const caption = nailDisplayTitle(nail, isEnglish) ?? cap
+                const caption =
+                  nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? SITUATION_DEMO_CAPTION_EN[cap] : cap)
                 return (
                   <OccasionNailThumbShell
                     key={cap}
@@ -408,7 +433,7 @@ export default function ClientPage() {
         <section className="mb-0">
           <div className="mb-5 mt-12 flex items-center justify-between px-4">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              {isEnglish ? 'Explore Gallery' : '갤러리 탐색'}
+              {isEnglish ? 'Gallery Explore' : '갤러리 탐색'}
             </h2>
             <button
               type="button"
@@ -424,7 +449,7 @@ export default function ClientPage() {
               <OccasionNailThumbShell
                 key={nail.id}
                 variant="grid"
-                caption={nail.title?.trim() || (isEnglish ? 'Gallery' : '갤러리')}
+                caption={nailDisplayTitle(nail, isEnglish) || (isEnglish ? 'Gallery' : '갤러리')}
                 imageUrl={nail.image_url?.trim() ?? null}
                 onActivate={() => goDetail(nail)}
               />

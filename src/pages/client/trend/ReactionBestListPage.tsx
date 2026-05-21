@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabaseClient";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
@@ -13,6 +14,11 @@ const REACTION_SCROLL_Y_KEY = "gelia_reaction_best_scroll_y";
 
 type ReactionBestSortColumn = "saves" | "likes";
 
+const TAB_LABEL_EN: Record<(typeof TAB_ITEMS)[number]["id"], string> = {
+  save: "📌 Most Saved",
+  like: "❤️ Most Liked",
+};
+
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
@@ -20,10 +26,15 @@ function extractPureThemeKeyword(raw: string): string {
     .trim();
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayTabLabel(tab: (typeof TAB_ITEMS)[number], isEnglish: boolean): string {
+  return isEnglish ? TAB_LABEL_EN[tab.id] : tab.name;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function resolveActiveTab(rawTab: string | null): (typeof TAB_ITEMS)[number] {
@@ -53,6 +64,8 @@ export default function ReactionBestListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -105,7 +118,7 @@ export default function ReactionBestListPage() {
   }, [navigationType, location.pathname, isLoading, data.length]);
 
   const detailState = (item: NailDesignRow) => ({
-    initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) },
+    initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) },
   });
 
   return (
@@ -116,7 +129,7 @@ export default function ReactionBestListPage() {
             <ChevronLeft className="w-6 h-6" />
           </button>
           <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
-            유저 반응 BEST
+            {isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
           </h1>
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate("/client/search")}>
             <Search className="w-5 h-5" />
@@ -136,7 +149,7 @@ export default function ReactionBestListPage() {
                   : "border-b-2 border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              {tab.name}
+              {displayTabLabel(tab, isEnglish)}
             </button>
           ))}
         </div>
@@ -165,7 +178,9 @@ export default function ReactionBestListPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 px-4">
-              <p className="col-span-2 py-6 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+              <p className="col-span-2 py-6 text-center text-sm text-gray-500">
+                {isEnglish ? "Failed to load rankings." : "랭킹을 불러오지 못했습니다."}
+              </p>
             </div>
           </>
         ) : !top1 ? (
@@ -175,7 +190,9 @@ export default function ReactionBestListPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3 px-4">
-              <p className="col-span-2 py-6 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+              <p className="col-span-2 py-6 text-center text-sm text-gray-500">
+                {isEnglish ? "No reaction data yet." : "집계된 유저 반응 데이터가 없습니다."}
+              </p>
             </div>
           </>
         ) : (
@@ -188,7 +205,7 @@ export default function ReactionBestListPage() {
                 className="relative block w-full cursor-pointer overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm aspect-[3/4] text-left"
               >
                 <img
-                  alt={displayItemTitle(top1)}
+                  alt={displayItemTitle(top1, isEnglish)}
                   className="h-full w-full object-cover object-center"
                   src={top1.image_url}
                   loading="eager"
@@ -206,7 +223,7 @@ export default function ReactionBestListPage() {
                 </div>
                 <div className="absolute bottom-4 left-4 z-10 flex w-[calc(100%-2rem)] flex-col items-start">
                   <h2 className="w-full min-w-0 text-left text-lg font-bold leading-snug tracking-tight text-white">
-                    {displayItemTitle(top1)}
+                    {displayItemTitle(top1, isEnglish)}
                   </h2>
                 </div>
               </Link>
@@ -215,7 +232,7 @@ export default function ReactionBestListPage() {
             <div className="mt-6 grid grid-cols-2 gap-3 px-4">
               {remainingList.map((item, index) => {
                 const rank = index + 2;
-                const title = displayItemTitle(item);
+                const title = displayItemTitle(item, isEnglish);
                 return (
                   <Link
                     key={item.id}

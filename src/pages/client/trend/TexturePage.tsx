@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -12,6 +13,14 @@ const TEXTURE_CATEGORIES = [
   { label: "미러파우더", img: "/texture/mirror.jpg" },
 ] as const;
 
+const TEXTURE_LABEL_EN: Record<(typeof TEXTURE_CATEGORIES)[number]["label"], string> = {
+  시럽: "Syrup",
+  무광: "Matte",
+  글리터: "Glitter",
+  자석: "Magnetic",
+  미러파우더: "Mirror Powder",
+};
+
 function extractPureTextureKeyword(raw: string): string {
   return String(raw ?? "")
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
@@ -24,10 +33,15 @@ function resolveActiveTextureTab(rawTab: string | null): (typeof TEXTURE_CATEGOR
   return TEXTURE_CATEGORIES.find((category) => category.label === rawTab || category.label === pure)?.label ?? "시럽";
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayTextureLabel(label: (typeof TEXTURE_CATEGORIES)[number]["label"], isEnglish: boolean): string {
+  return isEnglish ? TEXTURE_LABEL_EN[label] : label;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function itemSearchText(item: NailDesignRow): string {
@@ -62,6 +76,8 @@ function isSyrupBestItem(item: NailDesignRow): boolean {
 
 export default function TexturePage() {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = useMemo(() => resolveActiveTextureTab(searchParams.get("tab")), [searchParams]);
   const { data: hubData = [] } = useRecommendHubQuery();
@@ -91,7 +107,7 @@ export default function TexturePage() {
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
     navigate(`/client/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } },
+      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
 
@@ -107,7 +123,7 @@ export default function TexturePage() {
           <ChevronLeft className="w-6 h-6" strokeWidth={2} />
         </button>
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
-          텍스처 트렌드
+          {isEnglish ? "Texture Trend" : "텍스처 트렌드"}
         </h1>
         <button type="button" className="p-1 -mr-1 text-gray-900 transition-colors hover:bg-gray-100 rounded-full" onClick={() => navigate('/client/search')}>
           <Search className="w-5 h-5" strokeWidth={2} />
@@ -120,14 +136,14 @@ export default function TexturePage() {
         <section className="pt-6 pb-5">
           <div className="mb-5 flex items-baseline justify-between gap-2 px-5">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
-              텍스처별 모아보기
+              {isEnglish ? "View by Texture" : "텍스처별 모아보기"}
             </h3>
             <button
               type="button"
               onClick={() => navigate(textureListPath)}
               className="shrink-0 text-sm font-medium text-gray-500 cursor-pointer"
             >
-              전체보기 {'>'}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
@@ -136,10 +152,10 @@ export default function TexturePage() {
               return (
               <button key={cat.label} type="button" onClick={() => setActiveTab(cat.label)} className="flex shrink-0 flex-col items-center gap-2.5">
                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${isActive ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>
-                  <img alt={cat.label} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} />
+                  <img alt={displayTextureLabel(cat.label, isEnglish)} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} />
                 </div>
                 <span className={`font-sans text-[13px] tracking-tight ${isActive ? "font-semibold text-gray-900" : "font-medium text-gray-800"}`}>
-                  {cat.label}
+                  {displayTextureLabel(cat.label, isEnglish)}
                 </span>
               </button>
               );
@@ -152,7 +168,7 @@ export default function TexturePage() {
           <div className="relative mb-0 block w-full aspect-[3/4] overflow-hidden rounded-[2rem] shadow-lg shadow-black/5" onClick={() => openDetail(heroItem)}>
             {heroItem?.image_url ? (
               <img
-                alt={displayItemTitle(heroItem)}
+                alt={displayItemTitle(heroItem, isEnglish)}
                 className="h-full w-full object-cover object-center"
                 src={heroItem.image_url}
                 onError={(e) => {
@@ -163,7 +179,11 @@ export default function TexturePage() {
             <div className="absolute inset-x-0 bottom-0 px-8 pb-8 pt-0">
               <div className="relative z-10">
                 <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
-                  {heroItem ? displayItemTitle(heroItem) : `${activeTab} 네일`}
+                  {heroItem
+                    ? displayItemTitle(heroItem, isEnglish)
+                    : isEnglish
+                      ? `${displayTextureLabel(activeTab, isEnglish)} Nails`
+                      : `${activeTab} 네일`}
                 </h2>
               </div>
             </div>
@@ -174,14 +194,14 @@ export default function TexturePage() {
         <section className="mb-0">
           <div className="mt-12 mb-4 flex items-baseline justify-between gap-2 px-5">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
-              지금 가장 핫한 시럽 BEST
+              {isEnglish ? "Hottest Syrup BEST" : "지금 가장 핫한 시럽 BEST"}
             </h3>
             <button
               type="button"
               onClick={() => navigate('/client/syrup-best')}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
-              전체보기 {'>'}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="mb-0 flex gap-4 overflow-x-auto px-5 pb-4 [&::-webkit-scrollbar]:hidden">
@@ -189,7 +209,7 @@ export default function TexturePage() {
               <button key={item.id} type="button" onClick={() => openDetail(item)} className="w-40 shrink-0 text-left">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                   <img
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     src={item.image_url}
                     onError={(e) => {
@@ -199,7 +219,7 @@ export default function TexturePage() {
                 </div>
                 <div className="mt-2 flex w-full flex-col items-center justify-center">
                   <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
-                    {displayItemTitle(item)}
+                    {displayItemTitle(item, isEnglish)}
                   </span>
                 </div>
               </button>
@@ -211,14 +231,14 @@ export default function TexturePage() {
         <section className="mb-0 px-5">
           <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
-              추천 갤러리
+              {isEnglish ? "Recommended Gallery" : "추천 갤러리"}
             </h3>
             <button
               type="button"
               onClick={() => navigate('/client/texture-list?title=' + encodeURIComponent('추천 갤러리'))}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
-              전체보기 {'>'}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="mb-0 grid grid-cols-2 gap-x-4 gap-y-8">
@@ -227,7 +247,7 @@ export default function TexturePage() {
                 <button type="button" onClick={() => openDetail(item)} className="text-left">
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                     <img
-                      alt={displayItemTitle(item)}
+                      alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       src={item.image_url}
                       onError={(e) => {
@@ -237,7 +257,7 @@ export default function TexturePage() {
                   </div>
                   <div className="mt-2 flex w-full flex-col items-center justify-center">
                     <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
-                      {displayItemTitle(item)}
+                      {displayItemTitle(item, isEnglish)}
                     </span>
                   </div>
                 </button>

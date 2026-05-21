@@ -1,3 +1,4 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { fetchNailDesignsByIds } from '@/entities/nail-design/api/fetchNailDesignsByIds'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import {
@@ -24,6 +25,12 @@ type ActiveTab = 'recent' | 'liked' | 'saved'
 
 const GALLERY_PREVIEW_LIMIT = 4
 
+const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
+  recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
+  liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
+  saved: { ko: '저장한 네일', en: 'Saved Nails' },
+}
+
 function galleryIdsForTab(tab: ActiveTab, userId: string | null): string[] {
   if (tab === 'recent') {
     return readRecentViewedIds(userId).slice(0, GALLERY_PREVIEW_LIMIT)
@@ -41,6 +48,8 @@ function galleryIdsForTab(tab: ActiveTab, userId: string | null): string[] {
 }
 
 export default function ClientMyPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
   const currentUserId = useCurrentUserId()
   const [activeTab, setActiveTab] = useState<ActiveTab>('recent')
@@ -53,6 +62,7 @@ export default function ClientMyPage() {
 
   const statBoxClass =
     'flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]'
+  const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -118,7 +128,7 @@ export default function ClientMyPage() {
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-white px-5 border-b border-gray-50">
         <div className="w-8" />
         <h1 className="text-lg font-bold text-gray-900 whitespace-nowrap">
-          마이페이지
+          {isEnglish ? 'My Page' : '마이페이지'}
         </h1>
         <button
           type="button"
@@ -160,7 +170,7 @@ export default function ClientMyPage() {
           >
             <span className="flex h-8 w-8 items-center justify-center text-[22px]" aria-hidden>⏱️</span>
             <span className="text-[22px] font-extrabold tabular-nums leading-none text-gray-800">{recentCount}</span>
-            <span className="text-[13px] font-semibold text-gray-600">최근 본 디자인</span>
+            <span className="text-[13px] font-semibold text-gray-600">{isEnglish ? 'Recently Viewed' : '최근 본 디자인'}</span>
           </button>
           
           <button
@@ -170,7 +180,7 @@ export default function ClientMyPage() {
           >
             <Heart className="h-7 w-7 fill-rose-500 text-rose-500" strokeWidth={1.5} aria-hidden />
             <span className="text-[22px] font-extrabold tabular-nums leading-none text-rose-500">{likedCount}</span>
-            <span className="text-[13px] font-semibold text-rose-500">좋아요 한 네일</span>
+            <span className="text-[13px] font-semibold text-rose-500">{isEnglish ? 'Liked Nails' : '좋아요 한 네일'}</span>
           </button>
 
           <button
@@ -180,26 +190,28 @@ export default function ClientMyPage() {
           >
             <Bookmark className="h-[26px] w-[26px] text-indigo-500" strokeWidth={2.5} aria-hidden />
             <span className="text-[22px] font-extrabold tabular-nums leading-none text-indigo-500">{savedCount}</span>
-            <span className="text-[13px] font-semibold text-indigo-500">저장한 네일</span>
+            <span className="text-[13px] font-semibold text-indigo-500">{isEnglish ? 'Saved Nails' : '저장한 네일'}</span>
           </button>
         </section>
 
         <section className="mb-12">
           <div className="mb-5 flex items-center justify-between px-5">
             <h2 className="text-lg font-bold text-gray-900">
-              {activeTab === 'recent' ? '최근 본 디자인' : activeTab === 'liked' ? '좋아요 한 네일' : '저장한 네일'}
+              {activeTabLabel}
             </h2>
             <button
               type="button"
               className="text-sm font-medium text-gray-500"
               onClick={() => navigate(`/client/my/list/${activeTab}`)}
             >
-              전체보기 {">"}
+              {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4 px-5">
             {galleryNails.map((item) => {
-              const title = String(item.title ?? '').trim() || '네일 디자인'
+              const titleKo = String(item.title ?? '').trim()
+              const titleEn = String(item.title_en ?? '').trim()
+              const title = (isEnglish && titleEn ? titleEn : titleKo) || titleEn || (isEnglish ? 'Nail Design' : '네일 디자인')
               const imageUrl = String(item.image_url ?? '').trim()
               return (
                 <article
@@ -233,7 +245,7 @@ export default function ClientMyPage() {
 
         <section className="pt-4">
           <div className="mb-8">
-            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">맞춤 설정</div>
+            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">{isEnglish ? 'Preferences' : '맞춤 설정'}</div>
             <button
               type="button"
               className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
@@ -241,14 +253,14 @@ export default function ClientMyPage() {
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🔔</span>
-                <span className="text-[15px] font-semibold text-gray-800">알림 설정</span>
+                <span className="text-[15px] font-semibold text-gray-800">{isEnglish ? 'Notification Settings' : '알림 설정'}</span>
               </div>
               <span className="text-gray-300 font-bold">{">"}</span>
             </button>
           </div>
           
           <div className="mb-8">
-            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">계정</div>
+            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">{isEnglish ? 'Account' : '계정'}</div>
             <button
               type="button"
               className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
@@ -256,7 +268,7 @@ export default function ClientMyPage() {
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">⚙️</span>
-                <span className="text-[15px] font-semibold text-gray-800">계정 관리</span>
+                <span className="text-[15px] font-semibold text-gray-800">{isEnglish ? 'Account Management' : '계정 관리'}</span>
               </div>
               <span className="text-gray-300 font-bold">{">"}</span>
             </button>
@@ -267,7 +279,7 @@ export default function ClientMyPage() {
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🎧</span>
-                <span className="text-[15px] font-semibold text-gray-800">고객센터 / 공지사항</span>
+                <span className="text-[15px] font-semibold text-gray-800">{isEnglish ? 'Customer Service / Notice' : '고객센터 / 공지사항'}</span>
               </div>
               <span className="text-gray-300 font-bold">{">"}</span>
             </button>

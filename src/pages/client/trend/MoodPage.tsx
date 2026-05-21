@@ -1,10 +1,17 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
 const MOOD_TABS = ["🎀 발레코어", "🎧 Y2K/키치", "🥂 올드머니/시크"] as const;
+
+const MOOD_TAB_LABEL_EN: Record<(typeof MOOD_TABS)[number], string> = {
+  "🎀 발레코어": "🎀 Balletcore",
+  "🎧 Y2K/키치": "🎧 Y2K/Kitsch",
+  "🥂 올드머니/시크": "🥂 Old Money/Chic",
+};
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
@@ -18,10 +25,15 @@ function resolveActiveMoodTab(rawTab: string | null): (typeof MOOD_TABS)[number]
   return MOOD_TABS.find((tab) => tab === rawTab || extractPureThemeKeyword(tab) === pure) ?? MOOD_TABS[0];
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayMoodTabLabel(tab: (typeof MOOD_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? MOOD_TAB_LABEL_EN[tab] : tab;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function itemSearchText(item: NailDesignRow): string {
@@ -51,7 +63,14 @@ function matchesAnyKeyword(item: NailDesignRow, keywords: string[]): boolean {
 function filterMoodItems(items: NailDesignRow[], keyword: string): NailDesignRow[] {
   const normalized = extractPureThemeKeyword(keyword).toLowerCase();
   if (!normalized) return items;
-  return items.filter((item) => itemSearchText(item).includes(normalized));
+
+  const searchTokens = normalized.split(/\s+/).filter(Boolean);
+  if (searchTokens.length === 0) return items;
+
+  return items.filter((item) => {
+    const targetText = itemSearchText(item);
+    return searchTokens.some((token) => targetText.includes(token));
+  });
 }
 
 function compareByPopularity(a: NailDesignRow, b: NailDesignRow): number {
@@ -60,6 +79,8 @@ function compareByPopularity(a: NailDesignRow, b: NailDesignRow): number {
 
 export default function MoodPage() {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = useMemo(() => resolveActiveMoodTab(searchParams.get("tab")), [searchParams]);
   const activeTabKeyword = extractPureThemeKeyword(activeTab);
@@ -95,7 +116,7 @@ export default function MoodPage() {
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
     navigate(`/client/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } },
+      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
 
@@ -111,7 +132,7 @@ export default function MoodPage() {
           <ChevronLeft className="w-6 h-6" strokeWidth={2} />
         </button>
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
-          핫 트렌드 무드
+          {isEnglish ? "Hot Trend Mood" : "핫 트렌드 무드"}
         </h1>
         <button type="button" className="p-1 -mr-1 text-gray-900 transition-colors hover:bg-gray-100 rounded-full">
           <Search className="w-5 h-5" strokeWidth={2} />
@@ -124,10 +145,10 @@ export default function MoodPage() {
         <section className="mt-2">
           <div className="mb-3 mt-6 flex items-end justify-between gap-2 px-4">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
-              무드별 모아보기
+              {isEnglish ? "View by Mood" : "무드별 모아보기"}
             </h3>
             <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate(`/client/mood-list?tab=${encodeURIComponent(activeTabKeyword)}`)}>
-              전체보기 {'>'}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="mb-0 flex overflow-x-auto whitespace-nowrap gap-2 px-4 scrollbar-hide [&::-webkit-scrollbar]:hidden pb-2">
@@ -144,7 +165,7 @@ export default function MoodPage() {
                     : "border border-gray-200 bg-white text-gray-600"
                 }`}
               >
-                {label}
+                {displayMoodTabLabel(label, isEnglish)}
               </button>
               );
             })}
@@ -157,7 +178,7 @@ export default function MoodPage() {
           <div className="relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-sm" onClick={() => openDetail(heroItem)}>
             {heroItem?.image_url ? (
               <img
-                alt={displayItemTitle(heroItem)}
+                alt={displayItemTitle(heroItem, isEnglish)}
                 className="absolute inset-0 h-full w-full object-cover object-center"
                 src={heroItem.image_url}
                 onError={(e) => {
@@ -169,7 +190,11 @@ export default function MoodPage() {
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent pt-20 px-6 pb-6 pointer-events-none">
               <div className="relative z-10">
                 <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
-                  {heroItem ? displayItemTitle(heroItem) : `${activeTab} 네일`}
+                  {heroItem
+                    ? displayItemTitle(heroItem, isEnglish)
+                    : isEnglish
+                      ? `${displayMoodTabLabel(activeTab, isEnglish)} Nails`
+                      : `${activeTab} 네일`}
                 </h2>
               </div>
             </div>
@@ -180,10 +205,10 @@ export default function MoodPage() {
         <section className="mb-0">
           <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2 px-4">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
-              세련된 미니멀 시크 BEST 🖤
+              {isEnglish ? "Hottest Minimal Chic BEST 🖤" : "세련된 미니멀 시크 BEST 🖤"}
             </h3>
             <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/client/chic-best-list')}>
-              전체보기 {'>'}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="mb-0 flex gap-3 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
@@ -193,7 +218,7 @@ export default function MoodPage() {
                   {item.image_url ? (
                     <img
                       src={item.image_url}
-                      alt={displayItemTitle(item)}
+                      alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
@@ -204,7 +229,7 @@ export default function MoodPage() {
                 </div>
                 <div className="flex w-full flex-col items-center justify-center">
                   <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
-                    {displayItemTitle(item)}
+                    {displayItemTitle(item, isEnglish)}
                   </span>
                 </div>
               </button>
@@ -216,10 +241,10 @@ export default function MoodPage() {
         <section className="mb-0 px-4">
           <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
-              실시간 인기 무드
+              {isEnglish ? "Real-time Popular Mood" : "실시간 인기 무드"}
             </h3>
             <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/client/popular-mood-list')}>
-              전체보기 {'>'}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="mb-0 grid grid-cols-2 gap-4 pb-10">
@@ -229,7 +254,7 @@ export default function MoodPage() {
                   {item.image_url ? (
                     <img
                       src={item.image_url}
-                      alt={displayItemTitle(item)}
+                      alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
@@ -240,7 +265,7 @@ export default function MoodPage() {
                 </div>
                 <div className="flex w-full flex-col items-center justify-center">
                   <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
-                    {displayItemTitle(item)}
+                    {displayItemTitle(item, isEnglish)}
                   </span>
                 </div>
               </article>

@@ -4,6 +4,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -14,6 +15,21 @@ const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
 const TEXTURE_LIST_SCROLL_Y_KEY = 'gelia_texture_list_scroll_y';
 const TEXTURE_LIST_SCROLL_ITEMS_KEY = 'gelia_texture_list_scroll_items';
 type SortValue = (typeof SORT_OPTIONS)[number];
+
+const TEXTURE_TAB_LABEL_EN: Record<(typeof TEXTURE_LIST_TABS)[number], string> = {
+  전체: 'All',
+  '💧 시럽': '💧 Syrup',
+  '☁️ 무광': '☁️ Matte',
+  '✨ 글리터': '✨ Glitter',
+  '🧲 자석': '🧲 Magnetic',
+  '🪞 미러파우더': '🪞 Mirror Powder',
+};
+
+const SORT_LABEL_EN: Record<SortValue, string> = {
+  인기순: 'Popular',
+  최신순: 'Newest',
+  '저장 많은 순': 'Most Saved',
+};
 
 function extractPureTextureKeyword(raw: string): string {
   return String(raw ?? '')
@@ -34,10 +50,19 @@ function textureTabKeywordForQuery(tab: (typeof TEXTURE_LIST_TABS)[number]): str
   return extractPureTextureKeyword(tab);
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayTextureTabLabel(tab: (typeof TEXTURE_LIST_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? TEXTURE_TAB_LABEL_EN[tab] : tab;
+}
+
+function displaySortLabel(sort: SortValue, isEnglish: boolean): string {
+  return isEnglish ? SORT_LABEL_EN[sort] : sort;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim();
   const en = String(item.title_en ?? '').trim();
-  return ko || en || '네일 디자인';
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인');
 }
 
 function isSortValue(value: string): value is SortValue {
@@ -48,6 +73,8 @@ export default function TextureListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === 'en';
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSortOpen, setIsSortOpen] = useState(false);
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -201,7 +228,13 @@ export default function TextureListPage() {
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[72%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            {customTitle || '텍스처별 모아보기'}
+            {customTitle
+              ? isEnglish && customTitle === '추천 갤러리'
+                ? 'Recommended Gallery'
+                : customTitle
+              : isEnglish
+                ? 'View by Texture'
+                : '텍스처별 모아보기'}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/client/search')}>
             <Search className="h-6 w-6 text-gray-900" />
@@ -224,7 +257,7 @@ export default function TextureListPage() {
                   : "shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600 mr-2"
               }
             >
-              {tab}
+              {displayTextureTabLabel(tab, isEnglish)}
             </button>
             );
           })}
@@ -234,7 +267,11 @@ export default function TextureListPage() {
         {/* 갯수 및 정렬 */}
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-pink-500">{totalCountLabel}</span>개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-pink-500">{totalCountLabel}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-pink-500">{totalCountLabel}</span>개의 디자인</>
+            )}
           </span>
           <div ref={sortMenuRef} className="relative">
             <button
@@ -245,7 +282,7 @@ export default function TextureListPage() {
               aria-expanded={isSortOpen}
               aria-label="정렬"
             >
-              <span>{sortType}</span>
+              <span>{displaySortLabel(sortType, isEnglish)}</span>
               <ChevronDown size={14} className="text-gray-500" />
             </button>
             {isSortOpen && (
@@ -264,7 +301,7 @@ export default function TextureListPage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {option}
+                    {displaySortLabel(option, isEnglish)}
                   </button>
                 ))}
               </div>
@@ -283,23 +320,27 @@ export default function TextureListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했습니다.'}
+          </p>
         ) : galleryItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? 'No nails registered yet.' : '등록된 네일이 없어요.'}
+          </p>
         ) : (
           <>
         {galleryItems.map((item, index) => (
           <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
             <Link
               to={`/client/detail/${item.id}`}
-              state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } }}
+              state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
               onClick={saveListScrollPosition}
             >
             <div className="aspect-[3/4] w-full rounded-xl overflow-hidden bg-gray-100 shadow-sm border border-black/5">
               {item.image_url ? (
                 <img
                   src={item.image_url}
-                  alt={displayItemTitle(item)}
+                  alt={displayItemTitle(item, isEnglish)}
                   className="h-full w-full object-cover object-center"
                   loading={index < 4 ? 'eager' : 'lazy'}
                   decoding="async"
@@ -313,7 +354,7 @@ export default function TextureListPage() {
             </div>
             <div className="mt-1 flex w-full flex-col items-center justify-center px-1">
               <p className="line-clamp-2 w-full text-center text-[13px] font-bold tracking-tight text-gray-800">
-                {displayItemTitle(item)}
+                {displayItemTitle(item, isEnglish)}
               </p>
             </div>
             </Link>

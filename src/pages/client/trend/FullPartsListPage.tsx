@@ -5,6 +5,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +16,21 @@ const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
 const FULL_PARTS_SCROLL_Y_KEY = 'gelia_full_parts_scroll_y';
 const FULL_PARTS_SCROLL_ITEMS_KEY = 'gelia_full_parts_scroll_items';
 type SortValue = (typeof SORT_OPTIONS)[number];
+
+const FULL_PARTS_TAB_LABEL_EN: Record<(typeof FULL_PARTS_TABS)[number], string> = {
+  전체: 'All',
+  '👰 웨딩/본식': '👰 Wedding',
+  '✨ 극강의화려함': '✨ Extreme Glamour',
+  '🤍 여리여리': '🤍 Delicate',
+  '🖤 블랙/시크': '🖤 Black/Chic',
+  '💎 투명/유리알': '💎 Clear/Glassy',
+};
+
+const SORT_LABEL_EN: Record<SortValue, string> = {
+  인기순: 'Popular',
+  최신순: 'Newest',
+  '저장 많은 순': 'Most Saved',
+};
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
@@ -35,10 +51,19 @@ function fullPartsTabKeywordForQuery(tab: (typeof FULL_PARTS_TABS)[number]): str
   return extractPureThemeKeyword(tab);
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayFullPartsTabLabel(tab: (typeof FULL_PARTS_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? FULL_PARTS_TAB_LABEL_EN[tab] : tab;
+}
+
+function displaySortLabel(sort: SortValue, isEnglish: boolean): string {
+  return isEnglish ? SORT_LABEL_EN[sort] : sort;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function isSortValue(value: string): value is SortValue {
@@ -49,6 +74,8 @@ export default function FullPartsListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSortOpen, setIsSortOpen] = useState(false);
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -198,7 +225,7 @@ export default function FullPartsListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            인기 풀파츠 스타일
+            {isEnglish ? "Popular Full Parts Style" : "인기 풀파츠 스타일"}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/client/search')}>
             <Search className="w-6 h-6 text-gray-900" />
@@ -220,7 +247,7 @@ export default function FullPartsListPage() {
                     : "bg-gray-100 text-gray-600 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap shrink-0"
                 }
               >
-                {tab}
+                {displayFullPartsTabLabel(tab, isEnglish)}
               </button>
             );
           })}
@@ -229,7 +256,11 @@ export default function FullPartsListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> 개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span>개의 디자인</>
+            )}
           </span>
           <div ref={sortMenuRef} className="relative">
             <button
@@ -240,7 +271,7 @@ export default function FullPartsListPage() {
               aria-expanded={isSortOpen}
               aria-label="정렬"
             >
-              <span>{sortType}</span>
+              <span>{displaySortLabel(sortType, isEnglish)}</span>
               <ChevronDown size={14} className="text-gray-500" />
             </button>
             {isSortOpen && (
@@ -259,7 +290,7 @@ export default function FullPartsListPage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {option}
+                    {displaySortLabel(option, isEnglish)}
                   </button>
                 ))}
               </div>
@@ -277,23 +308,27 @@ export default function FullPartsListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load designs." : "디자인을 불러오지 못했습니다."}
+          </p>
         ) : galleryItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 풀파츠 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No nails registered yet." : "등록된 네일이 없어요."}
+          </p>
         ) : (
           <>
             {galleryItems.map((item, index) => (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link
                   to={`/client/detail/${item.id}`}
-                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } }}
+                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
                   onClick={saveListScrollPosition}
                 >
                   <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item)}
+                        alt={displayItemTitle(item, isEnglish)}
                         className="h-full w-full object-cover object-center transition-transform hover:scale-105"
                         loading={index < 4 ? 'eager' : 'lazy'}
                         decoding="async"
@@ -307,7 +342,7 @@ export default function FullPartsListPage() {
                   </div>
                   <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
                     <p className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-2">
-                      {displayItemTitle(item)}
+                      {displayItemTitle(item, isEnglish)}
                     </p>
                   </div>
                 </Link>

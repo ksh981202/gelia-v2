@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
@@ -13,6 +14,28 @@ const H_SCROLLBAR_HIDE =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
 
 const SPRING_THEME_KEYWORDS = ['봄', '핑크', '피치', '벚꽃', '플라워', '코랄'] as const
+
+const COLOR_CURATION_TAB_LABEL_EN: Record<string, string> = {
+  '🌸 핑크': '🌸 Pink',
+  '🍒 레드': '🍒 Red',
+  '🤎 누드': '🤎 Nude',
+  '🎨 파스텔': '🎨 Pastel',
+  '🌊 블루': '🌊 Blue',
+  '☁️ 화이트': '☁️ White',
+  '🖤 블랙': '🖤 Black',
+  '✨ 글리터': '✨ Glitter',
+}
+
+const COLOR_HERO_CAPTION_EN: Record<string, string> = {
+  핑크: 'Romantic Pink Mood',
+  레드: 'Best Red Nail Trends',
+  누드: 'Natural Nude Beige',
+  파스텔: 'Pastel Dream Colors',
+  블루: 'Cool Blue Point',
+  화이트: 'Clean White Mood',
+  블랙: 'Chic Black Nails',
+  글리터: 'Sparkling Glitter Point',
+}
 
 function extractPureThemeKeyword(raw: string | null): string {
   return String(raw ?? '')
@@ -61,22 +84,32 @@ function itemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): 
   })
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim()
   const en = String(item.title_en ?? '').trim()
-  return ko || en || '네일 디자인'
+  if (isEnglish && en) return en
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
 }
 
-function detailState(item: NailDesignRow) {
+function detailState(item: NailDesignRow, isEnglish: boolean) {
   return {
     initialNailData: {
       id: item.id,
       imageUrl: item.image_url,
-      title: displayItemTitle(item),
+      title: displayItemTitle(item, isEnglish),
       color: item.color ?? '',
       mood: item.mood ?? '',
     },
   }
+}
+
+function displayColorTabLabel(label: string, isEnglish: boolean): string {
+  return isEnglish ? COLOR_CURATION_TAB_LABEL_EN[label] ?? label : label
+}
+
+function displayHeroCaption(color: string, fallback: string, isEnglish: boolean): string {
+  if (isEnglish) return COLOR_HERO_CAPTION_EN[color] ?? fallback
+  return fallback
 }
 
 function EmptyPreviewCards({
@@ -116,13 +149,15 @@ function HorizontalPreviewSection({
   viewAllTo,
   items,
   ariaLabel,
+  isEnglish,
 }: {
   title: string
   viewAllTo: To
   items: readonly NailDesignRow[]
   ariaLabel: string
+  isEnglish: boolean
 }) {
-  const viewAllLabel = '전체보기 >'
+  const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   return (
     <section className="mb-0 mt-12" aria-label={ariaLabel}>
@@ -138,14 +173,14 @@ function HorizontalPreviewSection({
             <Link
               key={item.id}
               to={`/client/detail/${item.id}`}
-              state={detailState(item)}
+              state={detailState(item, isEnglish)}
               className="flex w-[120px] flex-shrink-0 flex-col gap-2"
             >
               <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
                 {item.image_url ? (
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
@@ -153,7 +188,7 @@ function HorizontalPreviewSection({
                 ) : null}
               </div>
               <p className="truncate text-center text-[13px] text-gray-800">
-                {displayItemTitle(item)}
+                {displayItemTitle(item, isEnglish)}
               </p>
             </Link>
           ))
@@ -173,6 +208,8 @@ export default function ClientColorCurationPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tabContainerRef = useRef<HTMLElement | null>(null)
   const { data: hubData = [] } = useRecommendHubQuery()
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
 
   const activeIdx = useMemo(
     () => resolveColorIndex(searchParams),
@@ -239,7 +276,7 @@ export default function ClientColorCurationPage() {
     return () => window.clearTimeout(timer)
   }, [activeIdx])
 
-  const viewAllLabel = '전체보기 >'
+  const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   return (
     <div className="relative mx-auto max-w-md bg-[#FDFBF7] pb-24">
@@ -247,30 +284,30 @@ export default function ClientColorCurationPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          aria-label="뒤로 가기"
+          aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
           className="-ml-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
         >
           <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
 
         <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,18rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-          추천 컬러 네일
+          {isEnglish ? 'Recommended Color Nails' : '추천 컬러 네일'}
         </h1>
 
         <Link
           to="/client/gallery"
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-          aria-label="검색"
+          aria-label={isEnglish ? 'Search' : '검색'}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </Link>
       </header>
 
       <main className="px-0">
-        <section className="mb-0 mt-6" aria-label="컬러별 모아보기">
+        <section className="mb-0 mt-6" aria-label={isEnglish ? 'View by Color' : '컬러별 모아보기'}>
           <div className="mb-4 flex items-end justify-between px-4">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              컬러별 모아보기
+              {isEnglish ? 'View by Color' : '컬러별 모아보기'}
             </h2>
             <Link to={colorListHref} className="text-sm text-gray-500">
               {viewAllLabel}
@@ -280,7 +317,7 @@ export default function ClientColorCurationPage() {
           <nav
             ref={tabContainerRef}
             className={`mb-4 flex w-full flex-nowrap gap-2 overflow-x-auto border-b border-gray-100 px-4 pb-0 ${H_SCROLLBAR_HIDE}`}
-            aria-label="컬러"
+            aria-label={isEnglish ? 'Color' : '컬러'}
           >
             {COLOR_CURATION_TABS.map((tab, idx) => {
               const isActive = idx === activeIdx
@@ -299,7 +336,7 @@ export default function ClientColorCurationPage() {
                         : 'font-medium text-gray-500'
                     }`}
                   >
-                    {tab.label}
+                    {displayColorTabLabel(tab.label, isEnglish)}
                   </span>
                   <div
                     className={`absolute bottom-0 left-0 right-0 h-[2px] ${
@@ -314,7 +351,7 @@ export default function ClientColorCurationPage() {
 
           <Link
             to={heroNail ? `/client/detail/${heroNail.id}` : '#'}
-            state={heroNail ? detailState(heroNail) : undefined}
+            state={heroNail ? detailState(heroNail, isEnglish) : undefined}
             onClick={(e) => {
               if (!heroNail) e.preventDefault()
             }}
@@ -324,7 +361,7 @@ export default function ClientColorCurationPage() {
             {heroNail?.image_url ? (
               <img
                 src={heroNail.image_url}
-                alt={displayItemTitle(heroNail)}
+                alt={displayItemTitle(heroNail, isEnglish)}
                 className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
@@ -333,26 +370,27 @@ export default function ClientColorCurationPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-4 left-4 right-4">
               <p className="truncate text-lg font-bold text-white drop-shadow-md md:text-xl">
-                {heroNail ? displayItemTitle(heroNail) : heroCaption}
+                {heroNail ? displayItemTitle(heroNail, isEnglish) : displayHeroCaption(currentColor, heroCaption, isEnglish)}
               </p>
             </div>
           </Link>
         </section>
 
         <HorizontalPreviewSection
-          title="올봄을 강타한, 벚꽃 핑크 & 피치"
+          title={isEnglish ? 'Spring Hits, Cherry Blossom Pink & Peach' : '올봄을 강타한, 벚꽃 핑크 & 피치'}
           viewAllTo={colorThemeListHref}
           items={themeItems}
-          ariaLabel="특정 테마 추천"
+          ariaLabel={isEnglish ? 'Spring hits recommendation' : '특정 테마 추천'}
+          isEnglish={isEnglish}
         />
 
         <section
           className="mb-0 mt-12 px-4"
-          aria-label="실시간 인기 컬러 네일"
+          aria-label={isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              실시간 인기 컬러 네일
+              {isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
             </h2>
             <Link to={colorPopularListHref} className="text-sm text-gray-500">
               {viewAllLabel}
@@ -365,14 +403,14 @@ export default function ClientColorCurationPage() {
                 <Link
                   key={item.id}
                   to={`/client/detail/${item.id}`}
-                  state={detailState(item)}
+                  state={detailState(item, isEnglish)}
                   className="flex flex-col gap-2"
                 >
                   <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item)}
+                        alt={displayItemTitle(item, isEnglish)}
                         className="h-full w-full object-cover"
                         loading="lazy"
                         decoding="async"
@@ -380,7 +418,7 @@ export default function ClientColorCurationPage() {
                     ) : null}
                   </div>
                   <p className="truncate text-center text-sm text-gray-800">
-                    {displayItemTitle(item)}
+                    {displayItemTitle(item, isEnglish)}
                   </p>
                 </Link>
               ))

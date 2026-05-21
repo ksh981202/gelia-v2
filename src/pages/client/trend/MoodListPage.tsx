@@ -5,6 +5,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,6 +23,19 @@ const MOOD_LIST_SCROLL_ITEMS_KEY = 'gelia_mood_list_scroll_items';
 
 type MoodTabLabel = (typeof MOOD_TABS)[number]['label'];
 type SortValue = (typeof SORT_OPTIONS)[number];
+
+const MOOD_TAB_LABEL_EN: Record<MoodTabLabel, string> = {
+  전체: 'All',
+  '🎀 발레코어': '🎀 Balletcore',
+  '🎧 Y2K/키치': '🎧 Y2K/Kitsch',
+  '🥂 올드머니/시크': '🥂 Old Money/Chic',
+};
+
+const SORT_LABEL_EN: Record<SortValue, string> = {
+  인기순: 'Popular',
+  최신순: 'Newest',
+  '저장 많은 순': 'Most Saved',
+};
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? '')
@@ -42,10 +56,19 @@ function moodTabKeywordForQuery(tab: MoodTabLabel): string {
   return extractPureThemeKeyword(tab);
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayMoodTabLabel(label: MoodTabLabel, isEnglish: boolean): string {
+  return isEnglish ? MOOD_TAB_LABEL_EN[label] : label;
+}
+
+function displaySortLabel(sort: SortValue, isEnglish: boolean): string {
+  return isEnglish ? SORT_LABEL_EN[sort] : sort;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim();
   const en = String(item.title_en ?? '').trim();
-  return ko || en || '네일 디자인';
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인');
 }
 
 function isSortValue(value: string): value is SortValue {
@@ -56,6 +79,8 @@ export default function MoodListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === 'en';
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSortOpen, setIsSortOpen] = useState(false);
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -205,7 +230,7 @@ export default function MoodListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            무드별 모아보기
+            {isEnglish ? 'View by Mood' : '무드별 모아보기'}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/client/search')}>
             <Search className="w-6 h-6 text-gray-900" />
@@ -227,7 +252,7 @@ export default function MoodListPage() {
                     : "bg-gray-100 text-gray-600 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap shrink-0"
                 }
               >
-                {tab.label}
+                {displayMoodTabLabel(tab.label, isEnglish)}
               </button>
             );
           })}
@@ -236,7 +261,11 @@ export default function MoodListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> 개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span>개의 디자인</>
+            )}
           </span>
           <div ref={sortMenuRef} className="relative">
             <button
@@ -247,7 +276,7 @@ export default function MoodListPage() {
               aria-expanded={isSortOpen}
               aria-label="정렬"
             >
-              <span>{sortType}</span>
+              <span>{displaySortLabel(sortType, isEnglish)}</span>
               <ChevronDown size={14} className="text-gray-500" />
             </button>
             {isSortOpen && (
@@ -266,7 +295,7 @@ export default function MoodListPage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {option}
+                    {displaySortLabel(option, isEnglish)}
                   </button>
                 ))}
               </div>
@@ -284,23 +313,27 @@ export default function MoodListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했습니다.'}
+          </p>
         ) : galleryItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 무드 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? 'No nails registered yet.' : '등록된 네일이 없어요.'}
+          </p>
         ) : (
           <>
             {galleryItems.map((item, index) => (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link
                   to={`/client/detail/${item.id}`}
-                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } }}
+                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
                   onClick={saveListScrollPosition}
                 >
                   <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item)}
+                        alt={displayItemTitle(item, isEnglish)}
                         className="h-full w-full object-cover object-center transition-transform hover:scale-105"
                         loading={index < 4 ? 'eager' : 'lazy'}
                         decoding="async"
@@ -314,7 +347,7 @@ export default function MoodListPage() {
                   </div>
                   <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
                     <p className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-2">
-                      {displayItemTitle(item)}
+                      {displayItemTitle(item, isEnglish)}
                     </p>
                   </div>
                 </Link>

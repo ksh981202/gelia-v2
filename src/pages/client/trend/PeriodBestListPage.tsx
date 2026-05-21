@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabaseClient";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
@@ -9,6 +10,12 @@ const PERIOD_TABS = ["🔥 일간", "👑 주간", "🏆 월간"] as const;
 const PERIOD_SCROLL_Y_KEY = "gelia_period_best_scroll_y";
 
 type RankingNailRow = NailDesignRow & { ranking_score?: number };
+
+const PERIOD_TAB_LABEL_EN: Record<(typeof PERIOD_TABS)[number], string> = {
+  "🔥 일간": "🔥 Daily",
+  "👑 주간": "👑 Weekly",
+  "🏆 월간": "🏆 Monthly",
+};
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
@@ -22,10 +29,15 @@ function resolveActiveTab(rawTab: string | null): (typeof PERIOD_TABS)[number] {
   return PERIOD_TABS.find((tab) => extractPureThemeKeyword(tab) === pure) ?? PERIOD_TABS[0];
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayPeriodTabLabel(tab: (typeof PERIOD_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? PERIOD_TAB_LABEL_EN[tab] : tab;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function useStyleBestRankingQuery(period: string, maxLimit: number) {
@@ -46,6 +58,8 @@ export default function PeriodBestListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -104,7 +118,7 @@ export default function PeriodBestListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
-            기간별 BEST 네일
+            {isEnglish ? "Period BEST Nails" : "기간별 BEST 네일"}
           </h1>
           <button type="button" className="p-1 -mr-1" onClick={() => navigate("/client/search")}>
             <Search className="w-5 h-5 text-gray-900" />
@@ -126,7 +140,7 @@ export default function PeriodBestListPage() {
                     : "shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200/90"
                 }
               >
-                {tab}
+                {displayPeriodTabLabel(tab, isEnglish)}
               </button>
             );
           })}
@@ -135,10 +149,14 @@ export default function PeriodBestListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <strong className="text-gray-900">{maxLimit}</strong>개의 디자인
+            {isEnglish ? (
+              <>Total <strong className="text-gray-900">{maxLimit}</strong> designs</>
+            ) : (
+              <>총 <strong className="text-gray-900">{maxLimit}</strong>개의 디자인</>
+            )}
           </span>
           <span className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-700">
-            <span>인기순</span>
+            <span>{isEnglish ? "Popular" : "인기순"}</span>
             <ChevronDown className="h-4 w-4 text-gray-500" />
           </span>
         </div>
@@ -153,12 +171,16 @@ export default function PeriodBestListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load rankings." : "랭킹을 불러오지 못했습니다."}
+          </p>
         ) : rankingItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No nails registered yet." : "등록된 네일이 없어요."}
+          </p>
         ) : (
           rankingItems.map((item, index) => {
-            const title = displayItemTitle(item);
+            const title = displayItemTitle(item, isEnglish);
             return (
               <article key={item.id} className="flex w-full min-w-0 cursor-pointer flex-col items-stretch gap-0">
                 <Link

@@ -1,4 +1,6 @@
 import { useRecommendHubQuery } from "@/entities/nail-design/api/useRecommendHubQuery";
+import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +9,7 @@ import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-rea
 // 공통 썸네일 클래스
 const NAIL_THUMB_IMAGE_FRAME = "aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5";
 const NAIL_THUMB_TITLE = "block w-full min-w-0 max-w-full text-center text-sm font-medium tracking-tight text-gray-800 truncate mt-2";
+const TREND_SKELETON_ROWS = 5;
 
 const SHAPE_KEYWORDS = [
   "숏",
@@ -20,18 +23,11 @@ const SHAPE_KEYWORDS = [
   "발레리나",
 ] as const;
 
-const SEARCH_TRENDS = [
-  { rank: 1, text: "시럽 네일", status: "up" },
-  { rank: 2, text: "누드 톤", status: "up" },
-  { rank: 3, text: "마그넷", status: "new" },
-  { rank: 4, text: "화이트 프렌치", status: "same" },
-  { rank: 5, text: "글리터 포인트", status: "down" },
-];
-
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function metric(value: unknown): number {
@@ -67,17 +63,39 @@ function itemMatchesShapeKeyword(item: NailDesignRow): boolean {
   return SHAPE_KEYWORDS.some((keyword) => haystack.includes(keyword));
 }
 
-function initialNailData(item: NailDesignRow) {
+function initialNailData(item: NailDesignRow, isEnglish: boolean) {
   return {
     ...item,
     imageUrl: item.image_url,
-    title: displayItemTitle(item),
+    title: displayItemTitle(item, isEnglish),
   };
+}
+
+function PopularTrendStatusIcon({ index }: { index: number }) {
+  return (
+    <div className="w-10 flex justify-end">
+      {(index === 0 || index === 1) && <TrendingUp className="w-5 h-5 text-[#FF7E67]" />}
+      {index === 2 && (
+        <span className="text-[10px] font-bold text-[#FF7E67] border border-[#FF7E67] rounded px-1.5 py-0.5">
+          NEW
+        </span>
+      )}
+      {index === 3 && <Minus className="w-5 h-5 text-gray-300" />}
+      {index === 4 && <TrendingDown className="w-5 h-5 text-gray-400" />}
+    </div>
+  );
 }
 
 export default function PopularDesignPage() {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const { data: hubData = [] } = useRecommendHubQuery();
+  const {
+    data: popularTrends = [],
+    isLoading: isTrendsLoading,
+    isError: isTrendsError,
+  } = usePopularSearchTrends();
 
   const periodBest = useMemo(
     () => [...hubData].sort(compareByEngagementThenNewest).slice(0, 6),
@@ -118,7 +136,7 @@ export default function PopularDesignPage() {
 
   const goDetail = (item: NailDesignRow) => {
     navigate(`/client/detail/${item.id}`, {
-      state: { initialNailData: initialNailData(item) },
+      state: { initialNailData: initialNailData(item, isEnglish) },
     });
   };
 
@@ -130,7 +148,7 @@ export default function PopularDesignPage() {
           <ChevronLeft className="w-6 h-6 text-gray-900" strokeWidth={2} />
         </button>
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
-          인기 네일 디자인
+          {isEnglish ? "Popular Designs" : "인기 네일 디자인"}
         </h1>
         <button type="button" aria-label="검색" className="z-10 p-1 -mr-1" onClick={() => navigate("/client/search")}>
           <Search className="w-6 h-6 text-gray-900" strokeWidth={2} />
@@ -141,13 +159,15 @@ export default function PopularDesignPage() {
         {/* 1. 기간별 BEST 네일 */}
         <section className="w-full">
           <div className="mb-4 flex w-full items-center justify-between gap-2 px-4">
-            <h2 className="text-lg font-bold tracking-tight text-gray-900">기간별 BEST 네일</h2>
+            <h2 className="text-lg font-bold tracking-tight text-gray-900">
+              {isEnglish ? "Period BEST Nails" : "기간별 BEST 네일"}
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/client/period-best-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
-              전체보기 {">"}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           {/* 스크롤바 완벽 숨김 처리 */}
@@ -161,14 +181,14 @@ export default function PopularDesignPage() {
                 <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading={index === 0 ? "eager" : "lazy"}
                     decoding="async"
                     fetchPriority={index === 0 ? "high" : undefined}
                   />
                 </div>
-                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item)}</span>
+                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
               </article>
             ))}
           </div>
@@ -177,13 +197,15 @@ export default function PopularDesignPage() {
         {/* 2. 유저 반응 BEST */}
         <section className="w-full">
           <div className="mb-4 flex w-full items-center justify-between gap-2 px-4">
-            <h2 className="text-lg font-bold tracking-tight text-gray-900">유저 반응 BEST</h2>
+            <h2 className="text-lg font-bold tracking-tight text-gray-900">
+              {isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/client/reaction-best-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
-              전체보기 {">"}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="flex gap-3 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -196,13 +218,13 @@ export default function PopularDesignPage() {
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
-                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item)}</span>
+                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
               </article>
             ))}
           </div>
@@ -211,13 +233,15 @@ export default function PopularDesignPage() {
         {/* 3. 손톱 모양별 BEST 네일 */}
         <section className="w-full">
           <div className="mb-4 flex items-center justify-between gap-2 px-4">
-            <h2 className="text-lg font-bold tracking-tight text-gray-900">손톱 모양별 BEST 네일</h2>
+            <h2 className="text-lg font-bold tracking-tight text-gray-900">
+              {isEnglish ? "Shape BEST Nails" : "손톱 모양별 BEST 네일"}
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/client/shape-best-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
-              전체보기 {">"}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="flex snap-x gap-4 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -230,13 +254,13 @@ export default function PopularDesignPage() {
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
-                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item)}</span>
+                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
               </article>
             ))}
           </div>
@@ -245,34 +269,58 @@ export default function PopularDesignPage() {
         {/* 4. 인기 검색어 트렌드 (독립 컴포넌트 인라인 정적 처리) */}
         <section className="w-full mb-10">
           <div className="mb-4 flex items-center justify-between gap-2 px-4">
-            <h2 className="text-lg font-bold tracking-tight text-gray-900">인기 검색어 트렌드</h2>
+            <h2 className="text-lg font-bold tracking-tight text-gray-900">
+              {isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}
+            </h2>
             <button
               type="button"
               onClick={() => navigate('/client/search-trend-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
-              전체보기 {">"}
+              {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           <div className="flex flex-col px-4">
-            {SEARCH_TRENDS.map((item) => (
-              <div key={item.rank} className="flex items-center py-3.5 border-b border-gray-50 last:border-0 cursor-pointer">
-                <span className={`w-8 text-center text-lg font-bold ${item.rank <= 3 ? 'text-[#FF7E67]' : 'text-gray-400'}`}>
-                  {item.rank}
-                </span>
-                <span className="flex-1 ml-3 text-[15px] font-medium text-gray-800">{item.text}</span>
-                <div className="w-10 flex justify-end">
-                  {item.status === 'up' && <TrendingUp className="w-5 h-5 text-[#FF7E67]" />}
-                  {item.status === 'down' && <TrendingDown className="w-5 h-5 text-gray-400" />}
-                  {item.status === 'same' && <Minus className="w-5 h-5 text-gray-300" />}
-                  {item.status === 'new' && (
-                    <span className="text-[10px] font-bold text-[#FF7E67] border border-[#FF7E67] rounded px-1.5 py-0.5">
-                      NEW
-                    </span>
-                  )}
+            {isTrendsLoading ? (
+              Array.from({ length: TREND_SKELETON_ROWS }, (_, index) => (
+                <div
+                  key={`popular-design-trend-skel-${index}`}
+                  className="flex items-center gap-3 border-b border-gray-50 py-3.5 last:border-0"
+                  aria-hidden
+                >
+                  <div className="h-5 w-6 shrink-0 animate-pulse rounded bg-gray-100" />
+                  <div className="h-5 flex-1 animate-pulse rounded bg-gray-100" />
                 </div>
-              </div>
-            ))}
+              ))
+            ) : isTrendsError ? (
+              <p className="py-6 text-center text-sm text-gray-500">
+                {isEnglish ? "Failed to load popular searches." : "인기 검색어를 불러오지 못했어요."}
+              </p>
+            ) : popularTrends.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-500">
+                {isEnglish ? "No popular search data yet." : "아직 집계된 인기 검색어가 없어요."}
+              </p>
+            ) : (
+              popularTrends.map((item, index) => {
+                const rank = index + 1;
+                const keyword = String(item.keyword ?? "").trim();
+                if (!keyword) return null;
+                return (
+                  <button
+                    key={`${rank}-${keyword}`}
+                    type="button"
+                    onClick={() => navigate(`/client/search?q=${encodeURIComponent(keyword)}`)}
+                    className="flex w-full items-center py-3.5 border-b border-gray-50 last:border-0 cursor-pointer text-left"
+                  >
+                    <span className={`w-8 text-center text-lg font-bold ${rank <= 3 ? 'text-[#FF7E67]' : 'text-gray-400'}`}>
+                      {rank}
+                    </span>
+                    <span className="flex-1 ml-3 truncate text-[15px] font-medium text-gray-800">{keyword}</span>
+                    <PopularTrendStatusIcon index={index} />
+                  </button>
+                );
+              })
+            )}
           </div>
         </section>
       </main>

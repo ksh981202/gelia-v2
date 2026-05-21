@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabaseClient";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
@@ -10,6 +11,14 @@ const CHIC_BEST_LIMIT = 30;
 const CHIC_BEST_SCROLL_Y_KEY = "gelia_chic_best_scroll_y";
 const CHIC_BASE_KEYWORDS = ["미니멀", "시크"] as const;
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
+
+const CHIC_BEST_TAB_LABEL_EN: Record<(typeof CHIC_BEST_TABS)[number], string> = {
+  전체: "All",
+  "🖤 블랙&화이트": "🖤 Black&White",
+  "🤎 누드톤": "🤎 Nude",
+  "☁️ 매트/무광": "☁️ Matte",
+  "💎 심플포인트": "💎 Simple Point",
+};
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
@@ -62,10 +71,15 @@ function resolveActiveChicTab(rawTab: string | null): (typeof CHIC_BEST_TABS)[nu
   return CHIC_BEST_TABS.find((tab) => tab === trimmed || extractPureThemeKeyword(tab) === pure) ?? "전체";
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayChicBestTabLabel(tab: (typeof CHIC_BEST_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? CHIC_BEST_TAB_LABEL_EN[tab] : tab;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function useChicBestQuery(activeTabKeyword: string, maxLimit: number) {
@@ -100,6 +114,8 @@ export default function ChicBestListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -154,7 +170,7 @@ export default function ChicBestListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[70%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            세련된 미니멀 시크 BEST
+            {isEnglish ? "Hottest Minimal Chic BEST" : "세련된 미니멀 시크 BEST"}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/client/search")}>
             <Search className="w-6 h-6 text-gray-900" />
@@ -176,7 +192,7 @@ export default function ChicBestListPage() {
                     : "bg-gray-100 text-gray-600 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap shrink-0"
                 }
               >
-                {tab}
+                {displayChicBestTabLabel(tab, isEnglish)}
               </button>
             );
           })}
@@ -185,7 +201,11 @@ export default function ChicBestListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">{CHIC_BEST_LIMIT}</span>개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-[#FF7E67]">{CHIC_BEST_LIMIT}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-[#FF7E67]">{CHIC_BEST_LIMIT}</span>개의 디자인</>
+            )}
           </span>
         </div>
       </div>
@@ -202,12 +222,16 @@ export default function ChicBestListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load rankings." : "랭킹을 불러오지 못했습니다."}
+          </p>
         ) : rankingItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No nails registered yet." : "등록된 네일이 없어요."}
+          </p>
         ) : (
           rankingItems.map((item, index) => {
-            const title = displayItemTitle(item);
+            const title = displayItemTitle(item, isEnglish);
             return (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link

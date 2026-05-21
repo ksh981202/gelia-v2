@@ -1,3 +1,4 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { ChevronLeft, ChevronRight, Mail } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -32,6 +33,8 @@ function ActionRow({
 }
 
 export default function ClientSupportPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
 
   return (
@@ -46,15 +49,19 @@ export default function ClientSupportPage() {
           <ChevronLeft className="h-6 w-6" strokeWidth={2} />
         </button>
         <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
-          고객센터
+          {isEnglish ? 'Customer Service' : '고객센터'}
         </h1>
       </header>
 
       <main className="w-full pb-10 pt-14">
         <section className="px-5 pb-8 pt-6">
-          <h2 className="text-[20px] font-bold text-gray-900">무엇을 도와드릴까요?</h2>
+          <h2 className="text-[20px] font-bold text-gray-900">
+            {isEnglish ? 'How can we help you?' : '무엇을 도와드릴까요?'}
+          </h2>
           <p className="mt-2 text-[14px] leading-relaxed text-gray-500">
-            문의 사항은 이메일로 보내주시면 빠르게 답변드릴게요.
+            {isEnglish
+              ? 'Please email us your inquiries and we will respond quickly.'
+              : '문의 사항은 이메일로 보내주시면 빠르게 답변드릴게요.'}
           </p>
           <button
             type="button"
@@ -64,19 +71,21 @@ export default function ClientSupportPage() {
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-[15px] font-semibold text-gray-800 shadow-sm transition-colors active:bg-gray-50"
           >
             <Mail className="h-5 w-5 text-[#FF7D66]" strokeWidth={2} aria-hidden />
-            <span>이메일로 문의하기</span>
+            <span>{isEnglish ? 'Contact via Email' : '이메일로 문의하기'}</span>
           </button>
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white mx-5">
-          <ActionRow label="공지사항" onClick={() => navigate('/client/notice')} />
-          <ActionRow label="자주 묻는 질문 (FAQ)" onClick={() => navigate('/client/faq')} />
-          <ActionRow label="서비스 이용약관" onClick={() => navigate('/client/terms')} />
-          <ActionRow label="개인정보 처리방침" onClick={() => navigate('/client/privacy')} />
+          <ActionRow label={isEnglish ? 'Notice' : '공지사항'} onClick={() => navigate('/client/notice')} />
+          <ActionRow label={isEnglish ? 'FAQ' : '자주 묻는 질문 (FAQ)'} onClick={() => navigate('/client/faq')} />
+          <ActionRow label={isEnglish ? 'Terms of Service' : '서비스 이용약관'} onClick={() => navigate('/client/terms')} />
+          <ActionRow label={isEnglish ? 'Privacy Policy' : '개인정보 처리방침'} onClick={() => navigate('/client/privacy')} />
           <ActionRow
-            label="앱 버전"
+            label={isEnglish ? 'App Version' : '앱 버전'}
             trailing={
-              <span className="text-[14px] font-semibold text-rose-500">1.0.0 (최신)</span>
+              <span className="text-[14px] font-semibold text-rose-500">
+                1.0.0 {isEnglish ? '(Latest)' : '(최신)'}
+              </span>
             }
           />
         </section>

@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useMemo } from 'react'
@@ -155,11 +156,12 @@ function HubThumbnail({
  */
 export default function ClientRecommendPage() {
   const navigate = useNavigate()
-  const isEnglish = false
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
 
   const { data: hubData = [] } = useRecommendHubQuery()
 
-  const viewAllLabel = isEnglish ? 'View All' : '전체보기'
+  const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
   const cardLabel = (name: string, nameEn?: string) =>
     isEnglish && nameEn ? nameEn : name
 
@@ -199,7 +201,7 @@ export default function ClientRecommendPage() {
             <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
           <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold text-gray-900">
-            {isEnglish ? 'Recommended' : '추천 네일'}
+            {isEnglish ? 'Recommended Nails' : '추천 네일'}
           </h1>
           <button
             type="button"
@@ -227,7 +229,7 @@ export default function ClientRecommendPage() {
                 to="/client/theme"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
-                {viewAllLabel} {'>'}
+                {viewAllLabel}
               </Link>
             </div>
             <div
@@ -277,7 +279,7 @@ export default function ClientRecommendPage() {
                 to="/client/style-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
-                {viewAllLabel} {'>'}
+                {viewAllLabel}
               </Link>
             </div>
             <div
@@ -327,7 +329,7 @@ export default function ClientRecommendPage() {
                 to="/client/season-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
-                {viewAllLabel} {'>'}
+                {viewAllLabel}
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -358,13 +360,13 @@ export default function ClientRecommendPage() {
                 to="/client/color-curation"
                 className="text-[20px] font-bold tracking-tight text-gray-900"
               >
-                {isEnglish ? 'Recommended Colors' : '추천 컬러 네일'}
+                {isEnglish ? 'Recommended Color Nails' : '추천 컬러 네일'}
               </Link>
               <Link
                 to="/client/color-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
-                {viewAllLabel} {'>'}
+                {viewAllLabel}
               </Link>
             </div>
             <div
@@ -398,7 +400,7 @@ export default function ClientRecommendPage() {
                 to="/client/today-special"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
-                {viewAllLabel} {'>'}
+                {viewAllLabel}
               </Link>
             </div>
             <div>

@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabaseClient";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
@@ -34,10 +35,11 @@ function buildPopularArtOrFilter(): string {
   return parts.join(",");
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function usePopularArtQuery(maxLimit: number) {
@@ -65,6 +67,8 @@ export default function PopularArtListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
 
   const { data = [], isLoading, isError } = usePopularArtQuery(POPULAR_ART_LIMIT);
   const rankingItems = useMemo(() => data.slice(0, POPULAR_ART_LIMIT), [data]);
@@ -98,7 +102,7 @@ export default function PopularArtListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[70%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            실시간 인기 아트 네일
+            {isEnglish ? "Real-time Popular Art Nails" : "실시간 인기 아트 네일"}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/client/search")}>
             <Search className="w-6 h-6 text-gray-900" />
@@ -107,7 +111,11 @@ export default function PopularArtListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">{POPULAR_ART_LIMIT}</span>개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-[#FF7E67]">{POPULAR_ART_LIMIT}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-[#FF7E67]">{POPULAR_ART_LIMIT}</span>개의 디자인</>
+            )}
           </span>
         </div>
       </div>
@@ -124,12 +132,16 @@ export default function PopularArtListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load rankings." : "랭킹을 불러오지 못했습니다."}
+          </p>
         ) : rankingItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No nails registered yet." : "등록된 네일이 없어요."}
+          </p>
         ) : (
           rankingItems.map((item, index) => {
-            const title = displayItemTitle(item);
+            const title = displayItemTitle(item, isEnglish);
             return (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link

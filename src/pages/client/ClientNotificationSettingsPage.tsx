@@ -1,3 +1,4 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -49,6 +50,8 @@ function NotificationRow({ title, description, enabled, onChange }: Notification
 }
 
 export default function ClientNotificationSettingsPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
 
   const [customRecommend, setCustomRecommend] = useState(true)
@@ -68,24 +71,28 @@ export default function ClientNotificationSettingsPage() {
           <ChevronLeft className="h-6 w-6" strokeWidth={2} />
         </button>
         <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
-          알림 설정
+          {isEnglish ? 'Notification Settings' : '알림 설정'}
         </h1>
       </header>
 
       <main className="w-full pb-10 pt-14">
         <section className="w-full">
           <h2 className="w-full bg-gray-50 px-5 py-2.5 text-[12px] font-medium text-gray-500">
-            서비스 알림
+            {isEnglish ? 'Service Notifications' : '서비스 알림'}
           </h2>
           <NotificationRow
-            title="맞춤 네일 추천 알림"
-            description="내 취향에 맞는 새로운 네일 디자인이 올라오면 알려드려요"
+            title={isEnglish ? 'Custom Nail Recommendation Alerts' : '맞춤 네일 추천 알림'}
+            description={
+              isEnglish
+                ? 'Get notified when new nail designs matching your taste are uploaded.'
+                : '내 취향에 맞는 새로운 네일 디자인이 올라오면 알려드려요'
+            }
             enabled={customRecommend}
             onChange={setCustomRecommend}
           />
           <NotificationRow
-            title="주간 트렌드 업데이트"
-            description="매주 핫한 트렌드 네일 결산 알림"
+            title={isEnglish ? 'Weekly Trend Updates' : '주간 트렌드 업데이트'}
+            description={isEnglish ? 'Weekly summary of hot trend nails.' : '매주 핫한 트렌드 네일 결산 알림'}
             enabled={weeklyTrend}
             onChange={setWeeklyTrend}
           />
@@ -93,17 +100,25 @@ export default function ClientNotificationSettingsPage() {
 
         <section className="w-full">
           <h2 className="w-full bg-gray-50 px-5 py-2.5 text-[12px] font-medium text-gray-500">
-            혜택 및 이벤트 알림
+            {isEnglish ? 'Benefits & Event Notifications' : '혜택 및 이벤트 알림'}
           </h2>
           <NotificationRow
-            title="이벤트 및 프로모션 알림"
-            description="다양한 이벤트와 혜택 소식을 전해드려요"
+            title={isEnglish ? 'Event & Promotion Alerts' : '이벤트 및 프로모션 알림'}
+            description={
+              isEnglish
+                ? 'Receive news about various events and benefits.'
+                : '다양한 이벤트와 혜택 소식을 전해드려요'
+            }
             enabled={eventPromo}
             onChange={setEventPromo}
           />
           <NotificationRow
-            title="야간 방해 금지"
-            description="21:00 ~ 08:00 동안에는 마케팅 알림을 받지 않아요"
+            title={isEnglish ? 'Do Not Disturb at Night' : '야간 방해 금지'}
+            description={
+              isEnglish
+                ? 'You will not receive marketing notifications from 21:00 to 08:00.'
+                : '21:00 - 08:00 동안에는 마케팅 알림을 받지 않아요'
+            }
             enabled={nightQuiet}
             onChange={setNightQuiet}
           />

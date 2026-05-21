@@ -4,6 +4,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,6 +13,21 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 const SYRUP_BEST_TABS = ['전체', '🤍 누드/여리', '🍑 과즙/생기', '🧊 얼음/물방울', '✨ 시럽그라데이션', '💎 포인트/파츠'] as const;
 const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
 type SortValue = (typeof SORT_OPTIONS)[number];
+
+const SYRUP_BEST_TAB_LABEL_EN: Record<(typeof SYRUP_BEST_TABS)[number], string> = {
+  전체: 'All',
+  '🤍 누드/여리': '🤍 Nude/Delicate',
+  '🍑 과즙/생기': '🍑 Juicy/Lively',
+  '🧊 얼음/물방울': '🧊 Ice/Waterdrop',
+  '✨ 시럽그라데이션': '✨ Syrup Gradient',
+  '💎 포인트/파츠': '💎 Point/Parts',
+};
+
+const SORT_LABEL_EN: Record<SortValue, string> = {
+  인기순: 'Popular',
+  최신순: 'Newest',
+  '저장 많은 순': 'Most Saved',
+};
 
 function extractPureSyrupKeyword(raw: string): string {
   return String(raw ?? '')
@@ -32,10 +48,19 @@ function syrupTabKeywordForQuery(tab: (typeof SYRUP_BEST_TABS)[number]): string 
   return extractPureSyrupKeyword(tab);
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displaySyrupBestTabLabel(tab: (typeof SYRUP_BEST_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? SYRUP_BEST_TAB_LABEL_EN[tab] : tab;
+}
+
+function displaySortLabel(sort: SortValue, isEnglish: boolean): string {
+  return isEnglish ? SORT_LABEL_EN[sort] : sort;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim();
   const en = String(item.title_en ?? '').trim();
-  return ko || en || '네일 디자인';
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인');
 }
 
 function isSortValue(value: string): value is SortValue {
@@ -44,6 +69,8 @@ function isSortValue(value: string): value is SortValue {
 
 export default function SyrupBestListPage() {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === 'en';
   const [searchParams, setSearchParams] = useSearchParams();
   const [isSortOpen, setIsSortOpen] = useState(false);
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -140,10 +167,10 @@ export default function SyrupBestListPage() {
   const openDetail = useCallback(
     (item: NailDesignRow) => {
       navigate(`/client/detail/${item.id}`, {
-        state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } },
+        state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
       });
     },
-    [navigate],
+    [isEnglish, navigate],
   );
 
   return (
@@ -160,7 +187,7 @@ export default function SyrupBestListPage() {
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
-            지금 가장 핫한 시럽 BEST
+            {isEnglish ? 'Hottest Syrup BEST' : '지금 가장 핫한 시럽 BEST'}
           </h1>
           <button
             type="button"
@@ -187,7 +214,7 @@ export default function SyrupBestListPage() {
                     : 'mr-2 shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
                 }
               >
-                {tab}
+                {displaySyrupBestTabLabel(tab, isEnglish)}
               </button>
             );
           })}
@@ -197,7 +224,11 @@ export default function SyrupBestListPage() {
         {/* 갯수 및 정렬 바 */}
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#ff765e]">{totalCountLabel}</span>개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-[#ff765e]">{totalCountLabel}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-[#ff765e]">{totalCountLabel}</span>개의 디자인</>
+            )}
           </span>
           <div ref={sortMenuRef} className="relative">
             <button
@@ -208,7 +239,7 @@ export default function SyrupBestListPage() {
               aria-expanded={isSortOpen}
               aria-label="정렬"
             >
-              <span>{sortType}</span>
+              <span>{displaySortLabel(sortType, isEnglish)}</span>
               <ChevronDown size={14} className="text-gray-500" />
             </button>
             {isSortOpen && (
@@ -227,7 +258,7 @@ export default function SyrupBestListPage() {
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {option}
+                    {displaySortLabel(option, isEnglish)}
                   </button>
                 ))}
               </div>
@@ -246,9 +277,13 @@ export default function SyrupBestListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했습니다.'}
+          </p>
         ) : galleryItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 시럽 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? 'No nails registered yet.' : '등록된 네일이 없어요.'}
+          </p>
         ) : (
           <>
             {galleryItems.map((item, index) => (
@@ -258,7 +293,7 @@ export default function SyrupBestListPage() {
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item)}
+                        alt={displayItemTitle(item, isEnglish)}
                         className="h-full w-full object-cover object-center"
                         loading={index < 4 ? 'eager' : 'lazy'}
                         decoding="async"
@@ -272,7 +307,7 @@ export default function SyrupBestListPage() {
                   </div>
                   <div className="mt-1 flex w-full flex-col items-center justify-center px-1">
                     <p className="line-clamp-2 w-full text-center text-[13px] font-bold tracking-tight text-gray-800">
-                      {displayItemTitle(item)}
+                      {displayItemTitle(item, isEnglish)}
                     </p>
                   </div>
                 </button>

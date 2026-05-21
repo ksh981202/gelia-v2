@@ -1,34 +1,39 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
+import { supabase } from '@/shared/api/supabaseClient'
+import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-type FaqItem = {
+type BoardPostRow = {
   id: string
-  q: string
-  a: string
+  title: string | null
+  content: string | null
+  title_en: string | null
+  content_en: string | null
 }
 
-const FAQ_DATA: FaqItem[] = [
-  {
-    id: '1',
-    q: '휴대폰을 바꾸면 제가 저장한 네일 사진들은 다 지워지나요?',
-    a: '로그인을 하셨다면 데이터는 안전하게 보관됩니다.',
-  },
-  {
-    id: '2',
-    q: '새로운 네일 디자인 사진은 얼마나 자주 업데이트되나요?',
-    a: '매주 새로운 트렌드 네일이 업데이트됩니다.',
-  },
-  {
-    id: '3',
-    q: '마음에 드는 네일 디자인은 어떻게 저장하고 어디서 보나요?',
-    a: '상세 페이지 하단의 저장 버튼을 누르고, 마이페이지에서 확인하세요.',
-  },
-]
-
 export default function ClientFaqPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const { data = [], isLoading, isError } = useQuery({
+    queryKey: ['board-posts', 'faq'],
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from('board_posts')
+        .select('*')
+        .eq('is_active', true)
+        .eq('post_type', 'faq')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return (rows ?? []) as BoardPostRow[]
+    },
+    staleTime: 30_000,
+  })
 
   const toggle = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id))
@@ -46,13 +51,24 @@ export default function ClientFaqPage() {
           <ChevronLeft className="h-6 w-6" strokeWidth={2} />
         </button>
         <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
-          자주 묻는 질문
+          {isEnglish ? 'FAQ' : '자주 묻는 질문 (FAQ)'}
         </h1>
       </header>
 
       <main className="w-full px-5 pb-10 pt-14">
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
-          {FAQ_DATA.map((item) => {
+          {isLoading ? (
+            <div className="px-5 py-8 text-center text-[14px] text-gray-500">
+              {isEnglish ? 'Loading posts...' : '글을 불러오는 중입니다.'}
+            </div>
+          ) : isError || data.length === 0 ? (
+            <div className="px-5 py-8 text-center text-[14px] text-gray-500">
+              {isEnglish ? 'No posts yet.' : '등록된 글이 없습니다.'}
+            </div>
+          ) : (
+            data.map((item) => {
+            const title = (isEnglish && item.title_en ? item.title_en : item.title) || ''
+            const content = (isEnglish && item.content_en ? item.content_en : item.content) || ''
             const isOpen = expandedId === item.id
             return (
               <div key={item.id} className="border-b border-gray-50 last:border-b-0">
@@ -63,7 +79,7 @@ export default function ClientFaqPage() {
                   aria-expanded={isOpen}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-semibold text-gray-900">{item.q}</p>
+                    <p className="text-[15px] font-semibold text-gray-900">{title}</p>
                   </div>
                   <ChevronDown
                     className={`h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 ${
@@ -75,12 +91,13 @@ export default function ClientFaqPage() {
                 </button>
                 {isOpen ? (
                   <div className="border-t border-gray-50 bg-gray-50/80 px-5 py-4">
-                    <p className="text-[14px] leading-relaxed text-gray-600">{item.a}</p>
+                    <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-gray-600">{content}</p>
                   </div>
                 ) : null}
               </div>
             )
-          })}
+          })
+          )}
         </div>
       </main>
     </div>

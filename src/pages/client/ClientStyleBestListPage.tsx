@@ -1,3 +1,4 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { PageContainer } from '@/shared/ui/PageContainer'
@@ -19,6 +20,13 @@ const PERIOD_PARAM_BY_TAB = {
   '🏆 월간 랭킹': 'monthly',
   '⭐ 역대 누적 BEST': 'alltime',
 } as const satisfies Record<StyleBestTabLabel, string>
+
+const STYLE_BEST_TAB_LABEL_EN: Record<StyleBestTabLabel, string> = {
+  '🔥 실시간 급상승': '🔥 Real-time',
+  '👑 주간 베스트': '👑 Weekly Best',
+  '🏆 월간 랭킹': '🥇 Monthly Ranking',
+  '⭐ 역대 누적 BEST': '⭐ All-Time Best',
+}
 
 type RankingPeriod = (typeof PERIOD_PARAM_BY_TAB)[StyleBestTabLabel]
 
@@ -47,10 +55,15 @@ function resolveActiveStyleBestTab(period: RankingPeriod): StyleBestTabLabel {
   )
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim()
   const en = String(item.title_en ?? '').trim()
-  return ko || en || '네일 디자인'
+  if (isEnglish && en) return en
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
+}
+
+function displayStyleBestTabLabel(label: StyleBestTabLabel, isEnglish: boolean): string {
+  return isEnglish ? STYLE_BEST_TAB_LABEL_EN[label] : label
 }
 
 function extractPureThemeKeyword(raw: string): string {
@@ -80,6 +93,8 @@ export default function ClientStyleBestListPage() {
   const location = useLocation()
   const navigationType = useNavigationType()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
 
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null)
 
@@ -165,20 +180,20 @@ export default function ClientStyleBestListPage() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            aria-label="뒤로 가기"
+            aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
             className="-ml-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
           >
             <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
 
           <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,18rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-            가장 많이 찾은 스타일 BEST ✨
+            {isEnglish ? 'Most Popular Styles BEST ✨' : '가장 많이 찾은 스타일 BEST ✨'}
           </h1>
 
           <Link
             to="/client/gallery"
             className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-            aria-label="검색"
+            aria-label={isEnglish ? 'Search' : '검색'}
           >
             <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </Link>
@@ -188,11 +203,11 @@ export default function ClientStyleBestListPage() {
       <div className="min-h-0 flex-1">
         <PageContainer className="!mx-auto !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
           <div className="w-full min-w-0 bg-white text-slate-900">
-            <p className="sr-only">스타일 BEST</p>
+            <p className="sr-only">{isEnglish ? 'Style BEST' : '스타일 BEST'}</p>
             <div className="sticky top-[56px] z-40 w-full min-w-0 bg-white shadow-sm">
               <section
                 className="scrollbar-hide flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                aria-label="스타일 BEST"
+                aria-label={isEnglish ? 'Style BEST' : '스타일 BEST'}
               >
                 {STYLE_BEST_TAB_LABELS.map((label) => {
                   const active = activeTabLabel === label
@@ -209,7 +224,7 @@ export default function ClientStyleBestListPage() {
                           : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
                       }
                     >
-                      {label}
+                      {displayStyleBestTabLabel(label, isEnglish)}
                     </button>
                   )
                 })}
@@ -218,11 +233,19 @@ export default function ClientStyleBestListPage() {
 
               <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
                 <span className="text-sm text-gray-500">
-                  총{' '}
-                  <span className="font-bold text-pink-500">{maxLimit}</span>{' '}
-                  개의 디자인
+                  {isEnglish ? (
+                    <>
+                      Total <strong className="font-bold text-pink-500">{maxLimit}</strong> designs
+                    </>
+                  ) : (
+                    <>
+                      총 <strong className="font-bold text-pink-500">{maxLimit}</strong>개의 디자인
+                    </>
+                  )}
                 </span>
-                <span className="text-[11px] text-gray-400">조회·저장·좋아요 합산 기준</span>
+                <span className="text-[11px] text-gray-400">
+                  {isEnglish ? 'Based on Views, Saves, Likes' : '조회·저장·좋아요 합산 기준'}
+                </span>
               </div>
             </div>
 
@@ -238,17 +261,17 @@ export default function ClientStyleBestListPage() {
                 ))
               ) : isError ? (
                 <li className="col-span-2 py-12 text-center text-sm text-gray-500">
-                  랭킹을 불러오지 못했습니다.
+                  {isEnglish ? 'Failed to load rankings.' : '랭킹을 불러오지 못했습니다.'}
                 </li>
               ) : rankingItems.length === 0 ? (
                 <li className="col-span-2 py-12 text-center text-sm text-gray-500">
-                  표시할 네일이 없습니다.
+                  {isEnglish ? 'No ranking data yet.' : '집계된 랭킹 데이터가 없습니다.'}
                 </li>
               ) : (
                 <>
                   {rankingItems.map((item, index) => {
                     const rank = index + 1
-                    const title = displayItemTitle(item)
+                    const title = displayItemTitle(item, isEnglish)
                     return (
                       <li key={item.id}>
                         <Link

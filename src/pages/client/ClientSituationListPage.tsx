@@ -5,6 +5,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { PageContainer } from '@/shared/ui/PageContainer'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
@@ -19,6 +20,18 @@ const SORT_MENU_OPTIONS = [
 ] as const
 
 type SortValue = (typeof SORT_MENU_OPTIONS)[number]['value']
+
+const SITUATION_TAB_LABEL_EN: Record<SituationTabLabel, string> = {
+  전체: 'All',
+  '🌿 데일리': '🌿 Daily',
+  '💖 데이트': '💖 Date',
+  '💼 오피스': '💼 Office',
+  '💐 하객': '💐 Guest',
+  '✈️ 여행': '✈️ Travel',
+  '🌴 바캉스': '🌴 Vacation',
+  '🎪 페스티벌': '🎪 Festival',
+  '🎉 파티': '🎉 Party',
+}
 
 function isSortValue(value: string): value is SortValue {
   return (SORT_MENU_OPTIONS as readonly { value: string }[]).some((o) => o.value === value)
@@ -50,16 +63,30 @@ function situationTabKeywordForQuery(label: SituationTabLabel): string {
   return extractPureThemeKeyword(label)
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim()
   const en = String(item.title_en ?? '').trim()
-  return ko || en || '네일 디자인'
+  if (isEnglish && en) return en
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
+}
+
+function displaySituationTabLabel(label: SituationTabLabel, isEnglish: boolean): string {
+  return isEnglish ? SITUATION_TAB_LABEL_EN[label] : label
+}
+
+function displaySortLabel(label: SortValue, isEnglish: boolean): string {
+  if (!isEnglish) return label
+  if (label === '최신순') return 'Newest'
+  if (label === '저장 많은 순') return 'Most Saved'
+  return 'Popular'
 }
 
 export default function ClientSituationListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [isSortOpen, setIsSortOpen] = useState(false)
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
 
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null)
   const sortMenuRef = useRef<HTMLDivElement | null>(null)
@@ -171,27 +198,27 @@ export default function ClientSituationListPage() {
       <div className="min-h-0 flex-1">
         <PageContainer className="!mx-auto !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
           <div className="w-full min-w-0 bg-white text-slate-900">
-            <p className="sr-only">상황</p>
+            <p className="sr-only">{isEnglish ? 'Occasion' : '상황'}</p>
             <div className="sticky top-0 z-50 w-full bg-white shadow-sm">
               <header className="flex h-14 w-full shrink-0 bg-white/95 backdrop-blur-md">
                 <div className="relative flex h-full w-full min-w-0 items-center justify-between px-5">
                   <button
                     type="button"
                     onClick={() => navigate(-1)}
-                    aria-label="뒤로 가기"
+                    aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
                     className="-ml-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
                   >
                     <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
                   </button>
 
                   <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,16rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-                    상황별 추천 네일
+                    {isEnglish ? 'Occasion Recommended Nails' : '상황별 추천 네일'}
                   </h1>
 
                   <Link
                     to="/client/gallery"
                     className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-                    aria-label="검색"
+                    aria-label={isEnglish ? 'Search' : '검색'}
                   >
                     <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
                   </Link>
@@ -200,7 +227,7 @@ export default function ClientSituationListPage() {
 
               <section
                 className="scrollbar-hide flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                aria-label="상황"
+                aria-label={isEnglish ? 'Occasion' : '상황'}
               >
                 {SITUATION_TAB_LABELS.map((label) => {
                   const active = activeTabLabel === label
@@ -217,7 +244,7 @@ export default function ClientSituationListPage() {
                           : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
                       }
                     >
-                      {label}
+                      {displaySituationTabLabel(label, isEnglish)}
                     </button>
                   )
                 })}
@@ -226,9 +253,15 @@ export default function ClientSituationListPage() {
 
               <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
                 <span className="text-sm text-gray-500">
-                  총{' '}
-                  <span className="font-bold text-pink-500">{totalCountLabel}</span>{' '}
-                  개의 디자인
+                  {isEnglish ? (
+                    <>
+                      Total <strong className="font-bold text-pink-500">{totalCountLabel}</strong> designs
+                    </>
+                  ) : (
+                    <>
+                      총 <strong className="font-bold text-pink-500">{totalCountLabel}</strong>개의 디자인
+                    </>
+                  )}
                 </span>
                 <div ref={sortMenuRef} className="relative">
                   <button
@@ -237,9 +270,9 @@ export default function ClientSituationListPage() {
                     className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-100"
                     aria-haspopup="menu"
                     aria-expanded={isSortOpen}
-                    aria-label="정렬"
+                    aria-label={isEnglish ? 'Sort' : '정렬'}
                   >
-                    <span>{sortMenuSelection.label}</span>
+                    <span>{displaySortLabel(sortMenuSelection.label, isEnglish)}</span>
                     <ChevronDown size={14} className="text-gray-500" />
                   </button>
                   {isSortOpen && (
@@ -262,7 +295,7 @@ export default function ClientSituationListPage() {
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                         >
-                          {opt.label}
+                          {displaySortLabel(opt.label, isEnglish)}
                         </button>
                       ))}
                     </div>
@@ -283,11 +316,11 @@ export default function ClientSituationListPage() {
                 ))
               ) : isError ? (
                 <li className="col-span-2 py-12 text-center text-sm text-gray-500">
-                  디자인을 불러오지 못했습니다.
+                  {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했습니다.'}
                 </li>
               ) : galleryItems.length === 0 ? (
                 <li className="col-span-2 py-12 text-center text-sm text-gray-500">
-                  표시할 네일이 없습니다.
+                  {isEnglish ? 'No nails registered yet.' : '등록된 네일이 없어요.'}
                 </li>
               ) : (
                 <>
@@ -299,7 +332,7 @@ export default function ClientSituationListPage() {
                           initialNailData: {
                             id: item.id,
                             imageUrl: item.image_url,
-                            title: displayItemTitle(item),
+                            title: displayItemTitle(item, isEnglish),
                             color: '',
                             mood: '',
                           },
@@ -310,7 +343,7 @@ export default function ClientSituationListPage() {
                           {item.image_url ? (
                             <img
                               src={item.image_url}
-                              alt={displayItemTitle(item)}
+                              alt={displayItemTitle(item, isEnglish)}
                               className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                               loading={index < 4 ? 'eager' : 'lazy'}
                               fetchPriority={index < 4 ? 'high' : undefined}
@@ -320,7 +353,7 @@ export default function ClientSituationListPage() {
                         </div>
                         <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
                           <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
-                            {displayItemTitle(item)}
+                            {displayItemTitle(item, isEnglish)}
                           </p>
                         </div>
                       </Link>

@@ -3,6 +3,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
@@ -17,13 +18,16 @@ function normalizeKeyword(raw: string | null | undefined): string {
   return String(raw ?? "").trim();
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 export default function SearchTrendListPage() {
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -157,7 +161,7 @@ export default function SearchTrendListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            인기 검색어 트렌드
+            {isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/client/search")}>
             <Search className="w-6 h-6 text-gray-900" />
@@ -186,7 +190,7 @@ export default function SearchTrendListPage() {
                       : "shrink-0 whitespace-nowrap rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
                   }
                 >
-                  {index + 1}위 {keyword}
+                  {isEnglish ? `Rank ${index + 1} ${keyword}` : `${index + 1}위 ${keyword}`}
                 </button>
               );
             })
@@ -196,10 +200,18 @@ export default function SearchTrendListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> 개의 디자인
+            {isEnglish ? (
+              <>
+                Total <strong className="font-bold text-[#FF7E67]">{totalCountLabel}</strong> designs
+              </>
+            ) : (
+              <>
+                총 <strong className="font-bold text-[#FF7E67]">{totalCountLabel}</strong>개의 디자인
+              </>
+            )}
           </span>
           <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
-            <span>인기순</span>
+            <span>{isEnglish ? "Popular" : "인기순"}</span>
             <ChevronDown size={14} className="text-gray-500" />
           </span>
         </div>
@@ -207,9 +219,13 @@ export default function SearchTrendListPage() {
 
       <ul className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
         {isTrendsError ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">인기 검색어를 불러오지 못했습니다.</li>
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load trend data." : "트렌드 데이터를 불러오지 못했습니다."}
+          </li>
         ) : !isGalleryEnabled && !isTrendsLoading ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">아직 집계된 인기 검색어가 없습니다.</li>
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No trend data has been collected yet." : "아직 집계된 인기 검색어가 없습니다."}
+          </li>
         ) : isLoading || (isTrendsLoading && !isGalleryEnabled) ? (
           Array.from({ length: 8 }, (_, index) => (
             <li key={`search-trend-skel-${index}`} aria-hidden>
@@ -220,13 +236,17 @@ export default function SearchTrendListPage() {
             </li>
           ))
         ) : isError ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">디자인을 불러오지 못했습니다.</li>
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load designs." : "디자인을 불러오지 못했습니다."}
+          </li>
         ) : galleryItems.length === 0 ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</li>
+          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No nails found for this keyword." : "해당 키워드의 네일이 없어요."}
+          </li>
         ) : (
           <>
             {galleryItems.map((item, index) => {
-              const title = displayItemTitle(item);
+              const title = displayItemTitle(item, isEnglish);
               return (
                 <li key={item.id}>
                   <Link

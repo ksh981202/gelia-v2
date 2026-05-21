@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -9,7 +10,7 @@ import {
   useNavigationType,
   useSearchParams,
 } from 'react-router-dom'
-import { STYLE_TAB_LABELS } from './styleTabs'
+import { STYLE_TAB_LABELS, type StyleTabLabel } from './styleTabs'
 
 /** V1 `NailOverlayTitle` 히어로 제목 — `ClientPage`와 동일 */
 const NAIL_HERO_BANNER_TITLE_CLASS =
@@ -19,6 +20,22 @@ const STYLE_HERO_BANNER_FRAME =
   'relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg'
 
 const bestStyleCaptions = ['✨ 심플', '💎 화려한', '💅 트렌디', '🌸 로맨틱'] as const
+
+const STYLE_TAB_LABEL_EN: Record<StyleTabLabel, string> = {
+  전체: 'All',
+  '✨ 심플': '✨ Simple',
+  '💎 화려한': '💎 Glamorous',
+  '🌙 프렌치': '🌙 French',
+  '🖍️ 드로잉': '🖍️ Drawing',
+  '🌈 그라데이션': '🌈 Gradient',
+}
+
+const BEST_STYLE_CAPTION_EN: Record<(typeof bestStyleCaptions)[number], string> = {
+  '✨ 심플': '✨ Simple',
+  '💎 화려한': '💎 Glamorous',
+  '💅 트렌디': '💅 Trendy',
+  '🌸 로맨틱': '🌸 Romantic',
+}
 
 function extractPureStyleKeyword(raw: string): string {
   return String(raw ?? '')
@@ -57,6 +74,10 @@ function nailDisplayTitle(nail: NailDesignRow | undefined, isEnglish: boolean): 
   const ko = nail.title?.trim()
   if (isEnglish && en) return en
   return ko || en || null
+}
+
+function displayStyleTabLabel(label: StyleTabLabel, isEnglish: boolean): string {
+  return isEnglish ? STYLE_TAB_LABEL_EN[label] : label
 }
 
 function resolveStyleTabIndex(searchParams: URLSearchParams): number {
@@ -149,8 +170,9 @@ export default function ClientStyleCurationPage() {
   const [active, setActive] = useState(() => resolveStyleTabIndex(searchParams))
   const tabContainerRef = useRef<HTMLDivElement | null>(null)
   const { data: hubData = [] } = useRecommendHubQuery()
+  const { language } = useLanguageContext()
 
-  const isEnglish = false
+  const isEnglish = language === 'en'
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   useEffect(() => {
@@ -263,7 +285,7 @@ export default function ClientStyleCurationPage() {
       <main className="px-0">
         <div className="mb-5 mt-6 flex items-end justify-between px-4">
           <h2 className="text-lg font-bold tracking-tight text-gray-900">
-            {isEnglish ? 'Browse by Style' : '스타일별 모아보기'}
+            {isEnglish ? 'View by Style' : '스타일별 모아보기'}
           </h2>
           <Link
             to={{
@@ -307,9 +329,9 @@ export default function ClientStyleCurationPage() {
                     ? 'border-b-2 border-gray-900 text-gray-900'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
-                aria-label={`${label} ${isEnglish ? 'tab' : '탭'}`}
+                aria-label={`${displayStyleTabLabel(label, isEnglish)} ${isEnglish ? 'tab' : '탭'}`}
               >
-                {label}
+                {displayStyleTabLabel(label, isEnglish)}
               </button>
             )
           })}
@@ -361,7 +383,7 @@ export default function ClientStyleCurationPage() {
           <div className="mb-5 mt-12 flex items-center justify-between px-4">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish
-                ? 'Most Searched Styles BEST ✨'
+                ? 'Most Popular Styles BEST ✨'
                 : '가장 많이 찾은 스타일 BEST ✨'}
             </h2>
             <Link
@@ -379,7 +401,7 @@ export default function ClientStyleCurationPage() {
             <div className="mb-0 flex items-center gap-4 pb-0">
               {bestStyleCaptions.map((cap, index) => {
                 const nail = bestStyleMatches[index]
-                const title = nailDisplayTitle(nail, isEnglish) ?? cap
+                const title = nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? BEST_STYLE_CAPTION_EN[cap] : cap)
                 return (
                   <StyleNailThumbShell
                     key={cap}

@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,19 @@ const TEXTURE_CAPTIONS = ['시럽 네일', '자석 네일', '미러파우더 네
 const PARTS_CAPTIONS = ['스톤/큐빅 네일', '리본 네일', '진주 네일', '메탈/체인 네일'] as const;
 const PATTERN_CAPTIONS = ['프렌치 네일', '마블 네일', '그라데이션 네일'] as const;
 
+const TREND_CAPTION_EN: Record<string, string> = {
+  '시럽 네일': 'Syrup Nails',
+  '자석 네일': 'Magnet Nails',
+  '미러파우더 네일': 'Mirror Powder Nails',
+  '스톤/큐빅 네일': 'Stone & Cubic Nails',
+  '리본 네일': 'Ribbon Nails',
+  '진주 네일': 'Pearl Nails',
+  '메탈/체인 네일': 'Metal & Chain Nails',
+  '프렌치 네일': 'French Nails',
+  '마블 네일': 'Marble Nails',
+  '그라데이션 네일': 'Gradient Nails',
+};
+
 type TrendCardItem = {
   id: string;
   name: string;
@@ -16,6 +30,11 @@ type TrendCardItem = {
 
 function captionKeyword(caption: string): string {
   return caption.replace(/\s*네일\s*$/g, '').trim();
+}
+
+function displayTrendCardName(item: TrendCardItem, isEnglish: boolean): string {
+  if (!isEnglish) return item.name;
+  return TREND_CAPTION_EN[item.name] ?? item.item?.title_en ?? item.item?.title ?? item.name;
 }
 
 function itemSearchText(item: NailDesignRow): string {
@@ -39,7 +58,7 @@ function itemSearchText(item: NailDesignRow): string {
 
 function findMatchingNail(pool: NailDesignRow[], caption: string): NailDesignRow | undefined {
   const keyword = captionKeyword(caption).toLowerCase();
-  const tokens = keyword.split(/[\/\s]+/).filter(Boolean);
+  const tokens = keyword.split(/[/\s]+/).filter(Boolean);
   return pool.find((item) => {
     const haystack = itemSearchText(item);
     return haystack.includes(keyword) || tokens.some((token) => haystack.includes(token));
@@ -63,6 +82,8 @@ function findMoodHero(pool: NailDesignRow[]): NailDesignRow | undefined {
 
 export default function TrendPage() {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === 'en';
   const { data: hubData = [] } = useRecommendHubQuery();
 
   const textureItems = useMemo(() => buildTrendCards(TEXTURE_CAPTIONS, hubData), [hubData]);
@@ -89,7 +110,7 @@ export default function TrendPage() {
           <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
-          트렌드 네일
+          {isEnglish ? 'Trend Nails' : '트렌드 네일'}
         </h1>
         <button
           type="button"
@@ -106,14 +127,14 @@ export default function TrendPage() {
         <section className="pt-6">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
-              텍스처 트렌드
+              {isEnglish ? 'Texture Trend' : '텍스처 트렌드'}
             </h2>
             <button
               type="button"
               onClick={() => navigate('/client/texture')}
               className="text-[13px] font-medium text-gray-500 cursor-pointer"
             >
-              전체보기 {'>'}
+              {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
           <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
@@ -123,7 +144,7 @@ export default function TrendPage() {
                   {item.item?.image_url ? (
                     <img
                       src={item.item.image_url}
-                      alt={item.name}
+                      alt={displayTrendCardName(item, isEnglish)}
                       className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -132,7 +153,7 @@ export default function TrendPage() {
                   ) : null}
                 </div>
                 <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
-                  {item.name}
+                  {displayTrendCardName(item, isEnglish)}
                 </span>
               </button>
             ))}
@@ -143,14 +164,14 @@ export default function TrendPage() {
         <section className="mt-12">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
-              포인트 파츠 트렌드
+              {isEnglish ? 'Point Parts Trend' : '포인트 파츠 트렌드'}
             </h2>
             <button
               type="button"
               onClick={() => navigate('/client/parts')}
               className="text-sm font-medium text-gray-500 cursor-pointer"
             >
-              전체보기 {'>'}
+              {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
           <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
@@ -160,7 +181,7 @@ export default function TrendPage() {
                   {item.item?.image_url ? (
                     <img
                       src={item.item.image_url}
-                      alt={item.name}
+                      alt={displayTrendCardName(item, isEnglish)}
                       className="w-full aspect-[3/4] rounded-2xl object-cover object-center shadow-sm"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -169,7 +190,7 @@ export default function TrendPage() {
                   ) : null}
                 </div>
                 <p className="font-sans font-medium text-[13px] sm:text-[14px] text-gray-800 tracking-tight text-center mt-2.5">
-                  {item.name}
+                  {displayTrendCardName(item, isEnglish)}
                 </p>
               </button>
             ))}
@@ -180,14 +201,14 @@ export default function TrendPage() {
         <section className="mt-12">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
-              아트 & 패턴 트렌드
+              {isEnglish ? 'Art & Pattern Trend' : '아트 & 패턴 트렌드'}
             </h2>
             <button
               type="button"
               onClick={() => navigate('/client/pattern')}
               className="text-sm font-medium text-gray-500 cursor-pointer"
             >
-              전체보기 {'>'}
+              {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
           <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
@@ -197,7 +218,7 @@ export default function TrendPage() {
                   {item.item?.image_url ? (
                     <img
                       src={item.item.image_url}
-                      alt={item.name}
+                      alt={displayTrendCardName(item, isEnglish)}
                       className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -206,7 +227,7 @@ export default function TrendPage() {
                   ) : null}
                 </div>
                 <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
-                  {item.name}
+                  {displayTrendCardName(item, isEnglish)}
                 </span>
               </button>
             ))}
@@ -217,14 +238,14 @@ export default function TrendPage() {
         <section className="mt-8 mb-6 w-full">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
-              핫 트렌드 무드
+              {isEnglish ? 'Hot Trend Mood' : '핫 트렌드 무드'}
             </h2>
             <button
               type="button"
               onClick={() => navigate('/client/mood')}
               className="text-sm font-medium text-gray-500 cursor-pointer"
             >
-              전체보기 {'>'}
+              {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
           <div className="w-full">
@@ -232,7 +253,7 @@ export default function TrendPage() {
               {moodHeroItem?.image_url ? (
                 <img
                   src={moodHeroItem.image_url}
-                  alt="핫 트렌드 무드"
+                  alt={isEnglish ? 'Hot Trend Mood' : '핫 트렌드 무드'}
                   className="absolute inset-0 w-full h-full object-cover object-center"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -245,7 +266,7 @@ export default function TrendPage() {
                   AESTHETIC MOOD
                 </span>
                 <h3 className="font-sans text-[22px] font-bold text-white drop-shadow-lg mb-4">
-                  요즘 가장 핫한 네일 무드
+                  {isEnglish ? 'The Hottest Nail Mood Now' : '요즘 가장 핫한 네일 무드'}
                 </h3>
                 <div className="px-5 py-2 bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-bold rounded-full shadow-md">
                   View Moodboard

@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useMemo } from 'react'
@@ -7,6 +8,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 const SEASON_TABS = ['🌸 봄', '🌊 여름', '🍁 가을', '❄️ 겨울'] as const
 
 const SEASON_KEYS = ['봄', '여름', '가을', '겨울'] as const
+
+const SEASON_TAB_LABEL_EN: Record<(typeof SEASON_TABS)[number], string> = {
+  '🌸 봄': '🌸 Spring',
+  '🌊 여름': '🌊 Summer',
+  '🍁 가을': '🍁 Autumn',
+  '❄️ 겨울': '❄️ Winter',
+}
 
 const H_SCROLLBAR_HIDE =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
@@ -42,18 +50,25 @@ function itemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): 
   })
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim()
   const en = String(item.title_en ?? '').trim()
-  return ko || en || '네일 디자인'
+  if (isEnglish && en) return en
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
+}
+
+function displaySeasonTabLabel(label: (typeof SEASON_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? SEASON_TAB_LABEL_EN[label] : label
 }
 
 export default function ClientSeasonCurationPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: hubData = [] } = useRecommendHubQuery()
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
 
-  const viewAllLabel = '전체보기 >'
+  const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
   const activeIdx = resolveSeasonIndex(searchParams.get('tab'))
   const currentSeason = SEASON_KEYS[activeIdx] ?? SEASON_KEYS[0]
   const currentTabSearch = `?tab=${encodeURIComponent(currentSeason)}`
@@ -81,7 +96,7 @@ export default function ClientSeasonCurationPage() {
         initialNailData: {
           id: item.id,
           imageUrl: item.image_url,
-          title: displayItemTitle(item),
+          title: displayItemTitle(item, isEnglish),
           color: '',
           mood: '',
         },
@@ -95,30 +110,30 @@ export default function ClientSeasonCurationPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          aria-label="뒤로 가기"
+          aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
           className="-ml-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
         >
           <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
 
         <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,18rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-          계절별 맞춤 네일
+          {isEnglish ? 'Seasonal Custom Nails' : '계절별 맞춤 네일'}
         </h1>
 
         <Link
           to="/client/gallery"
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-          aria-label="검색"
+          aria-label={isEnglish ? 'Search' : '검색'}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </Link>
       </header>
 
       <main className="px-0">
-        <section className="mb-0 mt-6 px-4" aria-label="시즌별 모아보기">
+        <section className="mb-0 mt-6 px-4" aria-label={isEnglish ? 'View by Season' : '시즌별 모아보기'}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              시즌별 모아보기
+              {isEnglish ? 'View by Season' : '시즌별 모아보기'}
             </h2>
             <Link
               to={{ pathname: '/client/season-list', search: currentTabSearch }}
@@ -130,7 +145,7 @@ export default function ClientSeasonCurationPage() {
 
           <nav
             className="mb-4 flex w-full items-center justify-between border-b border-gray-100 px-6"
-            aria-label="시즌"
+            aria-label={isEnglish ? 'Season' : '시즌'}
           >
             {SEASON_TABS.map((t, idx) => {
               const isActive = idx === activeIdx
@@ -149,7 +164,7 @@ export default function ClientSeasonCurationPage() {
                         : 'font-medium text-gray-500'
                     }`}
                   >
-                    {t}
+                    {displaySeasonTabLabel(t, isEnglish)}
                   </span>
                   <div
                     className={`absolute bottom-0 left-0 right-0 h-[2px] ${
@@ -177,7 +192,7 @@ export default function ClientSeasonCurationPage() {
             {heroNail?.image_url ? (
               <img
                 src={heroNail.image_url}
-                alt={displayItemTitle(heroNail)}
+                alt={displayItemTitle(heroNail, isEnglish)}
                 className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
@@ -187,7 +202,7 @@ export default function ClientSeasonCurationPage() {
             {heroNail ? (
               <div className="absolute bottom-4 left-4 right-4">
                 <p className="truncate text-lg font-bold text-white drop-shadow-md md:text-xl">
-                  {displayItemTitle(heroNail)}
+                  {displayItemTitle(heroNail, isEnglish)}
                 </p>
               </div>
             ) : null}
@@ -196,11 +211,11 @@ export default function ClientSeasonCurationPage() {
 
         <section
           className="mb-0 mt-12 px-4"
-          aria-label="휴양지에서 인생샷 보장! 바캉스 네일"
+          aria-label={isEnglish ? 'Perfect for Vacation! Vacation Nails' : '휴양지에서 인생샷 보장! 바캉스 네일'}
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              휴양지에서 인생샷 보장! 바캉스 네일 ✈️
+              {isEnglish ? 'Perfect for Vacation! Vacation Nails ✈️' : '휴양지에서 인생샷 보장! 바캉스 네일 ✈️'}
             </h2>
             <Link
               to={{ pathname: '/client/vacation-list', search: currentTabSearch }}
@@ -223,14 +238,14 @@ export default function ClientSeasonCurationPage() {
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
                 <p className="truncate text-center text-[13px] text-gray-800">
-                  {displayItemTitle(item)}
+                  {displayItemTitle(item, isEnglish)}
                 </p>
               </button>
             ))}
@@ -239,11 +254,11 @@ export default function ClientSeasonCurationPage() {
 
         <section
           className="mb-0 mt-12 px-4"
-          aria-label="내 손끝에 찰떡, 계절 인기 네일 모음"
+          aria-label={isEnglish ? 'Popular Seasonal Nails' : '내 손끝에 찰떡, 계절 인기 네일 모음'}
         >
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
-              내 손끝에 찰떡, 계절 인기 네일 모음
+              {isEnglish ? 'Popular Seasonal Nails' : '내 손끝에 찰떡, 계절 인기 네일 모음'}
             </h2>
             <Link
               to={{ pathname: '/client/season-popular-list', search: seasonPopularSearch }}
@@ -264,14 +279,14 @@ export default function ClientSeasonCurationPage() {
                 <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item)}
+                    alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
                 <p className="truncate text-center text-sm text-gray-800">
-                  {displayItemTitle(item)}
+                  {displayItemTitle(item, isEnglish)}
                 </p>
               </button>
             ))}

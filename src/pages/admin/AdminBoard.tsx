@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { supabase } from "@/shared/api/supabaseClient";
 
 const TYPE_LABEL: Record<string, string> = {
   notice: "공지사항",
@@ -8,23 +9,135 @@ const TYPE_LABEL: Record<string, string> = {
   privacy: "개인정보처리방침",
 };
 
-const DUMMY_ROWS = [
-  { id: "1", type: "notice", title: "젤리아 V2.0 업데이트 안내", is_active: true, created_at: "2026.05.16 10:30" },
-  { id: "2", type: "faq", title: "네일 사진 업로드는 어떻게 하나요?", is_active: true, created_at: "2026.05.15 14:20" },
-  { id: "3", type: "terms", title: "이용약관 개정 안내", is_active: false, created_at: "2026.05.10 09:00" },
-];
+type BoardPostRow = {
+  id: string;
+  post_type: string | null;
+  title: string | null;
+  content: string | null;
+  title_en: string | null;
+  content_en: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+};
+
+async function fetchBoardPosts(): Promise<BoardPostRow[]> {
+  const { data, error } = await supabase
+    .from("board_posts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as BoardPostRow[];
+}
+
+function formatCreatedAt(raw: string | null): string {
+  if (!raw) return "-";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
 
 export default function AdminBoard() {
   const [type, setType] = useState("notice");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [contentEn, setContentEn] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [rows, setRows] = useState<BoardPostRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const loadPosts = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+    try {
+      const nextRows = await fetchBoardPosts();
+      setRows(nextRows);
+    } catch (error) {
+      console.error("게시글 목록 조회 실패:", error);
+      setErrorMessage("게시글 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const nextRows = await fetchBoardPosts();
+        if (!cancelled) setRows(nextRows);
+      } catch (error) {
+        console.error("게시글 목록 조회 실패:", error);
+        if (!cancelled) setErrorMessage("게시글 목록을 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const resetForm = () => {
+    setType("notice");
+    setTitle("");
+    setContent("");
+    setTitleEn("");
+    setContentEn("");
+    setIsActive(true);
+  };
+
+  const handleSubmit = async () => {
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+
+    if (!trimmedTitle || !trimmedContent) {
+      setErrorMessage("제목 (KR)과 본문 (KR)을 입력해 주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    const { error } = await supabase.from("board_posts").insert([
+      {
+        post_type: type,
+        title: trimmedTitle,
+        content: trimmedContent,
+        title_en: titleEn.trim(),
+        content_en: contentEn.trim(),
+        is_active: isActive,
+      },
+    ]);
+
+    if (error) {
+      console.error("게시글 등록 실패:", error);
+      setErrorMessage("게시글 등록에 실패했습니다.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    resetForm();
+    await loadPosts();
+    setIsSubmitting(false);
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 bg-slate-50 min-h-screen">
-      <h2 className="text-xl font-bold text-slate-900">고객센터 글 등록 (정적 템플릿)</h2>
+      <h2 className="text-xl font-bold text-slate-900">고객센터 글 등록</h2>
       <p className="mt-1 text-sm text-slate-500">
-        공지·FAQ·약관·개인정보 처리방침을 등록하는 관리자 UI 뼈대입니다. API 통신은 연결되지 않았습니다.
+        공지·FAQ·약관·개인정보 처리방침을 한국어와 영어로 등록하고 관리합니다.
       </p>
 
       <div className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -42,26 +155,56 @@ export default function AdminBoard() {
           </select>
         </div>
 
-        <div className="grid gap-2">
-          <label htmlFor="board-title" className="text-sm font-semibold text-gray-700">제목</label>
-          <input
-            id="board-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="제목을 입력하세요"
-            className="h-10 w-full max-w-2xl rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
-          />
-        </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-4 rounded-lg border border-slate-100 bg-slate-50/60 p-4">
+            <h3 className="text-sm font-bold text-slate-900">한국어 원본</h3>
+            <div className="grid gap-2">
+              <label htmlFor="board-title" className="text-sm font-semibold text-gray-700">제목 (KR)</label>
+              <input
+                id="board-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="제목을 입력하세요"
+                className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
 
-        <div className="grid gap-2">
-          <label htmlFor="board-content" className="text-sm font-semibold text-gray-700">본문</label>
-          <textarea
-            id="board-content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="본문을 작성하세요."
-            className="min-h-[220px] w-full rounded-md border border-slate-200 p-3 text-sm focus:border-slate-500 focus:outline-none resize-y"
-          />
+            <div className="grid gap-2">
+              <label htmlFor="board-content" className="text-sm font-semibold text-gray-700">본문 (KR)</label>
+              <textarea
+                id="board-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="본문을 작성하세요."
+                className="min-h-[260px] w-full resize-y rounded-md border border-slate-200 p-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+            <h3 className="text-sm font-bold text-slate-900">영어 번역</h3>
+            <div className="grid gap-2">
+              <label htmlFor="board-title-en" className="text-sm font-semibold text-gray-700">제목 (EN)</label>
+              <input
+                id="board-title-en"
+                value={titleEn}
+                onChange={(e) => setTitleEn(e.target.value)}
+                placeholder="Enter the English title"
+                className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="board-content-en" className="text-sm font-semibold text-gray-700">본문 (EN)</label>
+              <textarea
+                id="board-content-en"
+                value={contentEn}
+                onChange={(e) => setContentEn(e.target.value)}
+                placeholder="Enter the English content."
+                className="min-h-[260px] w-full resize-y rounded-md border border-slate-200 p-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-2">
@@ -72,17 +215,31 @@ export default function AdminBoard() {
           </label>
         </div>
 
+        {errorMessage ? (
+          <p className="rounded-md bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{errorMessage}</p>
+        ) : null}
+
         <div className="flex flex-wrap gap-2 pt-4">
-          <button type="button" className="rounded-md bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800">
-            등록
+          <button
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={isSubmitting}
+            className="rounded-md bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {isSubmitting ? "등록 중..." : "등록"}
           </button>
         </div>
       </div>
 
       <div className="mt-10 flex items-center justify-between gap-4">
         <h2 className="text-lg font-bold text-slate-900">게시글 목록</h2>
-        <button type="button" className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-          새로고침
+        <button
+          type="button"
+          onClick={() => void loadPosts()}
+          disabled={isLoading}
+          className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          {isLoading ? "불러오는 중..." : "새로고침"}
         </button>
       </div>
 
@@ -98,32 +255,54 @@ export default function AdminBoard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {DUMMY_ROWS.map((row) => (
-              <tr key={row.id} className="transition-colors hover:bg-slate-50/50">
-                <td className="px-4 py-3 font-medium text-slate-700">{TYPE_LABEL[row.type]}</td>
-                <td className="max-w-[240px] truncate px-4 py-3 text-slate-900" title={row.title}>
-                  {row.title}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${row.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {row.is_active ? "Y" : "N"}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-4 py-3 text-slate-500">
-                  {row.created_at}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="inline-flex gap-1">
-                    <button type="button" className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors" aria-label="수정">
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button type="button" className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" aria-label="삭제">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+            {isLoading ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
+                  게시글을 불러오는 중입니다.
                 </td>
               </tr>
-            ))}
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
+                  등록된 게시글이 없습니다.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => {
+                const postType = row.post_type ?? "";
+                const titleText = row.title?.trim() || "(제목 없음)";
+                const hasEnglishTitle = Boolean(row.title_en?.trim());
+                return (
+                  <tr key={row.id} className="transition-colors hover:bg-slate-50/50">
+                    <td className="px-4 py-3 font-medium text-slate-700">{TYPE_LABEL[postType] ?? postType}</td>
+                    <td className="max-w-[280px] truncate px-4 py-3 text-slate-900" title={titleText}>
+                      {titleText}
+                      {hasEnglishTitle ? (
+                        <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-600">[EN]</span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${row.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {row.is_active ? "Y" : "N"}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                      {formatCreatedAt(row.created_at)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex gap-1">
+                        <button type="button" className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors" aria-label="수정">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button type="button" className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" aria-label="삭제">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

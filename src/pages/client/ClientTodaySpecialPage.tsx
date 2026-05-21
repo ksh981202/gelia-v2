@@ -1,11 +1,11 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { Bookmark, ChevronLeft, Search } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { editorPickNoteFromRow } from '../../lib/editorPickNote'
 
-type EditorPick = NailDesignRow & { editorNote: string }
+type DailySpecialPick = NailDesignRow & { dailyScore: number }
 
 function formatTodayPickBadgeLabel(d = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -29,30 +29,23 @@ function hashString(value: string): number {
   return hash >>> 0
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? '').trim()
   const en = String(item.title_en ?? '').trim()
-  return ko || en || '네일 디자인'
+  if (isEnglish && en) return en
+  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
 }
 
 function pickDailySpecialNails(
   rows: NailDesignRow[],
   count: number,
   d = new Date(),
-): EditorPick[] {
+): DailySpecialPick[] {
   const seed = dateSeed(d)
   return rows
     .filter((row) => row.id && row.image_url)
-    .map((row, index) => ({
+    .map((row) => ({
       ...row,
-      editorNote: editorPickNoteFromRow(
-        {
-          title: row.title,
-          description: row.description,
-          styles: (row.styles ?? []).join(', '),
-        },
-        index,
-      ),
       dailyScore: hashString(`${seed}:${row.id}`),
     }))
     .sort((a, b) => a.dailyScore - b.dailyScore)
@@ -62,6 +55,8 @@ function pickDailySpecialNails(
 /** V1 에디토리얼 — 정적 매거진 UI (탭·무한 스크롤 없음) */
 export default function ClientTodaySpecialPage() {
   const navigate = useNavigate()
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const today = useMemo(() => new Date(), [])
   const todayLabel = formatTodayPickBadgeLabel(today)
   const { data: hubData = [] } = useRecommendHubQuery()
@@ -76,20 +71,20 @@ export default function ClientTodaySpecialPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          aria-label="뒤로 가기"
+          aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
           className="-ml-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
         >
           <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
 
         <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,16rem)] -translate-x-1/2 truncate text-center text-[17px] font-bold text-gray-900">
-          오늘의 특별한 네일
+          {isEnglish ? "Today's Special Nails" : '오늘의 특별한 네일'}
         </h1>
 
         <Link
           to="/client/gallery"
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-          aria-label="검색"
+          aria-label={isEnglish ? 'Search' : '검색'}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </Link>
@@ -100,26 +95,46 @@ export default function ClientTodaySpecialPage() {
           {todayLabel}
         </span>
         <h2 className="mt-2 text-2xl font-bold leading-snug text-gray-900">
-          오늘 하루, 에디터가 고른
-          <br />
-          네일 세 가지 ✨
+          {isEnglish ? (
+            'Three Nails Picked by Our Editor Today ✨'
+          ) : (
+            <>
+              오늘 하루, 에디터가 고른
+              <br />
+              네일 세 가지 ✨
+            </>
+          )}
         </h2>
         <p className="mt-2 text-[13px] text-gray-500">
-          매일 자정마다 조회·저장이 높은 작품 풀에서 새로운 조합으로 만나요.
+          {isEnglish
+            ? 'Meet a new combination every midnight from our highly viewed and saved collection.'
+            : '매일 자정마다 조회·저장이 높은 작품 풀에서 새로운 조합으로 만나요.'}
         </p>
       </div>
 
+      {editorPicks.length === 0 ? (
+        <p className="px-5 py-12 text-center text-sm text-gray-500">
+          {isEnglish ? "Failed to load today's special nails." : '오늘의 네일을 불러오지 못했어요.'}
+        </p>
+      ) : (
       <div className="flex flex-col gap-10">
-        {editorPicks.map((pick, index) => (
+        {editorPicks.map((pick, index) => {
+          const title = displayItemTitle(pick, isEnglish)
+          return (
           <article key={pick.id} className="px-4">
             <Link
               to={`/client/detail/${pick.id}`}
-              state={{ initialNailData: pick }}
+              state={{
+                initialNailData: {
+                  ...pick,
+                  title,
+                },
+              }}
               className="relative block aspect-[4/5] w-full overflow-hidden rounded-2xl"
             >
               <img
                 src={pick.image_url}
-                alt={displayItemTitle(pick)}
+                alt={title}
                 className="h-full w-full object-cover"
                 loading={index === 0 ? 'eager' : 'lazy'}
                 decoding="async"
@@ -136,21 +151,14 @@ export default function ClientTodaySpecialPage() {
                 PICK
               </span>
               <h3 className="absolute bottom-4 left-4 text-lg font-bold text-white">
-                {displayItemTitle(pick)}
+                {title}
               </h3>
             </Link>
-
-            <div className="mt-4 rounded-xl border border-orange-50 bg-[#fdfaf8] p-4">
-              <h4 className="mb-2 text-sm font-bold text-gray-900">
-                💅 추천 포인트
-              </h4>
-              <p className="text-[13px] leading-relaxed text-gray-600">
-                &ldquo;{pick.description || pick.editorNote}&rdquo;
-              </p>
-            </div>
           </article>
-        ))}
+          )
+        })}
       </div>
+      )}
     </div>
   )
 }

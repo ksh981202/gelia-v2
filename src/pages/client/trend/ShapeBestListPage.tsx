@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabaseClient";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
@@ -8,6 +9,13 @@ import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } fr
 const SHAPE_TABS = ["전체", "⚪ 라운드", "🧊 스퀘어", "🌰 오발/아몬드"] as const;
 const SHAPE_SCROLL_Y_KEY = "gelia_shape_best_scroll_y";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
+
+const SHAPE_TAB_LABEL_EN: Record<(typeof SHAPE_TABS)[number], string> = {
+  전체: "All",
+  "⚪ 라운드": "⚪ Round",
+  "🧊 스퀘어": "🧊 Square",
+  "🌰 오발/아몬드": "🌰 Oval/Almond",
+};
 
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
@@ -56,10 +64,15 @@ function resolveActiveTab(rawTab: string | null): (typeof SHAPE_TABS)[number] {
   return SHAPE_TABS.find((tab) => tab === rawTab || extractPureThemeKeyword(tab) === pure) ?? SHAPE_TABS[0];
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayShapeTabLabel(tab: (typeof SHAPE_TABS)[number], isEnglish: boolean): string {
+  return isEnglish ? SHAPE_TAB_LABEL_EN[tab] : tab;
+}
+
+function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  if (isEnglish && en) return en;
+  return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function useShapeBestQuery(shapeKeyword: string, maxLimit: number) {
@@ -91,6 +104,8 @@ export default function ShapeBestListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -149,7 +164,7 @@ export default function ShapeBestListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            손톱 형태별 인기 네일
+            {isEnglish ? "Shape BEST Nails" : "손톱 형태별 인기 네일"}
           </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/client/search")}>
             <Search className="w-6 h-6 text-gray-900" />
@@ -171,7 +186,7 @@ export default function ShapeBestListPage() {
                     : "shrink-0 whitespace-nowrap rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 }
               >
-                {tab}
+                {displayShapeTabLabel(tab, isEnglish)}
               </button>
             );
           })}
@@ -180,10 +195,14 @@ export default function ShapeBestListPage() {
 
         <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
           <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#FF7E67]">{maxLimit}</span> 개의 디자인
+            {isEnglish ? (
+              <>Total <span className="font-bold text-[#FF7E67]">{maxLimit}</span> designs</>
+            ) : (
+              <>총 <span className="font-bold text-[#FF7E67]">{maxLimit}</span>개의 디자인</>
+            )}
           </span>
           <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
-            <span>인기순</span>
+            <span>{isEnglish ? "Popular" : "인기순"}</span>
             <ChevronDown size={14} className="text-gray-500" />
           </span>
         </div>
@@ -198,12 +217,16 @@ export default function ShapeBestListPage() {
             </article>
           ))
         ) : isError ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">랭킹을 불러오지 못했습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "Failed to load rankings." : "랭킹을 불러오지 못했습니다."}
+          </p>
         ) : rankingItems.length === 0 ? (
-          <p className="col-span-2 py-12 text-center text-sm text-gray-500">표시할 네일이 없습니다.</p>
+          <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+            {isEnglish ? "No nails registered yet." : "등록된 네일이 없어요."}
+          </p>
         ) : (
           rankingItems.map((item, index) => {
-            const title = displayItemTitle(item);
+            const title = displayItemTitle(item, isEnglish);
             return (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link
