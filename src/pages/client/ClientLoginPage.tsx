@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/shared/api/supabaseClient';
 import { mergeGuestRecentViewedToUser } from '@/shared/lib/recentViewedStorage';
 
+function getAuthErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown Error';
+}
+
 export default function ClientLoginPage() {
   const navigate = useNavigate();
 
@@ -68,10 +72,11 @@ export default function ClientLoginPage() {
         if (signedInUserId) mergeGuestRecentViewedToUser(signedInUserId);
         navigate('/client/my', { replace: true });
       }
-    } catch (error: any) {
-      setErrorMsg(error.message === 'Invalid login credentials' 
+    } catch (error) {
+      const message = getAuthErrorMessage(error);
+      setErrorMsg(message === 'Invalid login credentials' 
         ? '이메일 또는 비밀번호가 일치하지 않습니다.' 
-        : error.message || '인증 과정에서 오류가 발생했습니다.');
+        : message || '인증 과정에서 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -94,11 +99,12 @@ export default function ClientLoginPage() {
       setShowAdminPin(false);
       setAdminPin("");
       navigate("/client/my", { replace: true });
-    } catch (error: any) {
+    } catch (error) {
+      const message = getAuthErrorMessage(error);
       setErrorMsg(
-        error.message === "Invalid login credentials"
+        message === "Invalid login credentials"
           ? "이메일 또는 비밀번호가 일치하지 않습니다."
-          : error.message || "인증 과정에서 오류가 발생했습니다.",
+          : message || "인증 과정에서 오류가 발생했습니다.",
       );
     } finally {
       setLoading(false);
@@ -120,8 +126,9 @@ export default function ClientLoginPage() {
       if (error) throw error;
       alert('비밀번호 재설정 링크가 이메일로 전송되었습니다. 이메일함을 확인해주세요!');
       setIsResetMode(false);
-    } catch (error: any) {
-      setErrorMsg(error.message || '이메일 전송 중 오류가 발생했습니다.');
+    } catch (error) {
+      const message = getAuthErrorMessage(error);
+      setErrorMsg(message || '이메일 전송 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -139,7 +146,7 @@ export default function ClientLoginPage() {
         },
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch {
       setErrorMsg('구글 로그인 중 오류가 발생했습니다.');
       setLoading(false);
     }

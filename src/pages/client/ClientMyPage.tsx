@@ -18,7 +18,7 @@ import {
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import { Bell, Bookmark, Camera, Heart, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 type ActiveTab = 'recent' | 'liked' | 'saved'
@@ -29,6 +29,14 @@ const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
   saved: { ko: '저장한 네일', en: 'Saved Nails' },
+}
+
+function getMyPageCounts(userId: string | null) {
+  return {
+    recent: readRecentViewedIds(userId).slice(0, 20).length,
+    liked: getLikedNailsCount(userId),
+    saved: getSavedNailsCount(userId),
+  }
 }
 
 function galleryIdsForTab(tab: ActiveTab, userId: string | null): string[] {
@@ -56,13 +64,15 @@ export default function ClientMyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [profileImg, setProfileImg] = useState('/avatar/default_profile_heart.png')
   const [tempImg, setTempImg] = useState('/avatar/default_profile_heart.png')
-  const [recentCount, setRecentCount] = useState(0)
-  const [likedCount, setLikedCount] = useState(0)
-  const [savedCount, setSavedCount] = useState(0)
+  const [counts, setCounts] = useState(() => getMyPageCounts(currentUserId))
+  const [, setStorageVersion] = useState(0)
 
   const statBoxClass =
     'flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]'
   const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
+  const recentCount = counts.recent
+  const likedCount = counts.liked
+  const savedCount = counts.saved
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -77,13 +87,16 @@ export default function ClientMyPage() {
   }, [navigate])
 
   const syncCounts = useCallback(() => {
-    setRecentCount(readRecentViewedIds(currentUserId).slice(0, 20).length)
-    setLikedCount(getLikedNailsCount(currentUserId))
-    setSavedCount(getSavedNailsCount(currentUserId))
+    setCounts(getMyPageCounts(currentUserId))
+    setStorageVersion((version) => version + 1)
   }, [currentUserId])
 
   useEffect(() => {
-    syncCounts()
+    const timer = window.setTimeout(syncCounts, 0)
+    return () => window.clearTimeout(timer)
+  }, [syncCounts])
+
+  useEffect(() => {
     const onChanged = () => syncCounts()
     window.addEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
     window.addEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
@@ -97,10 +110,7 @@ export default function ClientMyPage() {
     }
   }, [syncCounts])
 
-  const galleryIds = useMemo(
-    () => galleryIdsForTab(activeTab, currentUserId),
-    [activeTab, currentUserId, recentCount, likedCount, savedCount],
-  )
+  const galleryIds = galleryIdsForTab(activeTab, currentUserId)
 
   const { data: galleryNails = [] } = useQuery({
     queryKey: ['my-page-gallery', activeTab, currentUserId, galleryIds],

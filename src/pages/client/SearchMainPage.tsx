@@ -9,7 +9,7 @@ import {
 } from '@/shared/lib/recentSearchStorage'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Search, TrendingDown, TrendingUp } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 const TREND_SKELETON_ROWS = 5
@@ -58,25 +58,21 @@ export default function SearchMainPage() {
   const [draft, setDraft] = useState(q)
   const [isEditing, setIsEditing] = useState(!q)
   const [recentSearches, setRecentSearches] = useState(() => getRecentSearches())
+  const [suggestedStyles, setSuggestedStyles] = useState<string[]>([])
 
   const showResultHeader = !isEditing && q.length > 0
 
-  const suggestedStyles = useMemo(() => {
-    return [...ALLOWED_NAIL_KEYWORDS].sort(() => 0.5 - Math.random()).slice(0, 5)
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSuggestedStyles([...ALLOWED_NAIL_KEYWORDS].sort(() => 0.5 - Math.random()).slice(0, 5))
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [])
-
-  useEffect(() => {
-    setDraft(q)
-  }, [q])
-
-  useEffect(() => {
-    if (!q) setIsEditing(true)
-  }, [q])
 
   useEffect(() => {
     if (!q) return
     addRecentSearch(q)
-    setRecentSearches(getRecentSearches())
   }, [q])
 
   const submitSearch = useCallback(
@@ -84,11 +80,13 @@ export default function SearchMainPage() {
       const term = (keyword ?? draft).trim()
       if (!term) {
         setSearchParams({}, { replace: true })
+        setDraft('')
         setIsEditing(true)
         return
       }
       addRecentSearch(term)
       setRecentSearches(getRecentSearches())
+      setDraft(term)
       setSearchParams({ q: term })
 
       const isValidNailKeyword = ALLOWED_NAIL_KEYWORDS.some((kw) => term.includes(kw))
@@ -149,7 +147,10 @@ export default function SearchMainPage() {
             </h1>
             <button
               type="button"
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setDraft(q)
+                setIsEditing(true)
+              }}
               aria-label="검색"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 active:bg-gray-100"
             >

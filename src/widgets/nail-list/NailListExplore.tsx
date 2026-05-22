@@ -40,7 +40,6 @@ const DUMMY_ITEMS = Array.from({ length: 12 }, (_, index) => ({
 export function NailListExplore({
   tabs,
   tabsSectionLabel,
-  queryScope: _queryScope,
   rankingSortTabs = false,
   showRankBadge = false,
 }: NailListExploreProps) {

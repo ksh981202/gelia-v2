@@ -1,75 +1,77 @@
+import { lazy, Suspense } from 'react'
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
-import AdminUploadPage from '../../pages/admin/AdminUploadPage'
-import AdminBoard from '../../pages/admin/AdminBoard'
-import AdminManagePage from '../../pages/admin/AdminManagePage'
-import ClientNailDetailPage from '../../pages/client/ClientNailDetailPage'
-import ClientGalleryPage from '../../pages/client/ClientGalleryPage'
-import ClientRankingPage from '../../pages/client/ClientRankingPage'
-import TrendPage from '../../pages/client/trend/TrendPage'
-import TexturePage from '../../pages/client/trend/TexturePage'
-import TextureListPage from '../../pages/client/trend/TextureListPage'
-import SyrupBestListPage from '../../pages/client/trend/SyrupBestListPage'
-import TextureGalleryListPage from '../../pages/client/trend/TextureGalleryListPage'
-import PartsPage from '../../pages/client/trend/PartsPage'
-import PartsListPage from '../../pages/client/trend/PartsListPage'
-import StoneBestListPage from '../../pages/client/trend/StoneBestListPage'
-import MarbleBestListPage from '../../pages/client/trend/MarbleBestListPage'
-import PopularArtListPage from '../../pages/client/trend/PopularArtListPage'
-import ChicBestListPage from '../../pages/client/trend/ChicBestListPage'
-import FullPartsListPage from '../../pages/client/trend/FullPartsListPage'
-import PopularDesignPage from '../../pages/client/trend/PopularDesignPage'
-import PeriodBestListPage from '../../pages/client/trend/PeriodBestListPage'
-import ReactionBestListPage from '../../pages/client/trend/ReactionBestListPage'
-import ShapeBestListPage from '../../pages/client/trend/ShapeBestListPage'
-import SearchTrendListPage from '../../pages/client/trend/SearchTrendListPage'
-import PatternPage from '../../pages/client/trend/PatternPage'
-import PatternListPage from '../../pages/client/trend/PatternListPage'
-import PatternCurationPage from '../../pages/client/PatternCurationPage'
-import MoodPage from '../../pages/client/trend/MoodPage'
-import MoodListPage from '../../pages/client/trend/MoodListPage'
-import PopularMoodListPage from '../../pages/client/trend/PopularMoodListPage'
-import CategoryPage from '../../pages/client/CategoryPage'
-import SearchMainPage from '../../pages/client/SearchMainPage'
-import ClientLoginPage from '../../pages/client/ClientLoginPage'
-import ClientAccountSettingsPage from '../../pages/client/ClientAccountSettingsPage'
-import ClientNotificationSettingsPage from '../../pages/client/ClientNotificationSettingsPage'
-import ClientNotificationPage from '../../pages/client/ClientNotificationPage'
-import ClientNoticePage from '../../pages/client/ClientNoticePage'
-import ClientSupportPage from '../../pages/client/ClientSupportPage'
-import ClientFaqPage from '../../pages/client/ClientFaqPage'
-import ClientTermsPage from '../../pages/client/ClientTermsPage'
-import ClientPrivacyPage from '../../pages/client/ClientPrivacyPage'
-import ClientMyPage from '../../pages/client/ClientMyPage'
-import ClientMyNailListPage from '../../pages/client/ClientMyNailListPage'
-import ClientHomePage from '../../pages/client/ClientHomePage'
-import ClientRecommendPage from '../../pages/client/ClientRecommendPage'
-import ClientPage from '../../pages/client/ClientPage'
-import ClientSituationListPage from '../../pages/client/ClientSituationListPage'
-import ClientStyleBestListPage from '../../pages/client/ClientStyleBestListPage'
-import ClientStyleCurationPage from '../../pages/client/ClientStyleCurationPage'
-import ClientStyleGalleryListPage from '../../pages/client/ClientStyleGalleryListPage'
-import ClientStyleListPage from '../../pages/client/ClientStyleListPage'
-import ClientThemeListPage from '../../pages/client/ClientThemeListPage'
-import ClientSeasonCurationPage from '../../pages/client/ClientSeasonCurationPage'
-import ClientSeasonListPage from '../../pages/client/ClientSeasonListPage'
-import ClientVacationListPage from '../../pages/client/ClientVacationListPage'
-import ClientSeasonPopularListPage from '../../pages/client/ClientSeasonPopularListPage'
-import ClientColorCurationPage from '../../pages/client/ClientColorCurationPage'
-import ClientColorListPage from '../../pages/client/ClientColorListPage'
-import ClientColorThemeListPage from '../../pages/client/ClientColorThemeListPage'
-import ClientColorPopularListPage from '../../pages/client/ClientColorPopularListPage'
-import ClientTodaySpecialPage from '../../pages/client/ClientTodaySpecialPage'
-import TestIntroPage from '../../pages/client/test/TestIntroPage'
-import TestStep1Page from '../../pages/client/test/TestStep1Page'
-import TestStep2Page from '../../pages/client/test/TestStep2Page'
-import TestStep3Page from '../../pages/client/test/TestStep3Page'
-import TestResultPage from '../../pages/client/test/TestResultPage'
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from 'react-router-dom'
+
+const AdminUploadPage = lazy(() => import('../../pages/admin/AdminUploadPage'))
+const AdminBoard = lazy(() => import('../../pages/admin/AdminBoard'))
+const AdminManagePage = lazy(() => import('../../pages/admin/AdminManagePage'))
+const ClientNailDetailPage = lazy(() => import('../../pages/client/ClientNailDetailPage'))
+const ClientGalleryPage = lazy(() => import('../../pages/client/ClientGalleryPage'))
+const ClientRankingPage = lazy(() => import('../../pages/client/ClientRankingPage'))
+const TrendPage = lazy(() => import('../../pages/client/trend/TrendPage'))
+const TexturePage = lazy(() => import('../../pages/client/trend/TexturePage'))
+const TextureListPage = lazy(() => import('../../pages/client/trend/TextureListPage'))
+const SyrupBestListPage = lazy(() => import('../../pages/client/trend/SyrupBestListPage'))
+const TextureGalleryListPage = lazy(() => import('../../pages/client/trend/TextureGalleryListPage'))
+const PartsPage = lazy(() => import('../../pages/client/trend/PartsPage'))
+const PartsListPage = lazy(() => import('../../pages/client/trend/PartsListPage'))
+const StoneBestListPage = lazy(() => import('../../pages/client/trend/StoneBestListPage'))
+const MarbleBestListPage = lazy(() => import('../../pages/client/trend/MarbleBestListPage'))
+const PopularArtListPage = lazy(() => import('../../pages/client/trend/PopularArtListPage'))
+const ChicBestListPage = lazy(() => import('../../pages/client/trend/ChicBestListPage'))
+const FullPartsListPage = lazy(() => import('../../pages/client/trend/FullPartsListPage'))
+const PopularDesignPage = lazy(() => import('../../pages/client/trend/PopularDesignPage'))
+const PeriodBestListPage = lazy(() => import('../../pages/client/trend/PeriodBestListPage'))
+const ReactionBestListPage = lazy(() => import('../../pages/client/trend/ReactionBestListPage'))
+const ShapeBestListPage = lazy(() => import('../../pages/client/trend/ShapeBestListPage'))
+const SearchTrendListPage = lazy(() => import('../../pages/client/trend/SearchTrendListPage'))
+const PatternPage = lazy(() => import('../../pages/client/trend/PatternPage'))
+const PatternListPage = lazy(() => import('../../pages/client/trend/PatternListPage'))
+const PatternCurationPage = lazy(() => import('../../pages/client/PatternCurationPage'))
+const MoodPage = lazy(() => import('../../pages/client/trend/MoodPage'))
+const MoodListPage = lazy(() => import('../../pages/client/trend/MoodListPage'))
+const PopularMoodListPage = lazy(() => import('../../pages/client/trend/PopularMoodListPage'))
+const CategoryPage = lazy(() => import('../../pages/client/CategoryPage'))
+const SearchMainPage = lazy(() => import('../../pages/client/SearchMainPage'))
+const ClientLoginPage = lazy(() => import('../../pages/client/ClientLoginPage'))
+const ClientAccountSettingsPage = lazy(() => import('../../pages/client/ClientAccountSettingsPage'))
+const ClientNotificationSettingsPage = lazy(() => import('../../pages/client/ClientNotificationSettingsPage'))
+const ClientNotificationPage = lazy(() => import('../../pages/client/ClientNotificationPage'))
+const ClientNoticePage = lazy(() => import('../../pages/client/ClientNoticePage'))
+const ClientSupportPage = lazy(() => import('../../pages/client/ClientSupportPage'))
+const ClientFaqPage = lazy(() => import('../../pages/client/ClientFaqPage'))
+const ClientTermsPage = lazy(() => import('../../pages/client/ClientTermsPage'))
+const ClientPrivacyPage = lazy(() => import('../../pages/client/ClientPrivacyPage'))
+const ClientMyPage = lazy(() => import('../../pages/client/ClientMyPage'))
+const ClientMyNailListPage = lazy(() => import('../../pages/client/ClientMyNailListPage'))
+const ClientHomePage = lazy(() => import('../../pages/client/ClientHomePage'))
+const ClientRecommendPage = lazy(() => import('../../pages/client/ClientRecommendPage'))
+const ClientPage = lazy(() => import('../../pages/client/ClientPage'))
+const ClientSituationListPage = lazy(() => import('../../pages/client/ClientSituationListPage'))
+const ClientStyleBestListPage = lazy(() => import('../../pages/client/ClientStyleBestListPage'))
+const ClientStyleCurationPage = lazy(() => import('../../pages/client/ClientStyleCurationPage'))
+const ClientStyleGalleryListPage = lazy(() => import('../../pages/client/ClientStyleGalleryListPage'))
+const ClientStyleListPage = lazy(() => import('../../pages/client/ClientStyleListPage'))
+const ClientThemeListPage = lazy(() => import('../../pages/client/ClientThemeListPage'))
+const ClientSeasonCurationPage = lazy(() => import('../../pages/client/ClientSeasonCurationPage'))
+const ClientSeasonListPage = lazy(() => import('../../pages/client/ClientSeasonListPage'))
+const ClientVacationListPage = lazy(() => import('../../pages/client/ClientVacationListPage'))
+const ClientSeasonPopularListPage = lazy(() => import('../../pages/client/ClientSeasonPopularListPage'))
+const ClientColorCurationPage = lazy(() => import('../../pages/client/ClientColorCurationPage'))
+const ClientColorListPage = lazy(() => import('../../pages/client/ClientColorListPage'))
+const ClientColorThemeListPage = lazy(() => import('../../pages/client/ClientColorThemeListPage'))
+const ClientColorPopularListPage = lazy(() => import('../../pages/client/ClientColorPopularListPage'))
+const ClientTodaySpecialPage = lazy(() => import('../../pages/client/ClientTodaySpecialPage'))
+const TestIntroPage = lazy(() => import('../../pages/client/test/TestIntroPage'))
+const TestStep1Page = lazy(() => import('../../pages/client/test/TestStep1Page'))
+const TestStep2Page = lazy(() => import('../../pages/client/test/TestStep2Page'))
+const TestStep3Page = lazy(() => import('../../pages/client/test/TestStep3Page'))
+const TestResultPage = lazy(() => import('../../pages/client/test/TestResultPage'))
 
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/client" replace /> },
@@ -163,5 +165,9 @@ const router = createBrowserRouter([
 ])
 
 export function AppRouter() {
-  return <RouterProvider router={router} />
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-sm text-gray-400">화면을 불러오는 중입니다...</div>}>
+      <RouterProvider router={router} />
+    </Suspense>
+  )
 }
