@@ -7,7 +7,6 @@ import {
   Droplets,
   Eye,
   Heart,
-  Loader2,
   Search,
   Share2,
   Sparkles,
@@ -891,12 +890,68 @@ const Detail = () => {
 
   if (isLoading && !displayRow) {
     return pageShell(
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 py-16 text-slate-500">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
-        <p className="text-sm font-medium">{isEnglish ? "Loading..." : "로딩 중…"}</p>
-        <p className="text-xs text-slate-400">
-          {isEnglish ? "Fetching nail details." : "네일 정보를 불러오고 있어요."}
-        </p>
+      <div aria-busy="true" aria-label={isEnglish ? "Loading nail details" : "네일 상세 로딩 중"}>
+        <div className="aspect-[4/5] w-full animate-pulse rounded-3xl bg-gray-100 shadow-xl shadow-primary/5" />
+
+        <div className="mt-5 flex flex-col gap-3">
+          <div className="h-8 w-4/5 animate-pulse rounded bg-gray-100" />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="h-5 w-20 animate-pulse rounded bg-gray-100" />
+            <div className="h-5 w-20 animate-pulse rounded bg-gray-100" />
+            <div className="h-5 w-20 animate-pulse rounded bg-gray-100" />
+          </div>
+          <div className="rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
+            <div className="h-3 w-28 animate-pulse rounded bg-gray-100" />
+            <div className="mt-5 space-y-2 pl-5">
+              <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
+              <div className="h-4 w-11/12 animate-pulse rounded bg-gray-100" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2.5">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={`detail-tag-skel-${index}`} className="h-8 w-20 animate-pulse rounded-full bg-gray-100" />
+          ))}
+        </div>
+
+        <section className="mt-10 font-sans">
+          <div className="mb-4 h-6 w-32 animate-pulse rounded bg-gray-100" />
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div key={`detail-point-skel-${index}`} className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-4">
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-gray-100" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-3.5 w-full animate-pulse rounded bg-gray-100" />
+                  <div className="h-3.5 w-2/3 animate-pulse rounded bg-gray-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-10 w-full font-sans antialiased">
+          <div className="flex w-full items-center justify-between border-b border-gray-200 py-3">
+            <div className="h-6 w-44 animate-pulse rounded bg-gray-100" />
+            <div className="h-5 w-5 animate-pulse rounded bg-gray-100" />
+          </div>
+        </div>
+
+        <section className="mt-10 overflow-hidden">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="h-6 w-40 animate-pulse rounded bg-gray-100" />
+            <div className="h-5 w-14 animate-pulse rounded bg-gray-100" />
+          </div>
+          <div className="-mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {Array.from({ length: 5 }, (_, index) => (
+              <div key={`similar-nail-skel-${index}`} className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2">
+                <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100" />
+                <div className="h-4 w-4/5 animate-pulse rounded bg-gray-100" />
+              </div>
+            ))}
+          </div>
+        </section>
       </div>,
     );
   }
@@ -936,7 +991,7 @@ const Detail = () => {
             decoding="async"
           />
         ) : (
-          <div className="mx-auto block h-[min(85vh,720px)] w-full animate-pulse bg-gray-100" aria-hidden />
+          <div className="mx-auto block aspect-[4/5] w-full animate-pulse bg-gray-100" aria-hidden />
         )}
         {showFloatingHeart ? (
           <div

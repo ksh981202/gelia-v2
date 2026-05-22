@@ -45,6 +45,8 @@ export function useNailQuery(
   return useInfiniteQuery({
     queryKey: ['nail-designs', 'infinite', 'supabase', scope, { tab, sort }],
     initialPageParam: 0,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: async ({ pageParam, signal }) => {
       if (allTab) {
         const from = pageParam * PAGE_SIZE

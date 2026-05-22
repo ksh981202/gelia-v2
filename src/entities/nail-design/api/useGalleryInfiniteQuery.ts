@@ -87,7 +87,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: { e
 
   return useInfiniteQuery({
     queryKey: ['nail-designs', 'gallery', 'infinite', { tab: normalizedTab, sort: normalizedSort }],
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
     initialPageParam: 1,
@@ -121,7 +121,8 @@ export function useGalleryCountQuery(tab: string, options?: { enabled?: boolean 
 
   return useQuery({
     queryKey: ['nail-designs', 'gallery', 'count', { tab: normalizedTab }],
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
     queryFn: async ({ signal }) => {
       let query = supabase

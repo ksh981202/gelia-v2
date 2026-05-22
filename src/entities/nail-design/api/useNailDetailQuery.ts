@@ -56,5 +56,7 @@ export function useNailDetailQuery(nailId: string | undefined) {
       return data as unknown as NailDesignRow
     },
     enabled: Boolean(nailId),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 }

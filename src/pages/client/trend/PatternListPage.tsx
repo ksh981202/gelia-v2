@@ -218,7 +218,7 @@ export default function PatternListPage() {
   ]);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white text-slate-900 pb-20">
+    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900 pb-20">
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
@@ -304,7 +304,10 @@ export default function PatternListPage() {
           Array.from({ length: 8 }, (_, index) => (
             <article key={`pattern-list-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
               <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 animate-pulse" />
-              <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+              <div className="mt-2 flex w-full flex-col gap-1 px-1">
+                <div className="h-3.5 w-full rounded bg-gray-200 animate-pulse" />
+                <div className="h-3.5 w-2/3 rounded bg-gray-200 animate-pulse" />
+              </div>
             </article>
           ))
         ) : isError ? (
@@ -352,7 +355,10 @@ export default function PatternListPage() {
               ? [0, 1].map((index) => (
                   <article key={`pattern-list-next-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
                     <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 animate-pulse" />
-                    <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+                    <div className="mt-2 flex w-full flex-col gap-1 px-1">
+                      <div className="h-3.5 w-full rounded bg-gray-200 animate-pulse" />
+                      <div className="h-3.5 w-2/3 rounded bg-gray-200 animate-pulse" />
+                    </div>
                   </article>
                 ))
               : null}
