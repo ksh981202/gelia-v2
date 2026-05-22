@@ -105,7 +105,10 @@ export default function ClientNoticePage() {
                 </button>
                 {isOpen ? (
                   <div className="border-t border-gray-50 bg-gray-50/80 px-5 py-4">
-                    <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-gray-600">{content}</p>
+                    <div
+                      className="whitespace-pre-wrap break-words break-all overflow-hidden text-[14px] leading-relaxed text-gray-600 [&_a]:text-[#FF7D66] [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
+                      dangerouslySetInnerHTML={{ __html: content }}
+                    />
                   </div>
                 ) : null}
               </div>

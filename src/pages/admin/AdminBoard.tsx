@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 import { supabase } from "@/shared/api/supabaseClient";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -213,12 +215,11 @@ export default function AdminBoard() {
 
             <div className="grid gap-2">
               <label htmlFor="board-content" className="text-sm font-semibold text-gray-700">본문 (KR)</label>
-              <textarea
-                id="board-content"
+              <ReactQuill
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={setContent}
                 placeholder="본문을 작성하세요."
-                className="min-h-[260px] w-full resize-y rounded-md border border-slate-200 p-3 text-sm focus:border-slate-500 focus:outline-none"
+                className="h-64 mb-12 bg-white"
               />
             </div>
           </div>
@@ -238,12 +239,11 @@ export default function AdminBoard() {
 
             <div className="grid gap-2">
               <label htmlFor="board-content-en" className="text-sm font-semibold text-gray-700">본문 (EN)</label>
-              <textarea
-                id="board-content-en"
+              <ReactQuill
                 value={contentEn}
-                onChange={(e) => setContentEn(e.target.value)}
+                onChange={setContentEn}
                 placeholder="Enter the English content."
-                className="min-h-[260px] w-full resize-y rounded-md border border-slate-200 p-3 text-sm focus:border-slate-500 focus:outline-none"
+                className="h-64 mb-12 bg-white"
               />
             </div>
           </div>
