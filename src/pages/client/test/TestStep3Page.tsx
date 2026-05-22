@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, Check } from "lucide-react";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import { useLanguage } from "@/shared/language/useLanguage";
 
 const COLOR_OPTIONS = [
   {
@@ -100,10 +100,11 @@ const COLOR_TIPS: Record<string, { ko: string; en: string }> = {
 export default function TestStep3Page() {
   const navigate = useNavigate();
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const { isEn } = useLanguage();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
 
   const currentTip = selectedColor ? COLOR_TIPS[selectedColor] : COLOR_TIPS.default;
-  const tipText = isEn ? currentTip.en : currentTip.ko;
+  const tipText = isEnglish ? currentTip.en : currentTip.ko;
 
   return (
     <div className="relative mx-auto flex h-full min-h-screen w-full flex-col overflow-y-scroll overflow-x-hidden box-border bg-white font-sans">
@@ -117,7 +118,7 @@ export default function TestStep3Page() {
             <ChevronLeft className="w-6 h-6" />
           </button>
           <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
-            {isEn ? "Personal Nail Analysis" : "퍼스널 네일 진단"}
+            {isEnglish ? "Personal Nail Diagnosis" : "퍼스널 네일 진단"}
           </h1>
           <div className="w-8" />
         </div>
@@ -131,12 +132,12 @@ export default function TestStep3Page() {
         </div>
       </header>
 
-      <main className="box-border w-full flex-1 px-5 pb-44 pt-8">
+      <main className="box-border w-full flex-1 px-5 pt-8">
         <h2 className="mb-1 whitespace-pre-line font-sans text-[20px] font-bold leading-snug tracking-tight text-gray-900 sm:text-[22px]">
-          {isEn ? "Select Your\nFavorite Color" : "좋아하는 컬러를\n선택하세요"}
+          {isEnglish ? "Choose a color you like" : "끌리는 컬러를 선택해주세요"}
         </h2>
         <p className="mb-8 mt-2 font-sans text-[13px] font-medium tracking-tight text-gray-500 sm:text-[14px]">
-          {isEn
+          {isEnglish
             ? "Please choose the nail color chip that attracts you the most."
             : "가장 끌리는 네일 컬러 칩을 골라주세요."}
         </p>
@@ -155,7 +156,7 @@ export default function TestStep3Page() {
                   <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
                     <img
                       src={color.src}
-                      alt={isEn ? color.titleEn : color.titleKo}
+                      alt={isEnglish ? color.titleEn : color.titleKo}
                       className="h-full w-full object-cover object-center transition-transform duration-200"
                     />
                   </div>
@@ -177,13 +178,13 @@ export default function TestStep3Page() {
 
                 <div className="flex w-full flex-col items-center text-center">
                   <p className="mt-1 rounded-full bg-gray-100 px-3 py-0.5 font-sans text-[11px] font-semibold tracking-tight text-gray-600 sm:text-[12px]">
-                    {isEn ? color.toneEn : color.toneKo}
+                    {isEnglish ? color.toneEn : color.toneKo}
                   </p>
                   <p className="mt-1 font-sans text-[16px] font-bold tracking-tight text-gray-900 sm:text-[17px]">
-                    {isEn ? color.titleEn : color.titleKo}
+                    {isEnglish ? color.titleEn : color.titleKo}
                   </p>
                   <p className="mt-0.5 font-sans text-[12px] font-medium tracking-tight text-gray-400 sm:text-[13px]">
-                    {isEn ? color.tagsEn : color.tagsKo}
+                    {isEnglish ? color.tagsEn : color.tagsKo}
                   </p>
                 </div>
               </button>
@@ -194,7 +195,7 @@ export default function TestStep3Page() {
         <div className="mt-10 rounded-2xl border border-orange-100 bg-orange-50/60 p-5">
           <p className="mb-2 flex items-center gap-1 font-sans text-[15px] font-bold tracking-tight text-[#FF826E]">
             <span aria-hidden>💡</span>
-            {isEn ? "Chief Curator's Color Tip" : "수석 큐레이터의 컬러 팁"}
+            {isEnglish ? "Chief Curator's Color Tip" : "수석 큐레이터의 컬러 팁"}
           </p>
           <p className="break-keep font-sans text-[14px] font-medium leading-relaxed tracking-tight text-gray-700">
             {tipText}
@@ -212,7 +213,7 @@ export default function TestStep3Page() {
           }}
           className="h-[56px] w-full shrink-0 rounded-xl bg-[#FF7D66] font-sans text-[16px] font-bold tracking-tight text-white shadow-lg shadow-[#FF7D66]/30 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isEn ? "View Results" : "결과 보기"}
+          {isEnglish ? "View Results" : "결과 보기"}
         </button>
       </div>
     </div>

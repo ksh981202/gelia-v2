@@ -1,22 +1,25 @@
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 
 const nailLengthOptions = [
-  { id: "length-short", label: "짧은 손톱", image: "/quiz/length-short.jpg" },
-  { id: "length-medium", label: "중간 길이", image: "/quiz/length-medium.jpg" },
-  { id: "length-long", label: "긴 손톱", image: "/quiz/length-long.jpg" },
+  { id: "length-short", label: "짧은 손톱", labelEn: "Short Nails", image: "/quiz/length-short.jpg" },
+  { id: "length-medium", label: "중간 길이", labelEn: "Medium Length", image: "/quiz/length-medium.jpg" },
+  { id: "length-long", label: "긴 손톱", labelEn: "Long Nails", image: "/quiz/length-long.jpg" },
 ] as const;
 
 const handTypeOptions = [
-  { id: "short-finger", label: "🌷 손가락이 짧은 편" },
-  { id: "long-finger", label: "🦢 손가락이 긴 편" },
-  { id: "plump-hand", label: "☁️ 손이 통통한 편" },
-  { id: "slim-hand", label: "🩰 손이 마른 편" },
+  { id: "short-finger", label: "🌷 손가락이 짧은 편", labelEn: "🌷 Shorter Fingers" },
+  { id: "long-finger", label: "🦢 손가락이 긴 편", labelEn: "🦢 Longer Fingers" },
+  { id: "plump-hand", label: "☁️ 손이 통통한 편", labelEn: "☁️ Fuller Hands" },
+  { id: "slim-hand", label: "🩰 손이 마른 편", labelEn: "🩰 Slim Hands" },
 ] as const;
 
 const TestStep1Page = () => {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const [selectedLength, setSelectedLength] = useState("");
   const [selectedType, setSelectedType] = useState("");
 
@@ -29,13 +32,13 @@ const TestStep1Page = () => {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            aria-label="뒤로가기"
+            aria-label={isEnglish ? "Go back" : "뒤로가기"}
             className="p-1 text-gray-700"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
-            퍼스널 네일 진단
+            {isEnglish ? "Personal Nail Diagnosis" : "퍼스널 네일 진단"}
           </h1>
           <div className="w-8" />
         </div>
@@ -49,12 +52,12 @@ const TestStep1Page = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 pb-44">
+      <main className="flex-1 overflow-y-auto px-4">
         <h2 className="mt-4 font-sans text-[18px] font-bold tracking-tight text-gray-900 sm:text-[20px]">
-          손톱 길이를 골라주세요
+          {isEnglish ? "Choose your nail length" : "손톱 길이를 골라주세요"}
         </h2>
         <p className="mb-4 mt-1 font-sans text-[13px] font-medium tracking-tight text-gray-500 sm:text-[14px]">
-          가장 가까운 스타일을 선택하면 돼요.
+          {isEnglish ? "Select the closest style." : "가장 가까운 스타일을 선택하면 돼요."}
         </p>
         <div className="mb-8 grid grid-cols-3 gap-2">
           {nailLengthOptions.map((opt) => (
@@ -76,17 +79,17 @@ const TestStep1Page = () => {
                   selectedLength === opt.id ? "text-[#FF7D66]" : "text-gray-800"
                 }`}
               >
-                {opt.label}
+                {isEnglish && opt.labelEn ? opt.labelEn : opt.label}
               </span>
             </button>
           ))}
         </div>
 
         <h2 className="font-sans text-[18px] font-bold tracking-tight text-gray-900 sm:text-[20px]">
-          손 타입은 어떤가요?
+          {isEnglish ? "What's your hand type?" : "손 타입은 어떤가요?"}
         </h2>
         <p className="mb-4 mt-1 font-sans text-[13px] font-medium tracking-tight text-gray-500 sm:text-[14px]">
-          가장 가까운 타입을 하나만 선택해 주세요.
+          {isEnglish ? "Please select one." : "가장 가까운 타입을 하나만 선택해 주세요."}
         </p>
         <div className="flex flex-col gap-3">
           {handTypeOptions.map((t) => (
@@ -100,7 +103,7 @@ const TestStep1Page = () => {
                   : "border-gray-200 text-gray-700"
               }`}
             >
-              {t.label}
+              {isEnglish && t.labelEn ? t.labelEn : t.label}
             </button>
           ))}
         </div>
@@ -117,7 +120,7 @@ const TestStep1Page = () => {
           }}
           className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-sans text-[16px] font-bold tracking-wide text-white shadow-lg shadow-[#FF7D66]/30 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          다음
+          {isEnglish ? "Next" : "다음"}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabaseClient";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { ChevronLeft, Share2 } from "lucide-react";
@@ -36,36 +37,54 @@ const COLOR_KEYWORDS: Record<string, string[]> = {
   glitter: ["글리터", "펄", "반짝", "스파클"],
 };
 
-const RESULT_META: Record<string, { styleTag: string; description: string }> = {
+const RESULT_META: Record<string, { styleTag: string; styleTag_en: string; description: string; description_en: string }> = {
   simple: {
     styleTag: "Clean & Minimal Style",
+    styleTag_en: "Clean & Minimal Style",
     description:
       "군더더기 없이 정돈된 디자인을 가장 잘 소화하는 타입이에요.\n깔끔한 컬러와 은은한 포인트를 고르면 손끝이 더 단정하고 세련돼 보여요.",
+    description_en:
+      "You suit clean, polished designs without unnecessary details.\nChoose neat colors and subtle accents to make your fingertips look refined.",
   },
   delicate: {
     styleTag: "Soft & Delicate Style",
+    styleTag_en: "Soft & Delicate Style",
     description:
       "맑고 부드러운 분위기를 자연스럽게 살리는 타입이에요.\n시럽 질감이나 파스텔 톤처럼 은은하게 비치는 디자인이 잘 어울려요.",
+    description_en:
+      "You naturally bring out a soft and delicate mood.\nSheer syrup textures and gentle pastel tones will suit you beautifully.",
   },
   cute: {
     styleTag: "Lovely & Kitsch Style",
+    styleTag_en: "Lovely & Kitsch Style",
     description:
       "사랑스럽고 생기 있는 포인트를 잘 소화하는 타입이에요.\n작은 파츠나 키치한 디테일을 더하면 손끝에 기분 좋은 개성이 살아나요.",
+    description_en:
+      "You suit lovely, lively accents very well.\nSmall charms or kitschy details will add cheerful personality to your nails.",
   },
   elegant: {
     styleTag: "Elevated & Elegant Style",
+    styleTag_en: "Elevated & Elegant Style",
     description:
       "차분하면서도 고급스러운 분위기를 가장 잘 소화하는 타입이에요.\n손끝 라인을 정돈해 보이는 디자인과 은은한 누드 톤이 세련미를 높여줘요.",
+    description_en:
+      "You suit calm, refined styles with an elevated mood.\nClean silhouettes and subtle nude tones will make your nails look more sophisticated.",
   },
   glamorous: {
     styleTag: "Glamorous Point Style",
+    styleTag_en: "Glamorous Point Style",
     description:
       "빛나는 포인트와 화려한 디테일이 잘 어울리는 타입이에요.\n글리터, 스톤, 파츠처럼 시선을 모으는 요소를 더하면 특별한 무드가 완성돼요.",
+    description_en:
+      "Sparkling accents and glamorous details suit you well.\nGlitter, stones, and charms will create a special, eye-catching mood.",
   },
   unique: {
     styleTag: "Unique & Hip Style",
+    styleTag_en: "Unique & Hip Style",
     description:
       "개성 있는 패턴과 감각적인 디테일을 잘 소화하는 타입이에요.\n마블, 체크, 드로잉처럼 시그니처가 있는 디자인으로 손끝의 존재감을 살려보세요.",
+    description_en:
+      "You suit expressive patterns and stylish details.\nTry signature designs like marble, check, or artsy drawings to make your nails stand out.",
   },
 };
 
@@ -89,10 +108,10 @@ function readDiagnosisSelections(): DiagnosisSelections {
   };
 }
 
-function displayItemTitle(item: NailDesignRow): string {
+function displayItemTitle(item: NailDesignRow, isEnglish = false): string {
   const ko = String(item.title ?? "").trim();
   const en = String(item.title_en ?? "").trim();
-  return ko || en || "네일 디자인";
+  return (isEnglish ? en || ko : ko || en) || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
 function itemSearchText(item: NailDesignRow): string {
@@ -176,11 +195,11 @@ function pickDiagnosisNailsBySelections(items: NailDesignRow[], selections: Diag
 
 function calculateNailResult(selections: DiagnosisSelections) {
   const base = RESULT_META[selections.moodId] ?? RESULT_META.elegant;
-  const colorKeywords = COLOR_KEYWORDS[selections.colorId] ?? COLOR_KEYWORDS.nude;
-  const lengthKeywords = LENGTH_KEYWORDS[selections.lengthId] ?? LENGTH_KEYWORDS["length-medium"];
   return {
     styleTag: `✨ ${base.styleTag}`,
-    description: `${base.description}\n\n추천 키워드: ${uniqueKeywords(colorKeywords, lengthKeywords).slice(0, 4).join(", ")}`,
+    styleTag_en: `✨ ${base.styleTag_en || base.styleTag}`,
+    description: base.description,
+    description_en: base.description_en || base.description,
   };
 }
 
@@ -205,6 +224,8 @@ function useDiagnosisNailsQuery() {
 
 const TestResultPage = () => {
   const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const selections = useMemo(readDiagnosisSelections, []);
   const result = useMemo(() => calculateNailResult(selections), [selections]);
   const { data: nailData = [], isLoading, isError } = useDiagnosisNailsQuery();
@@ -221,7 +242,7 @@ const TestResultPage = () => {
 
   const openDetail = (item: NailDesignRow) => {
     navigate(`/client/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item) } },
+      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
 
@@ -229,7 +250,7 @@ const TestResultPage = () => {
     item.image_url ? (
       <img
         src={item.image_url}
-        alt={displayItemTitle(item)}
+        alt={displayItemTitle(item, isEnglish)}
         className={className}
         loading="lazy"
         decoding="async"
@@ -242,36 +263,40 @@ const TestResultPage = () => {
   );
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-[#FCFAF7] pb-24">
+    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-[#FCFAF7]">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          aria-label="뒤로가기"
+          aria-label={isEnglish ? "Go back" : "뒤로가기"}
           className="p-1 text-gray-700"
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <h1 className="whitespace-nowrap text-lg font-bold text-gray-900">진단 결과</h1>
-        <button type="button" aria-label="공유하기" className="p-1 text-gray-700">
+        <h1 className="whitespace-nowrap text-lg font-bold text-gray-900">
+          {isEnglish ? "Diagnosis Results" : "진단 결과"}
+        </h1>
+        <button type="button" aria-label={isEnglish ? "Share" : "공유하기"} className="p-1 text-gray-700">
           <Share2 className="h-5 w-5" />
         </button>
       </header>
 
-      <main className="flex-1 px-4 pb-8">
+      <main className="flex-1 px-4">
         <h2 className="mt-8 text-center text-[22px] font-semibold leading-snug text-gray-900 sm:text-[24px]">
-          당신에게 어울리는 네일
+          {isEnglish ? "Nails Perfect for You" : "당신에게 어울리는 네일"}
         </h2>
         <div className="mt-3 flex justify-center">
           <span className="inline-flex items-center justify-center rounded-full bg-[#FFEFE9] px-4 py-1.5 text-[13px] font-bold text-[#FF826E] sm:text-[14px]">
-            {result.styleTag}
+            {isEnglish && result.styleTag_en ? result.styleTag_en : result.styleTag}
           </span>
         </div>
 
         <div className="mb-8 mt-6 rounded-2xl border border-[#FFE4DB] bg-[#FFF7F3] p-5">
-          <p className="mb-2 text-[15px] font-bold text-[#FF826E]">💡 추천 이유</p>
+          <p className="mb-2 text-[15px] font-bold text-[#FF826E]">
+            {isEnglish ? "💡 Reason for Recommendation" : "💡 추천 이유"}
+          </p>
           <p className="break-keep text-[14px] font-medium leading-relaxed text-gray-700 whitespace-pre-line">
-            {result.description}
+            {isEnglish && result.description_en ? result.description_en : result.description}
           </p>
         </div>
 
@@ -285,7 +310,7 @@ const TestResultPage = () => {
             ))
           ) : isError || mainNails.length === 0 ? (
             <p className="col-span-2 py-8 text-center text-[14px] font-medium text-gray-500">
-              추천 네일을 불러오지 못했습니다.
+              {isEnglish ? "We couldn't load the recommended nail images." : "추천 네일 이미지를 불러오지 못했어요."}
             </p>
           ) : (
             mainNails.map((item) => (
@@ -298,7 +323,7 @@ const TestResultPage = () => {
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-200 shadow-sm">
                   {renderImage(item, "h-full w-full object-cover object-center")}
                 </div>
-                <p className="mt-2 text-center text-[14px] font-medium text-gray-800 sm:text-[15px]">{displayItemTitle(item)}</p>
+                <p className="mt-2 text-center text-[14px] font-medium text-gray-800 sm:text-[15px]">{displayItemTitle(item, isEnglish)}</p>
               </button>
             ))
           )}
@@ -309,7 +334,7 @@ const TestResultPage = () => {
             id="more-styles-heading"
             className="mt-10 mb-4 text-[18px] font-semibold text-gray-900 sm:text-[20px]"
           >
-            이런 스타일은 어때요?
+            {isEnglish ? "How about these styles?" : "이런 스타일은 어때요?"}
           </h3>
           <div className="grid grid-cols-3 gap-3">
             {isLoading ? (
@@ -319,6 +344,10 @@ const TestResultPage = () => {
                   <div className="mx-auto h-3 w-3/4 animate-pulse rounded bg-gray-200" />
                 </div>
               ))
+            ) : subNails.length === 0 ? (
+              <p className="col-span-3 py-6 text-center text-[13px] font-medium text-gray-500">
+                {isEnglish ? "We're preparing more style images." : "추가 스타일 이미지를 준비 중이에요."}
+              </p>
             ) : (
               subNails.map((item) => (
                 <button
@@ -331,7 +360,7 @@ const TestResultPage = () => {
                     {renderImage(item, "h-full w-full object-cover object-center")}
                   </div>
                   <p className="text-center break-keep text-[12px] font-medium text-gray-800 sm:text-[13px]">
-                    {displayItemTitle(item)}
+                    {displayItemTitle(item, isEnglish)}
                   </p>
                 </button>
               ))
