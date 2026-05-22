@@ -54,6 +54,7 @@ export default function AdminBoard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadPosts = useCallback(async () => {
     setIsLoading(true);
@@ -110,27 +111,68 @@ export default function AdminBoard() {
     setIsSubmitting(true);
     setErrorMessage("");
 
-    const { error } = await supabase.from("board_posts").insert([
-      {
-        post_type: type,
-        title: trimmedTitle,
-        content: trimmedContent,
-        title_en: titleEn.trim(),
-        content_en: contentEn.trim(),
-        is_active: isActive,
-      },
-    ]);
+    const payload = {
+      post_type: type,
+      title: trimmedTitle,
+      content: trimmedContent,
+      title_en: titleEn.trim(),
+      content_en: contentEn.trim(),
+      is_active: isActive,
+    };
+
+    const { error } = editingId
+      ? await supabase.from("board_posts").update(payload).eq("id", editingId)
+      : await supabase.from("board_posts").insert([payload]);
 
     if (error) {
-      console.error("게시글 등록 실패:", error);
-      setErrorMessage("게시글 등록에 실패했습니다.");
+      console.error(editingId ? "게시글 수정 실패:" : "게시글 등록 실패:", error);
+      setErrorMessage(editingId ? "게시글 수정에 실패했습니다." : "게시글 등록에 실패했습니다.");
       setIsSubmitting(false);
       return;
     }
 
     resetForm();
+    setEditingId(null);
     await loadPosts();
     setIsSubmitting(false);
+  };
+
+  const handleEditClick = (row: BoardPostRow) => {
+    setType(row.post_type || "notice");
+    setTitle(row.title || "");
+    setContent(row.content || "");
+    setTitleEn(row.title_en || "");
+    setContentEn(row.content_en || "");
+    setIsActive(Boolean(row.is_active));
+    setEditingId(row.id);
+    setErrorMessage("");
+    window.scrollTo(0, 0);
+  };
+
+  const handleCancelEdit = () => {
+    resetForm();
+    setEditingId(null);
+    setErrorMessage("");
+  };
+
+  const handleDelete = async (id: string) => {
+    const isConfirmed = window.confirm("정말 삭제하시겠습니까?");
+    if (!isConfirmed) return;
+
+    setErrorMessage("");
+    try {
+      const { error } = await supabase.from("board_posts").delete().eq("id", id);
+      if (error) throw error;
+      if (editingId === id) {
+        resetForm();
+        setEditingId(null);
+      }
+      alert("삭제되었습니다.");
+      await loadPosts();
+    } catch (error: unknown) {
+      console.error(error);
+      setErrorMessage("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -226,8 +268,18 @@ export default function AdminBoard() {
             disabled={isSubmitting}
             className="rounded-md bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
-            {isSubmitting ? "등록 중..." : "등록"}
+            {isSubmitting ? (editingId ? "수정 중..." : "등록 중...") : editingId ? "수정하기" : "등록하기"}
           </button>
+          {editingId ? (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              disabled={isSubmitting}
+              className="rounded-md border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            >
+              취소
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -291,10 +343,20 @@ export default function AdminBoard() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="inline-flex gap-1">
-                        <button type="button" className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors" aria-label="수정">
+                        <button
+                          type="button"
+                          onClick={() => handleEditClick(row)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                          aria-label="수정"
+                        >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button type="button" className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" aria-label="삭제">
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(row.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
+                          aria-label="삭제"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
