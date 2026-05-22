@@ -122,7 +122,7 @@ export default function ReactionBestListPage() {
   });
 
   return (
-    <div className="max-w-md mx-auto w-full min-w-0 bg-gray-50 min-h-screen flex flex-col pb-20">
+    <div className="max-w-md mx-auto w-full min-w-0 bg-gray-50 min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
         <div className="relative flex h-14 w-full items-center justify-between px-5">
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate(-1)}>

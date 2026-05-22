@@ -109,7 +109,7 @@ export default function PartsPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white pb-28 text-[#1A1A1A]">
+    <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#1A1A1A]">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 relative flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5 shadow-sm">
         <button

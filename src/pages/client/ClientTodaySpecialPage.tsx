@@ -66,7 +66,7 @@ export default function ClientTodaySpecialPage() {
   )
 
   return (
-    <div className="relative mx-auto w-full max-w-md bg-white pb-20">
+    <div className="relative mx-auto w-full max-w-md bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white px-4">
         <button
           type="button"

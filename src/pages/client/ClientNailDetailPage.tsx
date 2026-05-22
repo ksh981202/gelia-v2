@@ -759,7 +759,7 @@ const Detail = () => {
   );
 
   const pageShell = (main: ReactNode) => (
-    <div className="min-h-screen w-full bg-[#fdfaf7] pb-[calc(9.5rem+env(safe-area-inset-bottom,0px))]">
+    <div className="min-h-screen w-full bg-[#fdfaf7]">
       <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900">
         <nav className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 backdrop-blur-md">
           <div className="flex items-center gap-2.5">

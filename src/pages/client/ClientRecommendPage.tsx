@@ -189,7 +189,7 @@ export default function ClientRecommendPage() {
   )
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background">
       <div className="relative mx-auto max-w-md">
         <header className="sticky top-0 z-50 relative flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-white/95 px-5 backdrop-blur-md">
           <button

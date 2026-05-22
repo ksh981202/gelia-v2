@@ -111,7 +111,7 @@ export default function PeriodBestListPage() {
   }, [navigationType, location.pathname, isLoading, rankingItems.length]);
 
   return (
-    <div className="relative mx-auto w-full min-w-0 max-w-md bg-gray-50 pb-20 min-h-screen">
+    <div className="relative mx-auto w-full min-w-0 max-w-md bg-gray-50 min-h-screen">
       <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white backdrop-blur-sm">
         <div className="relative flex h-14 w-full items-center justify-between px-5">
           <button type="button" onClick={() => navigate(-1)} className="p-1 -ml-1">
@@ -162,7 +162,7 @@ export default function PeriodBestListPage() {
         </div>
       </header>
 
-      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pt-4">
         {isLoading ? (
           Array.from({ length: 8 }, (_, index) => (
             <article key={`period-skel-${index}`} className="flex w-full min-w-0 flex-col gap-2" aria-hidden>

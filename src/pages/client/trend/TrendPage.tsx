@@ -99,7 +99,7 @@ export default function TrendPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-gray-50 pb-20 text-gray-900">
+    <div className="relative mx-auto min-h-screen max-w-md bg-gray-50 text-gray-900">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-gray-50 px-5">
         <button

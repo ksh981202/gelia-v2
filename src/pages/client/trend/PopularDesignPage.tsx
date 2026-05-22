@@ -141,7 +141,7 @@ export default function PopularDesignPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white pb-24 font-sans text-slate-900 antialiased">
+    <div className="relative mx-auto min-h-screen max-w-md bg-white font-sans text-slate-900 antialiased">
       {/* 헤더 */}
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-md">
         <button type="button" aria-label="뒤로 가기" className="z-10 p-1 -ml-1" onClick={() => navigate(-1)}>

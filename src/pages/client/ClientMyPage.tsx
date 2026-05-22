@@ -151,7 +151,7 @@ export default function ClientMyPage() {
         </button>
       </header>
 
-      <main className="pb-24">
+      <main>
         <section className="flex flex-col items-center py-10 border-b border-gray-50">
           <div
             className="relative h-[100px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-full shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"

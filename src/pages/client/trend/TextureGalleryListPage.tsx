@@ -60,7 +60,7 @@ export default function TextureGalleryListPage() {
       </div>
 
       {/* 메인 2열 그리드 (더미 데이터) */}
-      <main className="grid grid-cols-2 gap-4 px-4 pb-[120px] pt-4">
+      <main className="grid grid-cols-2 gap-4 px-4 pt-4">
         {[
           { id: 1, name: '하객 유니크 코랄 생화', img: 'https://picsum.photos/300/400?random=110' },
           { id: 2, name: '다크 프렌치 조개', img: 'https://picsum.photos/300/400?random=111' },

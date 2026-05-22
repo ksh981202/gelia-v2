@@ -121,7 +121,7 @@ export default function CategoryPage() {
   const goParts = (keyword?: string) => navigate(keyword ? `/client/parts?tab=${encodeURIComponent(keyword)}` : "/client/parts");
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white pb-24 text-[#1A1A1A] antialiased">
+    <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#1A1A1A] antialiased">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-50 bg-white px-5">
         <button type="button" onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-900 rounded-full">
           <ChevronLeft className="h-6 w-6" strokeWidth={2} />

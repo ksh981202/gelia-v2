@@ -254,7 +254,7 @@ export default function ClientStyleCurationPage() {
     nailDisplayTitle(heroNail, isEnglish) ?? (isEnglish ? 'Style preview' : '스타일 미리보기')
 
   return (
-    <div className="relative mx-auto max-w-md bg-white pb-24">
+    <div className="relative mx-auto max-w-md bg-white">
       <header className="sticky top-0 z-[100] flex h-14 w-full shrink-0 border-b border-gray-100 bg-white/95 backdrop-blur-md">
         <div className="relative flex h-full w-full min-w-0 items-center justify-between px-5">
           <button

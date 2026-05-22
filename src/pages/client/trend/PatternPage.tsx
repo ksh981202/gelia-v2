@@ -116,7 +116,7 @@ export default function PatternPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white pb-28 text-neutral-800">
+    <div className="relative mx-auto min-h-screen max-w-md bg-white text-neutral-800">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 relative flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-sm">
         <button

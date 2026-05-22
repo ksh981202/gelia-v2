@@ -15,7 +15,7 @@ export default function PatternCurationPage() {
   const BEST_ARTS = ['심플 피치 마블', '겨울 파스텔 마블 풀...', '소라 마블 자개']
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background px-5">
         <button
           type="button"

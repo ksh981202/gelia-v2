@@ -274,7 +274,7 @@ export default function ClientPage() {
     nailDisplayTitle(heroNail, isEnglish) ?? (isEnglish ? 'Recommended nails' : '추천 네일')
 
   return (
-    <div className="relative mx-auto max-w-md bg-white pb-24">
+    <div className="relative mx-auto max-w-md bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"

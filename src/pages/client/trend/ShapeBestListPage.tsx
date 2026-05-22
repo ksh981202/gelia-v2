@@ -157,7 +157,7 @@ export default function ShapeBestListPage() {
   }, [navigationType, location.pathname, isLoading, rankingItems.length]);
 
   return (
-    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900 pb-20">
+    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900">
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
@@ -208,7 +208,7 @@ export default function ShapeBestListPage() {
         </div>
       </div>
 
-      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pt-4">
         {isLoading ? (
           Array.from({ length: 8 }, (_, index) => (
             <article key={`shape-skel-${index}`} className="flex w-full min-w-0 flex-col gap-2" aria-hidden>

@@ -279,7 +279,7 @@ export default function ClientColorCurationPage() {
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   return (
-    <div className="relative mx-auto max-w-md bg-[#FDFBF7] pb-24">
+    <div className="relative mx-auto max-w-md bg-[#FDFBF7]">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"

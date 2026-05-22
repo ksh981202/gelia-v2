@@ -130,7 +130,7 @@ export default function SearchMainPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white pb-28 text-gray-900">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white text-gray-900">
       <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white">
         {showResultHeader ? (
           <div className="flex h-14 w-full items-center gap-2 px-3">

@@ -311,7 +311,7 @@ export default function TextureListPage() {
       </div>
 
       {/* 메인 2열 그리드 리스트 */}
-      <main className="grid grid-cols-2 gap-4 px-4 pb-[120px] pt-4">
+      <main className="grid grid-cols-2 gap-4 px-4 pt-4">
         {isLoading ? (
           Array.from({ length: 8 }, (_, index) => (
             <article key={`texture-list-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
