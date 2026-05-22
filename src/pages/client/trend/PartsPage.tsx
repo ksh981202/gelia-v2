@@ -175,7 +175,7 @@ export default function PartsPage() {
             ) : null}
             <div className="absolute inset-x-5 bottom-5">
               <div className="relative z-10">
-                <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
+                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
                   {heroItem
                     ? displayItemTitle(heroItem, isEnglish)
                     : isEnglish

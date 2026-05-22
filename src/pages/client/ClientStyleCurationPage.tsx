@@ -14,7 +14,7 @@ import { STYLE_TAB_LABELS, type StyleTabLabel } from './styleTabs'
 
 /** V1 `NailOverlayTitle` 히어로 제목 — `ClientPage`와 동일 */
 const NAIL_HERO_BANNER_TITLE_CLASS =
-  'text-white font-sans font-bold text-[18px] sm:text-[20px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+  'text-white font-sans text-lg font-bold tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
 
 const STYLE_HERO_BANNER_FRAME =
   'relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg'

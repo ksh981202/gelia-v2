@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 /** V1 `NailOverlayTitle` — 히어로 배너 제목 */
 const NAIL_HERO_BANNER_TITLE_CLASS =
-  'text-white font-sans font-bold text-[18px] sm:text-[20px] tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+  'text-white font-sans text-lg font-bold tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
 
 function formatTodayPickBadgeLabel(d = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')

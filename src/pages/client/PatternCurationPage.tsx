@@ -66,7 +66,7 @@ export default function PatternCurationPage() {
 
         <div className="relative mb-12 flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-[20px] bg-slate-800 shadow-md">
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-            <h3 className="text-[20px] font-bold text-white drop-shadow-md">
+            <h3 className="text-lg font-bold text-white drop-shadow-md">
               화려한 라벤더 스톤
             </h3>
           </div>

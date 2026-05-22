@@ -179,7 +179,7 @@ export default function PatternPage() {
             ) : null}
             <div className="absolute inset-x-6 bottom-6">
               <div className="relative z-10">
-                <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
+                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
                   {heroItem
                     ? displayItemTitle(heroItem, isEnglish)
                     : isEnglish

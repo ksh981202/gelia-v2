@@ -265,7 +265,7 @@ export default function TrendPage() {
                 <span className="font-sans font-bold text-[13px] tracking-widest text-white/90 drop-shadow-md mb-1.5">
                   AESTHETIC MOOD
                 </span>
-                <h3 className="font-sans text-[22px] font-bold text-white drop-shadow-lg mb-4">
+                <h3 className="font-sans text-lg font-bold text-white drop-shadow-lg mb-4">
                   {isEnglish ? 'The Hottest Nail Mood Now' : '요즘 가장 핫한 네일 무드'}
                 </h3>
                 <div className="px-5 py-2 bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-bold rounded-full shadow-md">

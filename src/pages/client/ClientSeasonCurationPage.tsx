@@ -201,7 +201,7 @@ export default function ClientSeasonCurationPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             {heroNail ? (
               <div className="absolute bottom-4 left-4 right-4">
-                <p className="truncate text-lg font-bold text-white drop-shadow-md md:text-xl">
+                <p className="truncate text-lg font-bold text-white drop-shadow-md">
                   {displayItemTitle(heroNail, isEnglish)}
                 </p>
               </div>

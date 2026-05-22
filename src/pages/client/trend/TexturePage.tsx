@@ -178,7 +178,7 @@ export default function TexturePage() {
             ) : null}
             <div className="absolute inset-x-0 bottom-0 px-8 pb-8 pt-0">
               <div className="relative z-10">
-                <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
+                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
                   {heroItem
                     ? displayItemTitle(heroItem, isEnglish)
                     : isEnglish

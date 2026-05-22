@@ -189,7 +189,7 @@ export default function MoodPage() {
             ) : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent pt-20 px-6 pb-6 pointer-events-none">
               <div className="relative z-10">
-                <h2 className="text-[28px] font-extrabold text-white drop-shadow-md truncate leading-tight">
+                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
                   {heroItem
                     ? displayItemTitle(heroItem, isEnglish)
                     : isEnglish
