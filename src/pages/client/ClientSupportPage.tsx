@@ -1,6 +1,6 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { ChevronLeft, ChevronRight, Mail } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function ActionRow({
@@ -36,6 +36,19 @@ export default function ClientSupportPage() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
   const navigate = useNavigate()
+  const [showToast, setShowToast] = useState(false)
+
+  const handleEmailCopy = async () => {
+    try {
+      await navigator.clipboard.writeText("k981202@naver.com")
+      setShowToast(true)
+      setTimeout(() => {
+        setShowToast(false)
+      }, 2500)
+    } catch (error) {
+      console.error("클립보드 복사 실패:", error)
+    }
+  }
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -65,9 +78,7 @@ export default function ClientSupportPage() {
           </p>
           <button
             type="button"
-            onClick={() => {
-              window.location.href = 'mailto:cs@gelia.app'
-            }}
+            onClick={handleEmailCopy}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-[15px] font-semibold text-gray-800 shadow-sm transition-colors active:bg-gray-50"
           >
             <Mail className="h-5 w-5 text-[#FF7D66]" strokeWidth={2} aria-hidden />
@@ -90,6 +101,12 @@ export default function ClientSupportPage() {
           />
         </section>
       </main>
+
+      {showToast && (
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-xl bg-gray-800/95 px-5 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm">
+          {isEnglish ? "Email address copied." : "이메일 주소가 복사되었습니다."}
+        </div>
+      )}
     </div>
   )
 }
