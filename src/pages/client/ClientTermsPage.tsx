@@ -68,7 +68,7 @@ export default function ClientTermsPage() {
             <h2 className="mb-4 mt-6 text-base font-bold text-gray-900">{title}</h2>
             <div
               className="whitespace-pre-wrap break-words break-all overflow-hidden text-sm leading-relaxed text-gray-600 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
-              dangerouslySetInnerHTML={{ __html: content }}
+              dangerouslySetInnerHTML={{ __html: content ?? '' }}
             />
           </section>
         )}

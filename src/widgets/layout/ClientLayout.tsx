@@ -1,5 +1,5 @@
 import { BarChart2, Home, Search, Settings, User } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   NavLink,
   Outlet,
@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom'
 import { LanguageProvider, useLanguageContext } from '@/contexts/LanguageContext'
 import LanguageToggle from '@/components/LanguageToggle'
+import { supabase } from '@/shared/api/supabaseClient'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -30,11 +31,35 @@ function ClientLayoutContent() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
+  const [isAdminUser, setIsAdminUser] = useState(false)
 
   useEffect(() => {
     if (navigationType === 'POP') return
     window.scrollTo(0, 0)
   }, [pathname, navigationType])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const applyAdminEmail = (email: string | undefined) => {
+      if (!cancelled) setIsAdminUser(email?.trim().toLowerCase() === 'k981202@naver.com')
+    }
+
+    void supabase.auth.getUser().then(({ data }) => {
+      applyAdminEmail(data.user?.email)
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyAdminEmail(session?.user?.email)
+    })
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const hideTopHeader =
     pathname.startsWith('/client/test') ||
@@ -119,14 +144,16 @@ function ClientLayoutContent() {
             >
               <Search size={18} className="text-foreground" />
             </button>
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
-              onClick={() => navigate('/admin')}
-              aria-label="관리자 페이지"
-            >
-              <Settings size={18} className="text-foreground" strokeWidth={2} />
-            </button>
+            {isAdminUser ? (
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
+                onClick={() => navigate('/admin')}
+                aria-label="관리자 페이지"
+              >
+                <Settings size={18} className="text-foreground" strokeWidth={2} />
+              </button>
+            ) : null}
             <button
               type="button"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"

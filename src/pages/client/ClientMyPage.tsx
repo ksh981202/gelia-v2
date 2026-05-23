@@ -18,7 +18,7 @@ import {
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import { Bell, Bookmark, Camera, Heart, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 type ActiveTab = 'recent' | 'liked' | 'saved'
@@ -64,6 +64,10 @@ export default function ClientMyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [profileImg, setProfileImg] = useState('/avatar/default_profile_heart.png')
   const [tempImg, setTempImg] = useState('/avatar/default_profile_heart.png')
+  const [nickname, setNickname] = useState("")
+  const [tempNickname, setTempNickname] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const [counts, setCounts] = useState(() => getMyPageCounts(currentUserId))
   const [, setStorageVersion] = useState(0)
 
@@ -85,6 +89,28 @@ export default function ClientMyPage() {
     }
     void checkAuth()
   }, [navigate])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadUserProfile = async () => {
+      const { data } = await supabase.auth.getUser()
+      const metadata = data.user?.user_metadata ?? {}
+      const displayName = typeof metadata.display_name === 'string' ? metadata.display_name.trim() : ''
+      const avatarUrl = typeof metadata.avatar_url === 'string' ? metadata.avatar_url.trim() : ''
+
+      if (cancelled) return
+
+      setNickname(displayName || '네일리버')
+      if (avatarUrl) setProfileImg(avatarUrl)
+    }
+
+    void loadUserProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const syncCounts = useCallback(() => {
     setCounts(getMyPageCounts(currentUserId))
@@ -133,6 +159,38 @@ export default function ClientMyPage() {
     })
   }
 
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) return
+    if (!currentUserId) {
+      alert('로그인 후 이용해 주세요.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('5MB 이하의 이미지만 업로드할 수 있습니다.')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const fileName = `${currentUserId}_${Date.now()}.${extension}`
+      const { data, error } = await supabase.storage.from('avatars').upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(data.path)
+      setTempImg(publicUrlData.publicUrl)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '이미지 업로드 중 오류가 발생했습니다.'
+      alert(message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
     <div className="w-full flex flex-col min-h-screen bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-white px-5 border-b border-gray-50">
@@ -154,19 +212,20 @@ export default function ClientMyPage() {
       <main>
         <section className="flex flex-col items-center py-10 border-b border-gray-50">
           <div
-            className="relative h-[100px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-full shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
+            className="relative h-[100px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-full bg-white shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
             onClick={() => {
               setTempImg(profileImg)
+              setTempNickname(nickname || '네일리버')
               setIsModalOpen(true)
             }}
           >
             <img
               src={profileImg}
               alt="프로필"
-              className="h-full w-full rounded-full object-cover"
+              className="h-full w-full overflow-hidden rounded-full bg-white object-cover"
             />
           </div>
-          <div className="mt-4 text-xl font-bold text-gray-900">네일리버</div>
+          <div className="mt-4 text-xl font-bold text-gray-900">{nickname || "네일리버"}</div>
           <span className="mt-1.5 inline-flex items-center justify-center rounded-full bg-rose-50 px-3.5 py-1 text-center text-[13px] font-semibold text-rose-400">
             좋은 하루 보내세요 🌷
           </span>
@@ -314,7 +373,7 @@ export default function ClientMyPage() {
                     <button
                       key={type}
                       onClick={() => setTempImg(`/avatar/default_profile_${type}.png`)}
-                      className={`relative w-[68px] h-[68px] shrink-0 rounded-full transition-all outline-none ${
+                      className={`relative w-[68px] h-[68px] shrink-0 overflow-hidden rounded-full bg-white transition-all outline-none ${
                         isSelected
                           ? 'ring-[2.5px] ring-[#9baef3] ring-offset-[3px] ring-offset-white'
                           : 'border border-black/5'
@@ -323,7 +382,7 @@ export default function ClientMyPage() {
                       <img
                         src={`/avatar/default_profile_${type}.png`}
                         alt={type}
-                        className="w-full h-full object-cover rounded-full block"
+                        className="w-full h-full object-cover rounded-full block bg-white"
                       />
                     </button>
                   );
@@ -331,20 +390,34 @@ export default function ClientMyPage() {
               </div>
             </div>
 
-            <button type="button" className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3.5 text-[14px] font-bold text-rose-500 transition-colors active:bg-rose-100">
-              <Camera size={18} /> 내 앨범에서 사진 선택
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3.5 text-[14px] font-bold text-rose-500 transition-colors active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Camera size={18} /> {isUploading ? '업로드 중...' : '내 앨범에서 사진 선택'}
             </button>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+            />
 
             <div className="mb-8">
               <p className="mb-2 text-[13px] font-medium text-gray-500">닉네임 변경</p>
-              <input type="text" defaultValue="수정가" className="w-full rounded-xl border border-gray-200 px-4 py-3.5 text-[15px] outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" />
+              <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3.5 text-[15px] outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" />
             </div>
 
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 setProfileImg(tempImg);
+                setNickname(tempNickname);
                 setIsModalOpen(false);
+                await supabase.auth.updateUser({ data: { display_name: tempNickname, avatar_url: tempImg } });
               }}
               className="w-full rounded-2xl bg-gray-900 py-4 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
             >

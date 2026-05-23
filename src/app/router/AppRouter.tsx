@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import AdminGuard from '../../widgets/layout/AdminGuard'
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
 import {
@@ -154,12 +155,17 @@ const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: <AdminGuard />,
     children: [
-      { index: true, element: <Navigate to="upload" replace /> },
-      { path: 'upload', element: <AdminUploadPage /> },
-      { path: 'board', element: <AdminBoard /> },
-      { path: 'manage', element: <AdminManagePage /> },
+      {
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <Navigate to="upload" replace /> },
+          { path: 'upload', element: <AdminUploadPage /> },
+          { path: 'board', element: <AdminBoard /> },
+          { path: 'manage', element: <AdminManagePage /> },
+        ],
+      },
     ],
   },
 ])

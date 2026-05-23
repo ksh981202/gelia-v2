@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
@@ -20,6 +20,13 @@ type BoardPostRow = {
   content_en: string | null;
   is_active: boolean | null;
   created_at: string | null;
+};
+
+type QuillEditor = {
+  getSelection: () => { index: number } | null;
+  getLength: () => number;
+  insertEmbed: (index: number, type: "image", value: string) => void;
+  setSelection: (index: number, length?: number) => void;
 };
 
 async function fetchBoardPosts(): Promise<BoardPostRow[]> {
@@ -46,6 +53,8 @@ function formatCreatedAt(raw: string | null): string {
 }
 
 export default function AdminBoard() {
+  const quillRefKR = useRef<ReactQuill>(null);
+  const quillRefEN = useRef<ReactQuill>(null);
   const [type, setType] = useState("notice");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -55,6 +64,7 @@ export default function AdminBoard() {
   const [rows, setRows] = useState<BoardPostRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -177,6 +187,71 @@ export default function AdminBoard() {
     }
   };
 
+  const imageHandler = useCallback(function (this: { quill?: QuillEditor }) {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      setIsUploadingImage(true);
+      setErrorMessage("");
+
+      try {
+        const filePath = `board/${Date.now()}_${file.name}`;
+        const { data, error } = await supabase.storage
+          .from("nail_images")
+          .upload(filePath, file);
+
+        if (error) throw error;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("nail_images")
+          .getPublicUrl(data.path);
+
+        const activeElement = document.activeElement;
+        const krEditor = quillRefKR.current?.getEditor() as QuillEditor | undefined;
+        const enEditor = quillRefEN.current?.getEditor() as QuillEditor | undefined;
+        const editor =
+          this.quill ??
+          (activeElement && quillRefEN.current?.editor?.root?.contains(activeElement)
+            ? enEditor
+            : krEditor);
+
+        if (!editor) return;
+
+        const range = editor.getSelection();
+        const index = range?.index ?? Math.max(editor.getLength() - 1, 0);
+        editor.insertEmbed(index, "image", publicUrlData.publicUrl);
+        editor.setSelection(index + 1, 0);
+      } catch (error) {
+        console.error("게시판 이미지 업로드 실패:", error);
+        setErrorMessage("이미지 업로드에 실패했습니다.");
+      } finally {
+        setIsUploadingImage(false);
+      }
+    };
+  }, []);
+
+  const modules = useMemo(
+    () => ({
+      toolbar: {
+        container: [
+          [{ header: [1, 2, false] }],
+          ["bold", "italic", "underline"],
+          ["image"],
+        ],
+        handlers: {
+          image: imageHandler,
+        },
+      },
+    }),
+    [imageHandler],
+  );
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 bg-slate-50 min-h-screen">
       <h2 className="text-xl font-bold text-slate-900">고객센터 글 등록</h2>
@@ -216,8 +291,10 @@ export default function AdminBoard() {
             <div className="grid gap-2">
               <label htmlFor="board-content" className="text-sm font-semibold text-gray-700">본문 (KR)</label>
               <ReactQuill
+                ref={quillRefKR}
                 value={content}
                 onChange={setContent}
+                modules={modules}
                 placeholder="본문을 작성하세요."
                 className="h-64 mb-12 bg-white"
               />
@@ -240,8 +317,10 @@ export default function AdminBoard() {
             <div className="grid gap-2">
               <label htmlFor="board-content-en" className="text-sm font-semibold text-gray-700">본문 (EN)</label>
               <ReactQuill
+                ref={quillRefEN}
                 value={contentEn}
                 onChange={setContentEn}
+                modules={modules}
                 placeholder="Enter the English content."
                 className="h-64 mb-12 bg-white"
               />
@@ -260,12 +339,15 @@ export default function AdminBoard() {
         {errorMessage ? (
           <p className="rounded-md bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{errorMessage}</p>
         ) : null}
+        {isUploadingImage ? (
+          <p className="rounded-md bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600">이미지를 업로드하는 중입니다.</p>
+        ) : null}
 
         <div className="flex flex-wrap gap-2 pt-4">
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploadingImage}
             className="rounded-md bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {isSubmitting ? (editingId ? "수정 중..." : "등록 중...") : editingId ? "수정하기" : "등록하기"}
