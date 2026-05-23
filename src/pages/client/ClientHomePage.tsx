@@ -3,7 +3,7 @@ import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 type HomeNailCard = { id: string; title: string; titleEn: string; image: string };
 
@@ -228,9 +228,13 @@ export default function ClientHomePage() {
           )}
         </div>
         <div className="mb-4 flex items-center gap-3 text-[13px] text-gray-500">
-          <span className="font-semibold text-gray-500">{isEnglish ? "Terms" : "이용약관"}</span>
+          <Link to="/client/terms" className="font-semibold text-gray-500 hover:underline">
+            {isEnglish ? "Terms of Service" : "이용약관"}
+          </Link>
           <span className="text-gray-300">|</span>
-          <span className="font-bold text-gray-800">{isEnglish ? "Privacy Policy" : "개인정보처리방침"}</span>
+          <Link to="/client/privacy" className="font-bold text-gray-800 hover:underline">
+            {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
+          </Link>
         </div>
         <p className="text-[11px] font-medium text-gray-400">&copy; 2026 GELIA Studio. All rights reserved.</p>
       </footer>

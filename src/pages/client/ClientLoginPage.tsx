@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguageContext } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/shared/api/supabaseClient';
 import { mergeGuestRecentViewedToUser } from '@/shared/lib/recentViewedStorage';
@@ -8,6 +9,8 @@ function getAuthErrorMessage(error: unknown): string {
 }
 
 export default function ClientLoginPage() {
+  const { language } = useLanguageContext();
+  const isEnglish = language === 'en';
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -34,15 +37,15 @@ export default function ClientLoginPage() {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
         if (!email.trim()) {
-      setErrorMsg('이메일을 입력해 주세요.');
+      setErrorMsg(isEnglish ? 'Please enter your email.' : '이메일을 입력해 주세요.');
       return;
     }
     if (!password.trim()) {
-      setErrorMsg('비밀번호를 입력해 주세요.');
+      setErrorMsg(isEnglish ? 'Please enter your password.' : '비밀번호를 입력해 주세요.');
       return;
     }
     if (password.length < 6) {
-      setErrorMsg('비밀번호는 6자리 이상 입력해 주세요.');
+      setErrorMsg(isEnglish ? 'Password must be at least 6 characters.' : '비밀번호는 6자리 이상 입력해 주세요.');
       return;
     }
     if (!supabase) return;
@@ -75,8 +78,8 @@ export default function ClientLoginPage() {
     } catch (error) {
       const message = getAuthErrorMessage(error);
       setErrorMsg(message === 'Invalid login credentials' 
-        ? '이메일 또는 비밀번호가 일치하지 않습니다.' 
-        : message || '인증 과정에서 오류가 발생했습니다.');
+        ? (isEnglish ? 'Email or password does not match.' : '이메일 또는 비밀번호가 일치하지 않습니다.')
+        : message || (isEnglish ? 'An error occurred during authentication.' : '인증 과정에서 오류가 발생했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -85,7 +88,7 @@ export default function ClientLoginPage() {
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
         if (adminPin !== "2258") {
-      setErrorMsg("관리자 보안 코드가 일치하지 않습니다.");
+      setErrorMsg(isEnglish ? "Admin security code does not match." : "관리자 보안 코드가 일치하지 않습니다.");
       return;
     }
 
@@ -103,8 +106,8 @@ export default function ClientLoginPage() {
       const message = getAuthErrorMessage(error);
       setErrorMsg(
         message === "Invalid login credentials"
-          ? "이메일 또는 비밀번호가 일치하지 않습니다."
-          : message || "인증 과정에서 오류가 발생했습니다.",
+          ? (isEnglish ? "Email or password does not match." : "이메일 또는 비밀번호가 일치하지 않습니다.")
+          : message || (isEnglish ? "An error occurred during authentication." : "인증 과정에서 오류가 발생했습니다."),
       );
     } finally {
       setLoading(false);
@@ -119,16 +122,16 @@ export default function ClientLoginPage() {
 
     try {
       const trimmedEmail = email.trim();
-      if (!trimmedEmail) throw new Error('이메일을 입력해주세요.');
+      if (!trimmedEmail) throw new Error(isEnglish ? 'Please enter your email.' : '이메일을 입력해주세요.');
       const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: `${window.location.origin}/update-password`,
       });
       if (error) throw error;
-      alert('비밀번호 재설정 링크가 이메일로 전송되었습니다. 이메일함을 확인해주세요!');
+      alert(isEnglish ? 'A password reset link has been sent. Please check your email!' : '비밀번호 재설정 링크가 이메일로 전송되었습니다. 이메일함을 확인해주세요!');
       setIsResetMode(false);
     } catch (error) {
       const message = getAuthErrorMessage(error);
-      setErrorMsg(message || '이메일 전송 중 오류가 발생했습니다.');
+      setErrorMsg(message || (isEnglish ? 'An error occurred while sending the email.' : '이메일 전송 중 오류가 발생했습니다.'));
     } finally {
       setLoading(false);
     }
@@ -143,11 +146,14 @@ export default function ClientLoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/client/my`,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
       if (error) throw error;
     } catch {
-      setErrorMsg('구글 로그인 중 오류가 발생했습니다.');
+      setErrorMsg(isEnglish ? 'An error occurred during Google login.' : '구글 로그인 중 오류가 발생했습니다.');
       setLoading(false);
     }
   };
@@ -158,7 +164,7 @@ export default function ClientLoginPage() {
         <button
           onClick={() => navigate(-1)}
           className="rounded-full p-2 text-gray-600 transition-colors hover:text-gray-900"
-          aria-label="뒤로가기"
+          aria-label={isEnglish ? 'Go back' : '뒤로가기'}
         >
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -176,8 +182,8 @@ export default function ClientLoginPage() {
             {/* 앞쪽 메인 네일 이미지 */}
             <div className="relative h-40 w-40 overflow-hidden rounded-full border-4 border-white bg-gray-100 shadow-lg z-10 sm:h-48 sm:w-48">
               <img
-                src="/images/GL-0000358.jpg"
-                alt="네일북 메인 썸네일"
+                src="/quiz/intro-main.jpg"
+                alt={isEnglish ? 'Main nail thumbnail' : '네일북 메인 썸네일'}
                 className="h-full w-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = "https://via.placeholder.com/200?text=Nailbook";
@@ -189,40 +195,46 @@ export default function ClientLoginPage() {
 
         <div className="mb-8 text-center">
           <h2 className="mb-2 text-[24px] font-bold text-gray-900">
-            {isResetMode ? '비밀번호 찾기' : isSignUp ? '네일북 가입하기 ✨' : '환영합니다!'}
+            {isResetMode
+              ? (isEnglish ? 'Find Password' : '비밀번호 찾기')
+              : isSignUp
+                ? (isEnglish ? 'Sign up for Gelia ✨' : '네일북 가입하기 ✨')
+                : (isEnglish ? 'Welcome!' : '환영합니다!')}
           </h2>
           <p className="text-[14px] text-gray-500">
             {isResetMode
-              ? '가입한 이메일로 재설정 링크를 보내드릴게요.'
+              ? (isEnglish ? 'We will send a reset link to your registered email.' : '가입한 이메일로 재설정 링크를 보내드릴게요.')
               : isSignUp
-                ? '간단하게 이메일로 시작해 보세요.'
-                : '나만의 네일 스타일을 찾아보세요.'}
+                ? (isEnglish ? 'Get started easily with your email.' : '간단하게 이메일로 시작해 보세요.')
+                : (isEnglish ? 'Find your perfect nail style.' : '나만의 네일 스타일을 찾아보세요.')}
           </p>
         </div>
 
         <div className="rounded-2xl border border-gray-100 bg-white px-6 py-8 shadow-sm sm:px-8">
-            {errorMsg && (
-              <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-center text-[13px] font-medium text-red-600">
-                {errorMsg}
-              </div>
-            )}
+            <div className="min-h-[72px] w-full">
+              {errorMsg && (
+                <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-center text-[13px] font-medium text-red-600">
+                  {errorMsg}
+                </div>
+              )}
+            </div>
 
             {showAdminPin ? (
               <form className="space-y-5" onSubmit={handlePinSubmit}>
                 <div>
                   <p className="mb-2 text-center text-[14px] font-semibold text-gray-800">
-                    최고 관리자 보안 코드를 입력하세요
+                    {isEnglish ? 'Enter the admin security code' : '최고 관리자 보안 코드를 입력하세요'}
                   </p>
                   <input
                     type="password"
-                    value={adminPin}
+                    defaultValue={adminPin}
                     onChange={(e) => {
                       setAdminPin(e.target.value);
                       setErrorMsg("");
                     }}
                     maxLength={4}
                     className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-center text-[15px] tracking-[0.3em] outline-none transition-colors focus:border-[#FF6B00] focus:bg-white focus:ring-1 focus:ring-[#FF6B00] disabled:bg-gray-50"
-                    placeholder="보안 코드 4자리"
+                    placeholder={isEnglish ? '4-digit security code' : '보안 코드 4자리'}
                     disabled={loading}
                   />
                 </div>
@@ -231,7 +243,7 @@ export default function ClientLoginPage() {
                   disabled={loading}
                   className="mt-2 flex w-full items-center justify-center rounded-xl bg-[#FF6B00] px-4 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#E66000] disabled:bg-gray-300 shadow-md"
                 >
-                  {loading ? "확인 중..." : "확인"}
+                  {loading ? (isEnglish ? "Checking..." : "확인 중...") : (isEnglish ? "Confirm" : "확인")}
                 </button>
                 <button
                   type="button"
@@ -242,20 +254,20 @@ export default function ClientLoginPage() {
                   }}
                   className="w-full text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
                 >
-                  취소(뒤로가기)
+                  {isEnglish ? 'Cancel' : '취소(뒤로가기)'}
                 </button>
               </form>
             ) : (
               <>
                 <form className="space-y-5" onSubmit={isResetMode ? handleResetPassword : handleEmailAuth}>
                   <div>
-                    <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">이메일</label>
+                    <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">{isEnglish ? 'Email' : '이메일'}</label>
                     <input
                       type="email"
-                      value={email}
+                      defaultValue={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
-                        setErrorMsg('');
+                        if (errorMsg) setErrorMsg('');
                       }}
                       className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] outline-none transition-colors focus:border-[#FF6B00] focus:bg-white focus:ring-1 focus:ring-[#FF6B00] disabled:bg-gray-50"
                       placeholder="you@example.com"
@@ -265,16 +277,16 @@ export default function ClientLoginPage() {
 
                   {!isResetMode && (
                     <div>
-                      <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">비밀번호</label>
+                      <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">{isEnglish ? 'Password' : '비밀번호'}</label>
                       <input
                         type="password"
-                        value={password}
+                        defaultValue={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
-                          setErrorMsg('');
+                          if (errorMsg) setErrorMsg('');
                         }}
                         className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] outline-none transition-colors focus:border-[#FF6B00] focus:bg-white focus:ring-1 focus:ring-[#FF6B00] disabled:bg-gray-50"
-                        placeholder="6자리 이상 입력해주세요"
+                        placeholder={isEnglish ? 'Enter at least 6 characters' : '6자리 이상 입력해주세요'}
                         disabled={loading}
                       />
                       {!isSignUp && !isResetMode && (
@@ -287,7 +299,7 @@ export default function ClientLoginPage() {
                             }}
                             className="text-[13px] font-semibold text-gray-600 hover:text-[#FF6B00] transition-colors"
                           >
-                            비밀번호를 잊으셨나요?
+                            {isEnglish ? 'Forgot Password?' : '비밀번호를 잊으셨나요?'}
                           </button>
                         </div>
                       )}
@@ -299,7 +311,13 @@ export default function ClientLoginPage() {
                     disabled={loading}
                     className="mt-2 flex w-full items-center justify-center rounded-xl bg-[#FF6B00] px-4 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#E66000] disabled:bg-gray-300 shadow-md"
                   >
-                    {loading ? '처리 중...' : isResetMode ? '재설정 이메일 받기' : isSignUp ? '회원가입' : '이메일로 로그인'}
+                    {loading
+                      ? (isEnglish ? 'Processing...' : '처리 중...')
+                      : isResetMode
+                        ? (isEnglish ? 'Send Reset Link' : '재설정 이메일 받기')
+                        : isSignUp
+                          ? (isEnglish ? 'Sign Up' : '회원가입')
+                          : (isEnglish ? 'Log in with Email' : '이메일로 로그인')}
                   </button>
 
                   {isResetMode && (
@@ -311,7 +329,7 @@ export default function ClientLoginPage() {
                       }}
                       className="w-full text-[13px] font-semibold text-gray-500 underline underline-offset-2 hover:text-gray-900"
                     >
-                      뒤로 가기
+                      {isEnglish ? 'Back' : '뒤로 가기'}
                     </button>
                   )}
                 </form>
@@ -325,7 +343,7 @@ export default function ClientLoginPage() {
                     <div className="w-full border-t border-gray-100" />
                   </div>
                   <div className="relative flex justify-center text-[13px]">
-                    <span className="bg-white px-4 font-medium text-gray-400">또는</span>
+                    <span className="bg-white px-4 font-medium text-gray-400">{isEnglish ? 'OR' : '또는'}</span>
                   </div>
                 </div>
 
@@ -341,11 +359,13 @@ export default function ClientLoginPage() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
-                  Google로 계속하기
+                  {isEnglish ? 'Continue with Google' : 'Google로 계속하기'}
                 </button>
 
                 <div className="mt-8 text-center text-[13px] text-gray-500">
-                  {isSignUp ? '이미 계정이 있으신가요? ' : '아직 계정이 없으신가요? '}
+                  {isSignUp
+                    ? (isEnglish ? 'Already have an account? ' : '이미 계정이 있으신가요? ')
+                    : (isEnglish ? "Don't have an account? " : '아직 계정이 없으신가요? ')}
                   <button
                     type="button"
                     onClick={() => {
@@ -354,7 +374,7 @@ export default function ClientLoginPage() {
                     }}
                     className="ml-1.5 font-bold text-[#FF6B00] hover:text-[#E66000] transition-colors"
                   >
-                    {isSignUp ? '로그인하기' : '회원가입하기'}
+                    {isSignUp ? (isEnglish ? 'Log In' : '로그인하기') : (isEnglish ? 'Sign Up' : '회원가입하기')}
                   </button>
                 </div>
               </>

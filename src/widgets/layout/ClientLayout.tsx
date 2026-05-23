@@ -7,7 +7,7 @@ import {
   useNavigate,
   useNavigationType,
 } from 'react-router-dom'
-import { LanguageProvider } from '@/contexts/LanguageContext'
+import { LanguageProvider, useLanguageContext } from '@/contexts/LanguageContext'
 import LanguageToggle from '@/components/LanguageToggle'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -25,6 +25,8 @@ export default function ClientLayout() {
 }
 
 function ClientLayoutContent() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
@@ -150,50 +152,50 @@ function ClientLayoutContent() {
             to="/client"
             end
             className={bottomNavLinkClass}
-            aria-label="홈 탭"
+            aria-label={isEnglish ? 'Home tab' : '홈 탭'}
           >
             <Home
               className="h-6 w-6 shrink-0"
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">홈</span>
+            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Home' : '홈'}</span>
           </NavLink>
           <NavLink
             to="/client/trend"
             className={bottomNavLinkClass}
-            aria-label="트렌드 탭"
+            aria-label={isEnglish ? 'Trend tab' : '트렌드 탭'}
           >
             <BarChart2
               className="h-6 w-6 shrink-0"
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">트렌드</span>
+            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Trend' : '트렌드'}</span>
           </NavLink>
           <NavLink
             to="/client/search"
             className={bottomNavLinkClass}
-            aria-label="검색 탭"
+            aria-label={isEnglish ? 'Search tab' : '검색 탭'}
           >
             <Search
               className="h-6 w-6 shrink-0"
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">검색</span>
+            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
           <NavLink
             to="/client/my"
             className={bottomNavLinkClass}
-            aria-label="마이 탭"
+            aria-label={isEnglish ? 'My tab' : '마이 탭'}
           >
             <User
               className="h-6 w-6 shrink-0"
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">마이</span>
+            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'My' : '마이'}</span>
           </NavLink>
         </nav>
         )}

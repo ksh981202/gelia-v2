@@ -815,7 +815,7 @@ const Detail = () => {
           </div>
         </nav>
 
-        <main className="px-4 pt-4">{main}</main>
+        <main className="px-4 pb-32 pt-4">{main}</main>
 
         <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100/80 bg-white/95 px-4 py-3 backdrop-blur-sm">
           <div className="grid grid-cols-[7fr_13fr] gap-2.5">
