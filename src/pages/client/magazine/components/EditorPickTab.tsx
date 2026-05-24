@@ -23,19 +23,6 @@ async function fetchEditorPickPosts(): Promise<EditorPickPost[]> {
   return (data ?? []) as EditorPickPost[]
 }
 
-function formatCreatedAt(raw: string | null, isEnglish: boolean): string {
-  if (!raw) return ''
-
-  const date = new Date(raw)
-  if (Number.isNaN(date.getTime())) return ''
-
-  return new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'ko-KR', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date)
-}
-
 function renderHighlightedTitle(title: string) {
   const match = title.match(/^(\[[^\]]+\])\s*(.*)$/)
 
@@ -108,7 +95,6 @@ export default function EditorPickTab() {
 
   const [heroPost, ...listPosts] = posts
   const heroTitle = getPostTitle(heroPost, isEnglish)
-  const heroDate = formatCreatedAt(heroPost.created_at, isEnglish)
 
   return (
     <section className="mt-8 space-y-6">
@@ -125,12 +111,9 @@ export default function EditorPickTab() {
           )}
         </div>
         <div className="mt-4 space-y-2">
-          <h2 className="text-xl font-bold leading-snug text-gray-900">
+          <h2 className="text-xl font-bold tracking-tight leading-snug text-gray-900 mt-4">
             {renderHighlightedTitle(heroTitle)}
           </h2>
-          {heroDate ? (
-            <p className="text-xs font-medium text-gray-400">{heroDate}</p>
-          ) : null}
         </div>
       </Link>
 
@@ -138,7 +121,6 @@ export default function EditorPickTab() {
         <div className="space-y-4">
           {listPosts.map((post) => {
             const title = getPostTitle(post, isEnglish)
-            const createdAt = formatCreatedAt(post.created_at, isEnglish)
 
             return (
               <Link
@@ -147,12 +129,9 @@ export default function EditorPickTab() {
                 className="flex cursor-pointer gap-4 border-t border-gray-100 pt-4"
               >
                 <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-gray-900">
+                  <h3 className="text-[15px] font-bold tracking-tight leading-snug text-gray-800 line-clamp-2">
                     {renderHighlightedTitle(title)}
                   </h3>
-                  {createdAt ? (
-                    <p className="mt-2 text-xs font-medium text-gray-400">{createdAt}</p>
-                  ) : null}
                 </div>
                 <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100">
                   {post.thumbnail_url ? (

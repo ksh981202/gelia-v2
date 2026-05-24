@@ -251,7 +251,8 @@ export default function AdminBoard() {
       setThumbnailUrl(publicUrlData.publicUrl);
     } catch (error) {
       console.error("대표 썸네일 업로드 실패:", error);
-      setErrorMessage("대표 썸네일 업로드에 실패했습니다.");
+      const uploadError = error as { message?: string; toString?: () => string } | null | undefined;
+      setErrorMessage("썸네일 업로드 실패: " + (uploadError?.message || uploadError?.toString?.() || "알 수 없는 오류"));
     } finally {
       setIsUploadingThumbnail(false);
       event.target.value = "";
@@ -300,7 +301,8 @@ export default function AdminBoard() {
         editor.setSelection(index + 1, 0);
       } catch (error) {
         console.error("게시판 이미지 업로드 실패:", error);
-        setErrorMessage("이미지 업로드에 실패했습니다.");
+        const uploadError = error as { message?: string; toString?: () => string } | null | undefined;
+        setErrorMessage("에디터 이미지 업로드 실패: " + (uploadError?.message || uploadError?.toString?.() || "알 수 없는 오류"));
       } finally {
         setIsUploadingImage(false);
       }
@@ -312,7 +314,8 @@ export default function AdminBoard() {
       toolbar: {
         container: [
           [{ header: [1, 2, false] }],
-          ["bold", "italic", "underline"],
+          ["bold", "italic", "underline", "strike"],
+          [{ color: [] }, { background: [] }],
           ["image"],
         ],
         handlers: {

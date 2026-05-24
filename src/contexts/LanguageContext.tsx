@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type Language = "ko" | "en";
 
@@ -11,7 +11,14 @@ type LanguageContextValue = {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("ko");
+  const [language, setLanguage] = useState<Language>(() => {
+    const savedLanguage = localStorage.getItem("gelia-language");
+    return savedLanguage === "en" ? "en" : "ko";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("gelia-language", language);
+  }, [language]);
 
   const value = useMemo(
     () => ({

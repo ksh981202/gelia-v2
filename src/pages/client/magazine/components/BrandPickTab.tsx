@@ -5,9 +5,11 @@ export default function BrandPickTab() {
   const isEnglish = language === 'en'
 
   return (
-    <section className="mt-8 rounded-3xl border border-gray-100 bg-white px-5 py-12 text-center shadow-sm">
-      <p className="text-sm font-semibold text-gray-500">
-        {isEnglish ? 'Brand pick coming soon' : '브랜드 픽 준비중'}
+    <section className="flex min-h-[50vh] flex-col items-center justify-center px-5 text-center text-gray-500">
+      <p className="text-sm font-medium leading-7">
+        {isEnglish
+          ? "GELIA's curated premium brand collection will be revealed soon ✨"
+          : 'GELIA가 엄선한 프리미엄 브랜드 컬렉션이 곧 공개됩니다 ✨'}
       </p>
     </section>
   )

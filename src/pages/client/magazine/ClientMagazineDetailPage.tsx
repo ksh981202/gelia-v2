@@ -1,3 +1,4 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Share2 } from 'lucide-react'
@@ -7,7 +8,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 type MagazineDetailPost = {
   id: string
   title: string | null
+  title_en: string | null
   content: string | null
+  content_en: string | null
   thumbnail_url: string | null
   created_at: string | null
 }
@@ -15,7 +18,7 @@ type MagazineDetailPost = {
 async function fetchMagazinePost(id: string): Promise<MagazineDetailPost | null> {
   const { data, error } = await supabase
     .from('board_posts')
-    .select('id, title, content, thumbnail_url, created_at')
+    .select('id, title, title_en, content, content_en, thumbnail_url, created_at')
     .eq('id', id)
     .maybeSingle()
 
@@ -23,13 +26,13 @@ async function fetchMagazinePost(id: string): Promise<MagazineDetailPost | null>
   return data as MagazineDetailPost | null
 }
 
-function formatCreatedAt(raw: string | null): string {
+function formatCreatedAt(raw: string | null, isEnglish: boolean): string {
   if (!raw) return ''
 
   const date = new Date(raw)
   if (Number.isNaN(date.getTime())) return ''
 
-  return new Intl.DateTimeFormat('ko-KR', {
+  return new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -72,6 +75,8 @@ async function copyCurrentUrl() {
 }
 
 export default function ClientMagazineDetailPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
   const { id } = useParams()
   const {
@@ -87,22 +92,27 @@ export default function ClientMagazineDetailPage() {
   const handleShareClick = async () => {
     try {
       await copyCurrentUrl()
-      alert('링크가 복사되었습니다')
+      alert(isEnglish ? 'Link copied to clipboard.' : '링크가 복사되었습니다')
     } catch (error) {
       console.error('링크 복사 실패:', error)
-      alert('링크 복사에 실패했습니다.')
+      alert(isEnglish ? 'Failed to copy the link.' : '링크 복사에 실패했습니다.')
     }
   }
 
-  const title = post?.title?.trim() || '제목 없음'
-  const createdAt = formatCreatedAt(post?.created_at ?? null)
+  const title =
+    (isEnglish && post?.title_en ? post.title_en : post?.title)?.trim() ||
+    (isEnglish ? 'Untitled' : '제목 없음')
+  const content = isEnglish && post?.content_en ? post.content_en : post?.content
+  const createdAt = formatCreatedAt(post?.created_at ?? null, isEnglish)
 
   useEffect(() => {
     if (!post) return
 
     const originalTitle = document.title
-    const seoTitle = `${title} | GELIA Magazine`
-    const description = getPlainTextSummary(post.content)
+    const localizedTitle = isEnglish && post.title_en ? post.title_en : post.title
+    const localizedContent = isEnglish && post.content_en ? post.content_en : post.content
+    const seoTitle = `${localizedTitle?.trim() || (isEnglish ? 'Untitled' : '제목 없음')} | GELIA Magazine`
+    const description = getPlainTextSummary(localizedContent)
     const ogImage = post.thumbnail_url ?? ''
     const ogUrl = window.location.href
 
@@ -119,7 +129,7 @@ export default function ClientMagazineDetailPage() {
         .forEach((meta) => meta.remove())
       document.title = originalTitle
     }
-  }, [post, title])
+  }, [post, isEnglish])
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,15 +138,18 @@ export default function ClientMagazineDetailPage() {
           type="button"
           onClick={() => navigate(-1)}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-900 shadow-sm"
-          aria-label="뒤로가기"
+          aria-label={isEnglish ? 'Go back' : '뒤로가기'}
         >
           <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
         </button>
+        <h2 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold text-gray-900">
+          {isEnglish ? "Editor's Pick" : '에디터 픽'}
+        </h2>
         <button
           type="button"
           onClick={() => void handleShareClick()}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-900 shadow-sm"
-          aria-label="공유하기"
+          aria-label={isEnglish ? 'Share' : '공유하기'}
         >
           <Share2 className="h-5 w-5" strokeWidth={2.2} />
         </button>
@@ -144,9 +157,13 @@ export default function ClientMagazineDetailPage() {
 
       <main className="px-5 pb-10 pt-5">
         {isLoading ? (
-          <p className="py-16 text-center text-sm font-semibold text-gray-500">로딩 중...</p>
+          <p className="py-16 text-center text-sm font-semibold text-gray-500">
+            {isEnglish ? 'Loading...' : '로딩 중...'}
+          </p>
         ) : isError ? (
-          <p className="py-16 text-center text-sm font-semibold text-gray-500">게시글을 불러오지 못했습니다.</p>
+          <p className="py-16 text-center text-sm font-semibold text-gray-500">
+            {isEnglish ? 'Unable to load the article.' : '게시글을 불러오지 못했습니다.'}
+          </p>
         ) : post ? (
           <article>
             <h1 className="text-2xl font-bold leading-snug text-gray-900">{title}</h1>
@@ -157,11 +174,13 @@ export default function ClientMagazineDetailPage() {
             ) : null}
             <div
               className="mt-8 whitespace-pre-wrap break-words break-all overflow-hidden text-[15px] leading-7 text-gray-700 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-bold [&_img]:my-5 [&_img]:max-w-full [&_img]:rounded-2xl [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-4 [&_ul]:list-disc"
-              dangerouslySetInnerHTML={{ __html: post.content ?? '' }}
+              dangerouslySetInnerHTML={{ __html: content ?? '' }}
             />
           </article>
         ) : (
-          <p className="py-16 text-center text-sm font-semibold text-gray-500">게시글을 찾을 수 없습니다.</p>
+          <p className="py-16 text-center text-sm font-semibold text-gray-500">
+            {isEnglish ? 'Article not found.' : '게시글을 찾을 수 없습니다.'}
+          </p>
         )}
       </main>
     </div>
