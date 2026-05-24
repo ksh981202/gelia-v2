@@ -1,4 +1,4 @@
-import { BarChart2, Home, Search, Settings, User } from 'lucide-react'
+import { BarChart2, BookOpen, Home, Search, Settings, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
   NavLink,
@@ -99,6 +99,8 @@ function ClientLayoutContent() {
     pathname === '/client/shape-best-list' ||
     pathname === '/client/search-trend-list' ||
     pathname === '/client/trend' ||
+    pathname === '/client/magazine' ||
+    pathname.startsWith('/client/magazine/') ||
     pathname === '/client/texture' ||
     pathname === '/client/texture-list' ||
     pathname === '/client/syrup-best' ||
@@ -172,7 +174,7 @@ function ClientLayoutContent() {
 
         {!hideBottomNav && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[64px] w-full max-w-md grid-cols-4 border-t border-gray-200 bg-white pb-safe"
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[64px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe"
           aria-label="하단 탭"
         >
           <NavLink
@@ -199,6 +201,18 @@ function ClientLayoutContent() {
               aria-hidden
             />
             <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Trend' : '트렌드'}</span>
+          </NavLink>
+          <NavLink
+            to="/client/magazine"
+            className={bottomNavLinkClass}
+            aria-label={isEnglish ? 'Magazine tab' : '매거진 탭'}
+          >
+            <BookOpen
+              className="h-6 w-6 shrink-0"
+              strokeWidth={2.5}
+              aria-hidden
+            />
+            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Magazine' : '매거진'}</span>
           </NavLink>
           <NavLink
             to="/client/search"

@@ -14,6 +14,8 @@ const AdminManagePage = lazy(() => import('../../pages/admin/AdminManagePage'))
 const ClientNailDetailPage = lazy(() => import('../../pages/client/ClientNailDetailPage'))
 const ClientGalleryPage = lazy(() => import('../../pages/client/ClientGalleryPage'))
 const ClientRankingPage = lazy(() => import('../../pages/client/ClientRankingPage'))
+const ClientMagazinePage = lazy(() => import('../../pages/client/magazine/ClientMagazinePage'))
+const ClientMagazineDetailPage = lazy(() => import('../../pages/client/magazine/ClientMagazineDetailPage'))
 const TrendPage = lazy(() => import('../../pages/client/trend/TrendPage'))
 const TexturePage = lazy(() => import('../../pages/client/trend/TexturePage'))
 const TextureListPage = lazy(() => import('../../pages/client/trend/TextureListPage'))
@@ -104,6 +106,8 @@ const router = createBrowserRouter([
       },
       { path: 'detail/:id', element: <ClientNailDetailPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
+      { path: 'magazine', element: <ClientMagazinePage /> },
+      { path: 'magazine/:id', element: <ClientMagazineDetailPage /> },
       { path: 'search', element: <SearchMainPage /> },
       { path: 'login', element: <ClientLoginPage /> },
       { path: 'notifications', element: <ClientNotificationSettingsPage /> },

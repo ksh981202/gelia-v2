@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
@@ -9,7 +9,19 @@ const TYPE_LABEL: Record<string, string> = {
   faq: "FAQ",
   terms: "이용약관",
   privacy: "개인정보처리방침",
+  magazine_editor: "매거진 - 에디터 픽",
+  magazine_brand: "매거진 - 브랜드 픽",
+  magazine_shopping: "매거진 - 쇼핑",
 };
+
+const SHOPPING_SUB_CATEGORIES = [
+  { value: "", label: "전체" },
+  { value: "젤·네일팁", label: "젤·네일팁" },
+  { value: "파츠·스톤", label: "파츠·스톤" },
+  { value: "기기·도구", label: "기기·도구" },
+  { value: "영양·리무버", label: "영양·리무버" },
+  { value: "초보자 세트", label: "초보자 세트" },
+];
 
 type BoardPostRow = {
   id: string;
@@ -18,6 +30,10 @@ type BoardPostRow = {
   content: string | null;
   title_en: string | null;
   content_en: string | null;
+  thumbnail_url: string | null;
+  external_link: string | null;
+  external_link_en: string | null;
+  sub_category: string | null;
   is_active: boolean | null;
   created_at: string | null;
 };
@@ -55,16 +71,22 @@ function formatCreatedAt(raw: string | null): string {
 export default function AdminBoard() {
   const quillRefKR = useRef<ReactQuill>(null);
   const quillRefEN = useRef<ReactQuill>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState("notice");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [titleEn, setTitleEn] = useState("");
   const [contentEn, setContentEn] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [externalLink, setExternalLink] = useState("");
+  const [externalLinkEn, setExternalLinkEn] = useState("");
+  const [subCategory, setSubCategory] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [rows, setRows] = useState<BoardPostRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -108,7 +130,18 @@ export default function AdminBoard() {
     setContent("");
     setTitleEn("");
     setContentEn("");
+    setThumbnailUrl("");
+    setExternalLink("");
+    setExternalLinkEn("");
+    setSubCategory("");
     setIsActive(true);
+  };
+
+  const handleTypeChange = (nextType: string) => {
+    setType(nextType);
+    if (nextType !== "magazine_shopping") {
+      setSubCategory("");
+    }
   };
 
   const handleSubmit = async () => {
@@ -129,6 +162,10 @@ export default function AdminBoard() {
       content: trimmedContent,
       title_en: titleEn.trim(),
       content_en: contentEn.trim(),
+      thumbnail_url: thumbnailUrl,
+      external_link: externalLink,
+      external_link_en: externalLinkEn,
+      sub_category: subCategory,
       is_active: isActive,
     };
 
@@ -155,6 +192,10 @@ export default function AdminBoard() {
     setContent(row.content || "");
     setTitleEn(row.title_en || "");
     setContentEn(row.content_en || "");
+    setThumbnailUrl(row.thumbnail_url || "");
+    setExternalLink(row.external_link || "");
+    setExternalLinkEn(row.external_link_en || "");
+    setSubCategory(row.sub_category || "");
     setIsActive(Boolean(row.is_active));
     setEditingId(row.id);
     setErrorMessage("");
@@ -184,6 +225,36 @@ export default function AdminBoard() {
     } catch (error: unknown) {
       console.error(error);
       setErrorMessage("삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleThumbnailUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingThumbnail(true);
+    setErrorMessage("");
+
+    try {
+      const safeFileName = file.name.replace(/\s+/g, "_");
+      const filePath = `thumbnail/${Date.now()}_${safeFileName}`;
+      const { data, error } = await supabase.storage
+        .from("nail_images")
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from("nail_images")
+        .getPublicUrl(data.path);
+
+      setThumbnailUrl(publicUrlData.publicUrl);
+    } catch (error) {
+      console.error("대표 썸네일 업로드 실패:", error);
+      setErrorMessage("대표 썸네일 업로드에 실패했습니다.");
+    } finally {
+      setIsUploadingThumbnail(false);
+      event.target.value = "";
     }
   };
 
@@ -265,13 +336,70 @@ export default function AdminBoard() {
           <select
             id="board-type"
             value={type}
-            onChange={(e) => setType(e.target.value)}
+            onChange={(e) => handleTypeChange(e.target.value)}
             className="h-10 w-full max-w-md rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-slate-500 focus:outline-none"
           >
             {Object.entries(TYPE_LABEL).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
+        </div>
+
+        {type === "magazine_shopping" ? (
+          <div className="grid gap-2">
+            <label htmlFor="board-sub-category" className="text-sm font-semibold text-gray-700">쇼핑 서브 카테고리</label>
+            <select
+              id="board-sub-category"
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+              className="h-10 w-full max-w-md rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-slate-500 focus:outline-none"
+            >
+              {SHOPPING_SUB_CATEGORIES.map((category) => (
+                <option key={category.value || "all"} value={category.value}>{category.label}</option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
+        <div className="grid gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => thumbnailInputRef.current?.click()}
+              disabled={isUploadingThumbnail}
+              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+            >
+              {isUploadingThumbnail ? "대표 썸네일 업로드 중..." : "대표 썸네일 등록"}
+            </button>
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => void handleThumbnailUpload(event)}
+            />
+            {thumbnailUrl ? (
+              <button
+                type="button"
+                onClick={() => setThumbnailUrl("")}
+                className="text-sm font-medium text-rose-500 hover:text-rose-600"
+              >
+                썸네일 제거
+              </button>
+            ) : null}
+          </div>
+          {thumbnailUrl ? (
+            <div className="flex items-center gap-3">
+              <img
+                src={thumbnailUrl}
+                alt="대표 썸네일 미리보기"
+                className="h-24 w-24 rounded-md border border-slate-200 bg-white object-cover"
+              />
+              <p className="break-all text-xs text-slate-500">{thumbnailUrl}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">매거진 카드 등에 노출할 대표 이미지를 등록할 수 있습니다.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -284,6 +412,17 @@ export default function AdminBoard() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="제목을 입력하세요"
+                className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="board-external-link" className="text-sm font-semibold text-gray-700">외부 링크 (KR - 쿠팡 등)</label>
+              <input
+                id="board-external-link"
+                value={externalLink}
+                onChange={(e) => setExternalLink(e.target.value)}
+                placeholder="https://..."
                 className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
               />
             </div>
@@ -310,6 +449,17 @@ export default function AdminBoard() {
                 value={titleEn}
                 onChange={(e) => setTitleEn(e.target.value)}
                 placeholder="Enter the English title"
+                className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="board-external-link-en" className="text-sm font-semibold text-gray-700">외부 링크 (EN - 아마존 등)</label>
+              <input
+                id="board-external-link-en"
+                value={externalLinkEn}
+                onChange={(e) => setExternalLinkEn(e.target.value)}
+                placeholder="https://..."
                 className="h-10 w-full rounded-md border border-slate-200 px-3 text-sm focus:border-slate-500 focus:outline-none"
               />
             </div>
@@ -342,12 +492,15 @@ export default function AdminBoard() {
         {isUploadingImage ? (
           <p className="rounded-md bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600">이미지를 업로드하는 중입니다.</p>
         ) : null}
+        {isUploadingThumbnail ? (
+          <p className="rounded-md bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600">대표 썸네일을 업로드하는 중입니다.</p>
+        ) : null}
 
         <div className="flex flex-wrap gap-2 pt-4">
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={isSubmitting || isUploadingImage}
+            disabled={isSubmitting || isUploadingImage || isUploadingThumbnail}
             className="rounded-md bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {isSubmitting ? (editingId ? "수정 중..." : "등록 중...") : editingId ? "수정하기" : "등록하기"}
