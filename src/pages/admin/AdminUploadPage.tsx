@@ -311,22 +311,19 @@ export default function AdminUploadPage() {
     }
 
     setStatusMessage("");
-    await startUpload();
-  };
+    const completed = await startUpload();
+    if (!completed) return;
 
-  useEffect(() => {
-    if (phase === "complete") {
-      toast.success(`${eligibleCount}건 업로드 완료`);
-      setCsvRows([]);
-      setCsvHeaders([]);
-      setCsvFileName(null);
-      setCsvError(null);
-      setStatusMessage("");
-      clearImageFiles();
-      clearHookCsv();
-      resetUpload();
-    }
-  }, [phase, eligibleCount, clearImageFiles, clearHookCsv, resetUpload]);
+    toast.success(`${eligibleCount}건 업로드 완료`);
+    setCsvRows([]);
+    setCsvHeaders([]);
+    setCsvFileName(null);
+    setCsvError(null);
+    setStatusMessage("");
+    clearImageFiles();
+    clearHookCsv();
+    resetUpload();
+  };
 
   useEffect(() => {
     if (phase === "error" && uploadError) {

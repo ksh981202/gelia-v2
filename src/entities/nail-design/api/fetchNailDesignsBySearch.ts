@@ -1,7 +1,7 @@
 import { supabase } from '../../../shared/api/supabaseClient'
 import type { NailDesignRow } from '../../../shared/types/database.types'
 
-const SEARCH_COLUMNS = 'id,title,image_url'
+const SEARCH_COLUMNS = 'id,title,title_en,image_url'
 const SEARCH_LIMIT = 60
 
 /** PostgREST `.or()` 구분자(`,`) 및 `ilike` 와일드카드 충돌 방지 */
@@ -26,7 +26,7 @@ function buildSearchOrFilter(query: string): string {
   ].join(',')
 }
 
-export type NailDesignSearchRow = Pick<NailDesignRow, 'id' | 'title' | 'image_url'>
+export type NailDesignSearchRow = Pick<NailDesignRow, 'id' | 'title' | 'title_en' | 'image_url'>
 
 export async function fetchNailDesignsBySearch(query: string): Promise<NailDesignSearchRow[]> {
   const trimmed = query.trim()

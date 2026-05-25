@@ -2,7 +2,7 @@ import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHub
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   Link,
   useLocation,
@@ -167,7 +167,6 @@ export default function ClientStyleCurationPage() {
   const location = useLocation()
   const navigationType = useNavigationType()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [active, setActive] = useState(() => resolveStyleTabIndex(searchParams))
   const tabContainerRef = useRef<HTMLDivElement | null>(null)
   const { data: hubData = [] } = useRecommendHubQuery()
   const { language } = useLanguageContext()
@@ -180,9 +179,7 @@ export default function ClientStyleCurationPage() {
     window.scrollTo(0, 0)
   }, [location.pathname, navigationType])
 
-  useEffect(() => {
-    setActive(resolveStyleTabIndex(searchParams))
-  }, [searchParams])
+  const active = resolveStyleTabIndex(searchParams)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -310,7 +307,6 @@ export default function ClientStyleCurationPage() {
                 type="button"
                 data-active-tab={isActive ? 'true' : 'false'}
                 onClick={() => {
-                  setActive(idx)
                   setSearchParams(
                     (prev) => {
                       const next = new URLSearchParams(prev)

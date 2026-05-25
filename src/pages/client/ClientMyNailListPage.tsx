@@ -15,7 +15,7 @@ import {
 } from '@/shared/lib/savedNailsStorage'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 type ListType = 'recent' | 'liked' | 'saved'
@@ -48,7 +48,7 @@ export default function ClientMyNailListPage() {
   const navigate = useNavigate()
   const { type: typeParam } = useParams<{ type: string }>()
   const currentUserId = useCurrentUserId()
-  const [storageVersion, setStorageVersion] = useState(0)
+  const [, forceStorageRefresh] = useReducer((version: number) => version + 1, 0)
 
   const listType = isListType(typeParam) ? typeParam : null
   const pageTitle = listType ? LIST_TITLES[listType] : ''
@@ -72,7 +72,7 @@ export default function ClientMyNailListPage() {
   }, [typeParam, navigate])
 
   useEffect(() => {
-    const onChanged = () => setStorageVersion((v) => v + 1)
+    const onChanged = () => forceStorageRefresh()
     window.addEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
     window.addEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
     window.addEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
@@ -85,10 +85,7 @@ export default function ClientMyNailListPage() {
     }
   }, [])
 
-  const nailIds = useMemo(
-    () => (listType ? listIdsForType(listType, currentUserId) : []),
-    [listType, currentUserId, storageVersion],
-  )
+  const nailIds = listType ? listIdsForType(listType, currentUserId) : []
 
   const { data: nails = [] } = useQuery({
     queryKey: ['my-nail-list', listType, currentUserId, nailIds],

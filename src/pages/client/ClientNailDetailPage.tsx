@@ -289,7 +289,7 @@ function splitDesignElements(raw: string | null | undefined): string[] {
   const s = raw != null && typeof raw === "string" ? raw : "";
   if (!s.trim()) return [];
   return s
-    .split(/[,\s・;\|/]+/)
+    .split(/[,\s・;|/]+/)
     .map((x) => (x != null ? String(x).trim() : ""))
     .filter(Boolean)
     .slice(0, 4);
@@ -299,7 +299,7 @@ function splitLooseTokens(raw: unknown): string[] {
   const s = safeTrimText(raw);
   if (!s) return [];
   return s
-    .split(/[,\n\r\t・;\|/]+/)
+    .split(/[,\n\r\t・;|/]+/)
     .map((x) => safeTrimText(x))
     .filter(Boolean);
 }
@@ -310,7 +310,7 @@ function expandTagTokensFromChips(chips: string[]): string[] {
     const t = String(chip ?? "").trim();
     if (!t) return [];
     return t
-      .split(/[,\s・;\|/]+/)
+      .split(/[,\s・;|/]+/)
       .map((x) => x.replace(/^#+/, "").trim())
       .filter(Boolean);
   });
@@ -429,16 +429,18 @@ const Detail = () => {
   const { data: nailRow, isLoading: queryLoading, isError: queryError } = useNailDetailQuery(
     nailId || undefined,
   );
-  const [error, setError] = useState<string | null>(null);
   const fetchedRow = useMemo(
     () => (nailRow ? normalizeNailRow(nailRow) : null),
     [nailRow],
   );
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const currentUserId = useCurrentUserId();
+  const [reactionOverride, setReactionOverride] = useState<{
+    key: string;
+    isLiked: boolean;
+    isSaved: boolean;
+  } | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showFloatingHeart, setShowFloatingHeart] = useState(false);
@@ -446,10 +448,13 @@ const Detail = () => {
   const floatingHeartHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareToastHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTouchTapRef = useRef<{ t: number; x: number; y: number } | null>(null);
-  const locationState = location.state as DetailLocationState;
+  const locationState = useMemo(
+    () => location.state as DetailLocationState,
+    [location.state],
+  );
   const initialNailData = useMemo(
     () => normalizeInitialNailData(nailId, locationState?.initialNailData),
-    [nailId, location.state],
+    [nailId, locationState?.initialNailData],
   );
 
   /** ? ????? ??? ???? ??, URL id? ????? stale `row`? ?????. */
@@ -474,7 +479,7 @@ const Detail = () => {
 
   const sourceTag = useMemo(
     () => (typeof locationState?.sourceTag === "string" ? locationState.sourceTag : undefined),
-    [location.state],
+    [locationState?.sourceTag],
   );
   const tagChips = useMemo(() => (displayRow ? buildTagChips(displayRow) : []), [displayRow]);
   const displayTagTokens = useMemo(
@@ -520,6 +525,24 @@ const Detail = () => {
     return localized || (isEnglish ? "Nail Design" : "네일 디자인");
   }, [displayRow, pickLocalized, isEnglish]);
 
+  const error = useMemo(() => {
+    if (!nailId) return "잘못된 주소예요.";
+    if (queryError) return "네일 정보를 불러오지 못했어요.";
+    return null;
+  }, [nailId, queryError]);
+
+  const reactionKey = `${displayRow?.id ?? ""}:${currentUserId ?? ""}`;
+  const storedIsLiked = useMemo(
+    () => (displayRow?.id && currentUserId ? isNailLikedInStorage(displayRow.id, currentUserId) : false),
+    [displayRow, currentUserId],
+  );
+  const storedIsSaved = useMemo(
+    () => (displayRow?.id && currentUserId ? isNailSavedInStorage(displayRow.id, currentUserId) : false),
+    [displayRow, currentUserId],
+  );
+  const isLiked = reactionOverride?.key === reactionKey ? reactionOverride.isLiked : storedIsLiked;
+  const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
+
   const views = displayRow?.views ?? 0;
   const saveDisplayCount = (displayRow?.saves ?? 0) + (isSaved ? 1 : 0);
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
@@ -533,35 +556,6 @@ const Detail = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [nailId]);
-
-  useEffect(() => {
-    if (!nailId) {
-      setError("잘못된 주소예요.");
-      return;
-    }
-    if (queryError) {
-      setError("네일 정보를 불러오지 못했어요.");
-      return;
-    }
-    if (fetchedRow?.id === nailId) {
-      setError(null);
-      return;
-    }
-    if (!queryLoading && !fetchedRow) {
-      setError(null);
-    }
-  }, [nailId, queryError, queryLoading, fetchedRow]);
-
-  useEffect(() => {
-    if (!displayRow?.id) return;
-    if (!currentUserId) {
-      setIsLiked(false);
-      setIsSaved(false);
-      return;
-    }
-    setIsLiked(isNailLikedInStorage(displayRow.id, currentUserId));
-    setIsSaved(isNailSavedInStorage(displayRow.id, currentUserId));
-  }, [displayRow?.id, currentUserId]);
 
   useEffect(() => {
     if (!displayRow?.id || currentUserId === undefined) return;
@@ -688,12 +682,14 @@ const Detail = () => {
       setShowLoginModal(true);
       return;
     }
-    setIsLiked((v) => {
-      const next = !v;
+    setReactionOverride((previous) => {
+      const currentLiked = previous?.key === reactionKey ? previous.isLiked : storedIsLiked;
+      const currentSaved = previous?.key === reactionKey ? previous.isSaved : storedIsSaved;
+      const next = !currentLiked;
       persistNailLikeState(displayRow.id, next, currentUserId);
-      return next;
+      return { key: reactionKey, isLiked: next, isSaved: currentSaved };
     });
-  }, [displayRow, currentUserId]);
+  }, [displayRow, currentUserId, reactionKey, storedIsLiked, storedIsSaved]);
 
   const toggleSave = useCallback(() => {
     if (!displayRow?.id) return;
@@ -701,13 +697,15 @@ const Detail = () => {
       setShowLoginModal(true);
       return;
     }
-    setIsSaved((v) => {
-      const next = !v;
+    setReactionOverride((previous) => {
+      const currentLiked = previous?.key === reactionKey ? previous.isLiked : storedIsLiked;
+      const currentSaved = previous?.key === reactionKey ? previous.isSaved : storedIsSaved;
+      const next = !currentSaved;
       persistNailSaveState(displayRow.id, next, currentUserId);
       void trackNailActivity(displayRow.id, next ? "save" : "unsave", currentUserId);
-      return next;
+      return { key: reactionKey, isLiked: currentLiked, isSaved: next };
     });
-  }, [displayRow, currentUserId]);
+  }, [displayRow, currentUserId, reactionKey, storedIsLiked, storedIsSaved]);
 
   const playFloatingHeart = useCallback(() => {
     setFloatingHeartKey((k) => k + 1);

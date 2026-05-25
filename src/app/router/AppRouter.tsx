@@ -75,6 +75,7 @@ const TestStep1Page = lazy(() => import('../../pages/client/test/TestStep1Page')
 const TestStep2Page = lazy(() => import('../../pages/client/test/TestStep2Page'))
 const TestStep3Page = lazy(() => import('../../pages/client/test/TestStep3Page'))
 const TestResultPage = lazy(() => import('../../pages/client/test/TestResultPage'))
+const NotFoundPage = lazy(() => import('../../pages/client/NotFoundPage'))
 
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/client" replace /> },
@@ -172,6 +173,7 @@ const router = createBrowserRouter([
       },
     ],
   },
+  { path: '*', element: <NotFoundPage /> },
 ])
 
 export function AppRouter() {

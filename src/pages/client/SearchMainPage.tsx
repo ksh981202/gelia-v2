@@ -1,5 +1,6 @@
 import { fetchNailDesignsBySearch } from '@/entities/nail-design/api/fetchNailDesignsBySearch'
 import { usePopularSearchTrends } from '@/entities/nail-design/api/usePopularSearchTrends'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import { ALLOWED_NAIL_KEYWORDS } from '@/shared/constants/allowedNailKeywords'
 import {
@@ -15,6 +16,174 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 const TREND_SKELETON_ROWS = 5
 
 const SKELETON_COUNT = 6
+
+const NAIL_KEYWORD_EN_DICTIONARY: Record<string, string> = {
+  네일: 'Nail',
+  페디: 'Pedi',
+  패디: 'Pedi',
+  젤: 'Gel',
+  프렌치: 'French',
+  딥프렌치: 'Deep French',
+  둥근프렌치: 'Round French',
+  시럽: 'Syrup',
+  글리터: 'Glitter',
+  파츠: 'Charms',
+  스톤: 'Stone',
+  스와로브스키: 'Swarovski',
+  큐빅: 'Cubic',
+  진주: 'Pearl',
+  체인: 'Chain',
+  그라데이션: 'Ombre',
+  옴브레: 'Ombre',
+  솜사탕: 'Cotton Candy',
+  마블: 'Marble',
+  대리석: 'Marble Stone',
+  자석: 'Magnetic',
+  고양이눈: 'Cat Eye',
+  마그넷: 'Magnet',
+  얼음: 'Ice',
+  유리알: 'Glass Bead',
+  물방울: 'Water Drop',
+  엠보: '3D Art',
+  '3D': '3D',
+  입체: '3D Art',
+  드로잉: 'Drawing',
+  라인: 'Line Art',
+  체크: 'Plaid',
+  트위드: 'Tweed',
+  니트: 'Knit',
+  호피: 'Leopard',
+  레오파드: 'Leopard',
+  플라워: 'Floral',
+  생화: 'Floral',
+  꽃: 'Flower',
+  동물: 'Animal Print',
+  캐릭터: 'Character',
+  스마일: 'Smile',
+  리본: 'Ribbon',
+  나비: 'Butterfly',
+  하트: 'Heart',
+  별: 'Star',
+  달: 'Moon',
+  우주: 'Space',
+  은하수: 'Milky Way',
+  오로라: 'Aurora',
+  홀로그램: 'Hologram',
+  파우더: 'Powder',
+  미러: 'Mirror',
+  머메이드: 'Mermaid',
+  호일: 'Foil',
+  금박: 'Gold Foil',
+  은박: 'Silver Foil',
+  자개: 'Shell',
+  뉘앙스: 'Nuance',
+  치크: 'Blush',
+  시스루: 'Sheer',
+  테라조: 'Terrazzo',
+  아가일: 'Argyle',
+  도트: 'Dot',
+  수채화: 'Watercolor',
+  잉크: 'Ink',
+  풀컬러: 'Solid Color',
+  숏: 'Short',
+  미디엄: 'Medium',
+  롱: 'Long',
+  연장: 'Extension',
+  팁: 'Tip',
+  아크릴: 'Acrylic',
+  스퀘어: 'Square',
+  라운드: 'Round',
+  오발: 'Oval',
+  아몬드: 'Almond',
+  스틸레토: 'Stiletto',
+  코핀: 'Coffin',
+  발레리나: 'Ballerina',
+  귀여운: 'Cute',
+  큐티: 'Cute',
+  시크: 'Chic',
+  모던: 'Modern',
+  화려한: 'Glam',
+  블링블링: 'Bling',
+  심플: 'Simple',
+  깔끔: 'Clean',
+  단정: 'Neat',
+  여리여리: 'Soft',
+  청순: 'Pure',
+  힙한: 'Hip',
+  유니크: 'Unique',
+  빈티지: 'Vintage',
+  레트로: 'Retro',
+  키치: 'Kitsch',
+  우아한: 'Elegant',
+  고급스러운: 'Luxury',
+  엔틱: 'Antique',
+  섹시: 'Sexy',
+  걸코어: 'Girlcore',
+  발레코어: 'Balletcore',
+  올드머니: 'Old Money',
+  레드: 'Red',
+  핑크: 'Pink',
+  코랄: 'Coral',
+  오렌지: 'Orange',
+  옐로우: 'Yellow',
+  노랑: 'Yellow',
+  그린: 'Green',
+  초록: 'Green',
+  블루: 'Blue',
+  파랑: 'Blue',
+  네이비: 'Navy',
+  퍼플: 'Purple',
+  보라: 'Purple',
+  라벤더: 'Lavender',
+  화이트: 'White',
+  블랙: 'Black',
+  그레이: 'Gray',
+  실버: 'Silver',
+  골드: 'Gold',
+  베이지: 'Beige',
+  누드: 'Nude',
+  브라운: 'Brown',
+  파스텔: 'Pastel',
+  네온: 'Neon',
+  비비드: 'Vivid',
+  형광: 'Fluorescent',
+  맑은: 'Clear',
+  딥한: 'Deep',
+  카키: 'Khaki',
+  올리브: 'Olive',
+  버건디: 'Burgundy',
+  와인: 'Wine',
+  머스타드: 'Mustard',
+  민트: 'Mint',
+  소라: 'Sky Blue',
+  하늘: 'Sky Blue',
+  봄: 'Spring',
+  여름: 'Summer',
+  가을: 'Autumn',
+  겨울: 'Winter',
+  웨딩: 'Wedding',
+  신부: 'Bride',
+  결혼: 'Wedding',
+  하객: 'Wedding Guest',
+  데이트: 'Date',
+  소개팅: 'Blind Date',
+  면접: 'Interview',
+  오피스: 'Office',
+  출근: 'Work',
+  직장인: 'Office Worker',
+  바캉스: 'Vacation',
+  휴양지: 'Resort',
+  여행: 'Travel',
+  바다: 'Beach',
+  페스티벌: 'Festival',
+  파티: 'Party',
+  연말: 'Year End',
+  크리스마스: 'Christmas',
+  할로윈: 'Halloween',
+  명절: 'Holiday',
+  졸업: 'Graduation',
+  입학: 'School Entrance',
+}
 
 function PopularTrendStatusIcon({ index }: { index: number }) {
   return (
@@ -49,6 +218,8 @@ function SearchResultSkeleton() {
 }
 
 export default function SearchMainPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -61,6 +232,10 @@ export default function SearchMainPage() {
   const [suggestedStyles, setSuggestedStyles] = useState<string[]>([])
 
   const showResultHeader = !isEditing && q.length > 0
+  const displaySearchTerm = (term: string) => {
+    if (!term) return ''
+    return isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[term] || term) : term
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -137,13 +312,13 @@ export default function SearchMainPage() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              aria-label="뒤로 가기"
+              aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-900"
             >
               <ChevronLeft className="h-6 w-6" strokeWidth={2} />
             </button>
             <h1 className="min-w-0 flex-1 truncate px-1 text-center text-[16px] font-bold text-gray-900">
-              &apos;{q}&apos; 검색 결과
+              {isEnglish ? `"${displaySearchTerm(q)}" Search Results` : `'${q}' 검색 결과`}
             </h1>
             <button
               type="button"
@@ -151,7 +326,7 @@ export default function SearchMainPage() {
                 setDraft(q)
                 setIsEditing(true)
               }}
-              aria-label="검색"
+              aria-label={isEnglish ? 'Search' : '검색'}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 active:bg-gray-100"
             >
               <Search className="h-5 w-5" strokeWidth={2} />
@@ -163,13 +338,13 @@ export default function SearchMainPage() {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                aria-label="뒤로 가기"
+                aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-900"
               >
                 <ChevronLeft className="h-6 w-6" strokeWidth={2} />
               </button>
               <h1 className="min-w-0 flex-1 pr-10 text-center text-[17px] font-bold text-gray-900">
-                검색
+                {isEnglish ? 'Search' : '검색'}
               </h1>
             </div>
             <div className="border-t border-gray-50 px-4 py-3">
@@ -183,7 +358,8 @@ export default function SearchMainPage() {
                     if (e.key === 'Enter') submitSearch()
                   }}
                   className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none"
-                  aria-label="네일 디자인 검색"
+                  placeholder={isEnglish ? 'Enter a search term' : '검색어를 입력하세요'}
+                  aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
                 />
               </div>
             </div>
@@ -198,8 +374,17 @@ export default function SearchMainPage() {
           <>
             {!isLoading && !isError && results.length > 0 ? (
               <p className="px-5 pt-4 pb-2 text-[13px] font-medium text-gray-500">
-                총{' '}
-                <span className="font-bold text-[#FF7D66]">{results.length}</span> 개의 디자인
+                {isEnglish ? (
+                  <>
+                    Total <strong className="font-bold text-[#FF7D66]">{results.length}</strong>{' '}
+                    designs
+                  </>
+                ) : (
+                  <>
+                    총 <strong className="font-bold text-[#FF7D66]">{results.length}</strong>개의
+                    디자인
+                  </>
+                )}
               </p>
             ) : null}
             <div className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
@@ -207,15 +392,24 @@ export default function SearchMainPage() {
               <SearchResultSkeleton />
             ) : isError ? (
               <p className="col-span-2 py-12 text-center text-sm text-gray-500">
-                검색 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.
+                {isEnglish
+                  ? 'An error occurred while searching...'
+                  : '검색 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.'}
               </p>
             ) : results.length === 0 ? (
               <p className="col-span-2 py-12 text-center text-sm text-gray-500">
-                &apos;{q}&apos;에 맞는 디자인을 찾지 못했어요.
+                {isEnglish
+                  ? `No designs found for "${displaySearchTerm(q)}".`
+                  : `'${q}'에 맞는 디자인을 찾지 못했어요.`}
               </p>
             ) : (
               results.map((item) => {
-              const title = String(item.title ?? '').trim() || '네일 디자인'
+              const koTitle = String(item.title ?? '').trim()
+              const enTitle = String(item.title_en ?? '').trim()
+              const title =
+                isEnglish && enTitle
+                  ? enTitle
+                  : koTitle || enTitle || (isEnglish ? 'Nail Design' : '네일 디자인')
               const imageUrl = String(item.image_url ?? '').trim()
               return (
                 <article
@@ -262,7 +456,7 @@ export default function SearchMainPage() {
               <div className="relative z-10 flex h-[160px] w-[160px] items-center justify-center overflow-hidden rounded-full bg-gray-100 shadow-sm">
                 <img
                   src="/search/GL-0000358.jpg"
-                  alt="검색 메인 네일"
+                  alt={isEnglish ? 'Search main nail design' : '검색 메인 네일'}
                   className="h-full w-full object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none'
@@ -271,14 +465,19 @@ export default function SearchMainPage() {
               </div>
             </div>
             <p className="whitespace-pre-line text-center text-lg font-bold leading-tight text-slate-900">
-              어떤 네일을 찾고 싶으세요?{'\n'}
-              다양한 디자인을 찾아보세요
+              {isEnglish
+                ? 'What kind of nail design are you looking for?'
+                : '어떤 네일을 찾고 싶으세요?'}
+              {'\n'}
+              {isEnglish ? 'Discover various designs' : '다양한 디자인을 찾아보세요'}
             </p>
           </section>
 
           <section className="mb-10">
             <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-base font-bold text-gray-900">최근 검색어</h2>
+              <h2 className="text-base font-bold text-gray-900">
+                {isEnglish ? 'Recent Searches' : '최근 검색어'}
+              </h2>
               {recentSearches.length > 0 ? (
                 <button
                   type="button"
@@ -288,12 +487,14 @@ export default function SearchMainPage() {
                     setRecentSearches([])
                   }}
                 >
-                  전체삭제 {'>'}
+                  {isEnglish ? 'Clear All >' : '전체삭제 >'}
                 </button>
               ) : null}
             </div>
             {recentSearches.length === 0 ? (
-              <p className="text-sm text-gray-500">최근 검색어가 없습니다</p>
+              <p className="text-sm text-gray-500">
+                {isEnglish ? 'No recent searches.' : '최근 검색어가 없습니다'}
+              </p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map((term) => (
@@ -303,7 +504,7 @@ export default function SearchMainPage() {
                     onClick={() => submitSearch(term)}
                     className="rounded-full bg-gray-100 px-3.5 py-1.5 text-[13px] font-medium text-gray-700"
                   >
-                    {term}
+                    {displaySearchTerm(term)}
                   </button>
                 ))}
               </div>
@@ -312,13 +513,15 @@ export default function SearchMainPage() {
 
           <section className="mb-10">
             <div className="mb-4 flex items-center justify-between gap-2">
-              <h2 className="text-base font-bold text-gray-900">인기 검색어 트렌드</h2>
+              <h2 className="text-base font-bold text-gray-900">
+                {isEnglish ? 'Popular Search Trends' : '인기 검색어 트렌드'}
+              </h2>
               <button
                 type="button"
                 className="text-sm font-medium text-gray-500"
                 onClick={() => navigate('/client/search-trend-list')}
               >
-                전체보기 {'>'}
+                {isEnglish ? 'View All >' : '전체보기 >'}
               </button>
             </div>
             <div className="flex flex-col">
@@ -335,11 +538,13 @@ export default function SearchMainPage() {
                 ))
               ) : isTrendsError ? (
                 <p className="py-6 text-center text-sm text-gray-500">
-                  인기 검색어를 불러오지 못했어요.
+                  {isEnglish ? 'Failed to load popular trends.' : '인기 검색어를 불러오지 못했어요.'}
                 </p>
               ) : popularTrends.length === 0 ? (
                 <p className="py-6 text-center text-sm text-gray-500">
-                  아직 집계된 인기 검색어가 없어요.
+                  {isEnglish
+                    ? 'No popular trends available yet.'
+                    : '아직 집계된 인기 검색어가 없어요.'}
                 </p>
               ) : (
                 popularTrends.map((item, index) => {
@@ -362,7 +567,7 @@ export default function SearchMainPage() {
                           {rank}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-gray-800">
-                          {keyword}
+                          {displaySearchTerm(keyword)}
                         </span>
                       </span>
                       <PopularTrendStatusIcon index={index} />
@@ -374,7 +579,9 @@ export default function SearchMainPage() {
           </section>
 
           <section className="mb-10">
-            <h2 className="mb-4 text-base font-bold text-gray-900">이런 스타일은 어때요?</h2>
+            <h2 className="mb-4 text-base font-bold text-gray-900">
+              {isEnglish ? 'How about these styles?' : '이런 스타일은 어때요?'}
+            </h2>
             <div className="flex flex-wrap gap-2">
               {suggestedStyles.map((keyword) => (
                 <button
@@ -383,7 +590,7 @@ export default function SearchMainPage() {
                   onClick={() => submitSearch(keyword)}
                   className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[13px] text-gray-600 shadow-sm"
                 >
-                  #{keyword}
+                  #{isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[keyword] || keyword) : keyword}
                 </button>
               ))}
             </div>
@@ -394,7 +601,7 @@ export default function SearchMainPage() {
             onClick={() => navigate('/client/category')}
             className="flex w-full items-center justify-center gap-0.5 rounded-xl border border-gray-200 bg-white py-4 text-sm font-semibold text-gray-900 shadow-sm"
           >
-            카테고리 전체보기 {'>'}
+            {isEnglish ? 'View All Categories >' : '카테고리 전체보기 >'}
           </button>
           </div>
         )}

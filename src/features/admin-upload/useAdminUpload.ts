@@ -137,7 +137,7 @@ export function useAdminUpload() {
 
   const startUpload = useCallback(async () => {
     const jobs = eligibleRows
-    if (jobs.length === 0) return
+    if (jobs.length === 0) return false
 
     setUploadError(null)
     setPhase('uploading')
@@ -153,11 +153,13 @@ export function useAdminUpload() {
         setProgress(Math.round(((i + 1) / jobs.length) * 100))
       }
       setPhase('complete')
+      return true
     } catch (e) {
       const message =
         e instanceof Error ? e.message : '알 수 없는 오류로 업로드에 실패했습니다.'
       setUploadError(message)
       setPhase('error')
+      return false
     }
   }, [eligibleRows])
 

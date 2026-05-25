@@ -202,7 +202,7 @@ const AdminManagePage = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const [currentPage, setCurrentPage] = useState(1);
+  const [requestedPage, setRequestedPage] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingListRow, setEditingListRow] = useState<AdminNailListRow | null>(null);
   const [editForm, setEditForm] = useState<AdminEditFormState>(() => emptyEditForm());
@@ -211,14 +211,7 @@ const AdminManagePage = () => {
   const filteredRows = useMemo(() => filterRowsBySearch(rows, searchQuery), [rows, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
-  }, [totalPages]);
+  const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -355,7 +348,10 @@ const AdminManagePage = () => {
               type="search"
               placeholder="제목·영문 제목·파일명 검색"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setRequestedPage(1);
+              }}
               className="h-10 border-slate-200 pl-9"
               aria-label="검색"
             />
@@ -549,7 +545,7 @@ const AdminManagePage = () => {
                       size="sm"
                       className="min-w-[4rem] border-slate-200"
                       disabled={currentPage <= 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() => setRequestedPage((p) => Math.max(1, p - 1))}
                     >
                       이전
                     </Button>
@@ -574,7 +570,7 @@ const AdminManagePage = () => {
                                 ? "h-9 min-w-9 px-2"
                                 : "h-9 min-w-9 border-slate-200 px-2"
                             }
-                            onClick={() => setCurrentPage(item)}
+                            onClick={() => setRequestedPage(item)}
                           >
                             {item}
                           </Button>
@@ -587,7 +583,7 @@ const AdminManagePage = () => {
                       size="sm"
                       className="min-w-[4rem] border-slate-200"
                       disabled={currentPage >= totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() => setRequestedPage((p) => Math.min(totalPages, p + 1))}
                     >
                       다음
                     </Button>

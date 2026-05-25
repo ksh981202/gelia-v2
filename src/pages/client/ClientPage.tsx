@@ -2,7 +2,7 @@ import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHub
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { THEME_TAB_LABELS, type ThemeTabLabel } from './themeTabs'
 
@@ -201,9 +201,6 @@ function OccasionNailThumbShell({
 export default function ClientPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [active, setActive] = useState<number | null>(() =>
-    resolveThemeTabIndex(searchParams),
-  )
   const tabContainerRef = useRef<HTMLDivElement | null>(null)
   const { data: hubData = [] } = useRecommendHubQuery()
   const { language } = useLanguageContext()
@@ -211,9 +208,7 @@ export default function ClientPage() {
   const isEnglish = language === 'en'
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
-  useEffect(() => {
-    setActive(resolveThemeTabIndex(searchParams))
-  }, [searchParams])
+  const active = resolveThemeTabIndex(searchParams)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -326,7 +321,6 @@ export default function ClientPage() {
                 type="button"
                 data-active-tab={isActive ? 'true' : 'false'}
                 onClick={() => {
-                  setActive(idx)
                   setSearchParams(
                     (prev) => {
                       const next = new URLSearchParams(prev)

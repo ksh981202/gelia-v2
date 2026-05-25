@@ -1,6 +1,4 @@
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { supabase } from '../../../shared/api/supabaseClient'
-import { getR2S3Client } from '../../../shared/api/r2Client'
 import { compressImageForUpload, toWebpFilename } from '../compressImageForUpload'
 import type { CsvDesignRow } from '../csvTypes'
 import {
@@ -10,18 +8,13 @@ import {
 } from '../parseCsvTagList'
 import type { NailDesignInsert } from '../../../shared/types/database.types'
 
-const R2_BUCKET = 'gelia-images'
+type PresignedUploadResponse = {
+  uploadUrl?: string
+  publicUrl?: string
+}
 
-function buildPublicImageUrl(imageR2Key: string): string {
-  const base = (import.meta.env.VITE_R2_PUBLIC_URL ?? '').replace(/\/$/, '')
-  if (!base) {
-    throw new Error('VITE_R2_PUBLIC_URL이 설정되어 있지 않습니다.')
-  }
-  const path = imageR2Key
-    .split('/')
-    .map((seg) => encodeURIComponent(seg))
-    .join('/')
-  return `${base}/${path}`
+type PresignedDeleteResponse = {
+  deleteUrl?: string
 }
 
 function safeFileStem(name: string): string {
@@ -35,33 +28,66 @@ export async function uploadToR2(file: File): Promise<{
   image_url: string
 }> {
   const compressed = await compressImageForUpload(file)
-  const s3 = getR2S3Client()
   const image_r2_key = `uploads/${crypto.randomUUID()}_${safeFileStem(compressed.name)}`
-  const body = new Uint8Array(await compressed.arrayBuffer())
-
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: image_r2_key,
-      Body: body,
-      ContentType: 'image/webp',
-    }),
+  const { data, error } = await supabase.functions.invoke<PresignedUploadResponse>(
+    'get-presigned-url',
+    {
+      body: {
+        fileName: image_r2_key,
+        contentType: 'image/webp',
+      },
+    },
   )
 
-  const image_url = buildPublicImageUrl(image_r2_key)
-  return { image_r2_key, image_url }
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data?.uploadUrl || !data.publicUrl) {
+    throw new Error('Presigned URL 응답에 uploadUrl 또는 publicUrl이 없습니다.')
+  }
+
+  const uploadResponse = await fetch(data.uploadUrl, {
+    method: 'PUT',
+    body: compressed,
+    headers: {
+      'Content-Type': 'image/webp',
+    },
+  })
+
+  if (!uploadResponse.ok) {
+    throw new Error(`R2 업로드에 실패했습니다. (${uploadResponse.status})`)
+  }
+
+  return { image_r2_key, image_url: data.publicUrl }
 }
 
 export async function deleteFromR2(imageR2Key: string): Promise<void> {
   const key = imageR2Key.trim()
   if (!key) return
-  const s3 = getR2S3Client()
-  await s3.send(
-    new DeleteObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: key,
-    }),
+
+  const { data, error } = await supabase.functions.invoke<PresignedDeleteResponse>(
+    'get-presigned-url',
+    {
+      body: {
+        fileName: key,
+        operation: 'delete',
+      },
+    },
   )
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data?.deleteUrl) {
+    throw new Error('Presigned URL 응답에 deleteUrl이 없습니다.')
+  }
+
+  const deleteResponse = await fetch(data.deleteUrl, { method: 'DELETE' })
+  if (!deleteResponse.ok) {
+    throw new Error(`R2 삭제에 실패했습니다. (${deleteResponse.status})`)
+  }
 }
 
 /** CSV V1 상세 → Supabase insert (필드 1:1, category/tags는 레거시 최소값만) */

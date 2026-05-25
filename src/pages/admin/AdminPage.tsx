@@ -53,10 +53,6 @@ function formatDate(iso: string) {
 }
 
 export default function AdminPage() {
-  const handleActionClick = () => {
-    console.log('액션 클릭됨')
-  }
-
   return (
     <PageContainer className="max-w-6xl">
       <div className="flex flex-col gap-6 pb-10">
@@ -78,7 +74,6 @@ export default function AdminPage() {
             <button
               type="button"
               className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm text-neutral-800 hover:bg-neutral-50"
-              onClick={handleActionClick}
             >
               새로고침
             </button>
@@ -124,7 +119,6 @@ export default function AdminPage() {
                         type="button"
                         className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white p-2 text-red-600 hover:bg-red-50"
                         aria-label="삭제"
-                        onClick={handleActionClick}
                       >
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </button>

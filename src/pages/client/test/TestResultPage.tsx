@@ -226,7 +226,7 @@ const TestResultPage = () => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
-  const selections = useMemo(readDiagnosisSelections, []);
+  const selections = useMemo(() => readDiagnosisSelections(), []);
   const result = useMemo(() => calculateNailResult(selections), [selections]);
   const { data: nailData = [], isLoading, isError } = useDiagnosisNailsQuery();
   const recommendedNails = useMemo(
