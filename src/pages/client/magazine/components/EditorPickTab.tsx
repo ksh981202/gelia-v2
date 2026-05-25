@@ -1,7 +1,10 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
+
+const PAGE_SIZE = 10
 
 type EditorPickPost = {
   id: string
@@ -11,13 +14,17 @@ type EditorPickPost = {
   created_at: string | null
 }
 
-async function fetchEditorPickPosts(): Promise<EditorPickPost[]> {
+async function fetchEditorPickPosts(page: number): Promise<EditorPickPost[]> {
+  const from = page * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
   const { data, error } = await supabase
     .from('board_posts')
     .select('id, title, title_en, thumbnail_url, created_at')
     .eq('post_type', 'magazine_editor')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) throw error
   return (data ?? []) as EditorPickPost[]
@@ -54,14 +61,39 @@ function ThumbnailPlaceholder() {
 export default function EditorPickTab() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const {
-    data: posts = [],
+    data,
     isLoading,
     isError,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['magazine-editor-posts'],
-    queryFn: fetchEditorPickPosts,
+    queryFn: ({ pageParam }) => fetchEditorPickPosts(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < PAGE_SIZE ? undefined : allPages.length,
   })
+
+  const posts = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel || !hasNextPage) return
+
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries
+      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        void fetchNextPage()
+      }
+    })
+
+    observer.observe(sentinel)
+
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   if (isLoading) {
     return (
@@ -148,6 +180,12 @@ export default function EditorPickTab() {
             )
           })}
         </div>
+      ) : null}
+      <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+      {isFetchingNextPage ? (
+        <p className="py-4 text-center text-xs font-semibold text-gray-400">
+          {isEnglish ? 'Loading more content...' : '콘텐츠를 불러오는 중...'}
+        </p>
       ) : null}
     </section>
   )
