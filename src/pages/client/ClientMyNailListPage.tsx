@@ -1,24 +1,13 @@
-import { fetchNailDesignsByIds } from '@/entities/nail-design/api/fetchNailDesignsByIds'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { supabase } from '@/shared/api/supabaseClient'
-import {
-  LIKED_NAILS_CHANGED_EVENT,
-  readLikedNailEntries,
-} from '@/shared/lib/likedNailsStorage'
-import {
-  readRecentViewedIds,
-  RECENT_VIEWED_CHANGED_EVENT,
-} from '@/shared/lib/recentViewedStorage'
-import {
-  readSavedNailEntries,
-  SAVED_NAILS_CHANGED_EVENT,
-} from '@/shared/lib/savedNailsStorage'
-import { useQuery } from '@tanstack/react-query'
+import type { NailDesignRow } from '@/shared/types/database.types'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
-import { useEffect, useReducer } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 type ListType = 'recent' | 'liked' | 'saved'
+type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
 
 const LIST_TITLES: Record<ListType, string> = {
   recent: '최근 본 디자인',
@@ -26,29 +15,77 @@ const LIST_TITLES: Record<ListType, string> = {
   saved: '내가 저장한 네일',
 }
 
+const LIST_PAGE_SIZE = 10
+const MY_LIST_NAIL_COLUMNS = 'id,title,title_en,image_url'
+
+const ACTIVITY_TABLE_BY_TYPE: Record<ListType, { table: UserActivityTable; orderColumn: string }> = {
+  recent: { table: 'user_recent_views', orderColumn: 'viewed_at' },
+  liked: { table: 'user_likes', orderColumn: 'created_at' },
+  saved: { table: 'user_saves', orderColumn: 'created_at' },
+}
+
+type MyNailListPage = {
+  items: NailDesignRow[]
+  totalCount: number
+}
+
 function isListType(value: string | undefined): value is ListType {
   return value === 'recent' || value === 'liked' || value === 'saved'
 }
 
-function listIdsForType(type: ListType, userId: string | null): string[] {
-  if (type === 'recent') {
-    return readRecentViewedIds(userId)
+async function fetchMyNailListPage(
+  type: ListType,
+  userId: string | null,
+  page: number,
+): Promise<MyNailListPage> {
+  if (!userId) return { items: [], totalCount: 0 }
+
+  const { table, orderColumn } = ACTIVITY_TABLE_BY_TYPE[type]
+  const from = (page - 1) * LIST_PAGE_SIZE
+  const to = page * LIST_PAGE_SIZE - 1
+
+  const { data: activityRows, count, error: activityError } = await supabase
+    .from(table)
+    .select('nail_id', { count: 'exact' })
+    .eq('user_id', userId)
+    .order(orderColumn, { ascending: false })
+    .range(from, to)
+
+  if (activityError) throw activityError
+
+  const nailIds =
+    activityRows
+      ?.map((row) => String((row as { nail_id?: unknown }).nail_id ?? '').trim())
+      .filter(Boolean) ?? []
+
+  if (nailIds.length === 0) return { items: [], totalCount: count ?? 0 }
+
+  const { data: nailRows, error: nailError } = await supabase
+    .from('nail_designs')
+    .select(MY_LIST_NAIL_COLUMNS)
+    .in('id', nailIds)
+
+  if (nailError) throw nailError
+
+  const byId = new Map<string, NailDesignRow>()
+  for (const row of nailRows ?? []) {
+    const id = String(row.id ?? '').trim()
+    if (id) byId.set(id, row as NailDesignRow)
   }
-  if (type === 'liked') {
-    return readLikedNailEntries(userId)
-      .sort((a, b) => b.likedAt.localeCompare(a.likedAt))
-      .map((e) => e.id)
+
+  return {
+    items: nailIds
+      .map((id) => byId.get(id))
+      .filter((row): row is NailDesignRow => Boolean(row)),
+    totalCount: count ?? 0,
   }
-  return readSavedNailEntries(userId)
-    .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
-    .map((e) => e.id)
 }
 
 export default function ClientMyNailListPage() {
   const navigate = useNavigate()
   const { type: typeParam } = useParams<{ type: string }>()
   const currentUserId = useCurrentUserId()
-  const [, forceStorageRefresh] = useReducer((version: number) => version + 1, 0)
+  const observerRef = useRef<HTMLDivElement | null>(null)
 
   const listType = isListType(typeParam) ? typeParam : null
   const pageTitle = listType ? LIST_TITLES[listType] : ''
@@ -71,28 +108,50 @@ export default function ClientMyNailListPage() {
     }
   }, [typeParam, navigate])
 
-  useEffect(() => {
-    const onChanged = () => forceStorageRefresh()
-    window.addEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
-    window.addEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
-    window.addEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
-    window.addEventListener('storage', onChanged)
-    return () => {
-      window.removeEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
-      window.removeEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
-      window.removeEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
-      window.removeEventListener('storage', onChanged)
-    }
-  }, [])
-
-  const nailIds = listType ? listIdsForType(listType, currentUserId) : []
-
-  const { data: nails = [] } = useQuery({
-    queryKey: ['my-nail-list', listType, currentUserId, nailIds],
-    queryFn: () => fetchNailDesignsByIds(nailIds),
-    enabled: Boolean(listType) && nailIds.length > 0,
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['my-nail-list', listType, currentUserId],
+    queryFn: ({ pageParam }) =>
+      listType
+        ? fetchMyNailListPage(listType, currentUserId, pageParam as number)
+        : Promise.resolve({ items: [], totalCount: 0 }),
+    enabled: Boolean(listType) && Boolean(currentUserId),
+    initialPageParam: 1,
     staleTime: 30_000,
+    getNextPageParam: (lastPage, allPages, lastPageParam) => {
+      const loadedCount = allPages.reduce((sum, page) => sum + page.items.length, 0)
+      if (loadedCount >= lastPage.totalCount || lastPage.items.length < LIST_PAGE_SIZE) return undefined
+      return (lastPageParam as number) + 1
+    },
   })
+
+  const nails = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  )
+  const totalCount = data?.pages[0]?.totalCount ?? 0
+
+  useEffect(() => {
+    const target = observerRef.current
+    if (!target || !hasNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isFetchingNextPage) return
+        void fetchNextPage()
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, listType])
 
   const openDetail = (nailId: string, title: string, imageUrl: string) => {
     navigate(`/client/detail/${nailId}`, {
@@ -113,8 +172,6 @@ export default function ClientMyNailListPage() {
   if (!listType) {
     return null
   }
-
-  const totalCount = nailIds.length
 
   return (
     <div className="min-h-screen w-full bg-white">
@@ -147,7 +204,22 @@ export default function ClientMyNailListPage() {
         </p>
 
         <div className="grid grid-cols-2 gap-4 px-5">
-          {nails.map((item) => {
+          {isLoading ? (
+            Array.from({ length: 6 }, (_, index) => (
+              <article key={`my-nail-list-skel-${index}`} className="flex flex-col" aria-hidden>
+                <div className="aspect-[3/4] w-full animate-pulse overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm" />
+                <div className="mx-auto mt-2.5 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+              </article>
+            ))
+          ) : isError ? (
+            <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+              디자인을 불러오지 못했어요.
+            </p>
+          ) : nails.length === 0 ? (
+            <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+              아직 등록된 디자인이 없어요.
+            </p>
+          ) : nails.map((item) => {
             const title = String(item.title ?? '').trim() || '네일 디자인'
             const imageUrl = String(item.image_url ?? '').trim()
             return (
@@ -181,7 +253,16 @@ export default function ClientMyNailListPage() {
               </article>
             )
           })}
+          {isFetchingNextPage
+            ? [0, 1].map((index) => (
+              <article key={`my-nail-list-next-skel-${index}`} className="flex flex-col" aria-hidden>
+                <div className="aspect-[3/4] w-full animate-pulse overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm" />
+                <div className="mx-auto mt-2.5 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+              </article>
+            ))
+            : null}
         </div>
+        <div ref={observerRef} className="h-10 px-5 pb-4" aria-hidden />
       </main>
     </div>
   )

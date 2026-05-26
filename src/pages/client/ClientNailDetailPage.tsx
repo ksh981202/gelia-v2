@@ -17,9 +17,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
-import { isNailLikedInStorage, persistNailLikeState } from "@/shared/lib/likedNailsStorage";
-import { pushRecentViewedNailId } from "@/shared/lib/recentViewedStorage";
-import { isNailSavedInStorage, persistNailSaveState } from "@/shared/lib/savedNailsStorage";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
@@ -441,6 +438,11 @@ const Detail = () => {
     isLiked: boolean;
     isSaved: boolean;
   } | null>(null);
+  const [dbReactionState, setDbReactionState] = useState<{
+    key: string;
+    isLiked: boolean;
+    isSaved: boolean;
+  }>({ key: "", isLiked: false, isSaved: false });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showFloatingHeart, setShowFloatingHeart] = useState(false);
@@ -533,14 +535,8 @@ const Detail = () => {
   }, [nailId, queryError]);
 
   const reactionKey = `${displayRow?.id ?? ""}:${currentUserId ?? ""}`;
-  const storedIsLiked = useMemo(
-    () => (displayRow?.id && currentUserId ? isNailLikedInStorage(displayRow.id, currentUserId) : false),
-    [displayRow, currentUserId],
-  );
-  const storedIsSaved = useMemo(
-    () => (displayRow?.id && currentUserId ? isNailSavedInStorage(displayRow.id, currentUserId) : false),
-    [displayRow, currentUserId],
-  );
+  const storedIsLiked = dbReactionState.key === reactionKey ? dbReactionState.isLiked : false;
+  const storedIsSaved = dbReactionState.key === reactionKey ? dbReactionState.isSaved : false;
   const isLiked = reactionOverride?.key === reactionKey ? reactionOverride.isLiked : storedIsLiked;
   const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
 
@@ -559,9 +555,49 @@ const Detail = () => {
   }, [nailId]);
 
   useEffect(() => {
-    if (!displayRow?.id || currentUserId === undefined) return;
-    pushRecentViewedNailId(displayRow.id, currentUserId);
-  }, [displayRow?.id, currentUserId]);
+    const nailDesignId = displayRow?.id;
+    if (!nailDesignId || !currentUserId) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const [likeResult, saveResult] = await Promise.all([
+          supabase
+            .from("user_likes")
+            .select("nail_id")
+            .eq("user_id", currentUserId)
+            .eq("nail_id", nailDesignId)
+            .maybeSingle(),
+          supabase
+            .from("user_saves")
+            .select("nail_id")
+            .eq("user_id", currentUserId)
+            .eq("nail_id", nailDesignId)
+            .maybeSingle(),
+        ]);
+
+        if (likeResult.error) throw likeResult.error;
+        if (saveResult.error) throw saveResult.error;
+        if (cancelled) return;
+
+        setDbReactionState({
+          key: reactionKey,
+          isLiked: Boolean(likeResult.data),
+          isSaved: Boolean(saveResult.data),
+        });
+        setReactionOverride(null);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn("[Detail] user reaction load failed", error);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [displayRow?.id, currentUserId, reactionKey]);
 
   useEffect(() => {
     detailViewTrackedForIdRef.current = null;
@@ -578,6 +614,14 @@ const Detail = () => {
     void (async () => {
       try {
         await trackNailActivity(nailDesignId, "detail_view", currentUserId);
+        if (currentUserId) {
+          const { error: recentViewError } = await supabase.from("user_recent_views").upsert({
+            user_id: currentUserId,
+            nail_id: nailDesignId,
+            viewed_at: new Date().toISOString(),
+          });
+          if (recentViewError) throw recentViewError;
+        }
         const { error } = await supabase.rpc("increment_popularity", {
           nail_id: nailDesignId,
           increment_value: 1,
@@ -689,33 +733,65 @@ const Detail = () => {
   const toggleLike = useCallback(() => {
     if (!displayRow?.id) return;
     if (!currentUserId) {
-      setShowLoginModal(true);
+      alert("로그인이 필요한 기능입니다.");
+      navigate("/client/login");
       return;
     }
-    setReactionOverride((previous) => {
-      const currentLiked = previous?.key === reactionKey ? previous.isLiked : storedIsLiked;
-      const currentSaved = previous?.key === reactionKey ? previous.isSaved : storedIsSaved;
-      const next = !currentLiked;
-      persistNailLikeState(displayRow.id, next, currentUserId);
-      return { key: reactionKey, isLiked: next, isSaved: currentSaved };
-    });
-  }, [displayRow, currentUserId, reactionKey, storedIsLiked, storedIsSaved]);
+    const nailDesignId = displayRow.id;
+    const next = !isLiked;
+    const previousState = { key: reactionKey, isLiked, isSaved };
+
+    setReactionOverride({ key: reactionKey, isLiked: next, isSaved });
+    setDbReactionState({ key: reactionKey, isLiked: next, isSaved });
+
+    void (async () => {
+      try {
+        const query = supabase.from("user_likes");
+        const { error } = next
+          ? await query.insert({ user_id: currentUserId, nail_id: nailDesignId })
+          : await query.delete().match({ user_id: currentUserId, nail_id: nailDesignId });
+        if (error) throw error;
+      } catch (error) {
+        setReactionOverride(previousState);
+        setDbReactionState(previousState);
+        if (import.meta.env.DEV) {
+          console.warn("[Detail] like update failed", error);
+        }
+      }
+    })();
+  }, [displayRow, currentUserId, isLiked, isSaved, navigate, reactionKey]);
 
   const toggleSave = useCallback(() => {
     if (!displayRow?.id) return;
     if (!currentUserId) {
-      setShowLoginModal(true);
+      alert("로그인이 필요한 기능입니다.");
+      navigate("/client/login");
       return;
     }
-    setReactionOverride((previous) => {
-      const currentLiked = previous?.key === reactionKey ? previous.isLiked : storedIsLiked;
-      const currentSaved = previous?.key === reactionKey ? previous.isSaved : storedIsSaved;
-      const next = !currentSaved;
-      persistNailSaveState(displayRow.id, next, currentUserId);
-      void trackNailActivity(displayRow.id, next ? "save" : "unsave", currentUserId);
-      return { key: reactionKey, isLiked: currentLiked, isSaved: next };
-    });
-  }, [displayRow, currentUserId, reactionKey, storedIsLiked, storedIsSaved]);
+    const nailDesignId = displayRow.id;
+    const next = !isSaved;
+    const previousState = { key: reactionKey, isLiked, isSaved };
+
+    setReactionOverride({ key: reactionKey, isLiked, isSaved: next });
+    setDbReactionState({ key: reactionKey, isLiked, isSaved: next });
+
+    void (async () => {
+      try {
+        const query = supabase.from("user_saves");
+        const { error } = next
+          ? await query.insert({ user_id: currentUserId, nail_id: nailDesignId })
+          : await query.delete().match({ user_id: currentUserId, nail_id: nailDesignId });
+        if (error) throw error;
+        void trackNailActivity(nailDesignId, next ? "save" : "unsave", currentUserId);
+      } catch (error) {
+        setReactionOverride(previousState);
+        setDbReactionState(previousState);
+        if (import.meta.env.DEV) {
+          console.warn("[Detail] save update failed", error);
+        }
+      }
+    })();
+  }, [displayRow, currentUserId, isLiked, isSaved, navigate, reactionKey]);
 
   const playFloatingHeart = useCallback(() => {
     setFloatingHeartKey((k) => k + 1);
@@ -731,12 +807,13 @@ const Detail = () => {
     if (isZoomOpen) return;
     if (!displayRow) return;
     if (!currentUserId) {
-      setShowLoginModal(true);
+      alert("로그인이 필요한 기능입니다.");
+      navigate("/client/login");
       return;
     }
     toggleLike();
     playFloatingHeart();
-  }, [displayRow, currentUserId, toggleLike, playFloatingHeart, isZoomOpen]);
+  }, [displayRow, currentUserId, navigate, toggleLike, playFloatingHeart, isZoomOpen]);
 
   const handleMainImageDoubleClick = useCallback(
     (e: MouseEvent<HTMLElement>) => {

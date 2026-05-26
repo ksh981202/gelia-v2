@@ -1,27 +1,14 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
-import { fetchNailDesignsByIds } from '@/entities/nail-design/api/fetchNailDesignsByIds'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
-import {
-  getLikedNailsCount,
-  LIKED_NAILS_CHANGED_EVENT,
-  readLikedNailEntries,
-} from '@/shared/lib/likedNailsStorage'
-import {
-  readRecentViewedIds,
-  RECENT_VIEWED_CHANGED_EVENT,
-} from '@/shared/lib/recentViewedStorage'
-import {
-  getSavedNailsCount,
-  readSavedNailEntries,
-  SAVED_NAILS_CHANGED_EVENT,
-} from '@/shared/lib/savedNailsStorage'
 import { supabase } from '@/shared/api/supabaseClient'
+import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
 import { Bell, Bookmark, Camera, Heart, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 type ActiveTab = 'recent' | 'liked' | 'saved'
+type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
 
 const GALLERY_PREVIEW_LIMIT = 4
 
@@ -31,28 +18,62 @@ const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
   saved: { ko: '저장한 네일', en: 'Saved Nails' },
 }
 
-function getMyPageCounts(userId: string | null) {
-  return {
-    recent: readRecentViewedIds(userId).slice(0, 20).length,
-    liked: getLikedNailsCount(userId),
-    saved: getSavedNailsCount(userId),
-  }
+const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; orderColumn: string }> = {
+  recent: { table: 'user_recent_views', orderColumn: 'viewed_at' },
+  liked: { table: 'user_likes', orderColumn: 'created_at' },
+  saved: { table: 'user_saves', orderColumn: 'created_at' },
 }
 
-function galleryIdsForTab(tab: ActiveTab, userId: string | null): string[] {
-  if (tab === 'recent') {
-    return readRecentViewedIds(userId).slice(0, GALLERY_PREVIEW_LIMIT)
+const MY_PAGE_NAIL_COLUMNS = 'id,title,title_en,image_url'
+
+async function fetchActivityCount(table: UserActivityTable, userId: string | null): Promise<number> {
+  if (!userId) return 0
+
+  const { count, error } = await supabase
+    .from(table)
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return count ?? 0
+}
+
+async function fetchActivityPreview(tab: ActiveTab, userId: string | null): Promise<NailDesignRow[]> {
+  if (!userId) return []
+
+  const { table, orderColumn } = ACTIVITY_TABLE_BY_TAB[tab]
+  const { data: activityRows, error: activityError } = await supabase
+    .from(table)
+    .select('nail_id')
+    .eq('user_id', userId)
+    .order(orderColumn, { ascending: false })
+    .limit(GALLERY_PREVIEW_LIMIT)
+
+  if (activityError) throw activityError
+
+  const nailIds =
+    activityRows
+      ?.map((row) => String((row as { nail_id?: unknown }).nail_id ?? '').trim())
+      .filter(Boolean) ?? []
+
+  if (nailIds.length === 0) return []
+
+  const { data: nailRows, error: nailError } = await supabase
+    .from('nail_designs')
+    .select(MY_PAGE_NAIL_COLUMNS)
+    .in('id', nailIds)
+
+  if (nailError) throw nailError
+
+  const byId = new Map<string, NailDesignRow>()
+  for (const row of nailRows ?? []) {
+    const id = String(row.id ?? '').trim()
+    if (id) byId.set(id, row as NailDesignRow)
   }
-  if (tab === 'liked') {
-    return readLikedNailEntries(userId)
-      .sort((a, b) => b.likedAt.localeCompare(a.likedAt))
-      .map((e) => e.id)
-      .slice(0, GALLERY_PREVIEW_LIMIT)
-  }
-  return readSavedNailEntries(userId)
-    .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
-    .map((e) => e.id)
-    .slice(0, GALLERY_PREVIEW_LIMIT)
+
+  return nailIds
+    .map((id) => byId.get(id))
+    .filter((row): row is NailDesignRow => Boolean(row))
 }
 
 export default function ClientMyPage() {
@@ -68,15 +89,28 @@ export default function ClientMyPage() {
   const [tempNickname, setTempNickname] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [counts, setCounts] = useState(() => getMyPageCounts(currentUserId))
-  const [, setStorageVersion] = useState(0)
 
   const statBoxClass =
     'flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]'
   const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
-  const recentCount = counts.recent
-  const likedCount = counts.liked
-  const savedCount = counts.saved
+  const { data: recentCount = 0, isLoading: isRecentCountLoading } = useQuery({
+    queryKey: ['my-page-count', 'recent', currentUserId],
+    queryFn: () => fetchActivityCount('user_recent_views', currentUserId),
+    enabled: Boolean(currentUserId),
+    staleTime: 30_000,
+  })
+  const { data: likedCount = 0, isLoading: isLikedCountLoading } = useQuery({
+    queryKey: ['my-page-count', 'liked', currentUserId],
+    queryFn: () => fetchActivityCount('user_likes', currentUserId),
+    enabled: Boolean(currentUserId),
+    staleTime: 30_000,
+  })
+  const { data: savedCount = 0, isLoading: isSavedCountLoading } = useQuery({
+    queryKey: ['my-page-count', 'saved', currentUserId],
+    queryFn: () => fetchActivityCount('user_saves', currentUserId),
+    enabled: Boolean(currentUserId),
+    staleTime: 30_000,
+  })
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -112,36 +146,10 @@ export default function ClientMyPage() {
     }
   }, [])
 
-  const syncCounts = useCallback(() => {
-    setCounts(getMyPageCounts(currentUserId))
-    setStorageVersion((version) => version + 1)
-  }, [currentUserId])
-
-  useEffect(() => {
-    const timer = window.setTimeout(syncCounts, 0)
-    return () => window.clearTimeout(timer)
-  }, [syncCounts])
-
-  useEffect(() => {
-    const onChanged = () => syncCounts()
-    window.addEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
-    window.addEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
-    window.addEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
-    window.addEventListener('storage', onChanged)
-    return () => {
-      window.removeEventListener(LIKED_NAILS_CHANGED_EVENT, onChanged)
-      window.removeEventListener(SAVED_NAILS_CHANGED_EVENT, onChanged)
-      window.removeEventListener(RECENT_VIEWED_CHANGED_EVENT, onChanged)
-      window.removeEventListener('storage', onChanged)
-    }
-  }, [syncCounts])
-
-  const galleryIds = galleryIdsForTab(activeTab, currentUserId)
-
   const { data: galleryNails = [] } = useQuery({
-    queryKey: ['my-page-gallery', activeTab, currentUserId, galleryIds],
-    queryFn: () => fetchNailDesignsByIds(galleryIds),
-    enabled: galleryIds.length > 0,
+    queryKey: ['my-page-gallery', activeTab, currentUserId],
+    queryFn: () => fetchActivityPreview(activeTab, currentUserId),
+    enabled: Boolean(currentUserId),
     staleTime: 30_000,
   })
 
@@ -238,7 +246,7 @@ export default function ClientMyPage() {
             onClick={() => setActiveTab("recent")}
           >
             <span className="flex h-8 w-8 items-center justify-center text-[22px]" aria-hidden>⏱️</span>
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-gray-800">{recentCount}</span>
+            <span className="text-[22px] font-extrabold tabular-nums leading-none text-gray-800">{isRecentCountLoading ? '...' : recentCount}</span>
             <span className="text-[13px] font-semibold text-gray-600">{isEnglish ? 'Recently Viewed' : '최근 본 디자인'}</span>
           </button>
           
@@ -248,7 +256,7 @@ export default function ClientMyPage() {
             onClick={() => setActiveTab("liked")}
           >
             <Heart className="h-7 w-7 fill-rose-500 text-rose-500" strokeWidth={1.5} aria-hidden />
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-rose-500">{likedCount}</span>
+            <span className="text-[22px] font-extrabold tabular-nums leading-none text-rose-500">{isLikedCountLoading ? '...' : likedCount}</span>
             <span className="text-[13px] font-semibold text-rose-500">{isEnglish ? 'Liked Nails' : '좋아요 한 네일'}</span>
           </button>
 
@@ -258,7 +266,7 @@ export default function ClientMyPage() {
             onClick={() => setActiveTab("saved")}
           >
             <Bookmark className="h-[26px] w-[26px] text-indigo-500" strokeWidth={2.5} aria-hidden />
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-indigo-500">{savedCount}</span>
+            <span className="text-[22px] font-extrabold tabular-nums leading-none text-indigo-500">{isSavedCountLoading ? '...' : savedCount}</span>
             <span className="text-[13px] font-semibold text-indigo-500">{isEnglish ? 'Saved Nails' : '저장한 네일'}</span>
           </button>
         </section>

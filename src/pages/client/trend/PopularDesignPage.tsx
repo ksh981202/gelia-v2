@@ -1,7 +1,9 @@
 import { useRecommendHubQuery } from "@/entities/nail-design/api/useRecommendHubQuery";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { supabase } from "@/shared/api/supabaseClient";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -10,18 +12,10 @@ import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-rea
 const NAIL_THUMB_IMAGE_FRAME = "aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5";
 const NAIL_THUMB_TITLE = "block w-full min-w-0 max-w-full text-center text-sm font-medium tracking-tight text-gray-800 truncate mt-2";
 const TREND_SKELETON_ROWS = 5;
+const SHAPE_PREVIEW_KEYWORD = "라운드 스퀘어 오발 아몬드 코핀 발레리나";
+const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 
-const SHAPE_KEYWORDS = [
-  "숏",
-  "미디엄",
-  "롱",
-  "오발",
-  "라운드",
-  "스퀘어",
-  "코핀",
-  "아몬드",
-  "발레리나",
-] as const;
+type RankingNailRow = NailDesignRow & { ranking_score?: number };
 
 function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   const ko = String(item.title ?? "").trim();
@@ -48,19 +42,77 @@ function compareByEngagementThenNewest(a: NailDesignRow, b: NailDesignRow): numb
   return bTime - aTime;
 }
 
-function itemMatchesShapeKeyword(item: NailDesignRow): boolean {
-  const haystack = [
-    item.nail_length,
-    item.design_elements,
-    item.title,
-    item.category,
-    ...(item.tags ?? []),
-    ...(item.styles ?? []),
-  ]
-    .map((part) => String(part ?? ""))
-    .join(" ");
+function escapePostgrestIlikePattern(raw: string): string {
+  return raw
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/,/g, " ")
+    .trim();
+}
 
-  return SHAPE_KEYWORDS.some((keyword) => haystack.includes(keyword));
+function buildShapeOrFilter(shapeKeyword: string): string {
+  const tokens = [
+    ...new Set(
+      shapeKeyword
+        .split(/\s+/)
+        .map((part) => escapePostgrestIlikePattern(part))
+        .filter((part) => part.length > 0 && part !== "전체"),
+    ),
+  ];
+
+  const parts: string[] = [];
+  for (const token of tokens) {
+    parts.push(
+      `nail_length.ilike.%${token}%`,
+      `title.ilike.%${token}%`,
+      `design_elements.ilike.%${token}%`,
+    );
+
+    for (const index of ARRAY_TEXT_FILTER_INDEXES) {
+      parts.push(`tags->>${index}.ilike.%${token}%`);
+    }
+  }
+
+  return parts.join(",");
+}
+
+function usePopularPeriodBestQuery(period: string, maxLimit: number) {
+  return useQuery({
+    queryKey: ["nail-designs", "popular-design-period-best", { period, maxLimit }],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async ({ signal }): Promise<RankingNailRow[]> => {
+      const { data, error } = await supabase
+        .rpc("get_ranking_nails", { p_period: period, p_limit: maxLimit })
+        .abortSignal(signal);
+
+      if (error) throw error;
+      return (data ?? []) as RankingNailRow[];
+    },
+  });
+}
+
+function usePopularShapeBestQuery(shapeKeyword: string, maxLimit: number) {
+  return useQuery({
+    queryKey: ["nail-designs", "popular-design-shape-best", { shapeKeyword, maxLimit }],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
+      let query = supabase.from("nail_designs").select("*");
+
+      const shapeFilter = buildShapeOrFilter(shapeKeyword);
+      if (shapeFilter) query = query.or(shapeFilter);
+
+      const { data, error } = await query
+        .order("popularity", { ascending: false })
+        .order("saves", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(maxLimit)
+        .abortSignal(signal);
+
+      if (error) throw error;
+      return (data ?? []) as NailDesignRow[];
+    },
+  });
 }
 
 function initialNailData(item: NailDesignRow, isEnglish: boolean) {
@@ -96,11 +148,8 @@ export default function PopularDesignPage() {
     isLoading: isTrendsLoading,
     isError: isTrendsError,
   } = usePopularSearchTrends();
-
-  const periodBest = useMemo(
-    () => [...hubData].sort(compareByEngagementThenNewest).slice(0, 6),
-    [hubData],
-  );
+  const { data: periodBest = [] } = usePopularPeriodBestQuery("weekly", 6);
+  const { data: shapeBest = [] } = usePopularShapeBestQuery(SHAPE_PREVIEW_KEYWORD, 6);
 
   const engagementFallback = useMemo(
     () => [...hubData].sort(compareByEngagementThenNewest),
@@ -125,15 +174,6 @@ export default function PopularDesignPage() {
     [hubData, engagementFallback],
   );
 
-  const shapeBest = useMemo(
-    () =>
-      [...hubData]
-        .filter(itemMatchesShapeKeyword)
-        .sort(compareByEngagementThenNewest)
-        .slice(0, 6),
-    [hubData],
-  );
-
   const goDetail = (item: NailDesignRow) => {
     navigate(`/client/detail/${item.id}`, {
       state: { initialNailData: initialNailData(item, isEnglish) },
@@ -155,10 +195,10 @@ export default function PopularDesignPage() {
         </button>
       </header>
 
-      <main className="mt-4 flex flex-col gap-10">
+      <main className="mt-4 flex flex-col gap-10 px-5">
         {/* 1. 기간별 BEST 네일 */}
         <section className="w-full">
-          <div className="mb-4 flex w-full items-center justify-between gap-2 px-4">
+          <div className="mb-4 flex w-full items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Period BEST Nails" : "기간별 BEST 네일"}
             </h2>
@@ -171,7 +211,7 @@ export default function PopularDesignPage() {
             </button>
           </div>
           {/* 스크롤바 완벽 숨김 처리 */}
-          <div className="flex snap-x gap-4 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex snap-x gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {periodBest.map((item, index) => (
               <article
                 key={item.id}
@@ -196,7 +236,7 @@ export default function PopularDesignPage() {
 
         {/* 2. 유저 반응 BEST */}
         <section className="w-full">
-          <div className="mb-4 flex w-full items-center justify-between gap-2 px-4">
+          <div className="mb-4 flex w-full items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
             </h2>
@@ -208,11 +248,11 @@ export default function PopularDesignPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex gap-3 overflow-x-auto px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex snap-x gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {reactionBest.map((item) => (
               <article
                 key={item.id}
-                className="flex w-[260px] shrink-0 cursor-pointer flex-col"
+                className="flex w-[260px] shrink-0 cursor-pointer flex-col snap-start"
                 onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
@@ -232,7 +272,7 @@ export default function PopularDesignPage() {
 
         {/* 3. 손톱 모양별 BEST 네일 */}
         <section className="w-full">
-          <div className="mb-4 flex items-center justify-between gap-2 px-4">
+          <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Shape BEST Nails" : "손톱 모양별 BEST 네일"}
             </h2>
@@ -244,7 +284,7 @@ export default function PopularDesignPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex snap-x gap-4 overflow-x-auto px-4 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex snap-x gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {shapeBest.map((item) => (
               <article
                 key={item.id}
@@ -268,7 +308,7 @@ export default function PopularDesignPage() {
 
         {/* 4. 인기 검색어 트렌드 (독립 컴포넌트 인라인 정적 처리) */}
         <section className="w-full mb-10">
-          <div className="mb-4 flex items-center justify-between gap-2 px-4">
+          <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}
             </h2>
@@ -280,7 +320,7 @@ export default function PopularDesignPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex flex-col px-4">
+          <div className="flex flex-col">
             {isTrendsLoading ? (
               Array.from({ length: TREND_SKELETON_ROWS }, (_, index) => (
                 <div
