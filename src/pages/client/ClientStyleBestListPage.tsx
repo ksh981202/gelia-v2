@@ -66,20 +66,13 @@ function displayStyleBestTabLabel(label: StyleBestTabLabel, isEnglish: boolean):
   return isEnglish ? STYLE_BEST_TAB_LABEL_EN[label] : label
 }
 
-function extractPureThemeKeyword(raw: string): string {
-  return String(raw ?? '')
-    .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
 function useStyleBestRankingQuery(period: string, maxLimit: number) {
   return useQuery({
     queryKey: ['nail-designs', 'style-best-ranking', { period, maxLimit }],
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<RankingNailRow[]> => {
       const { data, error } = await supabase
-        .rpc('get_style_ranking_nails', { p_period: period, p_limit: maxLimit })
+        .rpc('get_ranking_nails', { p_period: period, p_limit: maxLimit })
         .abortSignal(signal)
 
       if (error) throw error
@@ -115,13 +108,12 @@ export default function ClientStyleBestListPage() {
   )
 
   const maxLimit = MAX_LIMIT_BY_PERIOD[period]
-  const rankingPeriod = extractPureThemeKeyword(activeTabLabel)
 
   const {
     data,
     isLoading,
     isError,
-  } = useStyleBestRankingQuery(rankingPeriod, maxLimit)
+  } = useStyleBestRankingQuery(period, maxLimit)
 
   const rawRankingItems = useMemo(
     () => data?.slice(0, maxLimit) ?? [],

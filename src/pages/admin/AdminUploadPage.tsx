@@ -328,9 +328,8 @@ export default function AdminUploadPage() {
   useEffect(() => {
     if (phase === "error" && uploadError) {
       toast.error(uploadError);
-      resetUpload();
     }
-  }, [phase, uploadError, resetUpload]);
+  }, [phase, uploadError]);
 
   const progressPercent = isUploading ? progress : uploadTotal > 0 ? 100 : 0;
 

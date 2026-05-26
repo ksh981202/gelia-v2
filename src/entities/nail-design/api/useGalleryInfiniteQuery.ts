@@ -81,12 +81,23 @@ export function normalizeGallerySort(raw: string | null): string {
   return DEFAULT_GALLERY_SORT
 }
 
-export function useGalleryInfiniteQuery(tab: string, sort: string, options?: { enabled?: boolean }) {
+type GalleryQueryOptions = {
+  enabled?: boolean
+  baseTab?: string
+}
+
+export function useGalleryInfiniteQuery(tab: string, sort: string, options?: GalleryQueryOptions) {
   const normalizedTab = tab.trim() || DEFAULT_GALLERY_TAB
   const normalizedSort = normalizeGallerySort(sort)
+  const normalizedBaseTab = options?.baseTab?.trim() ?? ''
 
   return useInfiniteQuery({
-    queryKey: ['nail-designs', 'gallery', 'infinite', { tab: normalizedTab, sort: normalizedSort }],
+    queryKey: [
+      'nail-designs',
+      'gallery',
+      'infinite',
+      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab },
+    ],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
@@ -98,9 +109,14 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: { e
 
       let query = supabase.from('nail_designs').select(GALLERY_COLUMNS)
 
+      if (normalizedBaseTab && normalizedBaseTab !== DEFAULT_GALLERY_TAB) {
+        const baseFilter = buildTabOrFilter(normalizedBaseTab)
+        if (baseFilter) query = query.or(baseFilter)
+      }
+
       if (normalizedTab !== DEFAULT_GALLERY_TAB) {
         const orFilter = buildTabOrFilter(normalizedTab)
-        if (orFilter) query = query.or(orFilter)
+        if (orFilter && normalizedTab !== normalizedBaseTab) query = query.or(orFilter)
       }
 
       query = applyGallerySort(query, normalizedSort)
@@ -116,11 +132,12 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: { e
   })
 }
 
-export function useGalleryCountQuery(tab: string, options?: { enabled?: boolean }) {
+export function useGalleryCountQuery(tab: string, options?: GalleryQueryOptions) {
   const normalizedTab = tab.trim() || DEFAULT_GALLERY_TAB
+  const normalizedBaseTab = options?.baseTab?.trim() ?? ''
 
   return useQuery({
-    queryKey: ['nail-designs', 'gallery', 'count', { tab: normalizedTab }],
+    queryKey: ['nail-designs', 'gallery', 'count', { tab: normalizedTab, baseTab: normalizedBaseTab }],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
@@ -129,9 +146,14 @@ export function useGalleryCountQuery(tab: string, options?: { enabled?: boolean 
         .from('nail_designs')
         .select('*', { count: 'exact', head: true })
 
+      if (normalizedBaseTab && normalizedBaseTab !== DEFAULT_GALLERY_TAB) {
+        const baseFilter = buildTabOrFilter(normalizedBaseTab)
+        if (baseFilter) query = query.or(baseFilter)
+      }
+
       if (normalizedTab !== DEFAULT_GALLERY_TAB) {
         const orFilter = buildTabOrFilter(normalizedTab)
-        if (orFilter) query = query.or(orFilter)
+        if (orFilter && normalizedTab !== normalizedBaseTab) query = query.or(orFilter)
       }
 
       const { count, error } = await query.abortSignal(signal)

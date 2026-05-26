@@ -9,8 +9,16 @@ import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } fr
 const STONE_BEST_TABS = ['전체', '💎 스톤/큐빅', '⚪ 진주/체인', '🐚 조개/자개'] as const;
 const STONE_BEST_LIMIT = 30;
 const STONE_BEST_SCROLL_Y_KEY = "gelia_stone_best_scroll_y";
+const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 
-type RankingNailRow = NailDesignRow & { ranking_score?: number };
+type RankingNailRow = NailDesignRow & { ranking_score: number };
+
+const STONE_KEYWORD_MAPPING: Record<string, string> = {
+  전체: '스톤 큐빅 진주 체인 조개 자개 파츠 스와로브스키',
+  '스톤/큐빅': '스톤 큐빅 스와로브스키 글리터',
+  '진주/체인': '진주 체인 메탈 실버 골드',
+  '조개/자개': '조개 자개 펄 머메이드',
+};
 
 const STONE_BEST_TAB_LABEL_EN: Record<(typeof STONE_BEST_TABS)[number], string> = {
   전체: "All",
@@ -26,6 +34,55 @@ function extractPureThemeKeyword(raw: string): string {
     .trim();
 }
 
+function extractStoneMappingKey(raw: string): string {
+  return String(raw ?? "")
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, "")
+    .trim();
+}
+
+function escapePostgrestIlikePattern(raw: string): string {
+  return raw
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/,/g, " ")
+    .trim();
+}
+
+function buildKeywordOrFilter(keyword: string): string {
+  const tokens = [
+    ...new Set(
+      extractPureThemeKeyword(keyword)
+        .split(/\s+/)
+        .map((part) => escapePostgrestIlikePattern(part))
+        .filter((part) => part.length > 0 && part !== "전체"),
+    ),
+  ];
+
+  const parts: string[] = [];
+  for (const token of tokens) {
+    parts.push(
+      `title.ilike.%${token}%`,
+      `category.ilike.%${token}%`,
+      `nail_length.ilike.%${token}%`,
+      `color.ilike.%${token}%`,
+      `mood.ilike.%${token}%`,
+      `design_elements.ilike.%${token}%`,
+      `description.ilike.%${token}%`,
+    );
+
+    for (const index of ARRAY_TEXT_FILTER_INDEXES) {
+      parts.push(
+        `situations->>${index}.ilike.%${token}%`,
+        `styles->>${index}.ilike.%${token}%`,
+        `tags->>${index}.ilike.%${token}%`,
+      );
+    }
+  }
+
+  return parts.join(",");
+}
+
 function resolveActiveStoneTab(rawTab: string | null): (typeof STONE_BEST_TABS)[number] {
   const trimmed = rawTab?.trim();
   if (!trimmed || trimmed === "전체") return "전체";
@@ -34,8 +91,8 @@ function resolveActiveStoneTab(rawTab: string | null): (typeof STONE_BEST_TABS)[
 }
 
 function stoneTabKeywordForQuery(tab: (typeof STONE_BEST_TABS)[number]): string {
-  if (tab === "전체") return "스톤 큐빅";
-  return extractPureThemeKeyword(tab);
+  const mappingKey = extractStoneMappingKey(tab);
+  return STONE_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(tab);
 }
 
 function displayStoneBestTabLabel(tab: (typeof STONE_BEST_TABS)[number], isEnglish: boolean): string {
@@ -49,17 +106,34 @@ function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
-function useStyleBestRankingQuery(period: string, maxLimit: number) {
+function getStoneBestScore(item: NailDesignRow): number {
+  return (item.popularity ?? 0) + (item.saves ?? 0);
+}
+
+function useStoneBestQuery(keyword: string, maxLimit: number) {
   return useQuery({
-    queryKey: ["nail-designs", "stone-best-ranking", { period, maxLimit }],
+    queryKey: ["nail-designs", "stone-best", { keyword, maxLimit }],
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<RankingNailRow[]> => {
-      const { data, error } = await supabase
-        .rpc("get_style_ranking_nails", { p_period: period, p_limit: maxLimit })
+      let query = supabase
+        .from("nail_designs")
+        .select("*");
+
+      const orFilter = buildKeywordOrFilter(keyword);
+      if (orFilter) query = query.or(orFilter);
+
+      const { data, error } = await query
+        .order("popularity", { ascending: false })
+        .order("saves", { ascending: false })
+        .order("id", { ascending: false })
         .abortSignal(signal);
 
       if (error) throw error;
-      return (data ?? []) as RankingNailRow[];
+
+      return (data ?? [])
+        .map((item) => ({ ...item, ranking_score: getStoneBestScore(item as NailDesignRow) }))
+        .sort((a, b) => b.ranking_score - a.ranking_score || String(b.id).localeCompare(String(a.id)))
+        .slice(0, maxLimit) as RankingNailRow[];
     },
   });
 }
@@ -75,8 +149,8 @@ export default function StoneBestListPage() {
 
   const activeTab = useMemo(() => resolveActiveStoneTab(searchParams.get("tab")), [searchParams]);
   const activeTabKeyword = stoneTabKeywordForQuery(activeTab);
-  const { data = [], isLoading, isError } = useStyleBestRankingQuery(activeTabKeyword, STONE_BEST_LIMIT);
-  const rankingItems = data.slice(0, STONE_BEST_LIMIT);
+  const { data = [], isLoading, isError } = useStoneBestQuery(activeTabKeyword, STONE_BEST_LIMIT);
+  const rankingItems = data;
 
   const setActiveTab = useCallback(
     (tab: (typeof STONE_BEST_TABS)[number]) => {

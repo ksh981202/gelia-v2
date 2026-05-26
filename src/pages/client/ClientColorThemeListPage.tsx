@@ -30,6 +30,15 @@ type SortValue = (typeof SORT_MENU_OPTIONS)[number]['value']
 
 const COLOR_THEME_LIST_SCROLL_Y_KEY = 'gelia_color_theme_list_scroll_y'
 const COLOR_THEME_LIST_SCROLL_ITEMS_KEY = 'gelia_color_theme_list_scroll_items'
+const THEME_BASE_KEYWORD = '핑크 피치 벚꽃 플라워 코랄 봄 웜톤'
+
+const COLOR_THEME_KEYWORD_MAPPING: Record<string, string> = {
+  전체: THEME_BASE_KEYWORD,
+  '피치 시럽': '피치 시럽 코랄 살구 맑은 투명',
+  '수채화/생화': '수채화 생화 플라워 꽃 그라데이션 물감',
+  여리여리: '여리여리 청순 화이트 누드 시럽',
+  러블리: '러블리 귀여운 큐티 하트 리본 베이비핑크',
+}
 
 const COLOR_THEME_TAB_LABEL_EN: Record<ColorThemeTabLabel, string> = {
   '🌸 전체': '🌸 All',
@@ -50,6 +59,12 @@ function extractPureThemeKeyword(raw: string | null): string {
     .trim()
 }
 
+function extractColorThemeMappingKey(raw: string | null): string {
+  return String(raw ?? '')
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, '')
+    .trim()
+}
+
 function resolveActiveColorThemeTabLabel(rawTab: string | null): ColorThemeTabLabel {
   const trimmed = rawTab?.trim()
   if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return COLOR_THEME_TABS[0]
@@ -65,9 +80,8 @@ function resolveActiveColorThemeTabLabel(rawTab: string | null): ColorThemeTabLa
 }
 
 function colorThemeTabKeywordForQuery(label: ColorThemeTabLabel): string {
-  const pure = extractPureThemeKeyword(label)
-  if (pure === DEFAULT_GALLERY_TAB) return DEFAULT_GALLERY_TAB
-  return pure
+  const mappingKey = extractColorThemeMappingKey(label)
+  return COLOR_THEME_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(label)
 }
 
 function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
@@ -106,6 +120,7 @@ export default function ClientColorThemeListPage() {
     [searchParams],
   )
   const activeTabKeyword = colorThemeTabKeywordForQuery(activeTabLabel)
+  const themeBaseKeyword = activeTabKeyword === THEME_BASE_KEYWORD ? undefined : THEME_BASE_KEYWORD
 
   const sortType: SortValue = useMemo(() => {
     const normalized = normalizeGallerySort(searchParams.get('sort'))
@@ -149,13 +164,13 @@ export default function ClientColorThemeListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
+  } = useGalleryInfiniteQuery(activeTabKeyword, sortType, { baseTab: themeBaseKeyword })
 
   const galleryItems = useMemo(
     () => data?.pages.flatMap((page) => page) ?? [],
     [data],
   )
-  const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
+  const { data: totalCount } = useGalleryCountQuery(activeTabKeyword, { baseTab: themeBaseKeyword })
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const saveListScrollPosition = useCallback(() => {

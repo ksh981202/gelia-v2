@@ -42,6 +42,18 @@ const THEME_TAB_LABEL_EN: Record<ThemeTabLabel, string> = {
   '🎉 파티': '🎉 Party',
 }
 
+const THEME_KEYWORD_MAPPING: Record<string, string> = {
+  전체: '',
+  데일리: '데일리 일상 베이직 심플 캐주얼 기본',
+  데이트: '데이트 소개팅 로맨틱 러블리 청순 여리여리',
+  오피스: '오피스 출근 직장인 단아 차분 누드 시럽',
+  하객: '하객 하객룩 웨딩 결혼 신부 우아 고급',
+  여행: '여행 트래블 기분전환 사진',
+  바캉스: '바캉스 휴양지 여름 바다 물놀이 수영장 핫썸머',
+  페스티벌: '페스티벌 축제 공연 콘서트 글리터 화려한',
+  파티: '파티 연말 크리스마스 화려 풀파츠 글램',
+}
+
 function isSortValue(value: string): value is SortValue {
   return (SORT_MENU_OPTIONS as readonly { value: string }[]).some((o) => o.value === value)
 }
@@ -50,6 +62,12 @@ function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? '')
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function extractThemeMappingKey(raw: string): string {
+  return String(raw ?? '')
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, '')
     .trim()
 }
 
@@ -69,7 +87,8 @@ function resolveActiveThemeTabLabel(rawTab: string | null): ThemeTabLabel {
 
 function themeTabKeywordForQuery(label: ThemeTabLabel): string {
   if (label === '전체') return DEFAULT_GALLERY_TAB
-  return extractPureThemeKeyword(label)
+  const mappingKey = extractThemeMappingKey(label)
+  return THEME_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(label)
 }
 
 function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {

@@ -49,7 +49,7 @@ type NailPhotoDetail = {
   technique_en: string | null;
   design_point_en: string | null;
   guide_en: string | null;
-  views: number;
+  popularity: number;
   saves: number;
   likes: number;
   created_at?: string;
@@ -150,7 +150,7 @@ function normalizeNailRow(raw: unknown): NailPhotoDetail | null {
     technique_en: toStr(r.technique_en) || null,
     design_point_en: apiLongTextField(r.design_point_en),
     guide_en: apiLongTextField(r.guide_en),
-    views: toFiniteNumber(r.views, 0),
+    popularity: toFiniteNumber(r.popularity, 0),
     saves: toFiniteNumber(r.saves, 0),
     likes: (() => {
       const fromApi = toFiniteNumber(r.likes ?? r.like_count, NaN);
@@ -197,7 +197,7 @@ function normalizeInitialNailData(nailId: string, raw: unknown): NailPhotoDetail
     technique_en: toStr(rec.technique_en) || null,
     design_point_en: apiLongTextField(rec.design_point_en),
     guide_en: apiLongTextField(rec.guide_en),
-    views: toFiniteNumber(rec.views, 0),
+    popularity: toFiniteNumber(rec.popularity, 0),
     saves: toFiniteNumber(rec.saves, 0),
     likes: toFiniteNumber(rec.likes, 0),
     created_at: undefined,
@@ -444,6 +444,7 @@ const Detail = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showFloatingHeart, setShowFloatingHeart] = useState(false);
+  const [optimisticViewNailId, setOptimisticViewNailId] = useState<string | null>(null);
   const [floatingHeartKey, setFloatingHeartKey] = useState(0);
   const floatingHeartHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareToastHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -543,7 +544,7 @@ const Detail = () => {
   const isLiked = reactionOverride?.key === reactionKey ? reactionOverride.isLiked : storedIsLiked;
   const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
 
-  const views = displayRow?.views ?? 0;
+  const views = (displayRow?.popularity ?? 0) + (displayRow?.id === optimisticViewNailId ? 1 : 0);
   const saveDisplayCount = (displayRow?.saves ?? 0) + (isSaved ? 1 : 0);
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
   const detailViewTrackedForIdRef = useRef<string | null>(null);
@@ -572,12 +573,21 @@ const Detail = () => {
     if (currentUserId === undefined) return;
     if (detailViewTrackedForIdRef.current === nailDesignId) return;
     detailViewTrackedForIdRef.current = nailDesignId;
+    setOptimisticViewNailId(nailDesignId);
 
     void (async () => {
       try {
         await trackNailActivity(nailDesignId, "detail_view", currentUserId);
-      } catch {
-        /* ignore activity tracking failures */
+        const { error } = await supabase.rpc("increment_popularity", {
+          nail_id: nailDesignId,
+          increment_value: 1,
+        });
+        if (error) throw error;
+      } catch (error) {
+        setOptimisticViewNailId((current) => (current === nailDesignId ? null : current));
+        if (import.meta.env.DEV) {
+          console.warn("[Detail] popularity increment failed", error);
+        }
       }
     })();
   }, [displayRow?.id, currentUserId]);

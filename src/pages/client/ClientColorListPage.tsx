@@ -29,6 +29,18 @@ type SortValue = (typeof SORT_MENU_OPTIONS)[number]['value']
 const COLOR_LIST_SCROLL_Y_KEY = 'gelia_color_list_scroll_y'
 const COLOR_LIST_SCROLL_ITEMS_KEY = 'gelia_color_list_scroll_items'
 
+const COLOR_KEYWORD_MAPPING: Record<string, string> = {
+  핑크: '핑크 분홍 피치 베이비핑크 코랄 핫핑크',
+  레드: '레드 빨강 빨간색 버건디 와인 체리',
+  누드: '누드 베이지 살구 스킨 투명 시럽',
+  파스텔: '파스텔 연보라 연노랑 민트 소프트 마카롱',
+  블루: '블루 파랑 파란색 하늘 소라 네이비 청',
+  화이트: '화이트 흰색 백 아이보리 크림',
+  블랙: '블랙 검정 검은색 다크 시크',
+  글리터: '글리터 펄 은박 금박 반짝이 홀로그램 자석',
+  전체: '핑크 레드 누드 파스텔 블루 화이트 블랙 글리터',
+}
+
 const COLOR_TAB_LABEL_EN: Record<ColorListTabLabel, string> = {
   전체: 'All',
   '🌸 핑크': '🌸 Pink',
@@ -52,6 +64,12 @@ function extractPureThemeKeyword(raw: string): string {
     .trim()
 }
 
+function extractColorMappingKey(raw: string): string {
+  return String(raw ?? '')
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, '')
+    .trim()
+}
+
 function resolveActiveColorTabLabel(rawTab: string | null): ColorListTabLabel {
   const trimmed = rawTab?.trim()
   if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return '전체'
@@ -67,8 +85,8 @@ function resolveActiveColorTabLabel(rawTab: string | null): ColorListTabLabel {
 }
 
 function colorTabKeywordForQuery(label: ColorListTabLabel): string {
-  if (label === '전체') return DEFAULT_GALLERY_TAB
-  return extractPureThemeKeyword(label)
+  const mappingKey = extractColorMappingKey(label)
+  return COLOR_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(label)
 }
 
 function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {

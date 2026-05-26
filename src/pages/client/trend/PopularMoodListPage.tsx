@@ -25,6 +25,14 @@ const POPULAR_MOOD_LIST_SCROLL_ITEMS_KEY = 'gelia_popular_mood_list_scroll_items
 type PopularMoodTabLabel = (typeof POPULAR_MOOD_TABS)[number]['label'];
 type SortValue = (typeof SORT_OPTIONS)[number];
 
+const POPULAR_MOOD_KEYWORD_MAPPING: Record<string, string> = {
+  러블리: '러블리 귀여운 큐티 하트 리본',
+  하이틴: '하이틴 키치 발랄 팝 체크',
+  '단아/청순': '단아 청순 여리여리 시럽 웨딩',
+  '힙/스트릿': '힙한 힙 스트릿 걸크러쉬 유니크 다크 블랙',
+  전체: '러블리 귀여운 하이틴 키치 단아 청순 힙한 힙 스트릿',
+};
+
 const POPULAR_MOOD_TAB_LABEL_EN: Record<PopularMoodTabLabel, string> = {
   전체: 'All',
   '💖 러블리': '💖 Lovely',
@@ -46,6 +54,12 @@ function extractPureThemeKeyword(raw: string): string {
     .trim();
 }
 
+function extractPopularMoodMappingKey(raw: string): string {
+  return String(raw ?? '')
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, '')
+    .trim();
+}
+
 function resolveActivePopularMoodTab(rawTab: string | null): PopularMoodTabLabel {
   const trimmed = rawTab?.trim();
   if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return '전체';
@@ -54,8 +68,8 @@ function resolveActivePopularMoodTab(rawTab: string | null): PopularMoodTabLabel
 }
 
 function popularMoodTabKeywordForQuery(tab: PopularMoodTabLabel): string {
-  if (tab === '전체') return DEFAULT_GALLERY_TAB;
-  return extractPureThemeKeyword(tab);
+  const mappingKey = extractPopularMoodMappingKey(tab);
+  return POPULAR_MOOD_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(tab);
 }
 
 function displayPopularMoodTabLabel(label: PopularMoodTabLabel, isEnglish: boolean): string {

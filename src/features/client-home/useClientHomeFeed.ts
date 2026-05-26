@@ -6,7 +6,11 @@ const NAIL_DESIGN_COLUMNS =
   'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves'
 
 const POP_POOL = 20
-const LATEST_POOL = 20
+const LATEST_POOL = 30
+
+function shuffleNails(rows: NailDesignRow[]): NailDesignRow[] {
+  return [...rows].sort(() => Math.random() - 0.5)
+}
 
 /**
  * 메인 홈 전용: `useNailQuery` 무한목록 로직은 건드리지 않고,
@@ -46,7 +50,7 @@ export function useClientHomeFeed() {
       const pop = (popRows ?? []) as NailDesignRow[]
       const latest = (latestRows ?? []) as NailDesignRow[]
 
-      const recommend = pop.slice(0, 5)
+      const recommend = shuffleNails(latest).slice(0, 5)
       const heroIds = new Set(recommend.map((n) => n.id))
       const trend = latest.filter((n) => !heroIds.has(n.id)).slice(0, 3)
       const popular = pop.filter((n) => !heroIds.has(n.id)).slice(0, 4)

@@ -17,6 +17,14 @@ const FULL_PARTS_SCROLL_Y_KEY = 'gelia_full_parts_scroll_y';
 const FULL_PARTS_SCROLL_ITEMS_KEY = 'gelia_full_parts_scroll_items';
 type SortValue = (typeof SORT_OPTIONS)[number];
 
+const FULL_PARTS_KEYWORD_MAPPING: Record<string, string> = {
+  '극강의화려함': '화려한 화려 블링블링 풀파츠 글리터',
+  '웨딩/본식': '웨딩 본식 하객 신부',
+  '여리여리': '여리여리 청순 시럽 누드',
+  '블랙/시크': '블랙 시크 걸크러쉬 무채색',
+  '투명/유리알': '투명 유리알 맑은 얼음',
+};
+
 const FULL_PARTS_TAB_LABEL_EN: Record<(typeof FULL_PARTS_TABS)[number], string> = {
   전체: 'All',
   '👰 웨딩/본식': '👰 Wedding',
@@ -39,6 +47,12 @@ function extractPureThemeKeyword(raw: string): string {
     .trim();
 }
 
+function extractFullPartsMappingKey(raw: string): string {
+  return String(raw ?? "")
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, "")
+    .trim();
+}
+
 function resolveActiveFullPartsTab(rawTab: string | null): (typeof FULL_PARTS_TABS)[number] {
   const trimmed = rawTab?.trim();
   if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return '전체';
@@ -48,7 +62,8 @@ function resolveActiveFullPartsTab(rawTab: string | null): (typeof FULL_PARTS_TA
 
 function fullPartsTabKeywordForQuery(tab: (typeof FULL_PARTS_TABS)[number]): string {
   if (tab === '전체') return DEFAULT_GALLERY_TAB;
-  return extractPureThemeKeyword(tab);
+  const mappingKey = extractFullPartsMappingKey(tab);
+  return FULL_PARTS_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(tab);
 }
 
 function displayFullPartsTabLabel(tab: (typeof FULL_PARTS_TABS)[number], isEnglish: boolean): string {

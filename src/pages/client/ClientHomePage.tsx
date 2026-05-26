@@ -2,7 +2,7 @@
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 type HomeNailCard = { id: string; title: string; titleEn: string; image: string };
@@ -34,7 +34,9 @@ function homeNailTitle(nail: HomeNailCard, isEnglish: boolean) {
 export default function ClientHomePage() {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const autoPlayIndexRef = useRef(0);
   const [isFooterOpen, setIsFooterOpen] = useState(false);
+  const [isAutoPlayPaused, setIsAutoPlayPaused] = useState(false);
   const { data: feed, isLoading } = useClientHomeFeed();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
@@ -48,6 +50,27 @@ export default function ClientHomePage() {
     () => (feed?.popular ?? []).map(toHomeNailCard),
     [feed?.popular],
   );
+
+  useEffect(() => {
+    if (isLoading || isAutoPlayPaused || recommendNails.length <= 1) return;
+
+    const timer = window.setInterval(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+
+      const nextIndex = autoPlayIndexRef.current + 1;
+      if (nextIndex >= recommendNails.length) {
+        autoPlayIndexRef.current = 0;
+        el.scrollTo({ left: 0, behavior: "smooth" });
+        return;
+      }
+
+      autoPlayIndexRef.current = nextIndex;
+      el.scrollBy({ left: 300, behavior: "smooth" });
+    }, 3500);
+
+    return () => window.clearInterval(timer);
+  }, [isAutoPlayPaused, isLoading, recommendNails.length]);
 
   return (
     <div className="w-full flex flex-col min-h-screen overflow-x-hidden bg-[#fdfaf7] pb-4">
@@ -64,7 +87,14 @@ export default function ClientHomePage() {
             {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
-        <div ref={scrollRef} className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div
+          ref={scrollRef}
+          onMouseEnter={() => setIsAutoPlayPaused(true)}
+          onMouseLeave={() => setIsAutoPlayPaused(false)}
+          onTouchStart={() => setIsAutoPlayPaused(true)}
+          onTouchEnd={() => setIsAutoPlayPaused(false)}
+          className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        >
           {isLoading
             ? [0, 1, 2, 3].map((i) => (
                 <div
@@ -78,7 +108,7 @@ export default function ClientHomePage() {
             : recommendNails.map((nail, index) => (
             <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/client/detail/${nail.id}`)}>
               <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} className="h-full w-full object-cover object-center" />
+                <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
                 <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-5 pt-12">
                   <div className="flex w-full flex-col items-start text-left">
                     <span className="mb-2 inline-block rounded-full bg-[#FF7E67] px-3 py-1 text-[11px] font-bold text-white shadow-sm">PICK</span>
@@ -139,7 +169,7 @@ export default function ClientHomePage() {
             : trendNails.map((nail) => (
                 <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} className="h-full w-full object-cover object-center" />
+                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
                   </div>
                   <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{homeNailTitle(nail, isEnglish)}</span>
                 </div>
@@ -163,7 +193,7 @@ export default function ClientHomePage() {
             : popularNails.map((nail) => (
                 <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} className="h-full w-full object-cover object-center" />
+                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
                   </div>
                   <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{homeNailTitle(nail, isEnglish)}</span>
                 </div>

@@ -8,7 +8,22 @@ import { Link, useLocation, useNavigate, useNavigationType } from "react-router-
 
 const POPULAR_ART_LIMIT = 50;
 const POPULAR_ART_SCROLL_Y_KEY = "gelia_popular_art_scroll_y";
-const POPULAR_ART_KEYWORDS = ["프렌치", "마블", "체크", "그라데이션", "트위드", "수채화", "드로잉", "아트"] as const;
+const POPULAR_ART_KEYWORDS = [
+  "프렌치",
+  "마블",
+  "체크",
+  "그라데이션",
+  "트위드",
+  "수채화",
+  "드로잉",
+  "아트",
+  "3D",
+  "오브제",
+  "생화",
+  "자개",
+  "엠보",
+  "패턴",
+] as const;
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 
 function escapePostgrestIlikePattern(raw: string): string {
@@ -25,10 +40,19 @@ function buildPopularArtOrFilter(): string {
 
   for (const keyword of POPULAR_ART_KEYWORDS) {
     const token = escapePostgrestIlikePattern(keyword);
-    parts.push(`title.ilike.%${token}%`, `design_elements.ilike.%${token}%`);
+    parts.push(
+      `title.ilike.%${token}%`,
+      `category.ilike.%${token}%`,
+      `mood.ilike.%${token}%`,
+      `design_elements.ilike.%${token}%`,
+    );
 
     for (const index of ARRAY_TEXT_FILTER_INDEXES) {
-      parts.push(`tags->>${index}.ilike.%${token}%`, `styles->>${index}.ilike.%${token}%`);
+      parts.push(
+        `tags->>${index}.ilike.%${token}%`,
+        `styles->>${index}.ilike.%${token}%`,
+        `situations->>${index}.ilike.%${token}%`,
+      );
     }
   }
 

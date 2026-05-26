@@ -19,8 +19,6 @@ const NAIL_HERO_BANNER_TITLE_CLASS =
 const STYLE_HERO_BANNER_FRAME =
   'relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-2xl shadow-lg'
 
-const bestStyleCaptions = ['✨ 심플', '💎 화려한', '💅 트렌디', '🌸 로맨틱'] as const
-
 const STYLE_TAB_LABEL_EN: Record<StyleTabLabel, string> = {
   전체: 'All',
   '✨ 심플': '✨ Simple',
@@ -28,13 +26,6 @@ const STYLE_TAB_LABEL_EN: Record<StyleTabLabel, string> = {
   '🌙 프렌치': '🌙 French',
   '🖍️ 드로잉': '🖍️ Drawing',
   '🌈 그라데이션': '🌈 Gradient',
-}
-
-const BEST_STYLE_CAPTION_EN: Record<(typeof bestStyleCaptions)[number], string> = {
-  '✨ 심플': '✨ Simple',
-  '💎 화려한': '💎 Glamorous',
-  '💅 트렌디': '💅 Trendy',
-  '🌸 로맨틱': '🌸 Romantic',
 }
 
 function extractPureStyleKeyword(raw: string): string {
@@ -211,9 +202,9 @@ export default function ClientStyleCurationPage() {
 
   const bestStyleMatches = useMemo(
     () =>
-      bestStyleCaptions.map((cap) =>
-        findFirstHubMatch(hubData, extractPureStyleKeyword(cap)),
-      ),
+      [...hubData]
+        .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+        .slice(0, 4),
     [hubData],
   )
 
@@ -395,19 +386,15 @@ export default function ClientStyleCurationPage() {
 
           <section className="mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             <div className="mb-0 flex items-center gap-4 pb-0">
-              {bestStyleCaptions.map((cap, index) => {
-                const nail = bestStyleMatches[index]
-                const title = nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? BEST_STYLE_CAPTION_EN[cap] : cap)
-                return (
-                  <StyleNailThumbShell
-                    key={cap}
-                    variant="carousel"
-                    title={title}
-                    imageUrl={nail?.image_url?.trim() ?? null}
-                    onActivate={() => goDetail(nail)}
-                  />
-                )
-              })}
+              {bestStyleMatches.map((nail) => (
+                <StyleNailThumbShell
+                  key={nail.id}
+                  variant="carousel"
+                  title={nailDisplayTitle(nail, isEnglish) ?? ''}
+                  imageUrl={nail.image_url?.trim() ?? null}
+                  onActivate={() => goDetail(nail)}
+                />
+              ))}
             </div>
           </section>
         </div>

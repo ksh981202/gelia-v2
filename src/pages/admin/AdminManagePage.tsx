@@ -132,18 +132,6 @@ function rowStatus(row: AdminNailListRow): { label: string; tone: "ok" | "warn" 
   return { label: category || "정상 노출", tone: "ok" };
 }
 
-/** 표시: YYYY.MM.DD */
-function formatRegisteredAt(iso: string | null | undefined): string {
-  const raw = typeof iso === "string" ? iso.trim() : "";
-  if (!raw) return "—";
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return raw;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}.${m}.${day}`;
-}
-
 function filterRowsBySearch(rows: AdminNailListRow[], searchQuery: string): AdminNailListRow[] {
   const q = searchQuery.trim().toLowerCase();
   if (!q) return rows;
@@ -286,18 +274,31 @@ const AdminManagePage = () => {
     if (!window.confirm(`선택한 ${ids.length}건을 삭제하시겠습니까?`)) return;
     clearDeleteError();
     let deleted = 0;
-    try {
-      for (const id of ids) {
-        const row = rows.find((r) => r.id === id);
-        if (!row?.image_r2_key?.trim()) continue;
-        await deleteNailDesign(row.id, row.image_r2_key.trim());
-        deleted += 1;
+    let failed = 0;
+    const deletedIds = new Set<string>();
+
+    for (const id of ids) {
+      const row = rows.find((r) => r.id === id);
+      if (!row?.image_r2_key?.trim()) {
+        failed += 1;
+        continue;
       }
-      setSelectedIds(new Set());
-      toast.success(`${deleted}건 삭제되었습니다.`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "일부 항목 삭제에 실패했습니다.");
+
+      try {
+        await deleteNailDesign(row.id, row.image_r2_key.trim(), { invalidate: false });
+        deleted += 1;
+        deletedIds.add(row.id);
+      } catch {
+        failed += 1;
+      }
     }
+
+    if (deletedIds.size > 0) {
+      setSelectedIds((prev) => new Set([...prev].filter((id) => !deletedIds.has(id))));
+      await refetch();
+    }
+
+    toast.success(`성공 ${deleted}건, 실패 ${failed}건`);
   };
 
   const openEdit = (row: AdminNailListRow) => {
@@ -396,9 +397,8 @@ const AdminManagePage = () => {
                     <colgroup>
                       <col className="w-12" />
                       <col className="w-20" />
-                      <col className="w-1/5" />
+                      <col className="w-1/4" />
                       <col />
-                      <col className="w-28" />
                       <col className="w-24" />
                       <col className="w-32" />
                     </colgroup>
@@ -418,7 +418,6 @@ const AdminManagePage = () => {
                         <th className="whitespace-nowrap px-2 py-2.5 text-left">썸네일</th>
                         <th className="whitespace-nowrap px-2 py-2.5 text-left">파일명</th>
                         <th className="min-w-0 px-2 py-2.5 text-left">썸네일 제목</th>
-                        <th className="whitespace-nowrap px-2 py-2.5 text-left">등록일</th>
                         <th className="min-w-0 px-2 py-2.5 text-left">상태</th>
                         <th className="whitespace-nowrap px-2 py-2.5 text-right">작업</th>
                       </tr>
@@ -481,9 +480,6 @@ const AdminManagePage = () => {
                                   {String(row.title_en).trim()}
                                 </div>
                               ) : null}
-                            </td>
-                            <td className="whitespace-nowrap px-2 py-2.5 align-middle tabular-nums text-xs text-slate-600">
-                              {formatRegisteredAt(row.created_at)}
                             </td>
                             <td className="min-w-0 px-2 py-2.5 align-middle">
                               <div className="flex min-w-0 flex-wrap items-center">

@@ -29,10 +29,25 @@ const SORT_LABEL_EN: Record<SortValue, string> = {
   '저장 많은 순': 'Most Saved',
 };
 
+const SYRUP_KEYWORD_MAPPING: Record<string, string> = {
+  전체: '시럽',
+  '누드/여리': '누드 여리 여리여리 시럽 청순 베이지 스킨',
+  '과즙/생기': '과즙 생기 피치 코랄 핑크 젤리 상큼',
+  '얼음/물방울': '얼음 물방울 투명 물광 클리어 맑은',
+  시럽그라데이션: '시럽 그라데이션 옴브레 치크 투톤 번짐',
+  '포인트/파츠': '포인트 파츠 스와로브스키 스톤 큐빅 덩어리 생화',
+};
+
 function extractPureSyrupKeyword(raw: string): string {
   return String(raw ?? '')
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractSyrupMappingKey(raw: string): string {
+  return String(raw ?? '')
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, '')
     .trim();
 }
 
@@ -44,8 +59,8 @@ function resolveActiveSyrupTab(rawTab: string | null): (typeof SYRUP_BEST_TABS)[
 }
 
 function syrupTabKeywordForQuery(tab: (typeof SYRUP_BEST_TABS)[number]): string {
-  if (tab === '전체') return '시럽';
-  return extractPureSyrupKeyword(tab);
+  const mappingKey = extractSyrupMappingKey(tab);
+  return SYRUP_KEYWORD_MAPPING[mappingKey] ?? extractPureSyrupKeyword(tab);
 }
 
 function displaySyrupBestTabLabel(tab: (typeof SYRUP_BEST_TABS)[number], isEnglish: boolean): string {

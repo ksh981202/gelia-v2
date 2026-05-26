@@ -50,6 +50,7 @@ export function useAdminDashboard() {
       const { data, error } = await supabase
         .from('nail_designs')
         .select(NAIL_DESIGN_COLUMNS)
+        .order('source_filename', { ascending: false })
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
       if (error) throw new Error(error.message)
@@ -58,15 +59,18 @@ export function useAdminDashboard() {
   })
 
   const handleDelete = useCallback(
-    async (id: string, imageR2Key: string) => {
+    async (id: string, imageR2Key: string, options: { invalidate?: boolean } = {}) => {
+      const shouldInvalidate = options.invalidate ?? true
       setDeleteError(null)
       setDeletingId(id)
       try {
         await deleteFromR2(imageR2Key)
         const { error } = await supabase.from('nail_designs').delete().eq('id', id)
         if (error) throw new Error(error.message)
-        await queryClient.invalidateQueries({ queryKey: ['admin', 'nail-designs', 'list'] })
-        await queryClient.invalidateQueries({ queryKey: ['nail-designs'] })
+        if (shouldInvalidate) {
+          await queryClient.invalidateQueries({ queryKey: ['admin', 'nail-designs', 'list'] })
+          await queryClient.invalidateQueries({ queryKey: ['nail-designs'] })
+        }
       } catch (e) {
         const message =
           e instanceof Error ? e.message : '삭제 중 알 수 없는 오류가 발생했습니다.'
