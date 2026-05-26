@@ -355,8 +355,8 @@ export default function TextureListPage() {
                 />
               ) : null}
             </div>
-            <div className="mt-1 flex w-full flex-col items-center justify-center px-1">
-              <p className="line-clamp-2 w-full text-center text-[13px] font-bold tracking-tight text-gray-800">
+            <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+              <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
                 {displayItemTitle(item, isEnglish)}
               </p>
             </div>

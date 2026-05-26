@@ -12,6 +12,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -422,6 +423,7 @@ const Detail = () => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const nailId = (id ?? "").trim();
+  const queryClient = useQueryClient();
 
   const { data: nailRow, isLoading: queryLoading, isError: queryError } = useNailDetailQuery(
     nailId || undefined,
@@ -621,6 +623,9 @@ const Detail = () => {
             viewed_at: new Date().toISOString(),
           });
           if (recentViewError) throw recentViewError;
+          queryClient.invalidateQueries({ queryKey: ['my-page-count', 'recent', currentUserId] });
+          queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'recent', currentUserId] });
+          queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'recent', currentUserId] });
         }
         const { error } = await supabase.rpc("increment_popularity", {
           nail_id: nailDesignId,
@@ -634,7 +639,7 @@ const Detail = () => {
         }
       }
     })();
-  }, [displayRow?.id, currentUserId]);
+  }, [displayRow?.id, currentUserId, queryClient]);
 
   useEffect(() => {
     return () => {
@@ -751,6 +756,15 @@ const Detail = () => {
           ? await query.insert({ user_id: currentUserId, nail_id: nailDesignId })
           : await query.delete().match({ user_id: currentUserId, nail_id: nailDesignId });
         if (error) throw error;
+        const { error: likeCountError } = await supabase.rpc("increment_likes", {
+          nail_id: nailDesignId,
+          increment_value: next ? 1 : -1,
+        });
+        if (likeCountError) throw likeCountError;
+        queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] });
+        queryClient.invalidateQueries({ queryKey: ['my-page-count', 'liked', currentUserId] });
+        queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'liked', currentUserId] });
+        queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'liked', currentUserId] });
       } catch (error) {
         setReactionOverride(previousState);
         setDbReactionState(previousState);
@@ -759,7 +773,7 @@ const Detail = () => {
         }
       }
     })();
-  }, [displayRow, currentUserId, isLiked, isSaved, navigate, reactionKey]);
+  }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
 
   const toggleSave = useCallback(() => {
     if (!displayRow?.id) return;
@@ -782,6 +796,15 @@ const Detail = () => {
           ? await query.insert({ user_id: currentUserId, nail_id: nailDesignId })
           : await query.delete().match({ user_id: currentUserId, nail_id: nailDesignId });
         if (error) throw error;
+        const { error: saveCountError } = await supabase.rpc("increment_saves", {
+          nail_id: nailDesignId,
+          increment_value: next ? 1 : -1,
+        });
+        if (saveCountError) throw saveCountError;
+        queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] });
+        queryClient.invalidateQueries({ queryKey: ['my-page-count', 'saved', currentUserId] });
+        queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'saved', currentUserId] });
+        queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'saved', currentUserId] });
         void trackNailActivity(nailDesignId, next ? "save" : "unsave", currentUserId);
       } catch (error) {
         setReactionOverride(previousState);
@@ -791,7 +814,7 @@ const Detail = () => {
         }
       }
     })();
-  }, [displayRow, currentUserId, isLiked, isSaved, navigate, reactionKey]);
+  }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
 
   const playFloatingHeart = useCallback(() => {
     setFloatingHeartKey((k) => k + 1);

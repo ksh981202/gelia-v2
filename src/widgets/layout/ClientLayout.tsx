@@ -13,7 +13,7 @@ import { supabase } from '@/shared/api/supabaseClient'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-1 border-0 bg-transparent px-1 py-0 [-webkit-tap-highlight-color:transparent]',
+    'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 pt-1 pb-1.5 [-webkit-tap-highlight-color:transparent]',
     isActive ? 'text-[#FF7E67]' : 'text-gray-400',
   ].join(' ')
 
@@ -122,7 +122,7 @@ function ClientLayoutContent() {
 
   const mainPbClass = hideBottomNav
     ? 'pb-[env(safe-area-inset-bottom,0px)]'
-    : 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]'
+    : 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]'
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,17 +130,17 @@ function ClientLayoutContent() {
         {!hideTopHeader && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl">
           <h1
-            className="cursor-pointer whitespace-nowrap text-[28px] font-bold tracking-widest text-gray-900 sm:text-[30px]"
+            className="shrink-0 cursor-pointer whitespace-nowrap text-[28px] font-bold tracking-wide text-gray-900 sm:text-[30px]"
             style={{ fontFamily: "'Playfair Display', serif" }}
             onClick={() => navigate('/client')}
           >
             GELIA
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             <LanguageToggle compact />
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
               onClick={() => navigate('/client/search')}
               aria-label="검색"
             >
@@ -149,7 +149,7 @@ function ClientLayoutContent() {
             {isAdminUser ? (
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90 sm:h-10 sm:w-10"
                 onClick={() => navigate('/admin')}
                 aria-label="관리자 페이지"
               >
@@ -158,7 +158,7 @@ function ClientLayoutContent() {
             ) : null}
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
               onClick={() => navigate('/client/my')}
               aria-label="마이페이지"
             >
@@ -174,7 +174,7 @@ function ClientLayoutContent() {
 
         {!hideBottomNav && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[64px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe"
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe"
           aria-label="하단 탭"
         >
           <NavLink
@@ -188,7 +188,7 @@ function ClientLayoutContent() {
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Home' : '홈'}</span>
+            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Home' : '홈'}</span>
           </NavLink>
           <NavLink
             to="/client/trend"
@@ -200,7 +200,7 @@ function ClientLayoutContent() {
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Trend' : '트렌드'}</span>
+            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Trend' : '트렌드'}</span>
           </NavLink>
           <NavLink
             to="/client/magazine"
@@ -212,7 +212,7 @@ function ClientLayoutContent() {
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Magazine' : '매거진'}</span>
+            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Magazine' : '매거진'}</span>
           </NavLink>
           <NavLink
             to="/client/search"
@@ -224,7 +224,7 @@ function ClientLayoutContent() {
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'Search' : '검색'}</span>
+            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
           <NavLink
             to="/client/my"
@@ -236,7 +236,7 @@ function ClientLayoutContent() {
               strokeWidth={2.5}
               aria-hidden
             />
-            <span className="text-[10px] font-medium leading-none">{isEnglish ? 'My' : '마이'}</span>
+            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'My' : '마이'}</span>
           </NavLink>
         </nav>
         )}

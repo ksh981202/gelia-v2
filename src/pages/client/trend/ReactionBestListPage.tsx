@@ -257,10 +257,10 @@ export default function ReactionBestListPage() {
                         {rank}
                       </div>
                     </div>
-                    <div className="mt-2 flex w-full flex-col items-center justify-center">
-                      <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800">
+                    <div className="mt-2 flex w-full flex-col items-center justify-center px-1">
+                      <p className="line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
                         {title}
-                      </span>
+                      </p>
                     </div>
                   </Link>
                 );

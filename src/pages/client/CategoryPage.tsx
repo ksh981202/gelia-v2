@@ -1,4 +1,5 @@
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { useGalleryInfiniteQuery } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { useRecommendHubQuery } from "@/entities/nail-design/api/useRecommendHubQuery";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import type { SyntheticEvent } from "react";
@@ -46,10 +47,28 @@ const patternTrends = [
   { title: "트위드 네일", titleEn: "Tweed Nails", keyword: "트위드" },
 ];
 
+type PatternTrendItem = (typeof patternTrends)[number];
+
+const PATTERN_KEYWORD_MAPPING: Record<string, string> = {
+  마블: '마블 마블링 대리석 수채화 번짐 잉크 뉘앙스',
+  그라데이션: '그라데이션 그라 옴브레 투톤 시럽 치크 블러셔',
+  체크: '체크 체크보드 아가일 깅엄 타탄 격자 선 하운드투스',
+  트위드: '트위드 니트 겨울 포근한 털실 입체',
+};
+
 const textureTrends = [
   { title: "시럽 네일", titleEn: "Syrup Nails", keyword: "시럽" },
-  { title: "마그넷 네일", titleEn: "Magnet Nails", keyword: "마그넷" },
+  { title: "무광 네일", titleEn: "Matte Nails", keyword: "무광" },
+  { title: "자석 네일", titleEn: "Magnetic Nails", keyword: "자석" },
 ];
+
+type TextureTrendItem = (typeof textureTrends)[number];
+
+const TEXTURE_KEYWORD_MAPPING: Record<string, string> = {
+  시럽: '시럽 투명 클리어 젤리 맑은 과즙',
+  무광: '무광 매트 매트네일 벨벳 보송한',
+  자석: '자석 마그넷 마그네틱 magnetic magnet 캣아이',
+};
 
 const partTrends = [
   { title: "스톤/큐빅 네일", titleEn: "Stone/Cubic Nails", keyword: "스톤 큐빅" },
@@ -99,6 +118,66 @@ function handleImageError(e: SyntheticEvent<HTMLImageElement>) {
   e.currentTarget.removeAttribute("src");
   e.currentTarget.classList.add("bg-gray-100");
   e.currentTarget.parentElement?.classList.add("bg-gray-100");
+}
+
+function PatternTrendCard({
+  item,
+  isEnglish,
+  onClick,
+}: {
+  item: PatternTrendItem;
+  isEnglish: boolean;
+  onClick: () => void;
+}) {
+  const queryKeyword = PATTERN_KEYWORD_MAPPING[item.keyword] ?? item.keyword;
+  const { data } = useGalleryInfiniteQuery(queryKeyword, '인기순');
+  const imageUrl = data?.pages[0]?.[0]?.image_url;
+  const displayTitle = isEnglish ? item.titleEn : item.title;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col cursor-pointer text-left border-0 bg-transparent p-0"
+    >
+      {imageUrl ? (
+        <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" loading="lazy" decoding="async" onError={handleImageError} />
+      ) : (
+        <div className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm bg-gray-100" aria-hidden="true" />
+      )}
+      <span className="mt-3 text-center text-sm font-medium text-gray-800">{displayTitle}</span>
+    </button>
+  );
+}
+
+function TextureTrendCard({
+  item,
+  isEnglish,
+  onClick,
+}: {
+  item: TextureTrendItem;
+  isEnglish: boolean;
+  onClick: () => void;
+}) {
+  const queryKeyword = TEXTURE_KEYWORD_MAPPING[item.keyword] ?? item.keyword;
+  const { data } = useGalleryInfiniteQuery(queryKeyword, '인기순');
+  const imageUrl = data?.pages[0]?.[0]?.image_url;
+  const displayTitle = isEnglish ? item.titleEn : item.title;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-[45%] flex-shrink-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left"
+    >
+      {imageUrl ? (
+        <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" loading="lazy" decoding="async" onError={handleImageError} />
+      ) : (
+        <div className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm bg-gray-100" aria-hidden="true" />
+      )}
+      <span className="mt-3 text-center text-sm font-medium text-gray-800">{displayTitle}</span>
+    </button>
+  );
 }
 
 export default function CategoryPage() {
@@ -153,7 +232,7 @@ export default function CategoryPage() {
                   className="flex cursor-pointer flex-col items-center rounded-xl border-0 bg-transparent p-0"
                 >
                   <div className="w-14 h-14 sm:w-16 sm:h-16 relative mx-auto flex items-center justify-center rounded-full bg-gray-50 shadow-sm overflow-hidden">
-                    <img src={chip.src} alt={displayName} className="w-full h-full object-cover" onError={handleImageError} />
+                    <img src={chip.src} alt={displayName} className="w-full h-full object-cover" loading="lazy" decoding="async" onError={handleImageError} />
                   </div>
                   <span className="mt-2 w-full text-center font-sans tracking-tight font-medium text-[13px] text-gray-700">
                     {displayName}
@@ -186,6 +265,8 @@ export default function CategoryPage() {
                       src={season.imageSrc}
                       alt={displayName}
                       className="h-20 w-20 scale-110 object-contain"
+                      loading="lazy"
+                      decoding="async"
                       onError={handleImageError}
                     />
                   </div>
@@ -217,7 +298,7 @@ export default function CategoryPage() {
                 className="flex flex-col cursor-pointer border-0 bg-transparent p-0 text-left"
               >
                 {imageUrl ? (
-                  <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover object-center rounded-2xl shadow-sm" onError={handleImageError} />
+                  <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover object-center rounded-2xl shadow-sm" loading="lazy" decoding="async" onError={handleImageError} />
                 ) : (
                   <div className="w-full aspect-[4/5] object-cover object-center rounded-2xl shadow-sm bg-gray-100" aria-hidden="true" />
                 )}
@@ -259,25 +340,14 @@ export default function CategoryPage() {
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {patternTrends.map((item) => {
-              const imageUrl = findImageByKeyword(hubData, item.keyword);
-              const displayTitle = isEnglish ? item.titleEn : item.title;
-              return (
-              <button
+            {patternTrends.map((item) => (
+              <PatternTrendCard
                 key={item.title}
-                type="button"
+                item={item}
+                isEnglish={isEnglish}
                 onClick={() => goPattern(item.keyword)}
-                className="flex flex-col cursor-pointer text-left border-0 bg-transparent p-0"
-              >
-                {imageUrl ? (
-                  <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" onError={handleImageError} />
-                ) : (
-                  <div className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm bg-gray-100" aria-hidden="true" />
-                )}
-                <span className="mt-3 text-center text-sm font-medium text-gray-800">{displayTitle}</span>
-              </button>
-              );
-            })}
+              />
+            ))}
           </div>
         </section>
 
@@ -289,25 +359,14 @@ export default function CategoryPage() {
             </button>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {textureTrends.map((item) => {
-              const imageUrl = findImageByKeyword(hubData, item.keyword);
-              const displayTitle = isEnglish ? item.titleEn : item.title;
-              return (
-              <button
+            {textureTrends.map((item) => (
+              <TextureTrendCard
                 key={item.title}
-                type="button"
+                item={item}
+                isEnglish={isEnglish}
                 onClick={() => goTexture(item.keyword)}
-                className="flex w-[45%] flex-shrink-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left"
-              >
-                {imageUrl ? (
-                  <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" onError={handleImageError} />
-                ) : (
-                  <div className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm bg-gray-100" aria-hidden="true" />
-                )}
-                <span className="mt-3 text-center text-sm font-medium text-gray-800">{displayTitle}</span>
-              </button>
-              );
-            })}
+              />
+            ))}
           </div>
         </section>
 
@@ -330,7 +389,7 @@ export default function CategoryPage() {
                 className="flex w-32 shrink-0 snap-start flex-col text-left cursor-pointer border-0 bg-transparent p-0"
               >
                 {imageUrl ? (
-                  <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" onError={handleImageError} />
+                  <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" loading="lazy" decoding="async" onError={handleImageError} />
                 ) : (
                   <div className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm bg-gray-100" aria-hidden="true" />
                 )}

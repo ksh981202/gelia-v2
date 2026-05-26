@@ -17,6 +17,13 @@ const SHAPE_TAB_LABEL_EN: Record<(typeof SHAPE_TABS)[number], string> = {
   "🌰 오발/아몬드": "🌰 Oval/Almond",
 };
 
+const SHAPE_KEYWORD_MAPPING: Record<string, string> = {
+  전체: "",
+  라운드: "라운드 round 둥근 오벌라운드",
+  스퀘어: "스퀘어 square 각 직사각 라운드스퀘어",
+  "오발/아몬드": "오발 아몬드 oval almond 타원 뾰족 뾰족한",
+};
+
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
@@ -46,13 +53,20 @@ function buildShapeOrFilter(shapeKeyword: string): string {
   const parts: string[] = [];
   for (const token of tokens) {
     parts.push(
-      `nail_length.ilike.%${token}%`,
       `title.ilike.%${token}%`,
+      `category.ilike.%${token}%`,
+      `nail_length.ilike.%${token}%`,
+      `color.ilike.%${token}%`,
+      `mood.ilike.%${token}%`,
       `design_elements.ilike.%${token}%`,
     );
 
     for (const index of ARRAY_TEXT_FILTER_INDEXES) {
-      parts.push(`tags->>${index}.ilike.%${token}%`);
+      parts.push(
+        `situations->>${index}.ilike.%${token}%`,
+        `styles->>${index}.ilike.%${token}%`,
+        `tags->>${index}.ilike.%${token}%`,
+      );
     }
   }
 
@@ -62,6 +76,11 @@ function buildShapeOrFilter(shapeKeyword: string): string {
 function resolveActiveTab(rawTab: string | null): (typeof SHAPE_TABS)[number] {
   const pure = extractPureThemeKeyword(rawTab ?? "");
   return SHAPE_TABS.find((tab) => tab === rawTab || extractPureThemeKeyword(tab) === pure) ?? SHAPE_TABS[0];
+}
+
+function shapeTabKeywordForQuery(tab: (typeof SHAPE_TABS)[number]): string {
+  const mappingKey = tab.replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, "").trim();
+  return SHAPE_KEYWORD_MAPPING[mappingKey] ?? extractPureThemeKeyword(tab);
 }
 
 function displayShapeTabLabel(tab: (typeof SHAPE_TABS)[number], isEnglish: boolean): string {
@@ -110,7 +129,7 @@ export default function ShapeBestListPage() {
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const activeTab = useMemo(() => resolveActiveTab(searchParams.get("tab")), [searchParams]);
-  const rankingPeriod = extractPureThemeKeyword(activeTab);
+  const rankingPeriod = shapeTabKeywordForQuery(activeTab);
   const maxLimit = 30;
   const { data = [], isLoading, isError } = useShapeBestQuery(rankingPeriod, maxLimit);
   const rankingItems = data.slice(0, maxLimit);

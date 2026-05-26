@@ -181,6 +181,9 @@ export default function MoodPage() {
                 alt={displayItemTitle(heroItem, isEnglish)}
                 className="absolute inset-0 h-full w-full object-cover object-center"
                 src={heroItem.image_url}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                   e.currentTarget.parentElement?.classList.add("bg-gray-100");
@@ -220,6 +223,8 @@ export default function MoodPage() {
                       src={item.image_url}
                       alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                         e.currentTarget.parentElement?.classList.add("bg-gray-100");
@@ -256,6 +261,8 @@ export default function MoodPage() {
                       src={item.image_url}
                       alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                         e.currentTarget.parentElement?.classList.add("bg-gray-100");

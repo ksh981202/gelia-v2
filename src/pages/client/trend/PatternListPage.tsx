@@ -26,6 +26,15 @@ const PATTERN_TAB_LABEL_EN: Record<(typeof PATTERN_TAB_LABELS)[number], string> 
   '🧶 트위드': '🧶 Tweed',
 };
 
+const PATTERN_KEYWORD_MAPPING: Record<string, string> = {
+  전체: '',
+  프렌치: '프렌치 딥프렌치 둥근프렌치 하프프렌치 라인 라인아트 테두리',
+  마블: '마블 마블링 대리석 수채화 번짐 잉크 뉘앙스 아트',
+  체크: '체크 체크보드 체커보드 아가일 깅엄 타탄 격자 선 하운드투스',
+  그라데이션: '그라데이션 그라 옴브레 투톤 시럽 치크 블러셔 몽환',
+  트위드: '트위드 니트 겨울 포근한 털실 입체',
+};
+
 const SORT_LABEL_EN: Record<SortValue, string> = {
   인기순: 'Popular',
   최신순: 'Newest',
@@ -48,7 +57,8 @@ function resolveActivePatternTab(rawTab: string | null): (typeof PATTERN_TAB_LAB
 
 function patternTabKeywordForQuery(tab: (typeof PATTERN_TAB_LABELS)[number]): string {
   if (tab === '전체') return DEFAULT_GALLERY_TAB;
-  return extractPureThemeKeyword(tab);
+  const mappingKey = extractPureThemeKeyword(tab);
+  return PATTERN_KEYWORD_MAPPING[mappingKey] ?? mappingKey;
 }
 
 function displayPatternTabLabel(tab: (typeof PATTERN_TAB_LABELS)[number], isEnglish: boolean): string {

@@ -1,3 +1,4 @@
+import { useGalleryInfiniteQuery } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
@@ -35,6 +36,18 @@ const COLOR_HERO_CAPTION_EN: Record<string, string> = {
   화이트: 'Clean White Mood',
   블랙: 'Chic Black Nails',
   글리터: 'Sparkling Glitter Point',
+}
+
+const COLOR_KEYWORD_MAPPING: Record<string, string> = {
+  핑크: '핑크 분홍 피치 베이비핑크 코랄 핫핑크',
+  레드: '레드 빨강 빨간색 버건디 와인 체리',
+  누드: '누드 베이지 살구 스킨 투명 시럽',
+  파스텔: '파스텔 연보라 연노랑 민트 소프트 마카롱',
+  블루: '블루 파랑 파란색 하늘 소라 네이비 청',
+  화이트: '화이트 흰색 백 아이보리 크림',
+  블랙: '블랙 검정 검은색 다크 시크',
+  글리터: '글리터 펄 은박 금박 반짝이 홀로그램 자석',
+  전체: '핑크 레드 누드 파스텔 블루 화이트 블랙 글리터',
 }
 
 function extractPureThemeKeyword(raw: string | null): string {
@@ -232,11 +245,9 @@ export default function ClientColorCurationPage() {
     pathname: '/client/color-popular-list',
   }
 
-  const colorItems = useMemo(
-    () => hubData.filter((item) => itemMatchesKeywords(item, [currentColor])),
-    [hubData, currentColor],
-  )
-  const heroNail = colorItems[0]
+  const heroQueryKeyword = COLOR_KEYWORD_MAPPING[currentColor] ?? currentColor
+  const { data: heroData } = useGalleryInfiniteQuery(heroQueryKeyword, '인기순')
+  const heroNail = heroData?.pages[0]?.[0]
   const themeItems = useMemo(
     () =>
       hubData
@@ -385,7 +396,7 @@ export default function ClientColorCurationPage() {
         />
 
         <section
-          className="mb-0 mt-12 px-4"
+          className="mb-8 mt-12 px-4"
           aria-label={isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
         >
           <div className="mb-4 flex items-center justify-between">

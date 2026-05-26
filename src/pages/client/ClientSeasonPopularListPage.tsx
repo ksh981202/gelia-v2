@@ -52,6 +52,29 @@ const SEASON_POPULAR_TAB_LABEL_EN: Record<string, string> = {
   '🍷 버건디/벨벳': '🍷 Burgundy/Velvet',
 }
 
+const SEASON_BASE_KEYWORD_MAPPING: Record<string, string> = {
+  봄: '봄 spring 스프링 파스텔 웜톤 화사한',
+  여름: '여름 summer 썸머 바다 휴양지 바캉스',
+  가을: '가을 autumn fall 무화과 버건디 브라운 웜톤',
+  겨울: '겨울 winter 눈 크리스마스 니트 트위드 쿨톤',
+}
+
+const SEASON_SUBTAB_KEYWORD_MAPPING: Record<string, string> = {
+  전체: '',
+  '벚꽃/플라워': '벚꽃 플라워 꽃 생화 봄꽃 플로럴',
+  '피치/코랄': '피치 코랄 살구 복숭아 오렌지 웜톤',
+  '파스텔/생기': '파스텔 생기 민트 연보라 레몬 마카롱 솜사탕',
+  '바다/해변': '바다 해변 오션 휴양지 바캉스 파도 청량',
+  '시럽/투명': '시럽 투명 클리어 젤리 맑은 물방울 얼음',
+  '네온/비비드': '네온 비비드 형광 팝 원색 썸머',
+  '낙엽/브릭': '낙엽 브릭 단풍 테라코타 어텀 오렌지',
+  '매트/무광': '매트 무광 벨벳 보송한 가을',
+  '레오파드/호피': '레오파드 호피 애니멀 표범 패턴',
+  '눈꽃/니트': '눈꽃 니트 스노우 눈 화이트 포근한',
+  크리스마스: '크리스마스 연말 홀리데이 트리 파티',
+  '버건디/벨벳': '버건디 벨벳 와인 딥 레드 겨울',
+}
+
 function isSortValue(value: string): value is SortValue {
   return (SORT_MENU_OPTIONS as readonly { value: string }[]).some((o) => o.value === value)
 }
@@ -81,9 +104,15 @@ function resolveActiveSeasonPopularTabLabel(
   return found ?? '전체'
 }
 
-function seasonPopularTabKeywordForQuery(label: string, season: string): string {
-  if (label === '전체') return extractPureThemeKeyword(season) || DEFAULT_GALLERY_TAB
-  return extractPureThemeKeyword(label)
+function seasonPopularTabKeywordForQuery(label: string): string {
+  const mappingKey = extractPureThemeKeyword(label)
+  if (mappingKey === '전체') return DEFAULT_GALLERY_TAB
+  return SEASON_SUBTAB_KEYWORD_MAPPING[mappingKey] ?? mappingKey
+}
+
+function seasonBaseKeywordForQuery(season: string): string {
+  const mappingKey = extractPureThemeKeyword(season)
+  return SEASON_BASE_KEYWORD_MAPPING[mappingKey] ?? mappingKey
 }
 
 function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
@@ -128,7 +157,12 @@ export default function ClientSeasonPopularListPage() {
     () => resolveActiveSeasonPopularTabLabel(searchParams.get('tab'), tabs, season),
     [searchParams, tabs, season],
   )
-  const activeTabKeyword = seasonPopularTabKeywordForQuery(activeTabLabel, season)
+  const activeTabKeyword = seasonPopularTabKeywordForQuery(activeTabLabel)
+  const seasonBaseKeyword = seasonBaseKeywordForQuery(season)
+  const finalQueryKeyword = [seasonBaseKeyword, activeTabKeyword]
+    .filter((keyword) => keyword && keyword !== DEFAULT_GALLERY_TAB)
+    .join(' ')
+    .trim() || DEFAULT_GALLERY_TAB
 
   const sortType: SortValue = useMemo(() => {
     const normalized = normalizeGallerySort(searchParams.get('sort'))
@@ -172,13 +206,13 @@ export default function ClientSeasonPopularListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
+  } = useGalleryInfiniteQuery(finalQueryKeyword, sortType)
 
   const galleryItems = useMemo(
     () => data?.pages.flatMap((page) => page) ?? [],
     [data],
   )
-  const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
+  const { data: totalCount } = useGalleryCountQuery(finalQueryKeyword)
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const saveListScrollPosition = useCallback(() => {
@@ -271,7 +305,7 @@ export default function ClientSeasonPopularListPage() {
 
     observer.observe(target)
     return () => observer.disconnect()
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, activeTabKeyword, sortType])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, finalQueryKeyword, sortType])
 
   return (
     <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-white">

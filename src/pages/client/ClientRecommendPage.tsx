@@ -344,6 +344,8 @@ export default function ClientRecommendPage() {
                     src={publicAssetUrl(season.imageSrc)}
                     alt={isEnglish ? season.imageAltEn : season.imageAlt}
                     className="h-20 w-20 object-contain"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <span className="text-[14px] font-medium text-gray-800">
                     {isEnglish ? season.nameEn : season.label}

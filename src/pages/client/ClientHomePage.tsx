@@ -66,7 +66,7 @@ export default function ClientHomePage() {
       }
 
       autoPlayIndexRef.current = nextIndex;
-      el.scrollBy({ left: 300, behavior: "smooth" });
+      el.scrollBy({ left: el.clientWidth, behavior: "smooth" });
     }, 3500);
 
     return () => window.clearInterval(timer);
@@ -93,7 +93,7 @@ export default function ClientHomePage() {
           onMouseLeave={() => setIsAutoPlayPaused(false)}
           onTouchStart={() => setIsAutoPlayPaused(true)}
           onTouchEnd={() => setIsAutoPlayPaused(false)}
-          className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {isLoading
             ? [0, 1, 2, 3].map((i) => (
@@ -102,12 +102,12 @@ export default function ClientHomePage() {
                   className="relative w-full flex-none snap-center"
                   aria-hidden
                 >
-                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm bg-gray-200 animate-pulse" />
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm bg-gray-200 animate-pulse" />
                 </div>
               ))
             : recommendNails.map((nail, index) => (
             <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/client/detail/${nail.id}`)}>
-              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                 <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
                 <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-5 pt-12">
                   <div className="flex w-full flex-col items-start text-left">
@@ -116,12 +116,12 @@ export default function ClientHomePage() {
                   </div>
                 </div>
                 {index > 0 && (
-                  <button type="button" className="absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); scrollRef.current?.scrollBy({ left: -300, behavior: "smooth" }); }}>
+                  <button type="button" className="absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); const el = scrollRef.current; if (!el) return; el.scrollBy({ left: -el.clientWidth, behavior: "smooth" }); }}>
                     <ChevronLeft size={18} strokeWidth={2} />
                   </button>
                 )}
                 {index < recommendNails.length - 1 && (
-                  <button type="button" className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" }); }}>
+                  <button type="button" className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); const el = scrollRef.current; if (!el) return; el.scrollBy({ left: el.clientWidth, behavior: "smooth" }); }}>
                     <ChevronRight size={18} strokeWidth={2} />
                   </button>
                 )}

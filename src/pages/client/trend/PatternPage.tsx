@@ -1,3 +1,4 @@
+import { useGalleryInfiniteQuery } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
@@ -21,6 +22,15 @@ const PATTERN_LABEL_EN: Record<(typeof PATTERN_CATEGORIES)[number]["label"], str
   트위드: "Tweed",
 };
 
+const PATTERN_KEYWORD_MAPPING: Record<string, string> = {
+  전체: '',
+  프렌치: '프렌치 딥프렌치 둥근프렌치 하프프렌치 라인 라인아트 테두리',
+  마블: '마블 마블링 대리석 수채화 번짐 잉크 뉘앙스 아트',
+  체크: '체크 체크보드 체커보드 아가일 깅엄 타탄 격자 선 하운드투스',
+  그라데이션: '그라데이션 그라 옴브레 투톤 시럽 치크 블러셔 몽환',
+  트위드: '트위드 니트 겨울 포근한 털실 입체',
+};
+
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
@@ -31,6 +41,11 @@ function extractPureThemeKeyword(raw: string): string {
 function resolveActivePatternTab(rawTab: string | null): (typeof PATTERN_CATEGORIES)[number]["label"] {
   const pure = extractPureThemeKeyword(rawTab ?? "");
   return PATTERN_CATEGORIES.find((category) => category.label === rawTab || category.label === pure)?.label ?? "프렌치";
+}
+
+function patternTabKeywordForQuery(tab: (typeof PATTERN_CATEGORIES)[number]["label"]): string {
+  const mappingKey = extractPureThemeKeyword(tab);
+  return PATTERN_KEYWORD_MAPPING[mappingKey] ?? mappingKey;
 }
 
 function displayPatternLabel(label: (typeof PATTERN_CATEGORIES)[number]["label"], isEnglish: boolean): string {
@@ -68,12 +83,6 @@ function matchesAnyKeyword(item: NailDesignRow, keywords: string[]): boolean {
   return keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
 }
 
-function filterPatternItems(items: NailDesignRow[], keyword: string): NailDesignRow[] {
-  const normalized = extractPureThemeKeyword(keyword).toLowerCase();
-  if (!normalized) return items;
-  return items.filter((item) => itemSearchText(item).includes(normalized));
-}
-
 export default function PatternPage() {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
@@ -81,10 +90,10 @@ export default function PatternPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = useMemo(() => resolveActivePatternTab(searchParams.get("tab")), [searchParams]);
   const activeTabKeyword = extractPureThemeKeyword(activeTab);
+  const heroTabKeyword = useMemo(() => patternTabKeywordForQuery(activeTab), [activeTab]);
   const { data: hubData = [] } = useRecommendHubQuery();
-
-  const filteredItems = useMemo(() => filterPatternItems(hubData, activeTab), [activeTab, hubData]);
-  const heroItem = filteredItems[0];
+  const { data: heroData } = useGalleryInfiniteQuery(heroTabKeyword, '인기순');
+  const heroItem = heroData?.pages[0]?.[0];
   const marbleBestItems = useMemo(() => hubData.filter((item) => matchesAnyKeyword(item, ["마블", "대리석"])).slice(0, 3), [hubData]);
   const popularArtItems = useMemo(
     () =>
@@ -152,7 +161,7 @@ export default function PatternPage() {
               return (
               <button key={cat.label} type="button" onClick={() => setActiveTab(cat.label)} className="flex shrink-0 flex-col items-center gap-2.5">
                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${isActive ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>
-                  <img alt={displayPatternLabel(cat.label, isEnglish)} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} />
+                  <img alt={displayPatternLabel(cat.label, isEnglish)} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} loading="lazy" decoding="async" />
                 </div>
                 <span className={`font-sans text-[13px] tracking-tight ${isActive ? "font-semibold text-gray-900" : "font-medium text-gray-800"}`}>
                   {displayPatternLabel(cat.label, isEnglish)}
@@ -171,6 +180,9 @@ export default function PatternPage() {
                 alt={displayItemTitle(heroItem, isEnglish)}
                 className="absolute inset-0 w-full h-full object-cover object-center"
                 src={heroItem.image_url}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                   e.currentTarget.parentElement?.classList.add("bg-gray-100");
@@ -209,6 +221,8 @@ export default function PatternPage() {
                     src={item.image_url}
                     alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                       e.currentTarget.parentElement?.classList.add("bg-gray-100");
@@ -241,6 +255,8 @@ export default function PatternPage() {
                     src={item.image_url}
                     alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                       e.currentTarget.parentElement?.classList.add("bg-gray-100");

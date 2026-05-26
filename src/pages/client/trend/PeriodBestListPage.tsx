@@ -17,6 +17,12 @@ const PERIOD_TAB_LABEL_EN: Record<(typeof PERIOD_TABS)[number], string> = {
   "🏆 월간": "🏆 Monthly",
 };
 
+const PERIOD_PARAM_BY_TAB: Record<string, string> = {
+  일간: "realtime",
+  주간: "weekly",
+  월간: "monthly",
+};
+
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
@@ -46,7 +52,7 @@ function useStyleBestRankingQuery(period: string, maxLimit: number) {
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<RankingNailRow[]> => {
       const { data, error } = await supabase
-        .rpc("get_style_ranking_nails", { p_period: period, p_limit: maxLimit })
+        .rpc("get_ranking_nails", { p_period: period, p_limit: maxLimit })
         .abortSignal(signal);
       if (error) throw error;
       return (data ?? []) as RankingNailRow[];
@@ -64,7 +70,7 @@ export default function PeriodBestListPage() {
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const activeTab = useMemo(() => resolveActiveTab(searchParams.get("tab")), [searchParams]);
-  const rankingPeriod = extractPureThemeKeyword(activeTab);
+  const rankingPeriod = PERIOD_PARAM_BY_TAB[extractPureThemeKeyword(activeTab)] ?? "realtime";
   const maxLimit = 30;
   const { data = [], isLoading, isError } = useStyleBestRankingQuery(rankingPeriod, maxLimit);
   const rankingItems = data.slice(0, maxLimit);

@@ -146,6 +146,8 @@ export default function TrendPage() {
                       src={item.item.image_url}
                       alt={displayTrendCardName(item, isEnglish)}
                       className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
@@ -183,6 +185,8 @@ export default function TrendPage() {
                       src={item.item.image_url}
                       alt={displayTrendCardName(item, isEnglish)}
                       className="w-full aspect-[3/4] rounded-2xl object-cover object-center shadow-sm"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
@@ -220,6 +224,8 @@ export default function TrendPage() {
                       src={item.item.image_url}
                       alt={displayTrendCardName(item, isEnglish)}
                       className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
@@ -255,6 +261,8 @@ export default function TrendPage() {
                   src={moodHeroItem.image_url}
                   alt={isEnglish ? 'Hot Trend Mood' : '핫 트렌드 무드'}
                   className="absolute inset-0 w-full h-full object-cover object-center"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}

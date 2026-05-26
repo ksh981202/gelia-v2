@@ -152,7 +152,7 @@ export default function TexturePage() {
               return (
               <button key={cat.label} type="button" onClick={() => setActiveTab(cat.label)} className="flex shrink-0 flex-col items-center gap-2.5">
                 <div className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-gray-100 shadow-sm ${isActive ? "ring-2 ring-orange-500 ring-offset-2 ring-offset-white" : ""}`}>
-                  <img alt={displayTextureLabel(cat.label, isEnglish)} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} />
+                  <img alt={displayTextureLabel(cat.label, isEnglish)} className="absolute inset-0 h-full w-full object-cover object-center" src={cat.img} loading="lazy" decoding="async" />
                 </div>
                 <span className={`font-sans text-[13px] tracking-tight ${isActive ? "font-semibold text-gray-900" : "font-medium text-gray-800"}`}>
                   {displayTextureLabel(cat.label, isEnglish)}
@@ -171,6 +171,9 @@ export default function TexturePage() {
                 alt={displayItemTitle(heroItem, isEnglish)}
                 className="h-full w-full object-cover object-center"
                 src={heroItem.image_url}
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
@@ -212,6 +215,8 @@ export default function TexturePage() {
                     alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     src={item.image_url}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
@@ -250,6 +255,8 @@ export default function TexturePage() {
                       alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       src={item.image_url}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
