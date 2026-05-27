@@ -1,5 +1,7 @@
 import imageCompression from 'browser-image-compression' // WebP 업로드 최적화 (V1 동일)
 
+const WEBP_PASSTHROUGH_MAX_BYTES = 1.5 * 1024 * 1024
+
 const WEBP_COMPRESS_OPTIONS = {
   maxSizeMB: 1,
   maxWidthOrHeight: 1500,
@@ -18,6 +20,10 @@ export function toWebpFilename(filename: string): string {
 
 /** R2 업로드 직전: WebP 압축 + 확장자 `.webp` */
 export async function compressImageForUpload(file: File): Promise<File> {
+  if (file.type === 'image/webp' && file.size <= WEBP_PASSTHROUGH_MAX_BYTES) {
+    return file
+  }
+
   const compressed = await imageCompression(file, WEBP_COMPRESS_OPTIONS)
   const webpName = toWebpFilename(file.name)
   return new File([compressed], webpName, {

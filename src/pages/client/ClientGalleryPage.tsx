@@ -5,6 +5,7 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -36,7 +37,8 @@ function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
 export default function ClientGalleryPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [isEnglish, setIsEnglish] = useState(false)
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const [isSortOpen, setIsSortOpen] = useState(false)
 
   const tabContainerRef = useRef<HTMLDivElement>(null)
@@ -142,8 +144,9 @@ export default function ClientGalleryPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, activeTabKo, sortType])
 
   return (
-    <div className="min-h-screen w-full bg-white text-slate-900">
-      <header className="fixed top-0 left-0 right-0 z-50 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5">
+    <div className="relative min-h-screen w-full bg-white text-slate-900">
+      <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
+        <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -158,14 +161,6 @@ export default function ClientGalleryPage() {
           <div className="-mr-2 flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setIsEnglish((v) => !v)}
-              className="rounded-full px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
-              aria-label={isEnglish ? 'Switch to Korean' : 'Switch to English'}
-            >
-              {isEnglish ? 'KO' : 'EN'}
-            </button>
-            <button
-              type="button"
               onClick={() => navigate('/search')}
               className="p-2"
               aria-label={isEnglish ? 'Search' : '검색'}
@@ -173,13 +168,11 @@ export default function ClientGalleryPage() {
               <Search className="h-6 w-6 text-gray-900" />
             </button>
           </div>
-      </header>
+        </header>
 
-      <div className="pt-[140px]">
-        <div className="fixed top-14 left-0 right-0 z-40 mx-auto w-full bg-white border-b border-gray-100">
         <section
           ref={tabContainerRef}
-          className="min-w-0 scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pt-3 pb-2 [-webkit-overflow-scrolling:touch]"
+          className="min-w-0 flex w-full overflow-x-auto whitespace-nowrap scrollbar-hide px-4 pb-2 pt-1 [&::-webkit-scrollbar]:hidden"
         >
           {GALLERY_TABS.map((tab) => {
             const isActive = activeTabKo === tab.ko
@@ -191,15 +184,15 @@ export default function ClientGalleryPage() {
                 onClick={() => setGalleryTab(tab.ko)}
                 className={
                   isActive
-                    ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white'
-                    : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
+                    ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white mr-2'
+                    : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600 mr-2'
                 }
               >
                 {isEnglish ? tab.en : tab.ko}
               </button>
             )
           })}
-          <div className="w-10 shrink-0" aria-hidden="true" />
+          <div className="w-4 shrink-0" />
         </section>
 
         <div className="relative flex items-center justify-between px-4 pt-2 pb-3">
@@ -243,10 +236,9 @@ export default function ClientGalleryPage() {
             )}
           </div>
         </div>
-        </div>
       </div>
 
-      <main className="grid grid-cols-2 gap-4 px-5 pb-8">
+      <main className="grid grid-cols-2 gap-4 px-5 pt-4 pb-8">
         {isLoading ? (
           <>
             {Array.from({ length: 8 }, (_, i) => (

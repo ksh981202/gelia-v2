@@ -113,15 +113,31 @@ export default function ClientMyPage() {
   })
 
   useEffect(() => {
-    const checkAuth = async () => {
+    let cancelled = false
+
+    const initCheck = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      if (!session) {
+      if (!cancelled && !session) {
         navigate('/login', { replace: true })
       }
     }
-    void checkAuth()
+
+    void initCheck()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate('/login', { replace: true })
+      }
+    })
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [navigate])
 
   useEffect(() => {

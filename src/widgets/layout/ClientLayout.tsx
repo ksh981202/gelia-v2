@@ -66,6 +66,7 @@ function ClientLayoutContent() {
     pathname.includes('/detail/') ||
     pathname === '/category' ||
     pathname === '/search' ||
+    pathname.startsWith('/gallery') ||
     pathname === '/my' ||
     pathname.startsWith('/my/list') ||
     pathname === '/notifications' ||

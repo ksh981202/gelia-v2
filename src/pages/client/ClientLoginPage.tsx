@@ -145,7 +145,7 @@ export default function ClientLoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/client/my`,
+          redirectTo: `${window.location.origin}/my`,
           queryParams: {
             prompt: 'select_account',
           },
