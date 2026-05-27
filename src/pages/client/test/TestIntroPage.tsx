@@ -11,7 +11,7 @@ const TestIntroPage = () => {
 
   return (
     // 🚨 족쇄 해제: max-w-md(너비 제한)를 삭제하고 w-full을 주입하여 화면 전체를 쓰도록 강제
-    <div className="w-full flex min-h-screen flex-col overflow-x-hidden overflow-y-auto bg-white font-sans">
+    <div className="w-full flex min-h-[100dvh] flex-col overflow-x-hidden overflow-y-auto bg-white pb-28 font-sans">
       
       {/* 헤더: px-5 여백 */}
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5">
@@ -84,7 +84,7 @@ const TestIntroPage = () => {
       </div>
 
       {/* 하단 바: w-full 및 좌우 px-5 여백 통일 */}
-      <div className="sticky bottom-[64px] z-40 w-full bg-white px-5 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
           type="button"
           onClick={() => navigate("/test-step1")}

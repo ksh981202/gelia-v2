@@ -26,7 +26,7 @@ const TestStep1Page = () => {
   const canNext = selectedLength && selectedType;
 
   return (
-    <div className="mx-auto flex max-w-md min-h-screen flex-col overflow-hidden bg-white font-sans [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className="mx-auto flex max-w-md min-h-[100dvh] flex-col overflow-hidden bg-white pb-28 font-sans [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -109,7 +109,7 @@ const TestStep1Page = () => {
         </div>
       </main>
 
-      <div className="fixed left-0 right-0 z-40 mx-auto max-w-md border-t border-gray-100 bg-white px-5 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] [bottom:calc(4rem+env(safe-area-inset-bottom,0px))]">
+      <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white px-5 py-4 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
         <button
           type="button"
           disabled={!canNext}
