@@ -126,7 +126,7 @@ function ClientLayoutContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative mx-auto min-h-screen w-full max-w-md">
+      <div className="relative mx-auto min-h-screen w-full max-w-md overflow-x-hidden">
         {!hideTopHeader && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl">
           <h1
