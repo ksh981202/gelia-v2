@@ -185,7 +185,7 @@ function HorizontalPreviewSection({
           items.map((item) => (
             <Link
               key={item.id}
-              to={`/client/detail/${item.id}`}
+              to={`/detail/${item.id}`}
               state={detailState(item, isEnglish)}
               className="flex w-[120px] flex-shrink-0 flex-col gap-2"
             >
@@ -235,14 +235,14 @@ export default function ClientColorCurationPage() {
   const currentTabSearch = `?tab=${encodeURIComponent(currentColor)}`
 
   const colorListHref: To = {
-    pathname: '/client/color-list',
+    pathname: '/color-list',
     search: currentTabSearch,
   }
   const colorThemeListHref: To = {
-    pathname: '/client/color-theme-list',
+    pathname: '/color-theme-list',
   }
   const colorPopularListHref: To = {
-    pathname: '/client/color-popular-list',
+    pathname: '/color-popular-list',
   }
 
   const heroQueryKeyword = COLOR_KEYWORD_MAPPING[currentColor] ?? currentColor
@@ -306,7 +306,7 @@ export default function ClientColorCurationPage() {
         </h1>
 
         <Link
-          to="/client/gallery"
+          to="/gallery"
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
           aria-label={isEnglish ? 'Search' : '검색'}
         >
@@ -361,7 +361,7 @@ export default function ClientColorCurationPage() {
           </nav>
 
           <Link
-            to={heroNail ? `/client/detail/${heroNail.id}` : '#'}
+            to={heroNail ? `/detail/${heroNail.id}` : '#'}
             state={heroNail ? detailState(heroNail, isEnglish) : undefined}
             onClick={(e) => {
               if (!heroNail) e.preventDefault()
@@ -413,7 +413,7 @@ export default function ClientColorCurationPage() {
               popularItems.map((item) => (
                 <Link
                   key={item.id}
-                  to={`/client/detail/${item.id}`}
+                  to={`/detail/${item.id}`}
                   state={detailState(item, isEnglish)}
                   className="flex flex-col gap-2"
                 >

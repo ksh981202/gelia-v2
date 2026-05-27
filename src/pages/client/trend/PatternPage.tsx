@@ -119,7 +119,7 @@ export default function PatternPage() {
 
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
@@ -138,7 +138,7 @@ export default function PatternPage() {
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
           {isEnglish ? "Art & Pattern Trend" : "아트 & 패턴 트렌드"}
         </h1>
-        <button type="button" className="p-1 -mr-1 text-gray-900 transition-colors hover:bg-gray-100 rounded-full" onClick={() => navigate('/client/search')}>
+        <button type="button" className="p-1 -mr-1 text-gray-900 transition-colors hover:bg-gray-100 rounded-full" onClick={() => navigate('/search')}>
           <Search className="w-5 h-5" strokeWidth={2} />
         </button>
       </header>
@@ -151,7 +151,7 @@ export default function PatternPage() {
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "View by Art" : "아트별 모아보기"}
             </h3>
-            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate(`/client/pattern-list?tab=${encodeURIComponent(activeTabKeyword)}`)}>
+            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate(`/pattern-list?tab=${encodeURIComponent(activeTabKeyword)}`)}>
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
@@ -209,7 +209,7 @@ export default function PatternPage() {
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Hottest Marble BEST" : "지금 가장 핫한 마블 BEST"}
             </h3>
-            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/client/marble-best-list')}>
+            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/marble-best-list')}>
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
@@ -243,7 +243,7 @@ export default function PatternPage() {
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Real-time Popular Art Nails" : "실시간 인기 아트 네일"}
             </h3>
-            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/client/popular-art-list')}>
+            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/popular-art-list')}>
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>

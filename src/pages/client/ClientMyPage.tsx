@@ -118,7 +118,7 @@ export default function ClientMyPage() {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        navigate('/client/login', { replace: true })
+        navigate('/login', { replace: true })
       }
     }
     void checkAuth()
@@ -154,7 +154,7 @@ export default function ClientMyPage() {
   })
 
   const openDetail = (nailId: string, title: string, imageUrl: string) => {
-    navigate(`/client/detail/${nailId}`, {
+    navigate(`/detail/${nailId}`, {
       state: {
         initialNailData: {
           id: nailId,
@@ -210,7 +210,7 @@ export default function ClientMyPage() {
           type="button"
           aria-label="알림"
           className="relative p-2 text-gray-600"
-          onClick={() => navigate('/client/notification-list')}
+          onClick={() => navigate('/notification-list')}
         >
           <Bell className="h-6 w-6 text-current" strokeWidth={2} />
           <span className="absolute right-1.5 top-1.5 h-[9px] w-[9px] rounded-full border-[2px] border-white bg-red-500" />
@@ -279,7 +279,7 @@ export default function ClientMyPage() {
             <button
               type="button"
               className="text-sm font-medium text-gray-500"
-              onClick={() => navigate(`/client/my/list/${activeTab}`)}
+              onClick={() => navigate(`/my/list/${activeTab}`)}
             >
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
@@ -326,7 +326,7 @@ export default function ClientMyPage() {
             <button
               type="button"
               className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
-              onClick={() => navigate('/client/notifications')}
+              onClick={() => navigate('/notifications')}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🔔</span>
@@ -341,7 +341,7 @@ export default function ClientMyPage() {
             <button
               type="button"
               className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
-              onClick={() => navigate('/client/account')}
+              onClick={() => navigate('/account')}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">⚙️</span>
@@ -352,7 +352,7 @@ export default function ClientMyPage() {
             <button
               type="button"
               className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
-              onClick={() => navigate('/client/support')}
+              onClick={() => navigate('/support')}
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🎧</span>

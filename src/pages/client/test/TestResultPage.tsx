@@ -241,7 +241,7 @@ const TestResultPage = () => {
   }, []);
 
   const openDetail = (item: NailDesignRow) => {
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };

@@ -103,7 +103,7 @@ export default function PartsPage() {
 
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
@@ -136,7 +136,7 @@ export default function PartsPage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate(`/client/parts-list?tab=${encodeURIComponent(activeTabKeyword)}`)}
+              onClick={() => navigate(`/parts-list?tab=${encodeURIComponent(activeTabKeyword)}`)}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
@@ -198,7 +198,7 @@ export default function PartsPage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate('/client/stone-best-list')}
+              onClick={() => navigate('/stone-best-list')}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
@@ -236,7 +236,7 @@ export default function PartsPage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate('/client/full-parts-list')}
+              onClick={() => navigate('/full-parts-list')}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}

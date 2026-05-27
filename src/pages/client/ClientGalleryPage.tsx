@@ -166,7 +166,7 @@ export default function ClientGalleryPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/client/search')}
+              onClick={() => navigate('/search')}
               className="p-2"
               aria-label={isEnglish ? 'Search' : '검색'}
             >
@@ -275,7 +275,7 @@ export default function ClientGalleryPage() {
                 role="button"
                 tabIndex={0}
                 onClick={() =>
-                  navigate(`/client/detail/${item.id}`, {
+                  navigate(`/detail/${item.id}`, {
                     state: {
                       initialNailData: {
                         id: item.id,
@@ -290,7 +290,7 @@ export default function ClientGalleryPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    navigate(`/client/detail/${item.id}`, {
+                    navigate(`/detail/${item.id}`, {
                       state: {
                         initialNailData: {
                           id: item.id,

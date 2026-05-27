@@ -82,7 +82,7 @@ export default function ClientTodaySpecialPage() {
         </h1>
 
         <Link
-          to="/client/gallery"
+          to="/gallery"
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
           aria-label={isEnglish ? 'Search' : '검색'}
         >
@@ -123,7 +123,7 @@ export default function ClientTodaySpecialPage() {
           return (
           <article key={pick.id} className="px-4">
             <Link
-              to={`/client/detail/${pick.id}`}
+              to={`/detail/${pick.id}`}
               state={{
                 initialNailData: {
                   ...pick,

@@ -27,7 +27,7 @@ export default function ClientLoginPage() {
     const checkAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/client/my', { replace: true });
+        navigate('/my', { replace: true });
       }
     };
     checkAuth();
@@ -67,13 +67,13 @@ export default function ClientLoginPage() {
         const signedUpUserId = data.user?.id ?? data.session?.user?.id ?? "";
         if (signedUpUserId) mergeGuestRecentViewedToUser(signedUpUserId);
         // 이메일 인증이 꺼져있다면 가입 즉시 로그인됨
-        navigate('/client/my', { replace: true });
+        navigate('/my', { replace: true });
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         const signedInUserId = data.user?.id ?? data.session?.user?.id ?? "";
         if (signedInUserId) mergeGuestRecentViewedToUser(signedInUserId);
-        navigate('/client/my', { replace: true });
+        navigate('/my', { replace: true });
       }
     } catch (error) {
       const message = getAuthErrorMessage(error);
@@ -101,7 +101,7 @@ export default function ClientLoginPage() {
       if (signedInUserId) mergeGuestRecentViewedToUser(signedInUserId);
       setShowAdminPin(false);
       setAdminPin("");
-      navigate("/client/my", { replace: true });
+      navigate("/my", { replace: true });
     } catch (error) {
       const message = getAuthErrorMessage(error);
       setErrorMsg(

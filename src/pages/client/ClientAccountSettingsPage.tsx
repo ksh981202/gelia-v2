@@ -119,7 +119,7 @@ export default function ClientAccountSettingsPage() {
       alert(message)
     } finally {
       clearSupabaseAuthLocalStorage()
-      window.location.href = '/client'
+      window.location.href = '/'
     }
   }
 
@@ -162,7 +162,7 @@ export default function ClientAccountSettingsPage() {
     setIsDeleteModalOpen(false)
     alert(isEnglish ? 'Account deletion has been processed.' : '회원탈퇴 처리가 완료되었습니다.')
     clearSupabaseAuthLocalStorage()
-    window.location.href = '/client'
+    window.location.href = '/'
   }
 
   return (

@@ -130,7 +130,7 @@ export default function EditorPickTab() {
 
   return (
     <section className="mt-8 space-y-6">
-      <Link to={`/client/magazine/${heroPost.id}`} className="block cursor-pointer">
+      <Link to={`/magazine/${heroPost.id}`} className="block cursor-pointer">
         <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100">
           {heroPost.thumbnail_url ? (
             <img
@@ -157,7 +157,7 @@ export default function EditorPickTab() {
             return (
               <Link
                 key={post.id}
-                to={`/client/magazine/${post.id}`}
+                to={`/magazine/${post.id}`}
                 className="flex cursor-pointer gap-4 border-t border-gray-100 pt-4"
               >
                 <div className="min-w-0 flex-1">

@@ -187,17 +187,17 @@ export default function CategoryPage() {
   const { data: hubData = [] } = useRecommendHubQuery();
   const viewAllLabel = isEnglish ? "View All >" : "전체보기 >";
 
-  const goColorCuration = (keyword?: string) => navigate(keyword ? `/client/color-curation?color=${encodeURIComponent(keyword)}` : "/client/color-curation");
+  const goColorCuration = (keyword?: string) => navigate(keyword ? `/color-curation?color=${encodeURIComponent(keyword)}` : "/color-curation");
 
-  const goSeasonCuration = (keyword?: string) => navigate(keyword ? `/client/season-curation?tab=${encodeURIComponent(keyword)}` : "/client/season-curation");
+  const goSeasonCuration = (keyword?: string) => navigate(keyword ? `/season-curation?tab=${encodeURIComponent(keyword)}` : "/season-curation");
 
-  const goStyleCuration = (keyword?: string) => navigate(keyword ? `/client/style-curation?tab=${encodeURIComponent(keyword)}` : "/client/style-curation");
+  const goStyleCuration = (keyword?: string) => navigate(keyword ? `/style-curation?tab=${encodeURIComponent(keyword)}` : "/style-curation");
 
-  const goTheme = (keyword?: string) => navigate(keyword ? `/client/situation-list?tab=${encodeURIComponent(keyword)}` : "/client/situation-list");
+  const goTheme = (keyword?: string) => navigate(keyword ? `/situation-list?tab=${encodeURIComponent(keyword)}` : "/situation-list");
 
-  const goPattern = (keyword?: string) => navigate(keyword ? `/client/pattern?tab=${encodeURIComponent(keyword)}` : "/client/pattern");
-  const goTexture = (keyword?: string) => navigate(keyword ? `/client/texture?tab=${encodeURIComponent(keyword)}` : "/client/texture");
-  const goParts = (keyword?: string) => navigate(keyword ? `/client/parts?tab=${encodeURIComponent(keyword)}` : "/client/parts");
+  const goPattern = (keyword?: string) => navigate(keyword ? `/pattern?tab=${encodeURIComponent(keyword)}` : "/pattern");
+  const goTexture = (keyword?: string) => navigate(keyword ? `/texture?tab=${encodeURIComponent(keyword)}` : "/texture");
+  const goParts = (keyword?: string) => navigate(keyword ? `/parts?tab=${encodeURIComponent(keyword)}` : "/parts");
 
   return (
     <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#1A1A1A] antialiased">
@@ -208,7 +208,7 @@ export default function CategoryPage() {
         <h1 className="pointer-events-none absolute left-1/2 top-1/2 max-w-[60%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
           {isEnglish ? "Categories" : "카테고리 탐색"}
         </h1>
-        <button type="button" onClick={() => navigate("/client/gallery")} className="p-2 -mr-2 text-gray-900 rounded-full">
+        <button type="button" onClick={() => navigate("/gallery")} className="p-2 -mr-2 text-gray-900 rounded-full">
           <Search className="h-6 w-6" strokeWidth={2} />
         </button>
       </header>

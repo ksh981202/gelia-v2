@@ -62,61 +62,61 @@ function ClientLayoutContent() {
   }, [])
 
   const hideTopHeader =
-    pathname.startsWith('/client/test') ||
-    pathname.includes('/client/detail/') ||
-    pathname === '/client/category' ||
-    pathname === '/client/search' ||
-    pathname === '/client/my' ||
-    pathname.startsWith('/client/my/list') ||
-    pathname === '/client/notifications' ||
-    pathname === '/client/notification-list' ||
-    pathname === '/client/support' ||
-    pathname === '/client/faq' ||
-    pathname === '/client/terms' ||
-    pathname === '/client/privacy' ||
-    pathname === '/client/notice' ||
-    pathname === '/client/account' ||
-    pathname === '/client/recommend' ||
-    pathname === '/client/color-curation' ||
-    pathname === '/client/color-list' ||
-    pathname === '/client/color-theme-list' ||
-    pathname === '/client/color-popular-list' ||
-    pathname === '/client/theme' ||
-    pathname === '/client/season-curation' ||
-    pathname === '/client/season-list' ||
-    pathname === '/client/vacation-list' ||
-    pathname === '/client/season-popular-list' ||
-    pathname === '/client/style-curation' ||
-    pathname === '/client/style-list' ||
-    pathname === '/client/style-best-list' ||
-    pathname === '/client/style-gallery-list' ||
-    pathname === '/client/theme-list' ||
-    pathname === '/client/situation-list' ||
-    pathname === '/client/today-special' ||
-    pathname === '/client/popular-design' ||
-    pathname === '/client/period-best-list' ||
-    pathname === '/client/reaction-best-list' ||
-    pathname === '/client/shape-best-list' ||
-    pathname === '/client/search-trend-list' ||
-    pathname === '/client/trend' ||
-    pathname === '/client/magazine' ||
-    pathname.startsWith('/client/magazine/') ||
-    pathname === '/client/texture' ||
-    pathname === '/client/texture-list' ||
-    pathname === '/client/syrup-best' ||
-    pathname === '/client/parts' ||
-    pathname === '/client/parts-list' ||
-    pathname === '/client/stone-best-list' ||
-    pathname === '/client/marble-best-list' ||
-    pathname === '/client/popular-art-list' ||
-    pathname === '/client/chic-best-list' ||
-    pathname === '/client/full-parts-list' ||
-    pathname === '/client/art' ||
-    pathname === '/client/pattern' ||
-    pathname === '/client/pattern-list' ||
-    pathname === '/client/mood-list' ||
-    pathname === '/client/popular-mood-list' ||
-    pathname === '/client/mood'
+    pathname.startsWith('/test') ||
+    pathname.includes('/detail/') ||
+    pathname === '/category' ||
+    pathname === '/search' ||
+    pathname === '/my' ||
+    pathname.startsWith('/my/list') ||
+    pathname === '/notifications' ||
+    pathname === '/notification-list' ||
+    pathname === '/support' ||
+    pathname === '/faq' ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname === '/notice' ||
+    pathname === '/account' ||
+    pathname === '/recommend' ||
+    pathname === '/color-curation' ||
+    pathname === '/color-list' ||
+    pathname === '/color-theme-list' ||
+    pathname === '/color-popular-list' ||
+    pathname === '/theme' ||
+    pathname === '/season-curation' ||
+    pathname === '/season-list' ||
+    pathname === '/vacation-list' ||
+    pathname === '/season-popular-list' ||
+    pathname === '/style-curation' ||
+    pathname === '/style-list' ||
+    pathname === '/style-best-list' ||
+    pathname === '/style-gallery-list' ||
+    pathname === '/theme-list' ||
+    pathname === '/situation-list' ||
+    pathname === '/today-special' ||
+    pathname === '/popular-design' ||
+    pathname === '/period-best-list' ||
+    pathname === '/reaction-best-list' ||
+    pathname === '/shape-best-list' ||
+    pathname === '/search-trend-list' ||
+    pathname === '/trend' ||
+    pathname === '/magazine' ||
+    pathname.startsWith('/magazine/') ||
+    pathname === '/texture' ||
+    pathname === '/texture-list' ||
+    pathname === '/syrup-best' ||
+    pathname === '/parts' ||
+    pathname === '/parts-list' ||
+    pathname === '/stone-best-list' ||
+    pathname === '/marble-best-list' ||
+    pathname === '/popular-art-list' ||
+    pathname === '/chic-best-list' ||
+    pathname === '/full-parts-list' ||
+    pathname === '/art' ||
+    pathname === '/pattern' ||
+    pathname === '/pattern-list' ||
+    pathname === '/mood-list' ||
+    pathname === '/popular-mood-list' ||
+    pathname === '/mood'
 
   const hideBottomNav = false
 
@@ -132,7 +132,7 @@ function ClientLayoutContent() {
           <h1
             className="shrink-0 cursor-pointer whitespace-nowrap text-[28px] font-bold tracking-wide text-gray-900 sm:text-[30px]"
             style={{ fontFamily: "'Playfair Display', serif" }}
-            onClick={() => navigate('/client')}
+            onClick={() => navigate('/')}
           >
             GELIA
           </h1>
@@ -141,7 +141,7 @@ function ClientLayoutContent() {
             <button
               type="button"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
-              onClick={() => navigate('/client/search')}
+              onClick={() => navigate('/search')}
               aria-label="검색"
             >
               <Search size={18} className="text-foreground" />
@@ -159,7 +159,7 @@ function ClientLayoutContent() {
             <button
               type="button"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
-              onClick={() => navigate('/client/my')}
+              onClick={() => navigate('/my')}
               aria-label="마이페이지"
             >
               <User size={18} className="text-foreground" />
@@ -178,7 +178,7 @@ function ClientLayoutContent() {
           aria-label="하단 탭"
         >
           <NavLink
-            to="/client"
+            to="/"
             end
             className={bottomNavLinkClass}
             aria-label={isEnglish ? 'Home tab' : '홈 탭'}
@@ -191,7 +191,7 @@ function ClientLayoutContent() {
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Home' : '홈'}</span>
           </NavLink>
           <NavLink
-            to="/client/trend"
+            to="/trend"
             className={bottomNavLinkClass}
             aria-label={isEnglish ? 'Trend tab' : '트렌드 탭'}
           >
@@ -203,7 +203,7 @@ function ClientLayoutContent() {
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Trend' : '트렌드'}</span>
           </NavLink>
           <NavLink
-            to="/client/magazine"
+            to="/magazine"
             className={bottomNavLinkClass}
             aria-label={isEnglish ? 'Magazine tab' : '매거진 탭'}
           >
@@ -215,7 +215,7 @@ function ClientLayoutContent() {
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Magazine' : '매거진'}</span>
           </NavLink>
           <NavLink
-            to="/client/search"
+            to="/search"
             className={bottomNavLinkClass}
             aria-label={isEnglish ? 'Search tab' : '검색 탭'}
           >
@@ -227,7 +227,7 @@ function ClientLayoutContent() {
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
           <NavLink
-            to="/client/my"
+            to="/my"
             className={bottomNavLinkClass}
             aria-label={isEnglish ? 'My tab' : '마이 탭'}
           >

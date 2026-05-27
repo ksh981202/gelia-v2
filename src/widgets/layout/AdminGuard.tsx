@@ -20,7 +20,7 @@ export default function AdminGuard() {
 
       if (email !== ADMIN_EMAIL) {
         alert('최고 관리자만 접근할 수 있습니다.')
-        navigate('/client', { replace: true })
+        navigate('/', { replace: true })
         return
       }
 

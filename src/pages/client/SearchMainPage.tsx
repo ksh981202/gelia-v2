@@ -291,7 +291,7 @@ export default function SearchMainPage() {
   } = usePopularSearchTrends()
 
   const openDetail = (id: string, title: string, imageUrl: string) => {
-    navigate(`/client/detail/${id}`, {
+    navigate(`/detail/${id}`, {
       state: {
         initialNailData: {
           id,
@@ -519,7 +519,7 @@ export default function SearchMainPage() {
               <button
                 type="button"
                 className="text-sm font-medium text-gray-500"
-                onClick={() => navigate('/client/search-trend-list')}
+                onClick={() => navigate('/search-trend-list')}
               >
                 {isEnglish ? 'View All >' : '전체보기 >'}
               </button>
@@ -598,7 +598,7 @@ export default function SearchMainPage() {
 
           <button
             type="button"
-            onClick={() => navigate('/client/category')}
+            onClick={() => navigate('/category')}
             className="flex w-full items-center justify-center gap-0.5 rounded-xl border border-gray-200 bg-white py-4 text-sm font-semibold text-gray-900 shadow-sm"
           >
             {isEnglish ? 'View All Categories >' : '카테고리 전체보기 >'}

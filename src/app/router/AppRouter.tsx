@@ -78,9 +78,8 @@ const TestResultPage = lazy(() => import('../../pages/client/test/TestResultPage
 const NotFoundPage = lazy(() => import('../../pages/client/NotFoundPage'))
 
 const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/client" replace /> },
   {
-    path: '/client',
+    path: '/',
     element: <ClientLayout />,
     children: [
       { index: true, element: <ClientHomePage /> },
@@ -173,6 +172,7 @@ const router = createBrowserRouter([
       },
     ],
   },
+  { path: '/client/*', element: <Navigate to="/" replace /> },
   { path: '*', element: <NotFoundPage /> },
 ])
 

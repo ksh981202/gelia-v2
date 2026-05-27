@@ -175,7 +175,7 @@ export default function PopularDesignPage() {
   );
 
   const goDetail = (item: NailDesignRow) => {
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: initialNailData(item, isEnglish) },
     });
   };
@@ -190,12 +190,12 @@ export default function PopularDesignPage() {
         <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
           {isEnglish ? "Popular Designs" : "인기 네일 디자인"}
         </h1>
-        <button type="button" aria-label="검색" className="z-10 p-1 -mr-1" onClick={() => navigate("/client/search")}>
+        <button type="button" aria-label="검색" className="z-10 p-1 -mr-1" onClick={() => navigate("/search")}>
           <Search className="w-6 h-6 text-gray-900" strokeWidth={2} />
         </button>
       </header>
 
-      <main className="mt-4 flex flex-col gap-10 px-5">
+      <main className="mt-4 flex flex-col gap-10 overflow-x-hidden px-5">
         {/* 1. 기간별 BEST 네일 */}
         <section className="w-full">
           <div className="mb-4 flex w-full items-center justify-between gap-2">
@@ -204,14 +204,14 @@ export default function PopularDesignPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/period-best-list')}
+              onClick={() => navigate('/period-best-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
           {/* 스크롤바 완벽 숨김 처리 */}
-          <div className="flex snap-x gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex snap-x gap-4 overflow-x-auto px-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {periodBest.map((item, index) => (
               <article
                 key={item.id}
@@ -242,13 +242,13 @@ export default function PopularDesignPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/reaction-best-list')}
+              onClick={() => navigate('/reaction-best-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex snap-x gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex snap-x gap-4 overflow-x-auto px-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {reactionBest.map((item) => (
               <article
                 key={item.id}
@@ -278,13 +278,13 @@ export default function PopularDesignPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/shape-best-list')}
+              onClick={() => navigate('/shape-best-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex snap-x gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex snap-x gap-4 overflow-x-auto px-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {shapeBest.map((item) => (
               <article
                 key={item.id}
@@ -314,7 +314,7 @@ export default function PopularDesignPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/search-trend-list')}
+              onClick={() => navigate('/search-trend-list')}
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
@@ -349,7 +349,7 @@ export default function PopularDesignPage() {
                   <button
                     key={`${rank}-${keyword}`}
                     type="button"
-                    onClick={() => navigate(`/client/search?q=${encodeURIComponent(keyword)}`)}
+                    onClick={() => navigate(`/search?q=${encodeURIComponent(keyword)}`)}
                     className="flex w-full items-center py-3.5 border-b border-gray-50 last:border-0 cursor-pointer text-left"
                   >
                     <span className={`w-8 text-center text-lg font-bold ${rank <= 3 ? 'text-[#FF7E67]' : 'text-gray-400'}`}>

@@ -91,7 +91,7 @@ export default function ClientSeasonCurationPage() {
 
   const goDetail = (item?: NailDesignRow) => {
     if (!item?.id) return
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: {
         initialNailData: {
           id: item.id,
@@ -121,7 +121,7 @@ export default function ClientSeasonCurationPage() {
         </h1>
 
         <Link
-          to="/client/gallery"
+          to="/gallery"
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
           aria-label={isEnglish ? 'Search' : '검색'}
         >
@@ -136,7 +136,7 @@ export default function ClientSeasonCurationPage() {
               {isEnglish ? 'View by Season' : '시즌별 모아보기'}
             </h2>
             <Link
-              to={{ pathname: '/client/season-list', search: currentTabSearch }}
+              to={{ pathname: '/season-list', search: currentTabSearch }}
               className="text-sm text-gray-500"
             >
               {viewAllLabel}
@@ -218,7 +218,7 @@ export default function ClientSeasonCurationPage() {
               {isEnglish ? 'Perfect for Vacation! Vacation Nails ✈️' : '휴양지에서 인생샷 보장! 바캉스 네일 ✈️'}
             </h2>
             <Link
-              to={{ pathname: '/client/vacation-list', search: currentTabSearch }}
+              to={{ pathname: '/vacation-list', search: currentTabSearch }}
               className="text-sm text-gray-500"
             >
               {viewAllLabel}
@@ -261,7 +261,7 @@ export default function ClientSeasonCurationPage() {
               {isEnglish ? 'Popular Seasonal Nails' : '내 손끝에 찰떡, 계절 인기 네일 모음'}
             </h2>
             <Link
-              to={{ pathname: '/client/season-popular-list', search: seasonPopularSearch }}
+              to={{ pathname: '/season-popular-list', search: seasonPopularSearch }}
               className="text-sm text-gray-500"
             >
               {viewAllLabel}

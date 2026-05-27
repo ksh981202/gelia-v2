@@ -418,7 +418,7 @@ const Detail = () => {
   const handleTagClick = (tag: string) => {
     const bare = String(tag ?? "").replace(/^#+/, "").trim();
     const encoded = encodeURIComponent(bare || String(tag ?? "").trim());
-    navigate(`/client/search?q=${encoded}`);
+    navigate(`/search?q=${encoded}`);
   };
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
@@ -656,7 +656,7 @@ const Detail = () => {
       isEnglish
         ? "Found a nail style you love? Explore it in detail on GELIA. 💅"
         : "마음에 쏙 드는 네일 디자인! 젤리아에서 자세히 확인해 보세요. 💅";
-    const image = (displayRow.image_url ?? "").trim() || "https://gelia.app/ogimage/og-image.png";
+    const image = (displayRow.image_url ?? "").trim() || "https://gelia.app/ogimage/og-image.webp";
     const url = window.location.href;
 
     document.title = `${title} | 젤리아 (GELIA)`;
@@ -691,7 +691,7 @@ const Detail = () => {
         'meta[property="og:image"]',
         "property",
         "og:image",
-        "https://gelia.app/ogimage/og-image.png",
+        "https://gelia.app/ogimage/og-image.webp",
       );
     };
   }, [displayRow?.id, displayRow?.image_url, displayTitle, isEnglish]);
@@ -739,7 +739,7 @@ const Detail = () => {
     if (!displayRow?.id) return;
     if (!currentUserId) {
       alert("로그인이 필요한 기능입니다.");
-      navigate("/client/login");
+      navigate("/login");
       return;
     }
     const nailDesignId = displayRow.id;
@@ -779,7 +779,7 @@ const Detail = () => {
     if (!displayRow?.id) return;
     if (!currentUserId) {
       alert("로그인이 필요한 기능입니다.");
-      navigate("/client/login");
+      navigate("/login");
       return;
     }
     const nailDesignId = displayRow.id;
@@ -831,7 +831,7 @@ const Detail = () => {
     if (!displayRow) return;
     if (!currentUserId) {
       alert("로그인이 필요한 기능입니다.");
-      navigate("/client/login");
+      navigate("/login");
       return;
     }
     toggleLike();
@@ -881,7 +881,7 @@ const Detail = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/client")}
+              onClick={() => navigate("/")}
               className="text-[22px] sm:text-[24px] font-semibold text-gray-900 tracking-widest cursor-pointer leading-none"
               style={{ fontFamily: "'Playfair Display', serif" }}
               aria-label="이미지 확대"
@@ -975,7 +975,7 @@ const Detail = () => {
                   type="button"
                   onClick={() => {
                     setShowLoginModal(false);
-                    navigate("/client/login");
+                    navigate("/login");
                   }}
                   className="rounded-xl bg-[#FF7E67] px-4 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#f2664c]"
                 >
@@ -1337,7 +1337,7 @@ const Detail = () => {
           <button
             type="button"
             className="cursor-pointer text-sm font-medium text-gray-500"
-            onClick={() => navigate("/client/gallery")}
+            onClick={() => navigate("/gallery")}
           >
             {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
@@ -1349,7 +1349,7 @@ const Detail = () => {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => navigate(`/client/detail/${item.id}`)}
+                onClick={() => navigate(`/detail/${item.id}`)}
                 className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2"
               >
                 {simSrc ? (

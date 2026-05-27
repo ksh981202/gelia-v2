@@ -30,7 +30,7 @@ export default function PatternCurationPage() {
         </h1>
         <button
           type="button"
-          onClick={() => navigate('/client/search')}
+          onClick={() => navigate('/search')}
           className="-mr-2 p-2 text-gray-800"
           aria-label="검색"
         >

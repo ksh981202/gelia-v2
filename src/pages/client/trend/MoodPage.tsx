@@ -115,7 +115,7 @@ export default function MoodPage() {
 
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
@@ -147,7 +147,7 @@ export default function MoodPage() {
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "View by Mood" : "무드별 모아보기"}
             </h3>
-            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate(`/client/mood-list?tab=${encodeURIComponent(activeTabKeyword)}`)}>
+            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate(`/mood-list?tab=${encodeURIComponent(activeTabKeyword)}`)}>
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
@@ -210,7 +210,7 @@ export default function MoodPage() {
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Hottest Minimal Chic BEST 🖤" : "세련된 미니멀 시크 BEST 🖤"}
             </h3>
-            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/client/chic-best-list')}>
+            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/chic-best-list')}>
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
@@ -248,7 +248,7 @@ export default function MoodPage() {
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Real-time Popular Mood" : "실시간 인기 무드"}
             </h3>
-            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/client/popular-mood-list')}>
+            <button type="button" className="shrink-0 text-sm font-medium text-gray-500" onClick={() => navigate('/popular-mood-list')}>
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>

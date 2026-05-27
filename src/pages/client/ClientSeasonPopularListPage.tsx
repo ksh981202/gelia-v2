@@ -329,7 +329,7 @@ export default function ClientSeasonPopularListPage() {
                 </h1>
 
                 <Link
-                  to="/client/gallery"
+                  to="/gallery"
                   className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
                   aria-label={isEnglish ? 'Search' : '검색'}
                 >
@@ -440,7 +440,7 @@ export default function ClientSeasonPopularListPage() {
                 {galleryItems.map((item, index) => (
                   <li key={item.id}>
                     <Link
-                      to={`/client/detail/${item.id}`}
+                      to={`/detail/${item.id}`}
                       onClick={saveListScrollPosition}
                       state={{
                         initialNailData: {

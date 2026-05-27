@@ -116,7 +116,7 @@ const TestStep1Page = () => {
           onClick={() => {
             if (selectedLength) sessionStorage.setItem("diagnosis.lengthId", selectedLength);
             if (selectedType) sessionStorage.setItem("diagnosis.handTypeId", selectedType);
-            navigate("/client/test-step2");
+            navigate("/test-step2");
           }}
           className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-sans text-[16px] font-bold tracking-wide text-white shadow-lg shadow-[#FF7D66]/30 disabled:cursor-not-allowed disabled:opacity-40"
         >

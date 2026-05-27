@@ -122,7 +122,7 @@ export default function ClientGalleryExploreListPage() {
   }
 
   const openDetail = (item: NailDesignRow) => {
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: {
         initialNailData: {
           id: item.id,
@@ -205,7 +205,7 @@ export default function ClientGalleryExploreListPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/client/search')}
+              onClick={() => navigate('/search')}
               className="rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
               aria-label={isEnglish ? 'Search' : '검색'}
             >

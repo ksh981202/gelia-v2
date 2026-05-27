@@ -96,7 +96,7 @@ export default function ClientMyNailListPage() {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        navigate('/client/login', { replace: true })
+        navigate('/login', { replace: true })
       }
     }
     void checkAuth()
@@ -104,7 +104,7 @@ export default function ClientMyNailListPage() {
 
   useEffect(() => {
     if (!isListType(typeParam)) {
-      navigate('/client/my', { replace: true })
+      navigate('/my', { replace: true })
     }
   }, [typeParam, navigate])
 
@@ -154,7 +154,7 @@ export default function ClientMyNailListPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, listType])
 
   const openDetail = (nailId: string, title: string, imageUrl: string) => {
-    navigate(`/client/detail/${nailId}`, {
+    navigate(`/detail/${nailId}`, {
       state: {
         initialNailData: {
           id: nailId,

@@ -168,7 +168,7 @@ export function NailListExplore({
           {DUMMY_ITEMS.map((item, index) => (
             <li key={item.id}>
               <Link
-                to={`/client/detail/${item.id}`}
+                to={`/detail/${item.id}`}
                 className={`flex cursor-pointer flex-col gap-2 ${
                   showRankBadge ? 'relative' : ''
                 }`}

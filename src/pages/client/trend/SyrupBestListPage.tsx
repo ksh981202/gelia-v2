@@ -181,7 +181,7 @@ export default function SyrupBestListPage() {
 
   const openDetail = useCallback(
     (item: NailDesignRow) => {
-      navigate(`/client/detail/${item.id}`, {
+      navigate(`/detail/${item.id}`, {
         state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
       });
     },
@@ -206,7 +206,7 @@ export default function SyrupBestListPage() {
           </h1>
           <button
             type="button"
-            onClick={() => navigate('/client/search')}
+            onClick={() => navigate('/search')}
             className="z-10 p-2 -mr-2 transition-colors hover:bg-gray-100 rounded-full"
           >
             <Search className="h-6 w-6 text-gray-900" />

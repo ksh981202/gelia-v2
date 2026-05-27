@@ -1,4 +1,4 @@
-﻿import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
+import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
@@ -17,12 +17,12 @@ function toHomeNailCard(row: NailDesignRow): HomeNailCard {
 }
 
 const CATEGORY_CHIPS = [
-  { label: "컬러", labelEn: "Color", to: "/client/color-curation", imageUrl: "/maincategory/ic-category-color.png" },
-  { label: "스타일", labelEn: "Style", to: "/client/style-curation", imageUrl: "/maincategory/ic-category-style.png" },
-  { label: "텍스처", labelEn: "Texture", to: "/client/texture", imageUrl: "/maincategory/ic-category-texture.png" },
-  { label: "아트&패턴", labelEn: "Art & Pattern", to: "/client/pattern", imageUrl: "/maincategory/ic-category-art-pattern.png" },
-  { label: "계절", labelEn: "Season", to: "/client/season-curation", imageUrl: "/maincategory/ic-category-season.png" },
-  { label: "맞춤 네일", labelEn: "Custom Nails", to: "/client/theme", imageUrl: "/maincategory/ic-category-custom.png" },
+  { label: "컬러", labelEn: "Color", to: "/color-curation", imageUrl: "/maincategory/ic-category-color.png" },
+  { label: "스타일", labelEn: "Style", to: "/style-curation", imageUrl: "/maincategory/ic-category-style.png" },
+  { label: "텍스처", labelEn: "Texture", to: "/texture", imageUrl: "/maincategory/ic-category-texture.png" },
+  { label: "아트&패턴", labelEn: "Art & Pattern", to: "/pattern", imageUrl: "/maincategory/ic-category-art-pattern.png" },
+  { label: "계절", labelEn: "Season", to: "/season-curation", imageUrl: "/maincategory/ic-category-season.png" },
+  { label: "맞춤 네일", labelEn: "Custom Nails", to: "/theme", imageUrl: "/maincategory/ic-category-custom.png" },
 ];
 
 function homeNailTitle(nail: HomeNailCard, isEnglish: boolean) {
@@ -81,7 +81,7 @@ export default function ClientHomePage() {
           </h2>
           <button
             type="button"
-            onClick={() => navigate('/client/recommend')}
+            onClick={() => navigate('/recommend')}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {isEnglish ? "See All" : "전체보기"} {">"}
@@ -106,7 +106,7 @@ export default function ClientHomePage() {
                 </div>
               ))
             : recommendNails.map((nail, index) => (
-            <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/client/detail/${nail.id}`)}>
+            <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/detail/${nail.id}`)}>
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                 <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
                 <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-5 pt-12">
@@ -138,7 +138,7 @@ export default function ClientHomePage() {
             <p className="mt-1.5 text-[13px] text-gray-500">{isEnglish ? "Discover your perfect nail style with a quick test" : "간단한 테스트로 인생 네일 찾기"}</p>
             <button
               type="button"
-              onClick={() => navigate('/client/test-intro')}
+              onClick={() => navigate('/test-intro')}
               className="mt-5 flex items-center justify-center rounded-full bg-[#111827] px-4 py-2 text-[13px] font-bold text-white transition-transform active:scale-95"
             >
               {isEnglish ? "Start Test" : "테스트 시작하기"} <span className="ml-1 text-[10px]">➔</span>
@@ -156,7 +156,7 @@ export default function ClientHomePage() {
       <section className="mb-12 px-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">{isEnglish ? "Trending Nails" : "트렌드 네일"}</h2>
-          <span onClick={() => navigate('/client/trend')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
+          <span onClick={() => navigate('/trend')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {isLoading
@@ -167,7 +167,7 @@ export default function ClientHomePage() {
                 </div>
               ))
             : trendNails.map((nail) => (
-                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
+                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/detail/${nail.id}`)}>
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                     <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
                   </div>
@@ -180,7 +180,7 @@ export default function ClientHomePage() {
       <section className="mb-12 px-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">{isEnglish ? "Popular Nail Designs" : "인기 네일 디자인"}</h2>
-          <span onClick={() => navigate('/client/popular-design')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
+          <span onClick={() => navigate('/popular-design')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {isLoading
@@ -191,7 +191,7 @@ export default function ClientHomePage() {
                 </div>
               ))
             : popularNails.map((nail) => (
-                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/client/detail/${nail.id}`)}>
+                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/detail/${nail.id}`)}>
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                     <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
                   </div>
@@ -208,7 +208,7 @@ export default function ClientHomePage() {
           </h2>
           <button
             type="button"
-            onClick={() => navigate('/client/category')}
+            onClick={() => navigate('/category')}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {isEnglish ? "See All" : "전체보기"} {">"}
@@ -258,11 +258,11 @@ export default function ClientHomePage() {
           )}
         </div>
         <div className="mb-4 flex items-center gap-3 text-[13px] text-gray-500">
-          <Link to="/client/terms" className="font-semibold text-gray-500 hover:underline">
+          <Link to="/terms" className="font-semibold text-gray-500 hover:underline">
             {isEnglish ? "Terms of Service" : "이용약관"}
           </Link>
           <span className="text-gray-300">|</span>
-          <Link to="/client/privacy" className="font-bold text-gray-800 hover:underline">
+          <Link to="/privacy" className="font-bold text-gray-800 hover:underline">
             {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
           </Link>
         </div>

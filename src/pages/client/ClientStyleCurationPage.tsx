@@ -151,7 +151,7 @@ function StyleNailThumbShell({
 }
 
 /**
- * V1 스타일 큐레이션 서브 홈 UI (`/client/style-curation`).
+ * V1 스타일 큐레이션 서브 홈 UI (`/style-curation`).
  */
 export default function ClientStyleCurationPage() {
   const navigate = useNavigate()
@@ -224,7 +224,7 @@ export default function ClientStyleCurationPage() {
 
   const goDetail = (nail?: NailDesignRow) => {
     if (!nail?.id) return
-    navigate(`/client/detail/${nail.id}`, {
+    navigate(`/detail/${nail.id}`, {
       state: {
         initialNailData: {
           id: nail.id,
@@ -261,7 +261,7 @@ export default function ClientStyleCurationPage() {
           </h1>
 
           <Link
-            to="/client/gallery"
+            to="/gallery"
             className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
             aria-label={isEnglish ? 'Search' : '검색'}
           >
@@ -277,7 +277,7 @@ export default function ClientStyleCurationPage() {
           </h2>
           <Link
             to={{
-              pathname: '/client/style-list',
+              pathname: '/style-list',
               search: searchParams.toString() ? `?${searchParams.toString()}` : '',
             }}
             className="cursor-pointer text-sm font-medium text-gray-500"
@@ -375,7 +375,7 @@ export default function ClientStyleCurationPage() {
             </h2>
             <Link
               to={{
-                pathname: '/client/style-best-list',
+                pathname: '/style-best-list',
                 search: searchParams.toString() ? `?${searchParams.toString()}` : '',
               }}
               className="cursor-pointer text-sm font-medium text-gray-500"
@@ -406,7 +406,7 @@ export default function ClientStyleCurationPage() {
             </h2>
             <Link
               to={{
-                pathname: '/client/style-gallery-list',
+                pathname: '/style-gallery-list',
                 search: searchParams.toString() ? `?${searchParams.toString()}` : '',
               }}
               className="cursor-pointer text-sm font-medium text-gray-500"

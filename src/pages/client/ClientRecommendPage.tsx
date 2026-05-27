@@ -174,8 +174,8 @@ export default function ClientRecommendPage() {
   }
 
   const heroLinkTo = todayNail
-    ? `/client/detail/${todayNail.id}`
-    : '/client/today-special'
+    ? `/detail/${todayNail.id}`
+    : '/today-special'
 
   const occasionMatches = useMemo(
     () => OCCASION_HUB_UI.map((card) => findFirstHubMatch(hubData, card.tabQueryValue)),
@@ -207,7 +207,7 @@ export default function ClientRecommendPage() {
             type="button"
             className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-primary/10"
             aria-label={isEnglish ? 'Search' : '검색'}
-            onClick={() => navigate('/client/search')}
+            onClick={() => navigate('/search')}
           >
             <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
@@ -219,14 +219,14 @@ export default function ClientRecommendPage() {
             <div className="mb-5 flex items-center justify-between px-4">
               <h2
                 className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={() => navigate('/client/theme')}
+                onClick={() => navigate('/theme')}
               >
                 {isEnglish
                   ? 'Shining Moments, Custom Nails'
                   : '빛나는 순간, 맞춤 네일'}
               </h2>
               <Link
-                to="/client/theme"
+                to="/theme"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
                 {viewAllLabel}
@@ -239,13 +239,13 @@ export default function ClientRecommendPage() {
                 <div
                   key={card.cardTitle}
                   className="flex w-[45%] flex-shrink-0 cursor-pointer flex-col active:scale-[0.97]"
-                  onClick={() => navigate(`/client/theme?tab=${card.tabQueryValue}`)}
+                  onClick={() => navigate(`/theme?tab=${card.tabQueryValue}`)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      navigate(`/client/theme?tab=${card.tabQueryValue}`)
+                      navigate(`/theme?tab=${card.tabQueryValue}`)
                     }
                   }}
                   aria-label={`${cardLabel(card.cardTitle, card.cardTitleEn)} — ${isEnglish ? 'move to custom nail theme page' : '맞춤 네일 테마 페이지로 이동'}`}
@@ -269,14 +269,14 @@ export default function ClientRecommendPage() {
             <div className="mb-5 flex items-center justify-between px-4">
               <h2
                 className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={() => navigate('/client/style-curation')}
+                onClick={() => navigate('/style-curation')}
               >
                 {isEnglish
                   ? 'Style Perfect, Nails by Vibe'
                   : '취향 저격, 스타일별 네일'}
               </h2>
               <Link
-                to="/client/style-curation"
+                to="/style-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
                 {viewAllLabel}
@@ -289,13 +289,13 @@ export default function ClientRecommendPage() {
                 <div
                   key={card.cardTitle}
                   className="flex w-32 flex-shrink-0 cursor-pointer flex-col active:scale-[0.95]"
-                  onClick={() => navigate(`/client/style-curation?tab=${card.cardTitle}`)}
+                  onClick={() => navigate(`/style-curation?tab=${card.cardTitle}`)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      navigate(`/client/style-curation?tab=${card.cardTitle}`)
+                      navigate(`/style-curation?tab=${card.cardTitle}`)
                     }
                   }}
                   aria-label={`${cardLabel(card.cardTitle, card.cardTitleEn)} — ${isEnglish ? 'move to style nail page' : '스타일별 네일 페이지로 이동'}`}
@@ -320,13 +320,13 @@ export default function ClientRecommendPage() {
               <button
                 type="button"
                 className="m-0 cursor-pointer bg-transparent p-0 text-left text-[20px] font-bold tracking-tight text-gray-900"
-                onClick={() => navigate('/client/season-curation')}
+                onClick={() => navigate('/season-curation')}
                 aria-label="계절별 맞춤 네일 페이지로 이동"
               >
                 {isEnglish ? 'Seasonal Custom Nails' : '계절별 맞춤 네일'}
               </button>
               <Link
-                to="/client/season-curation"
+                to="/season-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
                 {viewAllLabel}
@@ -338,7 +338,7 @@ export default function ClientRecommendPage() {
                   key={season.label}
                   type="button"
                   className={`${season.bgColor} ${season.cardBorderClass ?? 'border-primary/5'} flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border px-4 py-5 active:scale-[0.95]`}
-                  onClick={() => navigate('/client/season-curation')}
+                  onClick={() => navigate('/season-curation')}
                 >
                   <img
                     src={publicAssetUrl(season.imageSrc)}
@@ -359,13 +359,13 @@ export default function ClientRecommendPage() {
           <section className="mt-12">
             <div className="mb-5 flex items-center justify-between px-4">
               <Link
-                to="/client/color-curation"
+                to="/color-curation"
                 className="text-[20px] font-bold tracking-tight text-gray-900"
               >
                 {isEnglish ? 'Recommended Color Nails' : '추천 컬러 네일'}
               </Link>
               <Link
-                to="/client/color-curation"
+                to="/color-curation"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
                 {viewAllLabel}
@@ -377,7 +377,7 @@ export default function ClientRecommendPage() {
               {colorChips.map((chip) => (
                 <Link
                   key={chip.label}
-                  to={`/client/color-curation?color=${encodeURIComponent(chip.label)}`}
+                  to={`/color-curation?color=${encodeURIComponent(chip.label)}`}
                   className="flex flex-shrink-0 cursor-pointer items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 shadow-sm active:scale-[0.95]"
                 >
                   <span className={`h-3 w-3 rounded-full ${chip.dotClassName}`} />
@@ -393,13 +393,13 @@ export default function ClientRecommendPage() {
           <section className="mb-0 mt-12 px-4">
             <div className="mb-5 flex items-center justify-between">
               <Link
-                to="/client/today-special"
+                to="/today-special"
                 className="m-0 text-[20px] font-bold tracking-tight text-gray-900"
               >
                 {isEnglish ? "Today's Special Nails" : '오늘의 특별한 네일'}
               </Link>
               <Link
-                to="/client/today-special"
+                to="/today-special"
                 className="cursor-pointer text-sm font-medium text-gray-500"
               >
                 {viewAllLabel}

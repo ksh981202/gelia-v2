@@ -209,7 +209,7 @@ export default function TestStep3Page() {
           disabled={!selectedColor}
           onClick={() => {
             if (selectedColor) sessionStorage.setItem("diagnosis.colorId", selectedColor);
-            navigate("/client/test-result");
+            navigate("/test-result");
           }}
           className="h-[56px] w-full shrink-0 rounded-xl bg-[#FF7D66] font-sans text-[16px] font-bold tracking-tight text-white shadow-lg shadow-[#FF7D66]/30 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >

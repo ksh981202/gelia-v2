@@ -131,7 +131,7 @@ export default function ReactionBestListPage() {
           <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
             {isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
           </h1>
-          <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate("/client/search")}>
+          <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate("/search")}>
             <Search className="w-5 h-5" />
           </button>
         </div>
@@ -199,7 +199,7 @@ export default function ReactionBestListPage() {
           <>
             <div className="px-4">
               <Link
-                to={`/client/detail/${top1.id}`}
+                to={`/detail/${top1.id}`}
                 state={detailState(top1)}
                 onClick={saveListScrollPosition}
                 className="relative block w-full cursor-pointer overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm aspect-[3/4] text-left"
@@ -236,7 +236,7 @@ export default function ReactionBestListPage() {
                 return (
                   <Link
                     key={item.id}
-                    to={`/client/detail/${item.id}`}
+                    to={`/detail/${item.id}`}
                     state={detailState(item)}
                     onClick={saveListScrollPosition}
                     className="group flex min-w-0 cursor-pointer flex-col gap-0 text-left"

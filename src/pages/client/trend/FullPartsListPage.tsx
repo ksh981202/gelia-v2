@@ -242,7 +242,7 @@ export default function FullPartsListPage() {
           <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
             {isEnglish ? "Popular Full Parts Style" : "인기 풀파츠 스타일"}
           </h1>
-          <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/client/search')}>
+          <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/search')}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>
         </header>
@@ -335,7 +335,7 @@ export default function FullPartsListPage() {
             {galleryItems.map((item, index) => (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link
-                  to={`/client/detail/${item.id}`}
+                  to={`/detail/${item.id}`}
                   state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
                   onClick={saveListScrollPosition}
                 >

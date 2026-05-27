@@ -87,10 +87,10 @@ export default function ClientSupportPage() {
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white mx-5">
-          <ActionRow label={isEnglish ? 'Notice' : '공지사항'} onClick={() => navigate('/client/notice')} />
-          <ActionRow label={isEnglish ? 'FAQ' : '자주 묻는 질문 (FAQ)'} onClick={() => navigate('/client/faq')} />
-          <ActionRow label={isEnglish ? 'Terms of Service' : '서비스 이용약관'} onClick={() => navigate('/client/terms')} />
-          <ActionRow label={isEnglish ? 'Privacy Policy' : '개인정보 처리방침'} onClick={() => navigate('/client/privacy')} />
+          <ActionRow label={isEnglish ? 'Notice' : '공지사항'} onClick={() => navigate('/notice')} />
+          <ActionRow label={isEnglish ? 'FAQ' : '자주 묻는 질문 (FAQ)'} onClick={() => navigate('/faq')} />
+          <ActionRow label={isEnglish ? 'Terms of Service' : '서비스 이용약관'} onClick={() => navigate('/terms')} />
+          <ActionRow label={isEnglish ? 'Privacy Policy' : '개인정보 처리방침'} onClick={() => navigate('/privacy')} />
           <ActionRow
             label={isEnglish ? 'App Version' : '앱 버전'}
             trailing={

@@ -239,7 +239,7 @@ export default function PartsListPage() {
           <button
             type="button"
             className="z-10 p-2 -mr-2"
-            onClick={() => navigate('/client/search')}
+            onClick={() => navigate('/search')}
             aria-label="검색"
           >
             <Search className="w-6 h-6 text-gray-900" />
@@ -340,7 +340,7 @@ export default function PartsListPage() {
             {galleryItems.map((item, index) => (
               <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
                 <Link
-                  to={`/client/detail/${item.id}`}
+                  to={`/detail/${item.id}`}
                   state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
                   onClick={saveListScrollPosition}
                 >

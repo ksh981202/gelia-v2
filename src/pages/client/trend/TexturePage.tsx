@@ -89,7 +89,7 @@ export default function TexturePage() {
     const syrupBestIds = new Set(syrupBestItems.map((item) => item.id));
     return hubData.filter((item) => !syrupBestIds.has(item.id)).slice(0, 4);
   }, [hubData, syrupBestItems]);
-  const textureListPath = `/client/texture-list?tab=${encodeURIComponent(activeTab)}`;
+  const textureListPath = `/texture-list?tab=${encodeURIComponent(activeTab)}`;
 
   useEffect(() => {
     if (searchParams.get("tab")) return;
@@ -106,7 +106,7 @@ export default function TexturePage() {
 
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
   };
@@ -125,7 +125,7 @@ export default function TexturePage() {
         <h1 className="absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
           {isEnglish ? "Texture Trend" : "텍스처 트렌드"}
         </h1>
-        <button type="button" className="p-1 -mr-1 text-gray-900 transition-colors hover:bg-gray-100 rounded-full" onClick={() => navigate('/client/search')}>
+        <button type="button" className="p-1 -mr-1 text-gray-900 transition-colors hover:bg-gray-100 rounded-full" onClick={() => navigate('/search')}>
           <Search className="w-5 h-5" strokeWidth={2} />
         </button>
       </header>
@@ -201,7 +201,7 @@ export default function TexturePage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate('/client/syrup-best')}
+              onClick={() => navigate('/syrup-best')}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}
@@ -240,7 +240,7 @@ export default function TexturePage() {
             </h3>
             <button
               type="button"
-              onClick={() => navigate('/client/texture-list?title=' + encodeURIComponent('추천 갤러리'))}
+              onClick={() => navigate('/texture-list?title=' + encodeURIComponent('추천 갤러리'))}
               className="shrink-0 cursor-pointer text-sm font-medium text-gray-500"
             >
               {isEnglish ? "View All >" : "전체보기 >"}

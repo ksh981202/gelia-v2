@@ -11,7 +11,7 @@ export default function NotFoundPage() {
       </h1>
       <button
         type="button"
-        onClick={() => navigate('/client', { replace: true })}
+        onClick={() => navigate('/', { replace: true })}
         className="rounded-full bg-[#FF7D66] px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#ff684d] active:scale-95"
       >
         홈으로 돌아가기 (Go to Home)

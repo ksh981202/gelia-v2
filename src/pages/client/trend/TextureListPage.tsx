@@ -236,7 +236,7 @@ export default function TextureListPage() {
                 ? 'View by Texture'
                 : '텍스처별 모아보기'}
           </h1>
-          <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/client/search')}>
+          <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/search')}>
             <Search className="h-6 w-6 text-gray-900" />
           </button>
         </header>
@@ -335,7 +335,7 @@ export default function TextureListPage() {
         {galleryItems.map((item, index) => (
           <article key={item.id} className="flex flex-col gap-2 cursor-pointer">
             <Link
-              to={`/client/detail/${item.id}`}
+              to={`/detail/${item.id}`}
               state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
               onClick={saveListScrollPosition}
             >

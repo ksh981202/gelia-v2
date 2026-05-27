@@ -87,7 +87,7 @@ const TestIntroPage = () => {
       <div className="sticky bottom-[64px] z-40 w-full bg-white px-5 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
           type="button"
-          onClick={() => navigate("/client/test-step1")}
+          onClick={() => navigate("/test-step1")}
           className="h-14 w-full flex-shrink-0 rounded-xl bg-[#FF7D66] px-4 py-4 font-sans text-[16px] font-bold text-white shadow-lg shadow-[#FF7D66]/30 transition-transform active:scale-95"
         >
           {isEnglish ? "Start Test" : "테스트 시작"}

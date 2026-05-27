@@ -196,7 +196,7 @@ function OccasionNailThumbShell({
 }
 
 /**
- * V1 `OccasionPage.tsx` UI 이식 — `/client/theme`.
+ * V1 `OccasionPage.tsx` UI 이식 — `/theme`.
  */
 export default function ClientPage() {
   const navigate = useNavigate()
@@ -251,7 +251,7 @@ export default function ClientPage() {
 
   const goDetail = (nail?: NailDesignRow) => {
     if (!nail?.id) return
-    navigate(`/client/detail/${nail.id}`, {
+    navigate(`/detail/${nail.id}`, {
       state: {
         initialNailData: {
           id: nail.id,
@@ -290,7 +290,7 @@ export default function ClientPage() {
           type="button"
           aria-label={isEnglish ? 'Search' : '검색'}
           className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-          onClick={() => navigate('/client/gallery')}
+          onClick={() => navigate('/gallery')}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
@@ -302,7 +302,7 @@ export default function ClientPage() {
             {isEnglish ? 'View by Theme' : '테마별 모아보기'}
           </h2>
           <Link
-            to={`/client/theme-list?tab=${extractPureThemeKeyword(activeTabDef?.label || '전체')}`}
+            to={`/theme-list?tab=${extractPureThemeKeyword(activeTabDef?.label || '전체')}`}
             className="cursor-pointer text-sm font-medium text-gray-500"
           >
             {viewAllLabel}
@@ -397,7 +397,7 @@ export default function ClientPage() {
               {isEnglish ? 'Occasion Recommended Nails' : '상황별 추천 네일'}
             </h2>
             <Link
-              to="/client/situation-list?tab=전체"
+              to="/situation-list?tab=전체"
               className="cursor-pointer text-sm font-medium text-gray-500"
             >
               {viewAllLabel}
@@ -432,7 +432,7 @@ export default function ClientPage() {
             <button
               type="button"
               className="cursor-pointer text-sm font-medium text-gray-500"
-              onClick={() => navigate('/client/theme-list?tab=전체')}
+              onClick={() => navigate('/theme-list?tab=전체')}
             >
               {viewAllLabel}
             </button>

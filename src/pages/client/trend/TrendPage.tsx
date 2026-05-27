@@ -93,7 +93,7 @@ export default function TrendPage() {
 
   const openDetail = (item?: NailDesignRow) => {
     if (!item) return;
-    navigate(`/client/detail/${item.id}`, {
+    navigate(`/detail/${item.id}`, {
       state: { initialNailData: item },
     });
   };
@@ -115,13 +115,13 @@ export default function TrendPage() {
         <button
           type="button"
           className="p-2 -mr-2 text-gray-900 transition-colors hover:bg-gray-100 rounded-full"
-          onClick={() => navigate('/client/search')}
+          onClick={() => navigate('/search')}
         >
           <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
         </button>
       </header>
 
-      <main className="w-full bg-gray-50 px-5 text-gray-900">
+      <main className="w-full overflow-x-hidden bg-gray-50 px-5 text-gray-900">
         
         {/* 섹션 1: 텍스처 트렌드 */}
         <section className="pt-6">
@@ -131,13 +131,13 @@ export default function TrendPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/texture')}
+              onClick={() => navigate('/texture')}
               className="text-[13px] font-medium text-gray-500 cursor-pointer"
             >
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 scrollbar-hide [&::-webkit-scrollbar]:hidden">
             {textureItems.map(item => (
               <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
                 <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
@@ -170,13 +170,13 @@ export default function TrendPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/parts')}
+              onClick={() => navigate('/parts')}
               className="text-sm font-medium text-gray-500 cursor-pointer"
             >
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 scrollbar-hide [&::-webkit-scrollbar]:hidden">
             {partsItems.map(item => (
               <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 snap-start flex-col bg-transparent p-0 text-left">
                 <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
@@ -209,13 +209,13 @@ export default function TrendPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/pattern')}
+              onClick={() => navigate('/pattern')}
               className="text-sm font-medium text-gray-500 cursor-pointer"
             >
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide gap-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 scrollbar-hide [&::-webkit-scrollbar]:hidden">
             {patternItems.map(item => (
               <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
                 <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
@@ -248,7 +248,7 @@ export default function TrendPage() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/client/mood')}
+              onClick={() => navigate('/mood')}
               className="text-sm font-medium text-gray-500 cursor-pointer"
             >
               {isEnglish ? 'View All >' : '전체보기 >'}
