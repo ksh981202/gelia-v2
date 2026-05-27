@@ -121,7 +121,7 @@ export default function MoodPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#333] antialiased">
+    <div className="relative min-h-screen w-full bg-white text-[#333] antialiased">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 relative flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-sm">
         <button
@@ -139,7 +139,7 @@ export default function MoodPage() {
         </button>
       </header>
 
-      <main className="w-full bg-white">
+      <main className="w-full bg-white pb-8">
         
         {/* 섹션 1: 무드별 모아보기 (알약 탭) */}
         <section className="mt-2">
@@ -174,7 +174,7 @@ export default function MoodPage() {
         </section>
 
         {/* 섹션 2: 히어로 배너 */}
-        <section className="mb-0 mt-5 px-4 pt-0">
+        <section className="mb-0 mt-5 px-5 pt-0">
           <div className="relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-sm" onClick={() => openDetail(heroItem)}>
             {heroItem?.image_url ? (
               <img
@@ -205,8 +205,8 @@ export default function MoodPage() {
         </section>
 
         {/* 섹션 3: 세련된 미니멀 시크 BEST (가로 스크롤) */}
-        <section className="mb-0">
-          <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2 px-4">
+        <section className="mb-0 px-5">
+          <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Hottest Minimal Chic BEST 🖤" : "세련된 미니멀 시크 BEST 🖤"}
             </h3>
@@ -214,9 +214,9 @@ export default function MoodPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="min-w-0 mb-0 flex gap-3 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {minimalChicItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-[130px] shrink-0 flex-col bg-transparent p-0 text-left">
+              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-32 shrink-0 flex-col bg-transparent p-0 text-left">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   {item.image_url ? (
                     <img
@@ -243,7 +243,7 @@ export default function MoodPage() {
         </section>
 
         {/* 섹션 4: 실시간 인기 무드 (2열 그리드) */}
-        <section className="mb-0 px-4">
+        <section className="mb-0 px-5">
           <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Real-time Popular Mood" : "실시간 인기 무드"}

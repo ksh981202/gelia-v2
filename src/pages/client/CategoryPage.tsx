@@ -168,7 +168,7 @@ function TextureTrendCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-[45%] flex-shrink-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left"
+      className="flex w-40 shrink-0 cursor-pointer flex-col border-0 bg-transparent p-0 text-left"
     >
       {imageUrl ? (
         <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" loading="lazy" decoding="async" onError={handleImageError} />
@@ -200,7 +200,7 @@ export default function CategoryPage() {
   const goParts = (keyword?: string) => navigate(keyword ? `/parts?tab=${encodeURIComponent(keyword)}` : "/parts");
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#1A1A1A] antialiased">
+    <div className="relative min-h-screen w-full bg-white text-[#1A1A1A] antialiased">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-50 bg-white px-5">
         <button type="button" onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-900 rounded-full">
           <ChevronLeft className="h-6 w-6" strokeWidth={2} />
@@ -213,8 +213,8 @@ export default function CategoryPage() {
         </button>
       </header>
 
-      <main className="bg-white px-5 pt-4 flex flex-col gap-12">
-        <section>
+      <main className="flex flex-col gap-12 bg-white pt-4 pb-8">
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">{isEnglish ? "Color Nails" : "컬러 네일"}</h2>
             <button type="button" onClick={() => goColorCuration()} className="text-sm font-medium text-gray-500 cursor-pointer">
@@ -243,7 +243,7 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section>
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">{isEnglish ? "Seasonal Custom Nails" : "계절별 맞춤 네일"}</h2>
             <button type="button" onClick={() => goSeasonCuration()} className="text-sm font-medium text-gray-500 cursor-pointer">
@@ -277,7 +277,7 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section>
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">
               {isEnglish ? "Style Perfect, Nails by Vibe" : "취향 저격, 스타일별 네일"}
@@ -309,7 +309,7 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section>
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">
               {isEnglish ? "Shining Moments, Custom Nails" : "빛나는 순간, 맞춤 네일"}
@@ -318,7 +318,7 @@ export default function CategoryPage() {
               {viewAllLabel}
             </button>
           </div>
-          <div className="min-w-0 -mx-5 flex gap-3 overflow-x-auto px-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {CUSTOM_THEME_PILLS.map((pill) => (
               <button
                 key={pill.label}
@@ -332,7 +332,7 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section>
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">{isEnglish ? "Art & Pattern Trend" : "아트 & 패턴 트렌드"}</h2>
             <button type="button" onClick={() => goPattern()} className="text-sm font-medium text-gray-500 cursor-pointer">
@@ -351,14 +351,14 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section>
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">{isEnglish ? "Texture Trend" : "텍스처 트렌드"}</h2>
             <button type="button" onClick={() => goTexture()} className="text-sm font-medium text-gray-500 cursor-pointer">
               {viewAllLabel}
             </button>
           </div>
-          <div className="min-w-0 flex gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {textureTrends.map((item) => (
               <TextureTrendCard
                 key={item.title}
@@ -370,14 +370,14 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section className="mb-10">
+        <section className="px-5">
           <div className="mb-4 flex w-full items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">{isEnglish ? "Point Parts Nails" : "포인트 파츠 네일"}</h2>
             <button type="button" onClick={() => goParts()} className="text-sm font-medium text-gray-500 cursor-pointer">
               {viewAllLabel}
             </button>
           </div>
-          <div className="min-w-0 flex overflow-x-auto snap-x snap-mandatory space-x-4 pb-4 px-4 -mx-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {partTrends.map((item) => {
               const imageUrl = findImageByKeyword(hubData, item.keyword);
               const displayTitle = isEnglish ? item.titleEn : item.title;
@@ -386,7 +386,7 @@ export default function CategoryPage() {
                 key={item.title}
                 type="button"
                 onClick={() => goParts(item.keyword)}
-                className="flex w-32 shrink-0 snap-start flex-col text-left cursor-pointer border-0 bg-transparent p-0"
+                className="flex w-32 shrink-0 flex-col text-left cursor-pointer border-0 bg-transparent p-0"
               >
                 {imageUrl ? (
                   <img src={imageUrl} alt={displayTitle} className="w-full aspect-[4/5] object-cover rounded-2xl shadow-sm" loading="lazy" decoding="async" onError={handleImageError} />

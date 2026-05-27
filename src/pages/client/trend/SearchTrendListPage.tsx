@@ -154,7 +154,7 @@ export default function SearchTrendListPage() {
   ]);
 
   return (
-    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900">
+    <div className="relative min-h-screen w-full bg-white text-slate-900">
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
@@ -217,38 +217,38 @@ export default function SearchTrendListPage() {
         </div>
       </div>
 
-      <ul className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+      <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-5 pt-4 pb-8">
         {isTrendsError ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+          <div className="col-span-2 py-12 text-center text-sm text-gray-500">
             {isEnglish ? "Failed to load trend data." : "트렌드 데이터를 불러오지 못했습니다."}
-          </li>
+          </div>
         ) : !isGalleryEnabled && !isTrendsLoading ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+          <div className="col-span-2 py-12 text-center text-sm text-gray-500">
             {isEnglish ? "No trend data has been collected yet." : "아직 집계된 인기 검색어가 없습니다."}
-          </li>
+          </div>
         ) : isLoading || (isTrendsLoading && !isGalleryEnabled) ? (
           Array.from({ length: 8 }, (_, index) => (
-            <li key={`search-trend-skel-${index}`} aria-hidden>
+            <div key={`search-trend-skel-${index}`} aria-hidden>
               <div className="flex w-full min-w-0 flex-col gap-2">
                 <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
                 <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
               </div>
-            </li>
+            </div>
           ))
         ) : isError ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+          <div className="col-span-2 py-12 text-center text-sm text-gray-500">
             {isEnglish ? "Failed to load designs." : "디자인을 불러오지 못했습니다."}
-          </li>
+          </div>
         ) : galleryItems.length === 0 ? (
-          <li className="col-span-2 py-12 text-center text-sm text-gray-500">
+          <div className="col-span-2 py-12 text-center text-sm text-gray-500">
             {isEnglish ? "No nails found for this keyword." : "해당 키워드의 네일이 없어요."}
-          </li>
+          </div>
         ) : (
           <>
             {galleryItems.map((item, index) => {
               const title = displayItemTitle(item, isEnglish);
               return (
-                <li key={item.id}>
+                <article key={item.id}>
                   <Link
                     to={`/detail/${item.id}`}
                     state={{ initialNailData: { ...item, imageUrl: item.image_url, title } }}
@@ -275,23 +275,23 @@ export default function SearchTrendListPage() {
                       <p className="w-full truncate text-center text-sm font-medium tracking-tight text-gray-800">{title}</p>
                     </div>
                   </Link>
-                </li>
+                </article>
               );
             })}
             {isFetchingNextPage
               ? [0, 1].map((index) => (
-                  <li key={`search-trend-next-skel-${index}`} aria-hidden>
+                  <div key={`search-trend-next-skel-${index}`} aria-hidden>
                     <div className="flex w-full min-w-0 flex-col gap-2">
                       <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
                       <div className="mx-auto h-4 w-3/4 animate-pulse rounded bg-gray-100" />
                     </div>
-                  </li>
+                  </div>
                 ))
               : null}
           </>
         )}
-      </ul>
-      <div ref={observerRef} className="h-10 px-4 pb-4" aria-hidden />
+      </main>
+      <div ref={observerRef} className="h-10" aria-hidden />
     </div>
   );
 }

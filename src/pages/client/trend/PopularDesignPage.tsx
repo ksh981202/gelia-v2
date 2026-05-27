@@ -181,7 +181,7 @@ export default function PopularDesignPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white font-sans text-slate-900 antialiased">
+    <div className="relative min-h-screen w-full bg-white font-sans text-slate-900 antialiased">
       {/* 헤더 */}
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-md">
         <button type="button" aria-label="뒤로 가기" className="z-10 p-1 -ml-1" onClick={() => navigate(-1)}>
@@ -195,9 +195,9 @@ export default function PopularDesignPage() {
         </button>
       </header>
 
-      <main className="mt-4 flex flex-col gap-10 overflow-x-hidden px-5">
+      <main className="mt-4 flex flex-col gap-10 overflow-x-hidden pb-8">
         {/* 1. 기간별 BEST 네일 */}
-        <section className="w-full">
+        <section className="w-full px-5">
           <div className="mb-4 flex w-full items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Period BEST Nails" : "기간별 BEST 네일"}
@@ -211,11 +211,11 @@ export default function PopularDesignPage() {
             </button>
           </div>
           {/* 스크롤바 완벽 숨김 처리 */}
-          <div className="-mx-5 min-w-0 flex snap-x gap-4 overflow-x-auto px-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {periodBest.map((item, index) => (
               <article
                 key={item.id}
-                className="flex w-32 flex-none cursor-pointer flex-col snap-start"
+                className="flex w-32 flex-none cursor-pointer flex-col"
                 onClick={() => goDetail(item)}
               >
                 <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
@@ -235,7 +235,7 @@ export default function PopularDesignPage() {
         </section>
 
         {/* 2. 유저 반응 BEST */}
-        <section className="w-full">
+        <section className="w-full px-5">
           <div className="mb-4 flex w-full items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
@@ -248,11 +248,11 @@ export default function PopularDesignPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="-mx-5 min-w-0 flex snap-x gap-4 overflow-x-auto px-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {reactionBest.map((item) => (
               <article
                 key={item.id}
-                className="flex w-[260px] shrink-0 cursor-pointer flex-col snap-start"
+                className="flex w-44 shrink-0 cursor-pointer flex-col"
                 onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
@@ -271,7 +271,7 @@ export default function PopularDesignPage() {
         </section>
 
         {/* 3. 손톱 모양별 BEST 네일 */}
-        <section className="w-full">
+        <section className="w-full px-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Shape BEST Nails" : "손톱 모양별 BEST 네일"}
@@ -284,11 +284,11 @@ export default function PopularDesignPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="-mx-5 min-w-0 flex snap-x gap-4 overflow-x-auto px-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {shapeBest.map((item) => (
               <article
                 key={item.id}
-                className="flex w-32 flex-none cursor-pointer flex-col snap-start"
+                className="flex w-32 flex-none cursor-pointer flex-col"
                 onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
@@ -307,7 +307,7 @@ export default function PopularDesignPage() {
         </section>
 
         {/* 4. 인기 검색어 트렌드 (독립 컴포넌트 인라인 정적 처리) */}
-        <section className="w-full mb-10">
+        <section className="w-full px-5">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}

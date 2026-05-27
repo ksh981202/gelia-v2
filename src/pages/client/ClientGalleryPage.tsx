@@ -142,8 +142,8 @@ export default function ClientGalleryPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, activeTabKo, sortType])
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-white text-slate-900">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center justify-between border-b border-gray-100 bg-white px-5">
+    <div className="min-h-screen w-full bg-white text-slate-900">
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -175,10 +175,11 @@ export default function ClientGalleryPage() {
           </div>
       </header>
 
-      <div className="pt-[56px]">
+      <div className="pt-[140px]">
+        <div className="fixed top-14 left-0 right-0 z-40 mx-auto w-full bg-white border-b border-gray-100">
         <section
           ref={tabContainerRef}
-          className="min-w-0 scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch]"
+          className="min-w-0 scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pt-3 pb-2 [-webkit-overflow-scrolling:touch]"
         >
           {GALLERY_TABS.map((tab) => {
             const isActive = activeTabKo === tab.ko
@@ -201,7 +202,7 @@ export default function ClientGalleryPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
+        <div className="relative flex items-center justify-between px-4 pt-2 pb-3">
           <span className="text-sm text-gray-500">
             {isEnglish ? 'Total ' : '총 '}
             <span className="font-bold text-pink-500">{totalCountLabel}</span>{' '}
@@ -242,9 +243,10 @@ export default function ClientGalleryPage() {
             )}
           </div>
         </div>
+        </div>
       </div>
 
-      <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
+      <main className="grid grid-cols-2 gap-4 px-5 pb-8">
         {isLoading ? (
           <>
             {Array.from({ length: 8 }, (_, i) => (

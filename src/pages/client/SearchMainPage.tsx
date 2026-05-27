@@ -305,8 +305,8 @@ export default function SearchMainPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-white text-gray-900">
-      <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white">
+    <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
+      <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-gray-100 bg-white">
         {showResultHeader ? (
           <div className="flex h-14 w-full items-center gap-2 px-3">
             <button
@@ -387,7 +387,7 @@ export default function SearchMainPage() {
                 )}
               </p>
             ) : null}
-            <div className="grid w-full min-w-0 grid-cols-2 gap-4 px-4 pb-6 pt-4">
+            <div className="grid w-full min-w-0 grid-cols-2 gap-4 px-5 pt-4 pb-8">
             {isLoading ? (
               <SearchResultSkeleton />
             ) : isError ? (

@@ -5,7 +5,7 @@ export default function TextureGalleryListPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-white text-slate-900 flex flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-white text-slate-900">
       {/* 상단 고정 영역 */}
       <div className="sticky top-0 z-50 border-b border-gray-100 bg-white shadow-sm">
         
@@ -60,7 +60,7 @@ export default function TextureGalleryListPage() {
       </div>
 
       {/* 메인 2열 그리드 (더미 데이터) */}
-      <main className="grid grid-cols-2 gap-4 px-4 pt-4">
+      <main className="grid grid-cols-2 gap-4 px-5 pt-4 pb-8">
         {[
           { id: 1, name: '하객 유니크 코랄 생화', img: 'https://picsum.photos/300/400?random=110' },
           { id: 2, name: '다크 프렌치 조개', img: 'https://picsum.photos/300/400?random=111' },

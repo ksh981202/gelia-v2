@@ -122,7 +122,7 @@ export default function ReactionBestListPage() {
   });
 
   return (
-    <div className="max-w-md mx-auto w-full min-w-0 bg-gray-50 min-h-screen flex flex-col">
+    <div className="relative min-h-screen w-full bg-gray-50 flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
         <div className="relative flex h-14 w-full items-center justify-between px-5">
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate(-1)}>
@@ -155,14 +155,14 @@ export default function ReactionBestListPage() {
         </div>
       </header>
 
-      <main className="w-full min-w-0 flex-1 pt-4">
+      <main className="w-full min-w-0 flex-1 pt-4 pb-8">
         {isLoading ? (
           <>
-            <div className="px-4" aria-hidden>
+            <div className="px-5" aria-hidden>
               <div className="aspect-[3/4] w-full animate-pulse rounded-[20px] bg-gray-100 shadow-sm" />
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 px-5">
               {Array.from({ length: 6 }, (_, index) => (
                 <div key={`reaction-skel-${index}`} className="flex w-full min-w-0 flex-col gap-2" aria-hidden>
                   <div className="aspect-[3/4] w-full animate-pulse rounded-[20px] bg-gray-100" />
@@ -173,11 +173,11 @@ export default function ReactionBestListPage() {
           </>
         ) : isError ? (
           <>
-            <div className="px-4" aria-hidden>
+            <div className="px-5" aria-hidden>
               <div className="aspect-[3/4] w-full rounded-[20px] bg-gray-100 shadow-sm" />
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 px-5">
               <p className="col-span-2 py-6 text-center text-sm text-gray-500">
                 {isEnglish ? "Failed to load rankings." : "랭킹을 불러오지 못했습니다."}
               </p>
@@ -185,11 +185,11 @@ export default function ReactionBestListPage() {
           </>
         ) : !top1 ? (
           <>
-            <div className="px-4" aria-hidden>
+            <div className="px-5" aria-hidden>
               <div className="aspect-[3/4] w-full rounded-[20px] bg-gray-100 shadow-sm" />
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 px-5">
               <p className="col-span-2 py-6 text-center text-sm text-gray-500">
                 {isEnglish ? "No reaction data yet." : "집계된 유저 반응 데이터가 없습니다."}
               </p>
@@ -197,7 +197,7 @@ export default function ReactionBestListPage() {
           </>
         ) : (
           <>
-            <div className="px-4">
+            <div className="px-5">
               <Link
                 to={`/detail/${top1.id}`}
                 state={detailState(top1)}
@@ -229,7 +229,7 @@ export default function ReactionBestListPage() {
               </Link>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 px-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 px-5">
               {remainingList.map((item, index) => {
                 const rank = index + 2;
                 const title = displayItemTitle(item, isEnglish);

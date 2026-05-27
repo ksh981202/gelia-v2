@@ -178,8 +178,8 @@ export default function ClientGalleryExploreListPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, activeTabKeyword, sortType])
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-white text-slate-900">
-      <header className="fixed top-0 left-0 right-0 z-[100] mx-auto flex h-14 w-full max-w-md shrink-0 border-b border-gray-100 bg-white/95 backdrop-blur-md">
+    <div className="relative flex min-h-screen w-full flex-col bg-white text-slate-900">
+      <header className="fixed top-0 left-0 right-0 z-[100] flex h-14 w-full shrink-0 border-b border-gray-100 bg-white/95 backdrop-blur-md">
         <div className="relative flex h-full w-full min-w-0 items-center justify-between px-5">
           <button
             type="button"
@@ -215,10 +215,11 @@ export default function ClientGalleryExploreListPage() {
         </div>
       </header>
 
-      <div className="pt-[56px]">
+      <div className="pt-[140px]">
+        <div className="fixed top-14 left-0 right-0 z-40 mx-auto w-full bg-white border-b border-gray-100">
         <section
           ref={tabContainerRef}
-          className="min-w-0 scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="min-w-0 scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pt-3 pb-2 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           aria-label="테마"
         >
           {THEME_TAB_LABELS.map((label) => {
@@ -242,7 +243,7 @@ export default function ClientGalleryExploreListPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
+        <div className="relative flex items-center justify-between px-4 pt-2 pb-3">
           <span className="text-sm text-gray-500">
             {isEnglish ? 'Total ' : '총 '}
             <span className="font-bold text-pink-500">{totalCountLabel}</span>{' '}
@@ -283,9 +284,10 @@ export default function ClientGalleryExploreListPage() {
             )}
           </div>
         </div>
+        </div>
       </div>
 
-      <main className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
+      <main className="grid grid-cols-2 gap-4 px-5 pb-8">
         {isLoading ? (
           <div className="col-span-2 flex flex-col items-center justify-center gap-2 py-16 text-gray-500">
             <Loader2 className="h-8 w-8 animate-spin text-[#FF7E67]" aria-hidden />
