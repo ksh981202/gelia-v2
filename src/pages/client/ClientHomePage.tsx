@@ -93,7 +93,7 @@ export default function ClientHomePage() {
           onMouseLeave={() => setIsAutoPlayPaused(false)}
           onTouchStart={() => setIsAutoPlayPaused(true)}
           onTouchEnd={() => setIsAutoPlayPaused(false)}
-          className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="min-w-0 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-4 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {isLoading
             ? [0, 1, 2, 3].map((i) => (

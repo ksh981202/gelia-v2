@@ -131,7 +131,7 @@ export default function PeriodBestListPage() {
           </button>
         </div>
 
-        <div className="flex flex-nowrap gap-2 overflow-x-auto px-4 pb-2 pt-1 mt-2 mb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth [-webkit-overflow-scrolling:touch]">
+        <div className="min-w-0 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-2 pt-1 mt-2 mb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth [-webkit-overflow-scrolling:touch]">
           {PERIOD_TABS.map((tab) => {
             const isActive = activeTab === tab;
             return (

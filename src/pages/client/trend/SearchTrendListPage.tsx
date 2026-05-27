@@ -168,7 +168,7 @@ export default function SearchTrendListPage() {
           </button>
         </header>
 
-        <section className="w-full flex flex-nowrap gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 pb-2 pt-3 whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch]">
+        <section className="min-w-0 w-full flex flex-nowrap gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 pb-2 pt-3 whitespace-nowrap scroll-smooth [-webkit-overflow-scrolling:touch]">
           {isTrendsLoading ? (
             Array.from({ length: 5 }, (_, index) => (
               <div key={`trend-tab-skel-${index}`} className="h-8 w-24 shrink-0 animate-pulse rounded-full bg-gray-100" aria-hidden />

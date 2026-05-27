@@ -180,7 +180,7 @@ function HorizontalPreviewSection({
           {viewAllLabel}
         </Link>
       </div>
-      <div className={`flex gap-3 overflow-x-auto px-4 pb-2 ${H_SCROLLBAR_HIDE}`}>
+      <div className={`min-w-0 flex gap-3 overflow-x-auto px-4 pb-2 ${H_SCROLLBAR_HIDE}`}>
         {items.length > 0 ? (
           items.map((item) => (
             <Link
@@ -327,7 +327,7 @@ export default function ClientColorCurationPage() {
 
           <nav
             ref={tabContainerRef}
-            className={`mb-4 flex w-full flex-nowrap gap-2 overflow-x-auto border-b border-gray-100 px-4 pb-0 ${H_SCROLLBAR_HIDE}`}
+            className={`min-w-0 mb-4 flex w-full flex-nowrap gap-2 overflow-x-auto border-b border-gray-100 px-4 pb-0 ${H_SCROLLBAR_HIDE}`}
             aria-label={isEnglish ? 'Color' : '컬러'}
           >
             {COLOR_CURATION_TABS.map((tab, idx) => {

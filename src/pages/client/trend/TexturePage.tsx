@@ -146,7 +146,7 @@ export default function TexturePage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
             {TEXTURE_CATEGORIES.map((cat) => {
               const isActive = activeTab === cat.label;
               return (
@@ -207,7 +207,7 @@ export default function TexturePage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="mb-0 flex gap-4 overflow-x-auto px-5 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 mb-0 flex gap-4 overflow-x-auto px-5 pb-4 [&::-webkit-scrollbar]:hidden">
             {syrupBestItems.map((item) => (
               <button key={item.id} type="button" onClick={() => openDetail(item)} className="w-40 shrink-0 text-left">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">

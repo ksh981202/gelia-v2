@@ -23,7 +23,7 @@ export default function TextureGalleryListPage() {
         </header>
 
         {/* 갤러리 서브 탭 (가로 스크롤) */}
-        <section className="flex w-full overflow-x-auto whitespace-nowrap scrollbar-hide px-4 pb-2 pt-1 [&::-webkit-scrollbar]:hidden">
+        <section className="min-w-0 flex w-full overflow-x-auto whitespace-nowrap scrollbar-hide px-4 pb-2 pt-1 [&::-webkit-scrollbar]:hidden">
           {[
             { label: '전체', active: true },
             { label: '💧 시럽', active: false },

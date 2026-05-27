@@ -47,7 +47,7 @@ export default function PatternCurationPage() {
             전체보기 {">"}
           </button>
         </div>
-        <div className="-mx-5 mb-6 flex gap-4 overflow-x-auto px-5 pb-2 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+        <div className="min-w-0 -mx-5 mb-6 flex gap-4 overflow-x-auto px-5 pb-2 scrollbar-hide [&::-webkit-scrollbar]:hidden">
           {ART_TABS.map((tab, idx) => (
             <div key={idx} className="flex shrink-0 flex-col items-center gap-2">
               <div
@@ -81,7 +81,7 @@ export default function PatternCurationPage() {
               전체보기 {">"}
             </button>
           </div>
-          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 -mx-5 flex gap-3 overflow-x-auto px-5 pb-2 scrollbar-hide [&::-webkit-scrollbar]:hidden">
             {BEST_ARTS.map((title, i) => (
               <div key={i} className="flex min-w-[130px] flex-col gap-2">
                 <div className="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-gray-200 shadow-sm" />

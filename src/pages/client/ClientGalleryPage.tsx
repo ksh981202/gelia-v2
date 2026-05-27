@@ -178,7 +178,7 @@ export default function ClientGalleryPage() {
       <div className="pt-[56px]">
         <section
           ref={tabContainerRef}
-          className="scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch]"
+          className="min-w-0 scrollbar-hide flex w-full flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch]"
         >
           {GALLERY_TABS.map((tab) => {
             const isActive = activeTabKo === tab.ko

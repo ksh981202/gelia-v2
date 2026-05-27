@@ -214,7 +214,7 @@ export default function SyrupBestListPage() {
         </header>
 
         {/* 시럽 BEST 서브 탭 (가로 스크롤) */}
-        <section className="flex w-full overflow-x-auto whitespace-nowrap scrollbar-hide px-4 pb-2 pt-1 [&::-webkit-scrollbar]:hidden">
+        <section className="min-w-0 flex w-full overflow-x-auto whitespace-nowrap scrollbar-hide px-4 pb-2 pt-1 [&::-webkit-scrollbar]:hidden">
           {SYRUP_BEST_TABS.map((tab) => {
             const isActive = activeTab === tab;
             return (

@@ -1051,7 +1051,7 @@ const Detail = () => {
             <div className="h-6 w-40 animate-pulse rounded bg-gray-100" />
             <div className="h-5 w-14 animate-pulse rounded bg-gray-100" />
           </div>
-          <div className="-mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 -mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {Array.from({ length: 5 }, (_, index) => (
               <div key={`similar-nail-skel-${index}`} className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2">
                 <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100" />
@@ -1342,7 +1342,7 @@ const Detail = () => {
             {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
-        <div className="-mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="min-w-0 -mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {similarDisplay.map((item) => {
             const simSrc = item.image_url?.trim() || "";
             return (

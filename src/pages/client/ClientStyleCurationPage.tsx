@@ -288,7 +288,7 @@ export default function ClientStyleCurationPage() {
 
         <nav
           ref={tabContainerRef}
-          className="flex w-full flex-nowrap gap-2 overflow-x-auto whitespace-nowrap border-b border-gray-100 px-4 pb-1 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="min-w-0 flex w-full flex-nowrap gap-2 overflow-x-auto whitespace-nowrap border-b border-gray-100 px-4 pb-1 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {STYLE_TAB_LABELS.map((label, idx) => {
             const isActive = active === idx
@@ -384,7 +384,7 @@ export default function ClientStyleCurationPage() {
             </Link>
           </div>
 
-          <section className="mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+          <section className="min-w-0 mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             <div className="mb-0 flex items-center gap-4 pb-0">
               {bestStyleMatches.map((nail) => (
                 <StyleNailThumbShell

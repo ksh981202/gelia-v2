@@ -151,7 +151,7 @@ export default function MoodPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="mb-0 flex overflow-x-auto whitespace-nowrap gap-2 px-4 scrollbar-hide [&::-webkit-scrollbar]:hidden pb-2">
+          <div className="min-w-0 mb-0 flex overflow-x-auto whitespace-nowrap gap-2 px-4 scrollbar-hide [&::-webkit-scrollbar]:hidden pb-2">
             {MOOD_TABS.map((label) => {
               const isActive = activeTab === label;
               return (
@@ -214,7 +214,7 @@ export default function MoodPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="mb-0 flex gap-3 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 mb-0 flex gap-3 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
             {minimalChicItems.map((item) => (
               <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-[130px] shrink-0 flex-col bg-transparent p-0 text-left">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">

@@ -311,7 +311,7 @@ export default function ClientPage() {
 
         <nav
           ref={tabContainerRef}
-          className="flex w-full flex-nowrap gap-2 overflow-x-auto whitespace-nowrap border-b border-gray-100 px-4 pb-1 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="min-w-0 flex w-full flex-nowrap gap-2 overflow-x-auto whitespace-nowrap border-b border-gray-100 px-4 pb-1 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {THEME_TABS.map((tab, idx) => {
             const isActive = active === idx
@@ -404,7 +404,7 @@ export default function ClientPage() {
             </Link>
           </div>
 
-          <section className="mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide">
+          <section className="min-w-0 mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide">
             <div className="mb-0 flex items-center gap-4 pb-0">
               {SITUATION_DEMO_CAPTIONS.map((cap, index) => {
                 const nail = situationMatches[index]

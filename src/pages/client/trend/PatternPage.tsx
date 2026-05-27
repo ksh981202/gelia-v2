@@ -155,7 +155,7 @@ export default function PatternPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 flex flex-nowrap items-start gap-4 overflow-x-auto scrollbar-hide px-5 pb-1.5 pt-1 [&::-webkit-scrollbar]:hidden">
             {PATTERN_CATEGORIES.map((cat) => {
               const isActive = activeTab === cat.label;
               return (

@@ -32,6 +32,13 @@
     @apply font-sans antialiased;
     scrollbar-gutter: stable;
   }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
 }
 
 @layer utilities {

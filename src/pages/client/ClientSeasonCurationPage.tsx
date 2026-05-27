@@ -226,7 +226,7 @@ export default function ClientSeasonCurationPage() {
           </div>
 
           <div
-            className={`flex gap-3 overflow-x-auto pb-2 ${H_SCROLLBAR_HIDE}`}
+            className={`min-w-0 flex gap-3 overflow-x-auto pb-2 ${H_SCROLLBAR_HIDE}`}
           >
             {vacationItems.map((item) => (
               <button

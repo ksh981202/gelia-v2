@@ -233,7 +233,7 @@ export default function ClientRecommendPage() {
               </Link>
             </div>
             <div
-              className={`flex gap-4 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
+              className={`min-w-0 flex gap-4 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
             >
               {OCCASION_HUB_UI.map((card, index) => (
                 <div
@@ -283,7 +283,7 @@ export default function ClientRecommendPage() {
               </Link>
             </div>
             <div
-              className={`flex gap-3 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
+              className={`min-w-0 flex gap-3 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
             >
               {STYLE_HUB_UI.map((card, index) => (
                 <div
@@ -372,7 +372,7 @@ export default function ClientRecommendPage() {
               </Link>
             </div>
             <div
-              className={`flex gap-4 overflow-x-auto px-4 ${H_SCROLLBAR_HIDE}`}
+              className={`min-w-0 flex gap-4 overflow-x-auto px-4 ${H_SCROLLBAR_HIDE}`}
             >
               {colorChips.map((chip) => (
                 <Link

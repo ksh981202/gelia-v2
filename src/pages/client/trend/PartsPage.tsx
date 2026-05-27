@@ -142,7 +142,7 @@ export default function PartsPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="flex items-start gap-4 overflow-x-auto px-5 pb-1.5 pt-1 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 flex items-start gap-4 overflow-x-auto px-5 pb-1.5 pt-1 scrollbar-hide [&::-webkit-scrollbar]:hidden">
             {PARTS_CATEGORIES.map((cat) => {
               const isActive = activeTab === cat.label;
               return (
@@ -204,7 +204,7 @@ export default function PartsPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="mb-0 flex gap-4 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="min-w-0 mb-0 flex gap-4 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
             {stoneBestItems.map((item) => (
               <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-32 shrink-0 flex-col text-center bg-transparent p-0">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">

@@ -318,7 +318,7 @@ export default function CategoryPage() {
               {viewAllLabel}
             </button>
           </div>
-          <div className="-mx-5 flex gap-3 overflow-x-auto px-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="min-w-0 -mx-5 flex gap-3 overflow-x-auto px-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {CUSTOM_THEME_PILLS.map((pill) => (
               <button
                 key={pill.label}
@@ -358,7 +358,7 @@ export default function CategoryPage() {
               {viewAllLabel}
             </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="min-w-0 flex gap-4 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {textureTrends.map((item) => (
               <TextureTrendCard
                 key={item.title}
@@ -377,7 +377,7 @@ export default function CategoryPage() {
               {viewAllLabel}
             </button>
           </div>
-          <div className="flex overflow-x-auto snap-x snap-mandatory space-x-4 pb-4 px-4 -mx-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="min-w-0 flex overflow-x-auto snap-x snap-mandatory space-x-4 pb-4 px-4 -mx-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {partTrends.map((item) => {
               const imageUrl = findImageByKeyword(hubData, item.keyword);
               const displayTitle = isEnglish ? item.titleEn : item.title;
