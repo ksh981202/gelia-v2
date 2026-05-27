@@ -107,7 +107,7 @@ export default function TestStep3Page() {
   const tipText = isEnglish ? currentTip.en : currentTip.ko;
 
   return (
-    <div className="relative mx-auto flex h-full min-h-[100dvh] w-full flex-col overflow-y-scroll overflow-x-hidden box-border bg-white pb-28 font-sans">
+    <div className="relative mx-auto flex h-full min-h-[100dvh] w-full flex-col overflow-y-scroll overflow-x-hidden box-border bg-white pb-40 font-sans">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white w-full">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -203,7 +203,7 @@ export default function TestStep3Page() {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
           type="button"
           disabled={!selectedColor}

@@ -263,7 +263,7 @@ const TestResultPage = () => {
   );
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-[#FCFAF7]">
+    <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col overflow-x-hidden bg-[#FCFAF7] pb-32">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5">
         <button
           type="button"

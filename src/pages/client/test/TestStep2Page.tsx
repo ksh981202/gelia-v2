@@ -57,7 +57,7 @@ const TestStep2Page = () => {
   const curatorTipBody = isEnglish ? curatorTip.en : curatorTip.ko;
 
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col overflow-x-hidden bg-white pb-28 font-sans">
+    <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col overflow-x-hidden bg-white pb-40 font-sans">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -133,7 +133,7 @@ const TestStep2Page = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white px-5 py-4 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+      <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white px-5 py-4 pb-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
         <button
           type="button"
           disabled={!selectedStyle}

@@ -118,7 +118,7 @@ function ClientLayoutContent() {
     pathname === '/popular-mood-list' ||
     pathname === '/mood'
 
-  const hideBottomNav = pathname.startsWith('/test')
+  const hideBottomNav = false
 
   const mainPbClass = hideBottomNav
     ? 'pb-[env(safe-area-inset-bottom,0px)]'
