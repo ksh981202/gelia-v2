@@ -112,7 +112,7 @@ export default function TexturePage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#1A1A1A]">
+    <div className="relative min-h-screen w-full bg-white text-[#1A1A1A]">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 relative flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-sm">
         <button
@@ -130,7 +130,7 @@ export default function TexturePage() {
         </button>
       </header>
 
-      <main className="w-full bg-white text-gray-900">
+      <main className="w-full bg-white pb-8 text-gray-900">
         
         {/* 섹션 1: 텍스처별 모아보기 (원형 탭) */}
         <section className="pt-6 pb-5">
@@ -194,8 +194,8 @@ export default function TexturePage() {
         </section>
 
         {/* 섹션 3: 지금 가장 핫한 시럽 BEST */}
-        <section className="mb-0">
-          <div className="mt-12 mb-4 flex items-baseline justify-between gap-2 px-5">
+        <section className="mb-0 px-5">
+          <div className="mt-12 mb-4 flex items-baseline justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Hottest Syrup BEST" : "지금 가장 핫한 시럽 BEST"}
             </h3>
@@ -207,9 +207,9 @@ export default function TexturePage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="min-w-0 mb-0 flex gap-4 overflow-x-auto px-5 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {syrupBestItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="w-40 shrink-0 text-left">
+              <button key={item.id} type="button" onClick={() => openDetail(item)} className="w-44 shrink-0 text-left">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                   <img
                     alt={displayItemTitle(item, isEnglish)}

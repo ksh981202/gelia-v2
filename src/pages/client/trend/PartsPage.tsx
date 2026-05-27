@@ -109,7 +109,7 @@ export default function PartsPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-white text-[#1A1A1A]">
+    <div className="relative min-h-screen w-full bg-white text-[#1A1A1A]">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 relative flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5 shadow-sm">
         <button
@@ -127,7 +127,7 @@ export default function PartsPage() {
         </button>
       </header>
 
-      <main>
+      <main className="w-full pb-8">
         {/* 섹션 1: 파츠별 모아보기 (원형 탭) */}
         <section className="pt-6 pb-5">
           <div className="mb-5 flex items-baseline justify-between gap-2 px-5">
@@ -160,7 +160,7 @@ export default function PartsPage() {
         </section>
 
         {/* 섹션 2: 히어로 배너 */}
-        <section className="mb-0 px-4">
+        <section className="mb-0 px-5">
           <div className="group relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-[20px] shadow-lg" onClick={() => openDetail(heroItem)}>
             {heroItem?.image_url ? (
               <img
@@ -191,8 +191,8 @@ export default function PartsPage() {
         </section>
 
         {/* 섹션 3: 지금 가장 핫한 스톤 BEST (가로 스크롤) */}
-        <section className="mb-0">
-          <div className="mt-12 mb-4 flex items-center justify-between gap-2 px-4">
+        <section className="mb-0 px-5">
+          <div className="mt-12 mb-4 flex items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Hottest Stone BEST" : "지금 가장 핫한 스톤 BEST"}
             </h3>
@@ -204,9 +204,9 @@ export default function PartsPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          <div className="min-w-0 mb-0 flex gap-4 overflow-x-auto px-4 pb-4 [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {stoneBestItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-32 shrink-0 flex-col text-center bg-transparent p-0">
+              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-44 shrink-0 flex-col bg-transparent p-0 text-center">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   <img
                     src={item.image_url}
@@ -229,7 +229,7 @@ export default function PartsPage() {
         </section>
 
         {/* 섹션 4: 인기 풀파츠 스타일 (2열 그리드) */}
-        <section className="mb-0 px-4">
+        <section className="mb-0 px-5">
           <div className="mt-12 mb-4 flex w-full items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? "Popular Full Parts Style" : "인기 풀파츠 스타일"}

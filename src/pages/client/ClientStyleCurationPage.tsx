@@ -109,7 +109,7 @@ function StyleNailThumbShell({
 
   const outerClass =
     variant === 'carousel'
-      ? 'w-32 flex-shrink-0 cursor-pointer'
+      ? 'w-40 shrink-0 cursor-pointer'
       : 'flex cursor-pointer flex-col gap-0'
 
   const frameExtra =
@@ -242,7 +242,7 @@ export default function ClientStyleCurationPage() {
     nailDisplayTitle(heroNail, isEnglish) ?? (isEnglish ? 'Style preview' : '스타일 미리보기')
 
   return (
-    <div className="relative mx-auto max-w-md bg-white">
+    <div className="relative w-full bg-white">
       <header className="sticky top-0 z-[100] flex h-14 w-full shrink-0 border-b border-gray-100 bg-white/95 backdrop-blur-md">
         <div className="relative flex h-full w-full min-w-0 items-center justify-between px-5">
           <button
@@ -270,8 +270,8 @@ export default function ClientStyleCurationPage() {
         </div>
       </header>
 
-      <main className="px-0">
-        <div className="mb-5 mt-6 flex items-end justify-between px-4">
+      <main className="px-0 pb-8">
+        <div className="mb-5 mt-6 flex items-end justify-between px-5">
           <h2 className="text-lg font-bold tracking-tight text-gray-900">
             {isEnglish ? 'View by Style' : '스타일별 모아보기'}
           </h2>
@@ -325,7 +325,7 @@ export default function ClientStyleCurationPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </nav>
 
-        <section className="mb-0 mt-5 px-4" aria-label="스타일 히어로">
+        <section className="mb-0 mt-5 px-5" aria-label="스타일 히어로">
           <div
             className={`${STYLE_HERO_BANNER_FRAME} cursor-pointer`}
             onClick={() => goDetail(heroNail)}
@@ -366,8 +366,8 @@ export default function ClientStyleCurationPage() {
           </div>
         </section>
 
-        <div className="mb-0">
-          <div className="mb-5 mt-12 flex items-center justify-between px-4">
+        <div className="mb-0 px-5">
+          <div className="mb-5 mt-12 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish
                 ? 'Most Popular Styles BEST ✨'
@@ -384,8 +384,8 @@ export default function ClientStyleCurationPage() {
             </Link>
           </div>
 
-          <section className="min-w-0 mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-            <div className="mb-0 flex items-center gap-4 pb-0">
+          <section className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="contents">
               {bestStyleMatches.map((nail) => (
                 <StyleNailThumbShell
                   key={nail.id}
@@ -399,8 +399,8 @@ export default function ClientStyleCurationPage() {
           </section>
         </div>
 
-        <section className="mb-0">
-          <div className="mb-5 mt-12 flex items-center justify-between px-4">
+        <section className="mb-0 px-5">
+          <div className="mb-5 mt-12 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Style Nail Gallery' : '스타일별 네일 갤러리'}
             </h2>
@@ -415,7 +415,7 @@ export default function ClientStyleCurationPage() {
             </Link>
           </div>
 
-          <div className="mb-0 grid grid-cols-2 gap-4 px-4 pb-0">
+          <div className="mb-0 grid grid-cols-2 gap-4 pb-0">
             {gallerySlots.map((nail, index) => (
               <StyleNailThumbShell
                 key={nail?.id ?? `style-placeholder-${index}`}

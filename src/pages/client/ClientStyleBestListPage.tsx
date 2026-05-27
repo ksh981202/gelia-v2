@@ -166,82 +166,82 @@ export default function ClientStyleBestListPage() {
   }, [navigationType, location.pathname, isLoading, rankingItems.length])
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-white">
-      <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 border-b border-gray-100 bg-white text-gray-900 backdrop-blur-md">
-        <div className="relative flex h-full w-full min-w-0 items-center justify-between px-5">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
-            className="-ml-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-          >
-            <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
-          </button>
+    <div className="relative flex min-h-screen w-full flex-col bg-white">
+      <div className="sticky top-0 z-50 w-full bg-white shadow-sm">
+        <header className="flex h-14 w-full shrink-0 border-b border-gray-100 bg-white text-gray-900 backdrop-blur-md">
+          <div className="relative flex h-full w-full min-w-0 items-center justify-between px-5">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+              className="-ml-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
+            >
+              <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
+            </button>
 
-          <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,18rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-            {isEnglish ? 'Most Popular Styles BEST ✨' : '가장 많이 찾은 스타일 BEST ✨'}
-          </h1>
+            <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,18rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
+              {isEnglish ? 'Most Popular Styles BEST ✨' : '가장 많이 찾은 스타일 BEST ✨'}
+            </h1>
 
-          <Link
-            to="/gallery"
-            className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
-            aria-label={isEnglish ? 'Search' : '검색'}
-          >
-            <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
-          </Link>
+            <Link
+              to="/gallery"
+              className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
+              aria-label={isEnglish ? 'Search' : '검색'}
+            >
+              <Search className="h-6 w-6 text-gray-900" strokeWidth={2} />
+            </Link>
+          </div>
+        </header>
+
+        <section
+          className="scrollbar-hide flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          aria-label={isEnglish ? 'Style BEST' : '스타일 BEST'}
+        >
+          {STYLE_BEST_TAB_LABELS.map((label) => {
+            const active = activeTabLabel === label
+            return (
+              <button
+                ref={active ? activeTabButtonRef : undefined}
+                key={label}
+                type="button"
+                data-active-tab={active ? 'true' : 'false'}
+                onClick={() => setRankingPeriod(label)}
+                className={
+                  active
+                    ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white'
+                    : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
+                }
+              >
+                {displayStyleBestTabLabel(label, isEnglish)}
+              </button>
+            )
+          })}
+          <div className="w-10 shrink-0" aria-hidden="true" />
+        </section>
+
+        <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
+          <span className="text-sm text-gray-500">
+            {isEnglish ? (
+              <>
+                Total <strong className="font-bold text-pink-500">{maxLimit}</strong> designs
+              </>
+            ) : (
+              <>
+                총 <strong className="font-bold text-pink-500">{maxLimit}</strong>개의 디자인
+              </>
+            )}
+          </span>
+          <span className="text-[11px] text-gray-400">
+            {isEnglish ? 'Based on Views, Saves, Likes' : '조회·저장·좋아요 합산 기준'}
+          </span>
         </div>
-      </header>
+      </div>
 
       <div className="min-h-0 flex-1">
-        <PageContainer className="!mx-auto !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
+        <PageContainer className="!mx-0 !w-full !max-w-full bg-white !px-0 !py-0 sm:!px-0 lg:!px-0">
           <div className="w-full min-w-0 bg-white text-slate-900">
             <p className="sr-only">{isEnglish ? 'Style BEST' : '스타일 BEST'}</p>
-            <div className="sticky top-[56px] z-40 w-full min-w-0 bg-white shadow-sm">
-              <section
-                className="scrollbar-hide flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto scroll-smooth whitespace-nowrap px-4 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                aria-label={isEnglish ? 'Style BEST' : '스타일 BEST'}
-              >
-                {STYLE_BEST_TAB_LABELS.map((label) => {
-                  const active = activeTabLabel === label
-                  return (
-                    <button
-                      ref={active ? activeTabButtonRef : undefined}
-                      key={label}
-                      type="button"
-                      data-active-tab={active ? 'true' : 'false'}
-                      onClick={() => setRankingPeriod(label)}
-                      className={
-                        active
-                          ? 'shrink-0 whitespace-nowrap rounded-full bg-[#FF7E67] px-4 py-1.5 text-sm font-medium text-white'
-                          : 'shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-4 py-1.5 text-sm font-medium text-gray-600'
-                      }
-                    >
-                      {displayStyleBestTabLabel(label, isEnglish)}
-                    </button>
-                  )
-                })}
-                <div className="w-10 shrink-0" aria-hidden="true" />
-              </section>
-
-              <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
-                <span className="text-sm text-gray-500">
-                  {isEnglish ? (
-                    <>
-                      Total <strong className="font-bold text-pink-500">{maxLimit}</strong> designs
-                    </>
-                  ) : (
-                    <>
-                      총 <strong className="font-bold text-pink-500">{maxLimit}</strong>개의 디자인
-                    </>
-                  )}
-                </span>
-                <span className="text-[11px] text-gray-400">
-                  {isEnglish ? 'Based on Views, Saves, Likes' : '조회·저장·좋아요 합산 기준'}
-                </span>
-              </div>
-            </div>
-
-            <ul className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
+            <ul className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
               {isLoading ? (
                 Array.from({ length: 8 }, (_, i) => (
                   <li key={`style-best-list-skel-${i}`} aria-hidden>

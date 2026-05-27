@@ -139,7 +139,7 @@ function EmptyPreviewCards({
           key={`color-curation-empty-${variant}-${index}`}
           className={
             variant === 'carousel'
-              ? 'flex w-[120px] flex-shrink-0 flex-col gap-2'
+              ? 'flex w-40 shrink-0 flex-col gap-2'
               : 'flex flex-col gap-2'
           }
           aria-hidden
@@ -173,21 +173,21 @@ function HorizontalPreviewSection({
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   return (
-    <section className="mb-0 mt-12" aria-label={ariaLabel}>
-      <div className="mb-4 flex items-center justify-between px-4">
+    <section className="mb-0 mt-12 px-5" aria-label={ariaLabel}>
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold tracking-tight text-gray-900">{title}</h2>
         <Link to={viewAllTo} className="text-sm text-gray-500">
           {viewAllLabel}
         </Link>
       </div>
-      <div className={`min-w-0 flex gap-3 overflow-x-auto px-4 pb-2 ${H_SCROLLBAR_HIDE}`}>
+      <div className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {items.length > 0 ? (
           items.map((item) => (
             <Link
               key={item.id}
               to={`/detail/${item.id}`}
               state={detailState(item, isEnglish)}
-              className="flex w-[120px] flex-shrink-0 flex-col gap-2"
+              className="flex w-40 shrink-0 flex-col gap-2"
             >
               <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
                 {item.image_url ? (
@@ -290,7 +290,7 @@ export default function ClientColorCurationPage() {
   const viewAllLabel = isEnglish ? 'View All >' : '전체보기 >'
 
   return (
-    <div className="relative mx-auto max-w-md bg-[#FDFBF7]">
+    <div className="relative w-full bg-[#FDFBF7]">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"
@@ -314,9 +314,9 @@ export default function ClientColorCurationPage() {
         </Link>
       </header>
 
-      <main className="px-0">
-        <section className="mb-0 mt-6" aria-label={isEnglish ? 'View by Color' : '컬러별 모아보기'}>
-          <div className="mb-4 flex items-end justify-between px-4">
+      <main className="px-0 pb-8">
+        <section className="mb-0 mt-6 px-5" aria-label={isEnglish ? 'View by Color' : '컬러별 모아보기'}>
+          <div className="mb-4 flex items-end justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? 'View by Color' : '컬러별 모아보기'}
             </h2>
@@ -366,7 +366,7 @@ export default function ClientColorCurationPage() {
             onClick={(e) => {
               if (!heroNail) e.preventDefault()
             }}
-            className="relative mx-4 block aspect-[3/4] w-[calc(100%-2rem)] overflow-hidden rounded-2xl bg-gray-100 shadow-xl sm:aspect-[4/5]"
+            className="relative block aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-100 shadow-xl sm:aspect-[4/5]"
             aria-disabled={!heroNail}
           >
             {heroNail?.image_url ? (
@@ -396,7 +396,7 @@ export default function ClientColorCurationPage() {
         />
 
         <section
-          className="mb-8 mt-12 px-4"
+          className="mb-0 mt-12 px-5"
           aria-label={isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
         >
           <div className="mb-4 flex items-center justify-between">

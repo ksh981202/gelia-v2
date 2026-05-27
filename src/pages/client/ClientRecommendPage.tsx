@@ -93,9 +93,6 @@ const STYLE_HUB_UI = [
   { cardTitle: '그라데이션 네일', cardTitleEn: 'Gradient Nails', tabIndex: 5 },
 ] as const
 
-const H_SCROLLBAR_HIDE =
-  "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
-
 function hubFieldIncludesKeyword(value: string, keyword: string): boolean {
   return String(value ?? '').includes(keyword)
 }
@@ -190,7 +187,7 @@ export default function ClientRecommendPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative mx-auto max-w-md">
+      <div className="relative w-full">
         <header className="sticky top-0 z-50 relative flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-white/95 px-5 backdrop-blur-md">
           <button
             type="button"
@@ -213,10 +210,10 @@ export default function ClientRecommendPage() {
           </button>
         </header>
 
-        <main>
+        <main className="pb-6">
           {/* 빛나는 순간, 맞춤 네일 */}
-          <section className="pt-6">
-            <div className="mb-5 flex items-center justify-between px-4">
+          <section className="px-5 pt-6">
+            <div className="mb-5 flex items-center justify-between">
               <h2
                 className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
                 onClick={() => navigate('/theme')}
@@ -233,12 +230,12 @@ export default function ClientRecommendPage() {
               </Link>
             </div>
             <div
-              className={`min-w-0 flex gap-4 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
+              className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             >
               {OCCASION_HUB_UI.map((card, index) => (
                 <div
                   key={card.cardTitle}
-                  className="flex w-[45%] flex-shrink-0 cursor-pointer flex-col active:scale-[0.97]"
+                  className="flex w-44 shrink-0 cursor-pointer flex-col active:scale-[0.97]"
                   onClick={() => navigate(`/theme?tab=${card.tabQueryValue}`)}
                   role="button"
                   tabIndex={0}
@@ -265,8 +262,8 @@ export default function ClientRecommendPage() {
           </section>
 
           {/* 추천 베이직 스타일 */}
-          <section className="mt-12">
-            <div className="mb-5 flex items-center justify-between px-4">
+          <section className="mt-12 px-5">
+            <div className="mb-5 flex items-center justify-between">
               <h2
                 className="cursor-pointer text-[20px] font-bold tracking-tight text-gray-900"
                 onClick={() => navigate('/style-curation')}
@@ -283,7 +280,7 @@ export default function ClientRecommendPage() {
               </Link>
             </div>
             <div
-              className={`min-w-0 flex gap-3 overflow-x-auto px-4 pb-1 ${H_SCROLLBAR_HIDE}`}
+              className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             >
               {STYLE_HUB_UI.map((card, index) => (
                 <div
@@ -315,7 +312,7 @@ export default function ClientRecommendPage() {
           </section>
 
           {/* 계절별 맞춤 네일 */}
-          <section className="mt-12 px-4">
+          <section className="mt-12 px-5">
             <div className="mb-5 flex items-center justify-between">
               <button
                 type="button"
@@ -356,8 +353,8 @@ export default function ClientRecommendPage() {
           </section>
 
           {/* 추천 컬러 네일 */}
-          <section className="mt-12">
-            <div className="mb-5 flex items-center justify-between px-4">
+          <section className="mt-12 px-5">
+            <div className="mb-5 flex items-center justify-between">
               <Link
                 to="/color-curation"
                 className="text-[20px] font-bold tracking-tight text-gray-900"
@@ -372,7 +369,7 @@ export default function ClientRecommendPage() {
               </Link>
             </div>
             <div
-              className={`min-w-0 flex gap-4 overflow-x-auto px-4 ${H_SCROLLBAR_HIDE}`}
+              className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             >
               {colorChips.map((chip) => (
                 <Link
@@ -390,7 +387,7 @@ export default function ClientRecommendPage() {
           </section>
 
           {/* 오늘의 특별한 네일 */}
-          <section className="mb-0 mt-12 px-4">
+          <section className="mb-0 mt-12 px-5">
             <div className="mb-5 flex items-center justify-between">
               <Link
                 to="/today-special"

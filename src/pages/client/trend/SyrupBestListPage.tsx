@@ -189,7 +189,7 @@ export default function SyrupBestListPage() {
   );
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-white text-slate-900">
+    <div className="relative min-h-screen w-full bg-white text-slate-900">
       {/* 상단 고정 영역 */}
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         {/* 헤더 */}
@@ -283,7 +283,7 @@ export default function SyrupBestListPage() {
       </div>
 
       {/* 메인 2열 그리드 */}
-      <main className="grid grid-cols-2 gap-4 px-4 pt-4">
+      <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
         {isLoading ? (
           Array.from({ length: 8 }, (_, index) => (
             <article key={`syrup-best-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
@@ -303,7 +303,7 @@ export default function SyrupBestListPage() {
           <>
             {galleryItems.map((item, index) => (
               <article key={item.id} className="flex cursor-pointer flex-col gap-2">
-                <button type="button" onClick={() => openDetail(item)} className="text-left">
+                <button type="button" onClick={() => openDetail(item)} className="w-full text-left">
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm">
                     {item.image_url ? (
                       <img

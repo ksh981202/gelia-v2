@@ -269,7 +269,7 @@ export default function ClientPage() {
     nailDisplayTitle(heroNail, isEnglish) ?? (isEnglish ? 'Recommended nails' : '추천 네일')
 
   return (
-    <div className="relative mx-auto max-w-md bg-white">
+    <div className="relative w-full bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"
@@ -296,8 +296,8 @@ export default function ClientPage() {
         </button>
       </header>
 
-      <main className="px-0">
-        <div className="mb-5 mt-6 flex items-end justify-between px-4">
+      <main className="px-0 pb-8">
+        <div className="mb-5 mt-6 flex items-end justify-between px-5">
           <h2 className="text-lg font-bold tracking-tight text-gray-900">
             {isEnglish ? 'View by Theme' : '테마별 모아보기'}
           </h2>
@@ -350,7 +350,7 @@ export default function ClientPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </nav>
 
-        <section className="mb-0 mt-5 px-4" aria-label="테마 히어로">
+        <section className="mb-0 mt-5 px-5" aria-label="테마 히어로">
           <div
             className={`${OCCASION_HERO_BANNER_FRAME} cursor-pointer`}
             onClick={() => goDetail(heroNail)}
@@ -391,8 +391,8 @@ export default function ClientPage() {
           </div>
         </section>
 
-        <div className="mb-0">
-          <div className="mb-5 mt-12 flex items-center justify-between px-4">
+        <div className="mb-0 px-5">
+          <div className="mb-5 mt-12 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Occasion Recommended Nails' : '상황별 추천 네일'}
             </h2>
@@ -404,8 +404,8 @@ export default function ClientPage() {
             </Link>
           </div>
 
-          <section className="min-w-0 mb-0 overflow-x-auto px-4 pb-0 scrollbar-hide">
-            <div className="mb-0 flex items-center gap-4 pb-0">
+          <section className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="contents">
               {SITUATION_DEMO_CAPTIONS.map((cap, index) => {
                 const nail = situationMatches[index]
                 const caption =
@@ -424,8 +424,8 @@ export default function ClientPage() {
           </section>
         </div>
 
-        <section className="mb-0">
-          <div className="mb-5 mt-12 flex items-center justify-between px-4">
+        <section className="mb-0 px-5">
+          <div className="mb-5 mt-12 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Gallery Explore' : '갤러리 탐색'}
             </h2>
@@ -438,7 +438,7 @@ export default function ClientPage() {
             </button>
           </div>
 
-          <div className="mb-0 grid grid-cols-2 gap-4 px-4 pb-0">
+          <div className="mb-0 grid grid-cols-2 gap-4 pb-0">
             {galleryItems.map((nail) => (
               <OccasionNailThumbShell
                 key={nail.id}

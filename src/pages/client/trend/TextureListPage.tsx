@@ -218,7 +218,7 @@ export default function TextureListPage() {
   ]);
 
   return (
-    <div className="mx-auto w-full min-w-0 min-h-screen max-w-md bg-white text-slate-900">
+    <div className="relative min-h-screen w-full bg-white text-slate-900">
       {/* 상단 고정 영역 (헤더 + 탭 + 정렬) */}
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         
@@ -311,7 +311,7 @@ export default function TextureListPage() {
       </div>
 
       {/* 메인 2열 그리드 리스트 */}
-      <main className="grid grid-cols-2 gap-4 px-4 pt-4">
+      <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
         {isLoading ? (
           Array.from({ length: 8 }, (_, index) => (
             <article key={`texture-list-skel-${index}`} className="flex flex-col gap-2" aria-hidden>

@@ -219,7 +219,7 @@ export default function PartsListPage() {
   ]);
 
   return (
-    <div className="max-w-md mx-auto w-full min-w-0 min-h-screen bg-white text-slate-900">
+    <div className="relative min-h-screen w-full bg-white text-slate-900">
       {/* 상단 고정 영역 */}
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
@@ -316,7 +316,7 @@ export default function PartsListPage() {
       </div>
 
       {/* 2열 그리드 네일 카드 리스트 */}
-      <main className="grid grid-cols-2 gap-4 px-4 pt-4">
+      <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
         {isLoading ? (
           Array.from({ length: 8 }, (_, index) => (
             <article key={`parts-list-skel-${index}`} className="flex flex-col gap-2" aria-hidden>

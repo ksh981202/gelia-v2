@@ -16,9 +16,6 @@ const SEASON_TAB_LABEL_EN: Record<(typeof SEASON_TABS)[number], string> = {
   '❄️ 겨울': '❄️ Winter',
 }
 
-const H_SCROLLBAR_HIDE =
-  "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']"
-
 const VACATION_KEYWORDS = ['바캉스', '휴양지', '여행', '여름'] as const
 
 function extractPureSeasonKeyword(raw: string | null): string {
@@ -105,7 +102,7 @@ export default function ClientSeasonCurationPage() {
   }
 
   return (
-    <div className="relative mx-auto max-w-md bg-white">
+    <div className="relative w-full bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"
@@ -129,8 +126,8 @@ export default function ClientSeasonCurationPage() {
         </Link>
       </header>
 
-      <main className="px-0">
-        <section className="mb-0 mt-6 px-4" aria-label={isEnglish ? 'View by Season' : '시즌별 모아보기'}>
+      <main className="px-0 pb-8">
+        <section className="mb-0 mt-6 px-5" aria-label={isEnglish ? 'View by Season' : '시즌별 모아보기'}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-gray-900">
               {isEnglish ? 'View by Season' : '시즌별 모아보기'}
@@ -210,7 +207,7 @@ export default function ClientSeasonCurationPage() {
         </section>
 
         <section
-          className="mb-0 mt-12 px-4"
+          className="mb-0 mt-12 px-5"
           aria-label={isEnglish ? 'Perfect for Vacation! Vacation Nails' : '휴양지에서 인생샷 보장! 바캉스 네일'}
         >
           <div className="mb-4 flex items-center justify-between">
@@ -225,15 +222,13 @@ export default function ClientSeasonCurationPage() {
             </Link>
           </div>
 
-          <div
-            className={`min-w-0 flex gap-3 overflow-x-auto pb-2 ${H_SCROLLBAR_HIDE}`}
-          >
+          <div className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {vacationItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => goDetail(item)}
-                className="flex w-[120px] flex-shrink-0 flex-col gap-2 text-left"
+                className="flex w-40 shrink-0 flex-col gap-2 text-left"
               >
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
@@ -253,7 +248,7 @@ export default function ClientSeasonCurationPage() {
         </section>
 
         <section
-          className="mb-0 mt-12 px-4"
+          className="mb-0 mt-12 px-5"
           aria-label={isEnglish ? 'Popular Seasonal Nails' : '내 손끝에 찰떡, 계절 인기 네일 모음'}
         >
           <div className="mb-4 flex items-center justify-between">

@@ -272,7 +272,7 @@ export default function ClientColorListPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, activeTabKeyword, sortType])
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-white">
       <div className="min-h-0 flex-1">
         <div className="w-full min-w-0 bg-white text-slate-900">
           <p className="sr-only">{isEnglish ? 'Color' : '컬러'}</p>
@@ -381,7 +381,7 @@ export default function ClientColorListPage() {
             </div>
           </div>
 
-          <ul className="grid grid-cols-2 gap-4 px-4 pb-6 pt-4">
+          <ul className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
             {isLoading ? (
               Array.from({ length: 8 }, (_, i) => (
                 <li key={`color-list-skel-${i}`} aria-hidden>

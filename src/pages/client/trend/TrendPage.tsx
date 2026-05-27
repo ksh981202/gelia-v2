@@ -99,7 +99,7 @@ export default function TrendPage() {
   };
 
   return (
-    <div className="relative mx-auto min-h-screen max-w-md bg-gray-50 text-gray-900">
+    <div className="relative min-h-screen w-full bg-gray-50 text-gray-900">
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-gray-50 px-5">
         <button
@@ -121,10 +121,10 @@ export default function TrendPage() {
         </button>
       </header>
 
-      <main className="w-full overflow-x-hidden bg-gray-50 px-5 text-gray-900">
+      <main className="w-full bg-gray-50 px-0 pb-8 text-gray-900">
         
         {/* 섹션 1: 텍스처 트렌드 */}
-        <section className="pt-6">
+        <section className="px-5 pt-6">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Texture Trend' : '텍스처 트렌드'}
@@ -137,9 +137,9 @@ export default function TrendPage() {
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="-mx-5 min-w-0 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {textureItems.map(item => (
-              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
+              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-44 shrink-0 flex-col bg-transparent p-0 text-left">
                 <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
                   {item.item?.image_url ? (
                     <img
@@ -163,7 +163,7 @@ export default function TrendPage() {
         </section>
 
         {/* 섹션 2: 포인트 파츠 트렌드 */}
-        <section className="mt-12">
+        <section className="mt-12 px-5">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Point Parts Trend' : '포인트 파츠 트렌드'}
@@ -176,9 +176,9 @@ export default function TrendPage() {
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="-mx-5 min-w-0 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {partsItems.map(item => (
-              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 snap-start flex-col bg-transparent p-0 text-left">
+              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 flex-col bg-transparent p-0 text-left">
                 <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
                   {item.item?.image_url ? (
                     <img
@@ -202,7 +202,7 @@ export default function TrendPage() {
         </section>
 
         {/* 섹션 3: 아트 & 패턴 트렌드 */}
-        <section className="mt-12">
+        <section className="mt-12 px-5">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Art & Pattern Trend' : '아트 & 패턴 트렌드'}
@@ -215,9 +215,9 @@ export default function TrendPage() {
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="-mx-5 min-w-0 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {patternItems.map(item => (
-              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-[45%] shrink-0 snap-start flex-col bg-transparent p-0 text-left">
+              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 flex-col bg-transparent p-0 text-left">
                 <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
                   {item.item?.image_url ? (
                     <img
@@ -241,7 +241,7 @@ export default function TrendPage() {
         </section>
 
         {/* 섹션 4: 핫 트렌드 무드 */}
-        <section className="mt-8 mb-6 w-full">
+        <section className="mb-6 mt-8 w-full px-5">
           <div className="mb-5 flex w-full items-center justify-between gap-2">
             <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
               {isEnglish ? 'Hot Trend Mood' : '핫 트렌드 무드'}
