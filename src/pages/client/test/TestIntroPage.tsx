@@ -11,7 +11,7 @@ const TestIntroPage = () => {
 
   return (
     // 🚨 족쇄 해제: max-w-md(너비 제한)를 삭제하고 w-full을 주입하여 화면 전체를 쓰도록 강제
-    <div className="w-full flex min-h-screen flex-col overflow-y-auto bg-white font-sans">
+    <div className="w-full flex min-h-screen flex-col overflow-x-hidden overflow-y-auto bg-white font-sans">
       
       {/* 헤더: px-5 여백 */}
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5">
@@ -23,7 +23,7 @@ const TestIntroPage = () => {
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
+        <h1 className="min-w-0 truncate font-sans text-lg font-bold tracking-tight text-gray-900">
           {isEnglish ? "Personal Nail Diagnosis" : "퍼스널 네일 진단"}
         </h1>
         <div className="w-8" />

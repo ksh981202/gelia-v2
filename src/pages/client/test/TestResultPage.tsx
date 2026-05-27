@@ -263,7 +263,7 @@ const TestResultPage = () => {
   );
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-[#FCFAF7]">
+    <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-[#FCFAF7]">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5">
         <button
           type="button"
@@ -273,7 +273,7 @@ const TestResultPage = () => {
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <h1 className="whitespace-nowrap text-lg font-bold text-gray-900">
+        <h1 className="min-w-0 truncate text-lg font-bold text-gray-900">
           {isEnglish ? "Diagnosis Results" : "진단 결과"}
         </h1>
         <button type="button" aria-label={isEnglish ? "Share" : "공유하기"} className="p-1 text-gray-700">

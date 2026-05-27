@@ -117,7 +117,7 @@ export default function TestStep3Page() {
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
+          <h1 className="min-w-0 truncate font-sans text-lg font-bold tracking-tight text-gray-900">
             {isEnglish ? "Personal Nail Diagnosis" : "퍼스널 네일 진단"}
           </h1>
           <div className="w-8" />
@@ -168,7 +168,7 @@ export default function TestStep3Page() {
                   />
 
                   <span
-                    className={`absolute -right-1 -top-1 z-30 flex items-center justify-center rounded-full bg-[#FF826E] p-1 text-white shadow-sm transition-opacity duration-150 ${
+                    className={`absolute right-0 -top-1 z-30 flex items-center justify-center rounded-full bg-[#FF826E] p-1 text-white shadow-sm transition-opacity duration-150 ${
                       isSelected ? "opacity-100" : "opacity-0"
                     }`}
                   >

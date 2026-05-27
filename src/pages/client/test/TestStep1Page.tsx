@@ -37,7 +37,7 @@ const TestStep1Page = () => {
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
+          <h1 className="min-w-0 truncate font-sans text-lg font-bold tracking-tight text-gray-900">
             {isEnglish ? "Personal Nail Diagnosis" : "퍼스널 네일 진단"}
           </h1>
           <div className="w-8" />

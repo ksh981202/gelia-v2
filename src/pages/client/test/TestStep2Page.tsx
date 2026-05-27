@@ -57,7 +57,7 @@ const TestStep2Page = () => {
   const curatorTipBody = isEnglish ? curatorTip.en : curatorTip.ko;
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-white font-sans">
+    <div className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-x-hidden bg-white font-sans">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -68,7 +68,7 @@ const TestStep2Page = () => {
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="whitespace-nowrap font-sans text-lg font-bold tracking-tight text-gray-900">
+          <h1 className="min-w-0 truncate font-sans text-lg font-bold tracking-tight text-gray-900">
             {isEnglish ? "Personal Nail Diagnosis" : "퍼스널 네일 진단"}
           </h1>
           <div className="w-8" />
@@ -98,7 +98,7 @@ const TestStep2Page = () => {
               type="button"
               onClick={() => setSelectedStyle(s.id)}
               className={`relative aspect-square overflow-hidden rounded-2xl text-left ${
-                selectedStyle === s.id ? "ring-2 ring-[#FF7D66] ring-offset-2" : ""
+                selectedStyle === s.id ? "ring-2 ring-[#FF7D66]" : ""
               }`}
             >
               <img
