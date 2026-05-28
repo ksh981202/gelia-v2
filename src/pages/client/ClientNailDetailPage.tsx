@@ -607,7 +607,7 @@ const Detail = () => {
   useEffect(() => {
     const nailDesignId = displayRow?.id;
     if (!nailDesignId) return;
-    if (currentUserId === undefined) return;
+    if (!currentUserId) return;
     if (detailViewTrackedForIdRef.current === nailDesignId) return;
     detailViewTrackedForIdRef.current = nailDesignId;
     setOptimisticViewNailId(nailDesignId);
@@ -615,17 +615,15 @@ const Detail = () => {
     void (async () => {
       try {
         await trackNailActivity(nailDesignId, "detail_view", currentUserId);
-        if (currentUserId) {
-          const { error: recentViewError } = await supabase.from("user_recent_views").upsert({
-            user_id: currentUserId,
-            nail_id: nailDesignId,
-            viewed_at: new Date().toISOString(),
-          });
-          if (recentViewError) throw recentViewError;
-          queryClient.invalidateQueries({ queryKey: ['my-page-count', 'recent', currentUserId] });
-          queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'recent', currentUserId] });
-          queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'recent', currentUserId] });
-        }
+        const { error: recentViewError } = await supabase.from("user_recent_views").upsert({
+          user_id: currentUserId,
+          nail_id: nailDesignId,
+          viewed_at: new Date().toISOString(),
+        });
+        if (recentViewError) throw recentViewError;
+        queryClient.invalidateQueries({ queryKey: ['my-page-count', 'recent', currentUserId] });
+        queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'recent', currentUserId] });
+        queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'recent', currentUserId] });
         const { error } = await supabase.rpc("increment_popularity", {
           nail_id: nailDesignId,
           increment_value: 1,
