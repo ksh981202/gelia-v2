@@ -1,6 +1,7 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
+import { CurationFallback } from '@/shared/ui/CurationFallback'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 import {
@@ -28,6 +29,14 @@ const STYLE_TAB_LABEL_EN: Record<StyleTabLabel, string> = {
   '🌈 그라데이션': '🌈 Gradient',
 }
 
+const STYLE_BASE_KEYWORD_MAPPING: Record<string, string> = {
+  심플: '심플 데일리 원컬러 깔끔 베이직 무지',
+  화려한: '화려한 풀파츠 글리터 스톤 큐빅 파티 맥시멀',
+  프렌치: '프렌치 라인 둥근프렌치 하트프렌치 투톤',
+  드로잉: '드로잉 수채화 라인 생화 꽃 펜 아트',
+  그라데이션: '그라데이션 그라 옴브레 투톤 시럽 치크 블러셔 몽환',
+}
+
 function extractPureStyleKeyword(raw: string): string {
   return String(raw ?? '')
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, ' ')
@@ -35,28 +44,48 @@ function extractPureStyleKeyword(raw: string): string {
     .trim()
 }
 
-function hubFieldIncludesKeyword(value: string, keyword: string): boolean {
-  return String(value ?? '').includes(keyword)
+function resolveStyleKeywords(keyword: string): string[] {
+  const pure = extractPureStyleKeyword(keyword)
+  const raw = STYLE_BASE_KEYWORD_MAPPING[pure] ?? pure
+  return Array.from(
+    new Set(
+      raw
+        .split(/\s+/)
+        .map((part) => extractPureStyleKeyword(part))
+        .filter(Boolean),
+    ),
+  )
 }
 
-function hubItemMatchesKeyword(item: NailDesignRow, keyword: string): boolean {
-  const needle = keyword.trim()
-  if (!needle || needle === '전체') return true
-  if (hubFieldIncludesKeyword(item.category, needle)) return true
-  if (hubFieldIncludesKeyword(item.title, needle)) return true
-  if (hubFieldIncludesKeyword(item.title_en ?? '', needle)) return true
-  if ((item.tags ?? []).some((tag) => hubFieldIncludesKeyword(tag, needle))) return true
-  if ((item.situations ?? []).some((situation) => hubFieldIncludesKeyword(situation, needle))) {
-    return true
+function hubFieldIncludesKeyword(value: string | string[] | null | undefined, keyword: string): boolean {
+  const needle = String(keyword ?? '').trim().toLowerCase()
+  if (!needle) return false
+  if (Array.isArray(value)) {
+    return value.some((part) => String(part ?? '').toLowerCase().includes(needle))
   }
-  return false
+  return String(value ?? '').toLowerCase().includes(needle)
 }
 
-function findFirstHubMatch(pool: NailDesignRow[], keyword: string): NailDesignRow | undefined {
-  const needle = keyword.trim()
+function hubItemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): boolean {
+  if (keywords.length === 0 || keywords.includes('전체')) return true
+  return keywords.some((keyword) => {
+    if (hubFieldIncludesKeyword(item.category, keyword)) return true
+    if (hubFieldIncludesKeyword(item.title, keyword)) return true
+    if (hubFieldIncludesKeyword(item.title_en ?? '', keyword)) return true
+    if (hubFieldIncludesKeyword(item.color, keyword)) return true
+    if (hubFieldIncludesKeyword(item.mood, keyword)) return true
+    if (hubFieldIncludesKeyword(item.design_elements, keyword)) return true
+    if (hubFieldIncludesKeyword(item.tags ?? [], keyword)) return true
+    if (hubFieldIncludesKeyword(item.situations ?? [], keyword)) return true
+    if (hubFieldIncludesKeyword(item.styles ?? [], keyword)) return true
+    return false
+  })
+}
+
+function findFirstHubMatch(pool: NailDesignRow[], keywords: readonly string[]): NailDesignRow | undefined {
   if (pool.length === 0) return undefined
-  if (!needle || needle === '전체') return pool[0]
-  return pool.find((item) => hubItemMatchesKeyword(item, needle))
+  if (keywords.length === 0 || keywords.includes('전체')) return pool[0]
+  return pool.find((item) => hubItemMatchesKeywords(item, keywords))
 }
 
 function nailDisplayTitle(nail: NailDesignRow | undefined, isEnglish: boolean): string | null {
@@ -194,10 +223,11 @@ export default function ClientStyleCurationPage() {
   const activeTabLabel = STYLE_TAB_LABELS[tabIndex]!
 
   const activeKeyword = extractPureStyleKeyword(activeTabLabel)
+  const activeKeywords = useMemo(() => resolveStyleKeywords(activeKeyword), [activeKeyword])
 
   const heroNail = useMemo(
-    () => findFirstHubMatch(hubData, activeKeyword),
-    [hubData, activeKeyword],
+    () => findFirstHubMatch(hubData, activeKeywords),
+    [hubData, activeKeywords],
   )
 
   const bestStyleMatches = useMemo(
@@ -211,9 +241,9 @@ export default function ClientStyleCurationPage() {
   const galleryItems = useMemo(
     () =>
       hubData
-        .filter((item) => hubItemMatchesKeyword(item, activeKeyword))
+        .filter((item) => hubItemMatchesKeywords(item, activeKeywords))
         .slice(0, 4),
-    [hubData, activeKeyword],
+    [hubData, activeKeywords],
   )
 
   const gallerySlots = useMemo<(NailDesignRow | undefined)[]>(() => {
@@ -348,21 +378,20 @@ export default function ClientStyleCurationPage() {
                   decoding="async"
                 />
               ) : (
-                <div
-                  className="h-full w-full animate-pulse bg-gray-200"
-                  aria-hidden
-                />
+                <CurationFallback isEnglish={isEnglish} />
               )}
             </div>
-            <div className="absolute inset-x-5 bottom-5 z-10">
-              <div className="relative z-10">
-                <h2
-                  className={`${NAIL_HERO_BANNER_TITLE_CLASS} truncate leading-tight`}
-                >
-                  {heroTitle}
-                </h2>
+            {heroImageUrl ? (
+              <div className="absolute inset-x-5 bottom-5 z-10">
+                <div className="relative z-10">
+                  <h2
+                    className={`${NAIL_HERO_BANNER_TITLE_CLASS} truncate leading-tight`}
+                  >
+                    {heroTitle}
+                  </h2>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </section>
 

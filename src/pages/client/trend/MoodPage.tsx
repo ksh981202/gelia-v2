@@ -1,6 +1,7 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
+import { CurationFallback } from '@/shared/ui/CurationFallback';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
@@ -189,18 +190,18 @@ export default function MoodPage() {
                   e.currentTarget.parentElement?.classList.add("bg-gray-100");
                 }}
               />
-            ) : null}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent pt-20 px-6 pb-6 pointer-events-none">
-              <div className="relative z-10">
-                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
-                  {heroItem
-                    ? displayItemTitle(heroItem, isEnglish)
-                    : isEnglish
-                      ? `${displayMoodTabLabel(activeTab, isEnglish)} Nails`
-                      : `${activeTab} 네일`}
-                </h2>
+            ) : (
+              <CurationFallback isEnglish={isEnglish} />
+            )}
+            {heroItem?.image_url ? (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-6 pb-6 pt-20 pointer-events-none">
+                <div className="relative z-10">
+                  <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
+                    {displayItemTitle(heroItem, isEnglish)}
+                  </h2>
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </section>
 

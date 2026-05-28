@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 const RECOMMEND_HUB_COLUMNS =
   'id,created_at,title,title_en,image_url,category,tags,situations,color,mood,styles,nail_length,design_elements,description,popularity,views,saves,likes'
 
-const RECOMMEND_HUB_POOL_SIZE = 50
+const RECOMMEND_HUB_POOL_SIZE = 100
 
 export function useRecommendHubQuery() {
   return useQuery({

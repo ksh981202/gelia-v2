@@ -2,12 +2,12 @@ import { useGalleryInfiniteQuery } from '@/entities/nail-design/api/useGalleryIn
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
+import { CurationFallback } from '@/shared/ui/CurationFallback'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams, type To } from 'react-router-dom'
 import {
   COLOR_CURATION_TABS,
-  COLOR_HERO_CAPTIONS,
   DEFAULT_COLOR_CURATION,
 } from './colorCurationTabs'
 
@@ -25,17 +25,6 @@ const COLOR_CURATION_TAB_LABEL_EN: Record<string, string> = {
   '☁️ 화이트': '☁️ White',
   '🖤 블랙': '🖤 Black',
   '✨ 글리터': '✨ Glitter',
-}
-
-const COLOR_HERO_CAPTION_EN: Record<string, string> = {
-  핑크: 'Romantic Pink Mood',
-  레드: 'Best Red Nail Trends',
-  누드: 'Natural Nude Beige',
-  파스텔: 'Pastel Dream Colors',
-  블루: 'Cool Blue Point',
-  화이트: 'Clean White Mood',
-  블랙: 'Chic Black Nails',
-  글리터: 'Sparkling Glitter Point',
 }
 
 const COLOR_KEYWORD_MAPPING: Record<string, string> = {
@@ -118,11 +107,6 @@ function detailState(item: NailDesignRow, isEnglish: boolean) {
 
 function displayColorTabLabel(label: string, isEnglish: boolean): string {
   return isEnglish ? COLOR_CURATION_TAB_LABEL_EN[label] ?? label : label
-}
-
-function displayHeroCaption(color: string, fallback: string, isEnglish: boolean): string {
-  if (isEnglish) return COLOR_HERO_CAPTION_EN[color] ?? fallback
-  return fallback
 }
 
 function EmptyPreviewCards({
@@ -230,8 +214,6 @@ export default function ClientColorCurationPage() {
   )
   const currentColor =
     COLOR_CURATION_TABS[activeIdx]?.value ?? DEFAULT_COLOR_CURATION
-  const heroCaption =
-    COLOR_HERO_CAPTIONS[currentColor] ?? COLOR_HERO_CAPTIONS['핑크']
   const currentTabSearch = `?tab=${encodeURIComponent(currentColor)}`
 
   const colorListHref: To = {
@@ -377,13 +359,19 @@ export default function ClientColorCurationPage() {
                 loading="lazy"
                 decoding="async"
               />
+            ) : (
+              <CurationFallback isEnglish={isEnglish} />
+            )}
+            {heroNail?.image_url ? (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <p className="truncate text-lg font-bold text-white drop-shadow-md">
+                    {displayItemTitle(heroNail, isEnglish)}
+                  </p>
+                </div>
+              </>
             ) : null}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4">
-              <p className="truncate text-lg font-bold text-white drop-shadow-md">
-                {heroNail ? displayItemTitle(heroNail, isEnglish) : displayHeroCaption(currentColor, heroCaption, isEnglish)}
-              </p>
-            </div>
           </Link>
         </section>
 

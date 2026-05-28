@@ -60,7 +60,6 @@ type DetailLocationState = {
 
 const DESIGN_ICONS = [Brush, Droplets, Circle, Sparkles] as const;
 
-
 function toStr(v: unknown): string {
   if (v == null) return "";
   if (typeof v === "string") return v;

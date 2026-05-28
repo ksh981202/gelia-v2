@@ -17,7 +17,7 @@ const TREND_SKELETON_ROWS = 5
 
 const SKELETON_COUNT = 6
 
-const NAIL_KEYWORD_EN_DICTIONARY: Record<string, string> = {
+export const NAIL_KEYWORD_EN_DICTIONARY: Record<string, string> = {
   네일: 'Nail',
   페디: 'Pedi',
   패디: 'Pedi',

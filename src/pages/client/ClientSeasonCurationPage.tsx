@@ -1,6 +1,7 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
+import { CurationFallback } from '@/shared/ui/CurationFallback'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -14,6 +15,13 @@ const SEASON_TAB_LABEL_EN: Record<(typeof SEASON_TABS)[number], string> = {
   '🌊 여름': '🌊 Summer',
   '🍁 가을': '🍁 Autumn',
   '❄️ 겨울': '❄️ Winter',
+}
+
+const SEASON_BASE_KEYWORD_MAPPING: Record<string, string> = {
+  봄: '봄 spring 스프링 파스텔 웜톤 화사한 생화',
+  여름: '여름 summer 썸머 바다 휴양지 바캉스 네온 실버',
+  가을: '가을 autumn 아텀 폴 fall 딥톤 버건디 호피',
+  겨울: '겨울 winter 윈터 눈 연말 파티 크리스마스 니트 쿨톤',
 }
 
 const VACATION_KEYWORDS = ['바캉스', '휴양지', '여행', '여름'] as const
@@ -31,9 +39,25 @@ function resolveSeasonIndex(rawTab: string | null): number {
   return index >= 0 ? index : 0
 }
 
+function resolveSeasonKeywords(season: string): string[] {
+  const raw = SEASON_BASE_KEYWORD_MAPPING[season] ?? season
+  return Array.from(
+    new Set(
+      raw
+        .split(/\s+/)
+        .map((keyword) => extractPureSeasonKeyword(keyword))
+        .filter(Boolean),
+    ),
+  )
+}
+
 function itemFieldIncludesKeyword(value: string | string[] | null | undefined, keyword: string): boolean {
-  if (Array.isArray(value)) return value.some((part) => String(part ?? '').includes(keyword))
-  return String(value ?? '').includes(keyword)
+  const needle = String(keyword ?? '').trim().toLowerCase()
+  if (!needle) return false
+  if (Array.isArray(value)) {
+    return value.some((part) => String(part ?? '').toLowerCase().includes(needle))
+  }
+  return String(value ?? '').toLowerCase().includes(needle)
 }
 
 function itemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): boolean {
@@ -41,8 +65,12 @@ function itemMatchesKeywords(item: NailDesignRow, keywords: readonly string[]): 
     if (itemFieldIncludesKeyword(item.category, keyword)) return true
     if (itemFieldIncludesKeyword(item.title, keyword)) return true
     if (itemFieldIncludesKeyword(item.title_en ?? '', keyword)) return true
+    if (itemFieldIncludesKeyword(item.color, keyword)) return true
+    if (itemFieldIncludesKeyword(item.mood, keyword)) return true
+    if (itemFieldIncludesKeyword(item.design_elements, keyword)) return true
     if (itemFieldIncludesKeyword(item.tags ?? [], keyword)) return true
     if (itemFieldIncludesKeyword(item.situations ?? [], keyword)) return true
+    if (itemFieldIncludesKeyword(item.styles ?? [], keyword)) return true
     return false
   })
 }
@@ -70,10 +98,11 @@ export default function ClientSeasonCurationPage() {
   const currentSeason = SEASON_KEYS[activeIdx] ?? SEASON_KEYS[0]
   const currentTabSearch = `?tab=${encodeURIComponent(currentSeason)}`
   const seasonPopularSearch = `?season=${encodeURIComponent(currentSeason)}&tab=${encodeURIComponent(currentSeason)}`
+  const seasonKeywords = useMemo(() => resolveSeasonKeywords(currentSeason), [currentSeason])
 
   const seasonItems = useMemo(
-    () => hubData.filter((item) => itemMatchesKeywords(item, [currentSeason])),
-    [hubData, currentSeason],
+    () => hubData.filter((item) => itemMatchesKeywords(item, seasonKeywords)),
+    [hubData, seasonKeywords],
   )
   const heroNail = seasonItems[0]
   const vacationItems = useMemo(
@@ -194,14 +223,18 @@ export default function ClientSeasonCurationPage() {
                 loading="lazy"
                 decoding="async"
               />
-            ) : null}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            {heroNail ? (
-              <div className="absolute bottom-4 left-4 right-4">
-                <p className="truncate text-lg font-bold text-white drop-shadow-md">
-                  {displayItemTitle(heroNail, isEnglish)}
-                </p>
-              </div>
+            ) : (
+              <CurationFallback isEnglish={isEnglish} />
+            )}
+            {heroNail?.image_url ? (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <p className="truncate text-lg font-bold text-white drop-shadow-md">
+                    {displayItemTitle(heroNail, isEnglish)}
+                  </p>
+                </div>
+              </>
             ) : null}
           </div>
         </section>

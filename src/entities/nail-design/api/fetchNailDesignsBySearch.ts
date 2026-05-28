@@ -23,6 +23,10 @@ function buildSearchOrFilter(query: string): string {
     `color.ilike.${pattern}`,
     `mood.ilike.${pattern}`,
     `design_elements.ilike.${pattern}`,
+    `title_en.ilike.${pattern}`,
+    `color_en.ilike.${pattern}`,
+    `mood_en.ilike.${pattern}`,
+    `design_point_en.ilike.${pattern}`,
   ].join(',')
 }
 
