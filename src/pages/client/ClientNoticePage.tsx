@@ -36,7 +36,7 @@ export default function ClientNoticePage() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from('board_posts')
-        .select('*')
+        .select('id,title,content,title_en,content_en,created_at')
         .eq('is_active', true)
         .eq('post_type', 'notice')
         .order('created_at', { ascending: false })

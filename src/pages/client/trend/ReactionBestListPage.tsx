@@ -11,6 +11,8 @@ const TAB_ITEMS = [
   { id: "like", name: "❤️ 독보적 하트", period: "독보적 하트" },
 ] as const;
 const REACTION_SCROLL_Y_KEY = "gelia_reaction_best_scroll_y";
+const REACTION_BEST_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
 
 type ReactionBestSortColumn = "saves" | "likes";
 
@@ -49,7 +51,7 @@ function useReactionBestQuery(sortBy: ReactionBestSortColumn, maxLimit: number) 
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
       const { data, error } = await supabase
         .from("nail_designs")
-        .select("*")
+        .select(REACTION_BEST_COLUMNS)
         .order(sortBy, { ascending: false })
         .order("id", { ascending: false })
         .limit(maxLimit)

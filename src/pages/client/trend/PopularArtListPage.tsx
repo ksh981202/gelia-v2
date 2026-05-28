@@ -7,7 +7,10 @@ import { useCallback, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 
 const POPULAR_ART_LIMIT = 50;
+const POPULAR_ART_SKELETON_COUNT = 8;
 const POPULAR_ART_SCROLL_Y_KEY = "gelia_popular_art_scroll_y";
+const POPULAR_ART_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
 const POPULAR_ART_KEYWORDS = [
   "프렌치",
   "마블",
@@ -73,7 +76,7 @@ function usePopularArtQuery(maxLimit: number) {
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
       const { data, error } = await supabase
         .from("nail_designs")
-        .select("*")
+        .select(POPULAR_ART_COLUMNS)
         .or(buildPopularArtOrFilter())
         .order("popularity", { ascending: false })
         .order("saves", { ascending: false })
@@ -146,7 +149,7 @@ export default function PopularArtListPage() {
 
       <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
         {isLoading ? (
-          Array.from({ length: POPULAR_ART_LIMIT }, (_, index) => (
+          Array.from({ length: POPULAR_ART_SKELETON_COUNT }, (_, index) => (
             <article key={`popular-art-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
               <div className="w-full aspect-[3/4] rounded-lg bg-gray-100 animate-pulse" />
               <div className="mt-2 flex w-full flex-col gap-1 px-1">

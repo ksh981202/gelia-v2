@@ -14,6 +14,8 @@ const NAIL_THUMB_TITLE = "block w-full min-w-0 max-w-full text-center text-sm fo
 const TREND_SKELETON_ROWS = 5;
 const SHAPE_PREVIEW_KEYWORD = "라운드 스퀘어 오발 아몬드 코핀 발레리나";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
+const POPULAR_DESIGN_SHAPE_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
 
 type RankingNailRow = NailDesignRow & { ranking_score?: number };
 
@@ -97,7 +99,7 @@ function usePopularShapeBestQuery(shapeKeyword: string, maxLimit: number) {
     queryKey: ["nail-designs", "popular-design-shape-best", { shapeKeyword, maxLimit }],
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
-      let query = supabase.from("nail_designs").select("*");
+      let query = supabase.from("nail_designs").select(POPULAR_DESIGN_SHAPE_COLUMNS);
 
       const shapeFilter = buildShapeOrFilter(shapeKeyword);
       if (shapeFilter) query = query.or(shapeFilter);

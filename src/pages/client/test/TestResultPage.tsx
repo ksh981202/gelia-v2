@@ -37,6 +37,9 @@ const COLOR_KEYWORDS: Record<string, string[]> = {
   glitter: ["글리터", "펄", "반짝", "스파클"],
 };
 
+const DIAGNOSIS_NAIL_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,hand_type,color,mood,design_elements,popularity,views,saves,likes";
+
 const RESULT_META: Record<string, { styleTag: string; styleTag_en: string; description: string; description_en: string }> = {
   simple: {
     styleTag: "Clean & Minimal Style",
@@ -210,7 +213,7 @@ function useDiagnosisNailsQuery() {
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
       const { data, error } = await supabase
         .from("nail_designs")
-        .select("*")
+        .select(DIAGNOSIS_NAIL_COLUMNS)
         .order("popularity", { ascending: false })
         .order("saves", { ascending: false })
         .limit(200)

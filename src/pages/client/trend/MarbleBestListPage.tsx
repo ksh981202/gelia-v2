@@ -7,8 +7,11 @@ import { useCallback, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 
 const MARBLE_BEST_LIMIT = 30;
+const MARBLE_BEST_SKELETON_COUNT = 8;
 const MARBLE_BEST_SCROLL_Y_KEY = "gelia_marble_best_scroll_y";
 const MARBLE_KEYWORDS = ["마블", "대리석"] as const;
+const MARBLE_BEST_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 
 function escapePostgrestIlikePattern(raw: string): string {
@@ -49,7 +52,7 @@ function useMarbleBestQuery(maxLimit: number) {
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
       const { data, error } = await supabase
         .from("nail_designs")
-        .select("*")
+        .select(MARBLE_BEST_COLUMNS)
         .or(buildMarbleOrFilter())
         .order("popularity", { ascending: false })
         .order("saves", { ascending: false })
@@ -123,7 +126,7 @@ export default function MarbleBestListPage() {
 
       <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
         {isLoading ? (
-          Array.from({ length: MARBLE_BEST_LIMIT }, (_, index) => (
+          Array.from({ length: MARBLE_BEST_SKELETON_COUNT }, (_, index) => (
             <article key={`marble-best-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
               <div className="w-full aspect-[3/4] rounded-lg bg-gray-100 animate-pulse" />
               <div className="mt-2 flex w-full flex-col gap-1 px-1">

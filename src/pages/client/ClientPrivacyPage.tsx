@@ -22,7 +22,7 @@ export default function ClientPrivacyPage() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from('board_posts')
-        .select('*')
+        .select('id,title,content,title_en,content_en')
         .eq('is_active', true)
         .eq('post_type', 'privacy')
         .order('created_at', { ascending: false })

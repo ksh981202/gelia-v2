@@ -9,6 +9,8 @@ import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } fr
 const SHAPE_TABS = ["전체", "⚪ 라운드", "🧊 스퀘어", "🌰 오발/아몬드"] as const;
 const SHAPE_SCROLL_Y_KEY = "gelia_shape_best_scroll_y";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
+const SHAPE_BEST_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
 
 const SHAPE_TAB_LABEL_EN: Record<(typeof SHAPE_TABS)[number], string> = {
   전체: "All",
@@ -99,7 +101,7 @@ function useShapeBestQuery(shapeKeyword: string, maxLimit: number) {
     queryKey: ["nail-designs", "shape-best-ranking", { shapeKeyword, maxLimit }],
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
-      let query = supabase.from("nail_designs").select("*");
+      let query = supabase.from("nail_designs").select(SHAPE_BEST_COLUMNS);
 
       if (shapeKeyword !== "전체") {
         const shapeFilter = buildShapeOrFilter(shapeKeyword);

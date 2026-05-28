@@ -8,8 +8,11 @@ import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } fr
 
 const STONE_BEST_TABS = ['전체', '💎 스톤/큐빅', '⚪ 진주/체인', '🐚 조개/자개'] as const;
 const STONE_BEST_LIMIT = 30;
+const STONE_BEST_SKELETON_COUNT = 8;
 const STONE_BEST_SCROLL_Y_KEY = "gelia_stone_best_scroll_y";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
+const STONE_BEST_COLUMNS =
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
 
 type RankingNailRow = NailDesignRow & { ranking_score: number };
 
@@ -117,7 +120,7 @@ function useStoneBestQuery(keyword: string, maxLimit: number) {
     queryFn: async ({ signal }): Promise<RankingNailRow[]> => {
       let query = supabase
         .from("nail_designs")
-        .select("*");
+        .select(STONE_BEST_COLUMNS);
 
       const orFilter = buildKeywordOrFilter(keyword);
       if (orFilter) query = query.or(orFilter);
@@ -240,7 +243,7 @@ export default function StoneBestListPage() {
 
       <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">
         {isLoading ? (
-          Array.from({ length: STONE_BEST_LIMIT }, (_, index) => (
+          Array.from({ length: STONE_BEST_SKELETON_COUNT }, (_, index) => (
             <article key={`stone-best-skel-${index}`} className="flex flex-col gap-2" aria-hidden>
               <div className="w-full aspect-[3/4] rounded-lg bg-gray-100 animate-pulse" />
               <div className="mt-2 flex w-full flex-col gap-1 px-1">
