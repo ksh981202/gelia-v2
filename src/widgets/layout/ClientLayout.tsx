@@ -147,7 +147,7 @@ function ClientLayoutContent() {
             >
               <Search size={18} className="text-foreground" />
             </button>
-            {isAdminUser ? (
+            {isAdminUser && import.meta.env.DEV ? (
               <button
                 type="button"
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90 sm:h-10 sm:w-10"

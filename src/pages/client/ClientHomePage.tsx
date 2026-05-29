@@ -45,6 +45,24 @@ export default function ClientHomePage() {
     () => (feed?.recommend ?? []).map(toHomeNailCard),
     [feed?.recommend],
   );
+
+  // LCP 최우선 프리페치 트릭 (가장 첫 번째 사진 멱살 잡기)
+  useEffect(() => {
+    const firstImage = recommendNails[0]?.image;
+    if (!firstImage) return;
+
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = firstImage;
+    link.fetchPriority = "high";
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [recommendNails]);
+
   const trendNails = useMemo(() => (feed?.trend ?? []).map(toHomeNailCard), [feed?.trend]);
   const popularNails = useMemo(
     () => (feed?.popular ?? []).map(toHomeNailCard),

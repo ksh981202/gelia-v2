@@ -19,8 +19,6 @@ export default function ClientLoginPage() {
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showAdminPin, setShowAdminPin] = useState(false);
-  const [adminPin, setAdminPin] = useState('');
 
   // 1. 이미 로그인된 유저는 마이페이지로 쫓아내기
   useEffect(() => {
@@ -49,13 +47,6 @@ export default function ClientLoginPage() {
       return;
     }
     if (!supabase) return;
-
-    if (email.trim().toLowerCase() === "k981202@naver.com" && !isSignUp) {
-      setErrorMsg("");
-      setAdminPin("");
-      setShowAdminPin(true);
-      return;
-    }
     
     setLoading(true);
     setErrorMsg('');
@@ -80,35 +71,6 @@ export default function ClientLoginPage() {
       setErrorMsg(message === 'Invalid login credentials' 
         ? (isEnglish ? 'Email or password does not match.' : '이메일 또는 비밀번호가 일치하지 않습니다.')
         : message || (isEnglish ? 'An error occurred during authentication.' : '인증 과정에서 오류가 발생했습니다.'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-        if (adminPin !== "2258") {
-      setErrorMsg(isEnglish ? "Admin security code does not match." : "관리자 보안 코드가 일치하지 않습니다.");
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg("");
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      const signedInUserId = data.user?.id ?? data.session?.user?.id ?? "";
-      if (signedInUserId) mergeGuestRecentViewedToUser(signedInUserId);
-      setShowAdminPin(false);
-      setAdminPin("");
-      navigate("/my", { replace: true });
-    } catch (error) {
-      const message = getAuthErrorMessage(error);
-      setErrorMsg(
-        message === "Invalid login credentials"
-          ? (isEnglish ? "Email or password does not match." : "이메일 또는 비밀번호가 일치하지 않습니다.")
-          : message || (isEnglish ? "An error occurred during authentication." : "인증 과정에서 오류가 발생했습니다."),
-      );
     } finally {
       setLoading(false);
     }
@@ -219,47 +181,7 @@ export default function ClientLoginPage() {
               )}
             </div>
 
-            {showAdminPin ? (
-              <form className="space-y-5" onSubmit={handlePinSubmit}>
-                <div>
-                  <p className="mb-2 text-center text-[14px] font-semibold text-gray-800">
-                    {isEnglish ? 'Enter the admin security code' : '최고 관리자 보안 코드를 입력하세요'}
-                  </p>
-                  <input
-                    type="password"
-                    defaultValue={adminPin}
-                    onChange={(e) => {
-                      setAdminPin(e.target.value);
-                      setErrorMsg("");
-                    }}
-                    maxLength={4}
-                    className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-center text-[15px] tracking-[0.3em] outline-none transition-colors focus:border-[#FF6B00] focus:bg-white focus:ring-1 focus:ring-[#FF6B00] disabled:bg-gray-50"
-                    placeholder={isEnglish ? '4-digit security code' : '보안 코드 4자리'}
-                    disabled={loading}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-2 flex w-full items-center justify-center rounded-xl bg-[#FF6B00] px-4 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-[#E66000] disabled:bg-gray-300 shadow-md"
-                >
-                  {loading ? (isEnglish ? "Checking..." : "확인 중...") : (isEnglish ? "Confirm" : "확인")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAdminPin(false);
-                    setAdminPin("");
-                    setErrorMsg("");
-                  }}
-                  className="w-full text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors"
-                >
-                  {isEnglish ? 'Cancel' : '취소(뒤로가기)'}
-                </button>
-              </form>
-            ) : (
-              <>
-                <form className="space-y-5" onSubmit={isResetMode ? handleResetPassword : handleEmailAuth}>
+            <form className="space-y-5" onSubmit={isResetMode ? handleResetPassword : handleEmailAuth}>
                   <div>
                     <label className="mb-1.5 block text-[13px] font-semibold text-gray-700">{isEnglish ? 'Email' : '이메일'}</label>
                     <input
@@ -332,11 +254,9 @@ export default function ClientLoginPage() {
                       {isEnglish ? 'Back' : '뒤로 가기'}
                     </button>
                   )}
-                </form>
-              </>
-            )}
+            </form>
 
-            {!isResetMode && !showAdminPin && (
+            {!isResetMode && (
               <>
                 <div className="relative my-10">
                   <div className="absolute inset-0 flex items-center">

@@ -12,9 +12,10 @@ dist
 dist-ssr
 *.local
 
-# Env (secrets)
+# Env (secrets) 방어벽 완전 봉쇄
 .env
-.env.*.local
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
