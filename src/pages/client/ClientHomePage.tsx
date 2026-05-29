@@ -127,7 +127,7 @@ export default function ClientHomePage() {
             <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/detail/${nail.id}`)}>
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                 <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
-                <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent p-5 pt-12">
+                <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/40 to-transparent p-5 pt-12">
                   <div className="flex w-full flex-col items-start text-left">
                     <span className="mb-2 inline-block rounded-full bg-[#FF7E67] px-3 py-1 text-[11px] font-bold text-white shadow-sm">PICK</span>
                     <h3 className="w-full truncate text-lg font-bold text-white drop-shadow-md">{homeNailTitle(nail, isEnglish)}</h3>

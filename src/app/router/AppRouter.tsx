@@ -42,6 +42,7 @@ const PopularMoodListPage = lazy(() => import('../../pages/client/trend/PopularM
 const CategoryPage = lazy(() => import('../../pages/client/CategoryPage'))
 const SearchMainPage = lazy(() => import('../../pages/client/SearchMainPage'))
 const ClientLoginPage = lazy(() => import('../../pages/client/ClientLoginPage'))
+const ClientUpdatePasswordPage = lazy(() => import('../../pages/client/auth/ClientUpdatePasswordPage'))
 const ClientAccountSettingsPage = lazy(() => import('../../pages/client/ClientAccountSettingsPage'))
 const ClientNotificationSettingsPage = lazy(() => import('../../pages/client/ClientNotificationSettingsPage'))
 const ClientNotificationPage = lazy(() => import('../../pages/client/ClientNotificationPage'))
@@ -110,6 +111,7 @@ const router = createBrowserRouter([
       { path: 'magazine/:id', element: <ClientMagazineDetailPage /> },
       { path: 'search', element: <SearchMainPage /> },
       { path: 'login', element: <ClientLoginPage /> },
+      { path: 'update-password', element: <ClientUpdatePasswordPage /> },
       { path: 'notifications', element: <ClientNotificationSettingsPage /> },
       { path: 'notification-list', element: <ClientNotificationPage /> },
       { path: 'support', element: <ClientSupportPage /> },
