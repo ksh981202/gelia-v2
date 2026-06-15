@@ -1,6 +1,7 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
+import DOMPurify from 'dompurify'
 import { ChevronLeft, Share2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -45,7 +46,7 @@ function getPlainTextSummary(html: string | null): string {
   if (!html) return ''
 
   const container = document.createElement('div')
-  container.innerHTML = html
+  container.innerHTML = DOMPurify.sanitize(html)
   return (container.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 150)
 }
 
@@ -162,6 +163,7 @@ export default function ClientMagazineDetailPage() {
     (isEnglish && post?.title_en ? post.title_en : post?.title)?.trim() ||
     (isEnglish ? 'Untitled' : '제목 없음')
   const content = isEnglish && post?.content_en ? post.content_en : post?.content
+  const sanitizedContent = DOMPurify.sanitize(content ?? '')
   const createdAt = formatCreatedAt(post?.created_at ?? null, isEnglish)
 
   useEffect(() => {
@@ -250,7 +252,7 @@ export default function ClientMagazineDetailPage() {
             ) : null}
             <div
               className="mt-8 whitespace-pre-wrap break-words break-all overflow-hidden text-base leading-relaxed text-gray-700 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_img]:my-5 [&_img]:max-w-full [&_img]:rounded-2xl [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-5 [&_ul]:list-disc"
-              dangerouslySetInnerHTML={{ __html: content ?? '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
           </article>
         ) : (

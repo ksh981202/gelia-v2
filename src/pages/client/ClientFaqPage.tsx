@@ -1,6 +1,7 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
+import DOMPurify from 'dompurify'
 import { ChevronDown, ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -69,6 +70,7 @@ export default function ClientFaqPage() {
             data.map((item) => {
             const title = (isEnglish && item.title_en ? item.title_en : item.title) || ''
             const content = (isEnglish && item.content_en ? item.content_en : item.content) || ''
+            const sanitizedContent = DOMPurify.sanitize(content)
             const isOpen = expandedId === item.id
             return (
               <div key={item.id} className="border-b border-gray-50 last:border-b-0">
@@ -93,7 +95,7 @@ export default function ClientFaqPage() {
                   <div className="border-t border-gray-50 bg-gray-50/80 px-5 py-4">
                     <div
                       className="whitespace-pre-wrap break-words break-all overflow-hidden text-[14px] leading-relaxed text-gray-600 [&_a]:text-[#FF7D66] [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
-                      dangerouslySetInnerHTML={{ __html: content ?? '' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     />
                   </div>
                 ) : null}
