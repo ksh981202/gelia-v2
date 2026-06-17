@@ -23,11 +23,35 @@ const CHIC_BEST_TAB_LABEL_EN: Record<(typeof CHIC_BEST_TABS)[number], string> = 
   "💎 심플포인트": "💎 Simple Point",
 };
 
+const CHIC_TAB_SYNONYMS: Record<string, string[]> = {
+  "블랙&화이트": ["블랙", "화이트", "흑백", "모노톤", "black", "white"],
+  누드톤: ["누드", "베이지", "스킨", "스킨톤", "여리여리", "살구", "nude"],
+  "매트/무광": ["매트", "무광", "벨벳", "matte"],
+  심플포인트: ["심플", "포인트", "깔끔한", "미니멀", "simple"],
+};
+
 function extractPureThemeKeyword(raw: string): string {
   return String(raw ?? "")
     .replace(/[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function extractChicSynonymKey(raw: string): string {
+  return String(raw ?? "")
+    .replace(/^[^\u3131-\u318E\uAC00-\uD7A3a-zA-Z0-9]+/, "")
+    .trim();
+}
+
+function chicTabKeywordsForQuery(tab: (typeof CHIC_BEST_TABS)[number]): readonly string[] {
+  if (tab === "전체") return [];
+
+  const synonyms = CHIC_TAB_SYNONYMS[extractChicSynonymKey(tab)];
+  if (synonyms?.length) return synonyms;
+
+  return extractPureThemeKeyword(tab)
+    .split(/\s+/)
+    .filter((part) => part.length > 0);
 }
 
 function escapePostgrestIlikePattern(raw: string): string {
@@ -85,9 +109,9 @@ function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
   return ko || en || (isEnglish ? "Nail Design" : "네일 디자인");
 }
 
-function useChicBestQuery(activeTabKeyword: string, maxLimit: number) {
+function useChicBestQuery(activeTab: (typeof CHIC_BEST_TABS)[number], maxLimit: number) {
   return useQuery({
-    queryKey: ["nail-designs", "chic-best", { activeTabKeyword, maxLimit }],
+    queryKey: ["nail-designs", "chic-best", { activeTab, maxLimit }],
     staleTime: 5 * 60 * 1000,
     queryFn: async ({ signal }): Promise<NailDesignRow[]> => {
       let query = supabase
@@ -95,8 +119,8 @@ function useChicBestQuery(activeTabKeyword: string, maxLimit: number) {
         .select(CHIC_BEST_COLUMNS)
         .or(buildKeywordOrFilter(CHIC_BASE_KEYWORDS));
 
-      if (activeTabKeyword !== "전체") {
-        const tabFilter = buildKeywordOrFilter([activeTabKeyword]);
+      if (activeTab !== "전체") {
+        const tabFilter = buildKeywordOrFilter(chicTabKeywordsForQuery(activeTab));
         if (tabFilter) query = query.or(tabFilter);
       }
 
@@ -123,8 +147,7 @@ export default function ChicBestListPage() {
   const activeTabButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const activeTab = useMemo(() => resolveActiveChicTab(searchParams.get("tab")), [searchParams]);
-  const activeTabKeyword = activeTab === "전체" ? "전체" : extractPureThemeKeyword(activeTab);
-  const { data = [], isLoading, isError } = useChicBestQuery(activeTabKeyword, CHIC_BEST_LIMIT);
+  const { data = [], isLoading, isError } = useChicBestQuery(activeTab, CHIC_BEST_LIMIT);
   const rankingItems = useMemo(() => data.slice(0, CHIC_BEST_LIMIT), [data]);
 
   const setActiveTab = useCallback(
