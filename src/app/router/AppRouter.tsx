@@ -71,6 +71,7 @@ const ClientColorListPage = lazy(() => import('../../pages/client/ClientColorLis
 const ClientColorThemeListPage = lazy(() => import('../../pages/client/ClientColorThemeListPage'))
 const ClientColorPopularListPage = lazy(() => import('../../pages/client/ClientColorPopularListPage'))
 const ClientTodaySpecialPage = lazy(() => import('../../pages/client/ClientTodaySpecialPage'))
+const ClientProposalPage = lazy(() => import('../../pages/client/proposal/ClientProposalPage'))
 const TestIntroPage = lazy(() => import('../../pages/client/test/TestIntroPage'))
 const TestStep1Page = lazy(() => import('../../pages/client/test/TestStep1Page'))
 const TestStep2Page = lazy(() => import('../../pages/client/test/TestStep2Page'))
@@ -79,6 +80,11 @@ const TestResultPage = lazy(() => import('../../pages/client/test/TestResultPage
 const NotFoundPage = lazy(() => import('../../pages/client/NotFoundPage'))
 const ProLayout = lazy(() => import('../../pages/pro/ProLayout'))
 const ProDashboardPage = lazy(() => import('../../pages/pro/ProDashboardPage'))
+const ProSentProposalsPage = lazy(() => import('../../pages/pro/ProSentProposalsPage'))
+const ProCollectionsPage = lazy(() => import('../../pages/pro/ProCollectionsPage'))
+const ProCurationPage = lazy(() => import('../../pages/pro/ProCurationPage'))
+const ProGrowthPage = lazy(() => import('../../pages/pro/ProGrowthPage'))
+const ProSettingsPage = lazy(() => import('../../pages/pro/ProSettingsPage'))
 
 const router = createBrowserRouter([
   {
@@ -108,6 +114,7 @@ const router = createBrowserRouter([
         element: <ClientSeasonPopularListPage />,
       },
       { path: 'detail/:id', element: <ClientNailDetailPage /> },
+      { path: 'proposal/:id', element: <ClientProposalPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
       { path: 'magazine', element: <ClientMagazinePage /> },
       { path: 'magazine/:id', element: <ClientMagazineDetailPage /> },
@@ -164,7 +171,14 @@ const router = createBrowserRouter([
   {
     path: '/pro',
     element: <ProLayout />,
-    children: [{ index: true, element: <ProDashboardPage /> }],
+    children: [
+      { index: true, element: <ProDashboardPage /> },
+      { path: 'proposals', element: <ProSentProposalsPage /> },
+      { path: 'collections', element: <ProCollectionsPage /> },
+      { path: 'curation', element: <ProCurationPage /> },
+      { path: 'growth', element: <ProGrowthPage /> },
+      { path: 'settings', element: <ProSettingsPage /> },
+    ],
   },
   {
     path: '/admin',

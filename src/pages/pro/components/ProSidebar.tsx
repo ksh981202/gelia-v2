@@ -1,10 +1,20 @@
+import { NavLink } from "react-router-dom";
+
 const PRO_MENU_ITEMS = [
-  { id: "curation", label: "🏆 젤리아 큐레이션", active: false },
-  { id: "designs", label: "💅 전체 디자인", active: true },
-  { id: "collection", label: "⭐ 내 컬렉션", active: false },
-  { id: "proposals", label: "📋 보낸 제안서", active: false },
-  { id: "growth", label: "📈 샵 성장 팁", active: false },
+  { id: "curation", label: "🏆 젤리아 큐레이션", to: "/pro/curation" },
+  { id: "designs", label: "💅 전체 디자인", to: "/pro", end: true },
+  { id: "collection", label: "⭐ 내 컬렉션", to: "/pro/collections" },
+  { id: "proposals", label: "📋 보낸 제안서", to: "/pro/proposals" },
+  { id: "growth", label: "📈 샵 성장 팁", to: "/pro/growth" },
 ] as const;
+
+const proNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+  [
+    "flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors",
+    isActive
+      ? "bg-[#EDE4D8] text-stone-900 shadow-sm"
+      : "text-stone-600 hover:bg-[#F3EDE4] hover:text-stone-800",
+  ].join(" ");
 
 export default function ProSidebar() {
   return (
@@ -16,28 +26,21 @@ export default function ProSidebar() {
 
       <nav className="flex-1 space-y-1 px-3 py-5" aria-label="PRO 메인 메뉴">
         {PRO_MENU_ITEMS.map((item) => (
-          <button
+          <NavLink
             key={item.id}
-            type="button"
-            className={[
-              "flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors",
-              item.active
-                ? "bg-[#EDE4D8] text-stone-900 shadow-sm"
-                : "text-stone-600 hover:bg-[#F3EDE4] hover:text-stone-800",
-            ].join(" ")}
+            to={item.to}
+            end={"end" in item ? item.end : false}
+            className={proNavLinkClass}
           >
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
 
       <div className="border-t border-stone-200/60 p-3">
-        <button
-          type="button"
-          className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-stone-600 transition-colors hover:bg-[#F3EDE4] hover:text-stone-800"
-        >
+        <NavLink to="/pro/settings" className={proNavLinkClass}>
           ⚙️ 샵 프로필 설정
-        </button>
+        </NavLink>
       </div>
     </aside>
   );

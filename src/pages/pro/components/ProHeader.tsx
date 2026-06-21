@@ -1,6 +1,10 @@
+import { useProSearchStore } from "@/features/pro/store/useProSearchStore";
 import { Clock, Search } from "lucide-react";
 
 export default function ProHeader() {
+  const searchKeyword = useProSearchStore((state) => state.searchKeyword);
+  const setSearchKeyword = useProSearchStore((state) => state.setSearchKeyword);
+
   return (
     <header className="flex h-16 shrink-0 items-center border-b border-stone-200/80 bg-[#FFFCF8] px-6">
       <div className="mx-auto flex w-full max-w-2xl items-center">
@@ -11,8 +15,11 @@ export default function ProHeader() {
           />
           <input
             type="search"
-            placeholder="Search designs..."
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+            placeholder="디자인 검색 (예: 글리터, 웨딩, 숏네일)"
             className="w-full rounded-full border border-stone-200/80 bg-[#FAF7F2] py-2.5 pl-11 pr-4 text-sm text-stone-700 placeholder:text-stone-400 outline-none transition-colors focus:border-stone-300 focus:bg-white"
+            aria-label="PRO 디자인 검색"
           />
         </div>
       </div>
