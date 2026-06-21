@@ -77,6 +77,8 @@ const TestStep2Page = lazy(() => import('../../pages/client/test/TestStep2Page')
 const TestStep3Page = lazy(() => import('../../pages/client/test/TestStep3Page'))
 const TestResultPage = lazy(() => import('../../pages/client/test/TestResultPage'))
 const NotFoundPage = lazy(() => import('../../pages/client/NotFoundPage'))
+const ProLayout = lazy(() => import('../../pages/pro/ProLayout'))
+const ProDashboardPage = lazy(() => import('../../pages/pro/ProDashboardPage'))
 
 const router = createBrowserRouter([
   {
@@ -158,6 +160,11 @@ const router = createBrowserRouter([
       { path: 'test-step3', element: <TestStep3Page /> },
       { path: 'test-result', element: <TestResultPage /> },
     ],
+  },
+  {
+    path: '/pro',
+    element: <ProLayout />,
+    children: [{ index: true, element: <ProDashboardPage /> }],
   },
   {
     path: '/admin',

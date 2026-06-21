@@ -6,7 +6,7 @@ export const GALLERY_PAGE_SIZE = 10
 export const DEFAULT_GALLERY_TAB = '전체'
 export const DEFAULT_GALLERY_SORT = '인기순'
 
-const GALLERY_COLUMNS =
+export const GALLERY_COLUMNS =
   'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length,color,mood,design_elements'
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const
 const NAIL_SYNONYMS: Record<string, string[]> = {
@@ -53,7 +53,7 @@ function expandSynonymTokens(normalizedTab: string, tokens: string[]): string[] 
   return [...expanded]
 }
 
-function buildTabOrFilter(tab: string): string {
+export function buildTabOrFilter(tab: string): string {
   const normalized = tab
     .replace(/\//g, ' ')
     .replace(/,/g, ' ')
@@ -96,7 +96,7 @@ function buildTabOrFilter(tab: string): string {
   return parts.join(',')
 }
 
-function applyGallerySort<T extends { order: (column: string, options: { ascending: boolean }) => T }>(
+export function applyGallerySort<T extends { order: (column: string, options: { ascending: boolean }) => T }>(
   query: T,
   sort: string,
 ): T {
@@ -120,19 +120,52 @@ export function normalizeGallerySort(raw: string | null): string {
 type GalleryQueryOptions = {
   enabled?: boolean
   baseTab?: string
+  extraTabs?: readonly string[]
+}
+
+function applyGalleryFilterTabs<T extends { or: (filters: string) => T }>(
+  query: T,
+  tabs: readonly string[],
+): T {
+  let next = query
+  for (const tab of tabs) {
+    const orFilter = buildTabOrFilter(tab)
+    if (orFilter) next = next.or(orFilter)
+  }
+  return next
+}
+
+function collectGalleryFilterTabs(
+  tab: string,
+  baseTab: string,
+  extraTabs: readonly string[] = [],
+): string[] {
+  const tabs: string[] = []
+
+  if (baseTab && baseTab !== DEFAULT_GALLERY_TAB) tabs.push(baseTab)
+  if (tab && tab !== DEFAULT_GALLERY_TAB && tab !== baseTab) tabs.push(tab)
+  for (const extraTab of extraTabs) {
+    const normalized = extraTab.trim()
+    if (!normalized || normalized === DEFAULT_GALLERY_TAB || tabs.includes(normalized)) continue
+    tabs.push(normalized)
+  }
+
+  return tabs
 }
 
 export function useGalleryInfiniteQuery(tab: string, sort: string, options?: GalleryQueryOptions) {
   const normalizedTab = tab.trim() || DEFAULT_GALLERY_TAB
   const normalizedSort = normalizeGallerySort(sort)
   const normalizedBaseTab = options?.baseTab?.trim() ?? ''
+  const normalizedExtraTabs = options?.extraTabs ?? []
+  const filterTabs = collectGalleryFilterTabs(normalizedTab, normalizedBaseTab, normalizedExtraTabs)
 
   return useInfiniteQuery({
     queryKey: [
       'nail-designs',
       'gallery',
       'infinite',
-      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab },
+      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabs: normalizedExtraTabs },
     ],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -144,16 +177,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
       const to = page * GALLERY_PAGE_SIZE - 1
 
       let query = supabase.from('nail_designs').select(GALLERY_COLUMNS)
-
-      if (normalizedBaseTab && normalizedBaseTab !== DEFAULT_GALLERY_TAB) {
-        const baseFilter = buildTabOrFilter(normalizedBaseTab)
-        if (baseFilter) query = query.or(baseFilter)
-      }
-
-      if (normalizedTab !== DEFAULT_GALLERY_TAB) {
-        const orFilter = buildTabOrFilter(normalizedTab)
-        if (orFilter && normalizedTab !== normalizedBaseTab) query = query.or(orFilter)
-      }
+      query = applyGalleryFilterTabs(query, filterTabs)
 
       query = applyGallerySort(query, normalizedSort)
 
