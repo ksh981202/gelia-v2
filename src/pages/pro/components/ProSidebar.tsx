@@ -1,3 +1,4 @@
+import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import { NavLink } from "react-router-dom";
 
 const PRO_MENU_ITEMS = [
@@ -6,6 +7,12 @@ const PRO_MENU_ITEMS = [
   { id: "collection", label: "⭐ 내 컬렉션", to: "/pro/collections" },
   { id: "proposals", label: "📋 보낸 제안서", to: "/pro/proposals" },
   { id: "growth", label: "📈 샵 성장 팁", to: "/pro/growth" },
+] as const;
+
+const PRO_FOCUS_MENU_ITEMS = [
+  { id: "designs", label: "💅 프리미엄 디자인", to: "/pro", end: true },
+  { id: "collection", label: "⭐ VIP 룩북", to: "/pro/collections" },
+  { id: "proposals", label: "💌 고객 맞춤 제안서", to: "/pro/proposals" },
 ] as const;
 
 const proNavLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -17,15 +24,18 @@ const proNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(" ");
 
 export default function ProSidebar() {
+  const isFocusMode = useProUIStore((state) => state.isFocusMode);
+  const menuItems = isFocusMode ? PRO_FOCUS_MENU_ITEMS : PRO_MENU_ITEMS;
+
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-stone-200/80 bg-[#FAF7F2]">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-stone-200/80 bg-[#FAF7F2]">
       <div className="border-b border-stone-200/60 px-6 py-7">
         <p className="text-xs font-medium tracking-[0.28em] text-stone-400">GELIA</p>
         <h1 className="mt-1 text-xl font-semibold tracking-tight text-stone-800">GELIA PRO</h1>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-5" aria-label="PRO 메인 메뉴">
-        {PRO_MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <NavLink
             key={item.id}
             to={item.to}
@@ -37,11 +47,13 @@ export default function ProSidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-stone-200/60 p-3">
-        <NavLink to="/pro/settings" className={proNavLinkClass}>
-          ⚙️ 샵 프로필 설정
-        </NavLink>
-      </div>
+      {!isFocusMode ? (
+        <div className="border-t border-stone-200/60 p-3">
+          <NavLink to="/pro/settings" className={proNavLinkClass}>
+            ⚙️ 샵 프로필 설정
+          </NavLink>
+        </div>
+      ) : null}
     </aside>
   );
 }

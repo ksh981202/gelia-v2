@@ -37,7 +37,7 @@ export default function ProRightPanel() {
 
   return (
     <>
-      <aside className="flex h-full w-80 shrink-0 flex-col border-l border-stone-200/80 bg-[#FAF7F2]">
+      <aside className="sticky top-0 flex h-screen w-80 shrink-0 flex-col overflow-y-auto border-l border-stone-200/80 bg-[#FAF7F2]">
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
           <div className="border-b border-stone-200/60 pb-4 mb-4">
             <p className="mb-2 text-lg font-bold text-stone-800">

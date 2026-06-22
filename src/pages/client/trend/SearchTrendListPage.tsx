@@ -51,18 +51,13 @@ export default function SearchTrendListPage() {
   const isGalleryEnabled = activeKeyword.length > 0;
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeKeyword, DEFAULT_GALLERY_SORT, { enabled: isGalleryEnabled });
-
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  );
   const { data: totalCount } = useGalleryCountQuery(activeKeyword, { enabled: isGalleryEnabled });
   const totalCountLabel = totalCount == null ? "-" : totalCount.toLocaleString();
 

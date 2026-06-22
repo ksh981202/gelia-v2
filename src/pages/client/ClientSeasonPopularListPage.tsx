@@ -200,18 +200,13 @@ export default function ClientSeasonPopularListPage() {
   )
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(finalQueryKeyword, sortType)
-
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  )
   const { data: totalCount } = useGalleryCountQuery(finalQueryKeyword)
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 

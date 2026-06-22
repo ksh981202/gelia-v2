@@ -141,6 +141,12 @@ function FilterPill({
   );
 }
 
+export type ProGalleryStats = {
+  totalCount: number | null;
+  hasActiveFilters: boolean;
+  isLoading: boolean;
+};
+
 export type ProGalleryWidgetProps = {
   variant?: "dashboard" | "compact";
   selectedIds: ReadonlySet<string>;
@@ -148,6 +154,7 @@ export type ProGalleryWidgetProps = {
   onOpenDetail?: (item: NailDesignRow) => void;
   debouncedSearchKeyword?: string;
   ariaLabel?: string;
+  onGalleryStatsChange?: (stats: ProGalleryStats) => void;
 };
 
 export default function ProGalleryWidget({
@@ -157,6 +164,7 @@ export default function ProGalleryWidget({
   onOpenDetail,
   debouncedSearchKeyword = "",
   ariaLabel = "PRO 디자인 탐색 갤러리",
+  onGalleryStatsChange,
 }: ProGalleryWidgetProps) {
   const isCompact = variant === "compact";
   const masonryClass = MASONRY_CLASS_BY_VARIANT[variant];
@@ -178,7 +186,8 @@ export default function ProGalleryWidget({
   );
 
   const {
-    data,
+    galleryItems,
+    totalCount,
     isLoading,
     isError,
     fetchNextPage,
@@ -189,7 +198,15 @@ export default function ProGalleryWidget({
     extraTabs: galleryQuery.extraTabs,
   });
 
-  const galleryItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data]);
+  const hasActiveFilters = galleryQuery.extraTabs.length > 0;
+
+  useEffect(() => {
+    onGalleryStatsChange?.({
+      totalCount,
+      hasActiveFilters,
+      isLoading,
+    });
+  }, [totalCount, hasActiveFilters, isLoading, onGalleryStatsChange]);
 
   const handleFilterToggle = useCallback(
     <T extends string>(setter: (value: T | ((prev: T) => T)) => void, option: T) => {

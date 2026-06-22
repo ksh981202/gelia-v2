@@ -158,18 +158,13 @@ export default function ClientColorThemeListPage() {
   )
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType, { baseTab: themeBaseKeyword })
-
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  )
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword, { baseTab: themeBaseKeyword })
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 

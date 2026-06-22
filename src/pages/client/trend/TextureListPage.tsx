@@ -88,7 +88,7 @@ export default function TextureListPage() {
   const sortType: SortValue = isSortValue(normalizedSort) ? normalizedSort : '인기순';
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
@@ -96,10 +96,6 @@ export default function TextureListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
 
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  );
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
 

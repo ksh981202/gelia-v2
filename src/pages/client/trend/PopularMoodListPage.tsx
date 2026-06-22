@@ -109,18 +109,13 @@ export default function PopularMoodListPage() {
   const sortType: SortValue = isSortValue(normalizedSort) ? normalizedSort : DEFAULT_GALLERY_SORT;
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
-
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  );
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
 

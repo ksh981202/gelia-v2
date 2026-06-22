@@ -131,7 +131,7 @@ function PatternTrendCard({
 }) {
   const queryKeyword = PATTERN_KEYWORD_MAPPING[item.keyword] ?? item.keyword;
   const { data } = useGalleryInfiniteQuery(queryKeyword, '인기순');
-  const imageUrl = data?.pages[0]?.[0]?.image_url;
+  const imageUrl = data?.pages[0]?.items[0]?.image_url;
   const displayTitle = isEnglish ? item.titleEn : item.title;
 
   return (
@@ -161,7 +161,7 @@ function TextureTrendCard({
 }) {
   const queryKeyword = TEXTURE_KEYWORD_MAPPING[item.keyword] ?? item.keyword;
   const { data } = useGalleryInfiniteQuery(queryKeyword, '인기순');
-  const imageUrl = data?.pages[0]?.[0]?.image_url;
+  const imageUrl = data?.pages[0]?.items[0]?.image_url;
   const displayTitle = isEnglish ? item.titleEn : item.title;
 
   return (

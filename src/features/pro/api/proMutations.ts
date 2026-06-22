@@ -35,6 +35,32 @@ export async function saveProLookbook(title: string, nailIds: string[]): Promise
   }
 }
 
+export async function duplicateProLookbook(lookbook: {
+  title: string;
+  nail_ids: string[];
+}): Promise<void> {
+  const title = `${lookbook.title.trim()} (복사본)`;
+  const nailIds = (lookbook.nail_ids ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
+
+  if (!title.replace(/\s*\(복사본\)$/, "").trim()) {
+    throw new Error("복제할 컬렉션 이름이 없습니다.");
+  }
+
+  const { data, error } = await supabase
+    .from("pro_lookbooks")
+    .insert({
+      title,
+      nail_ids: nailIds,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("컬렉션 복제 결과를 확인할 수 없습니다.");
+  }
+}
+
 export async function createProProposal(input: {
   customerName: string;
   greetingMessage: string;
@@ -150,4 +176,23 @@ export async function copyLookbookShareLink(lookbookId: string): Promise<string>
   const shareUrl = buildLookbookShareUrl(lookbookId);
   await navigator.clipboard.writeText(shareUrl);
   return shareUrl;
+}
+
+export async function deactivateProProposal(proposalId: string): Promise<void> {
+  const id = proposalId.trim();
+  if (!id) {
+    throw new Error("종료할 제안서 ID가 없습니다.");
+  }
+
+  const { data, error } = await supabase
+    .from("pro_proposals")
+    .update({ is_active: false })
+    .eq("id", id)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("제안서 종료 결과를 확인할 수 없습니다.");
+  }
 }

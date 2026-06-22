@@ -98,7 +98,7 @@ export default function SyrupBestListPage() {
   const sortType: SortValue = isSortValue(normalizedSort) ? normalizedSort : DEFAULT_GALLERY_SORT;
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
@@ -107,10 +107,6 @@ export default function SyrupBestListPage() {
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
 
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  );
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
 
   const setActiveTab = useCallback(

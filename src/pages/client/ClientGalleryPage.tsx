@@ -78,18 +78,13 @@ export default function ClientGalleryPage() {
   )
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKo, sortType)
-
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  )
   const { data: totalCount } = useGalleryCountQuery(activeTabKo)
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 

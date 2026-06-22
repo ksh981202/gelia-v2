@@ -139,18 +139,13 @@ export default function ClientVacationListPage() {
   )
 
   const {
-    data,
+    galleryItems,
     isLoading,
     isError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
-
-  const galleryItems = useMemo(
-    () => data?.pages.flatMap((page) => page) ?? [],
-    [data],
-  )
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
   const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 

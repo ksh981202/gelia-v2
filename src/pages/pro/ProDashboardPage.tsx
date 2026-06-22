@@ -1,24 +1,25 @@
-import {
-  DEFAULT_GALLERY_TAB,
-  useGalleryCountQuery,
-} from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { toProCartNail, useProCartStore } from "@/features/pro/store/useProCartStore";
 import { useProSearchStore } from "@/features/pro/store/useProSearchStore";
 import { useProUIStore } from "@/features/pro/store/useProUIStore";
-import ProGalleryWidget from "@/pages/pro/components/ProGalleryWidget";
+import ProGalleryWidget, { type ProGalleryStats } from "@/pages/pro/components/ProGalleryWidget";
 import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useCallback, useMemo, useState } from "react";
 
-function formatTotalDesignCount(count: number | undefined, isLoading: boolean): string {
+function formatGalleryCountLabel(count: number | null, isLoading: boolean): string {
   if (isLoading) return "2,000+";
-  if (count == null || count <= 0) return "2,000+";
+  if (count == null || count <= 0) return "0";
   return count.toLocaleString();
 }
 
 export default function ProDashboardPage() {
   const [selectedDetailNail, setSelectedDetailNail] = useState<NailDesignRow | null>(null);
+  const [galleryStats, setGalleryStats] = useState<ProGalleryStats>({
+    totalCount: null,
+    hasActiveFilters: false,
+    isLoading: true,
+  });
 
   const selectedNails = useProCartStore((state) => state.selectedNails);
   const toggleNail = useProCartStore((state) => state.toggleNail);
@@ -26,10 +27,16 @@ export default function ProDashboardPage() {
   const debouncedKeyword = useDebounce(searchKeyword.trim(), 500);
   const isFocusMode = useProUIStore((state) => state.isFocusMode);
 
-  const { data: totalDesignCount, isLoading: isTotalCountLoading } = useGalleryCountQuery(DEFAULT_GALLERY_TAB);
-
   const selectedIdSet = useMemo(() => new Set(selectedNails.map((nail) => nail.id)), [selectedNails]);
-  const totalCountLabel = formatTotalDesignCount(totalDesignCount, isTotalCountLoading);
+  const countLabel = formatGalleryCountLabel(galleryStats.totalCount, galleryStats.isLoading);
+
+  const headerCountText = galleryStats.hasActiveFilters
+    ? `총 ${countLabel}개의 검색 결과`
+    : `총 ${countLabel}개의 프리미엄 디자인`;
+
+  const handleGalleryStatsChange = useCallback((stats: ProGalleryStats) => {
+    setGalleryStats(stats);
+  }, []);
 
   const handleToggleNail = useCallback(
     (item: NailDesignRow) => {
@@ -39,15 +46,13 @@ export default function ProDashboardPage() {
   );
 
   return (
-    <div className="w-full">
+    <div className="flex h-full w-full flex-col">
       <header className="mb-8">
         {isFocusMode ? (
           <div className="mb-6">
             <div className="flex items-end gap-3">
               <h1 className="text-3xl font-bold text-stone-800 tracking-tight">✨ 프리미엄 디자인 룩북</h1>
-              <span className="text-base font-medium text-stone-500 mb-1">
-                총 {totalCountLabel}개의 프리미엄 디자인
-              </span>
+              <span className="text-base font-medium text-stone-500 mb-1">{headerCountText}</span>
             </div>
             <div className="mt-4 text-base text-stone-600 leading-relaxed border-l-4 border-stone-200 pl-4 py-1">
               <p>👑 원장님이 고객님을 위해 엄선한 프리미엄 네일 갤러리입니다.</p>
@@ -59,9 +64,17 @@ export default function ProDashboardPage() {
             <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
               <h1 className="text-2xl font-semibold tracking-tight text-stone-800">💅 전체 디자인 갤러리</h1>
               <p className="pb-0.5 text-sm text-stone-600">
-                총{" "}
-                <span className="font-semibold text-[#5C4A3A]">{totalCountLabel}</span>
-                개의 프리미엄 디자인
+                {galleryStats.hasActiveFilters ? (
+                  <>
+                    총 <span className="font-semibold text-[#5C4A3A]">{countLabel}</span>개의 검색 결과
+                  </>
+                ) : (
+                  <>
+                    총{" "}
+                    <span className="font-semibold text-[#5C4A3A]">{countLabel}</span>
+                    개의 프리미엄 디자인
+                  </>
+                )}
               </p>
             </div>
             <div className="mt-4 text-sm text-stone-600 leading-relaxed">
@@ -91,6 +104,7 @@ export default function ProDashboardPage() {
         onToggleSelect={handleToggleNail}
         onOpenDetail={setSelectedDetailNail}
         debouncedSearchKeyword={debouncedKeyword}
+        onGalleryStatsChange={handleGalleryStatsChange}
       />
 
       <ProQuickViewModal

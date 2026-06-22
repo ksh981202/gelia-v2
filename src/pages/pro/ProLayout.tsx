@@ -1,6 +1,7 @@
 import { useProUIStore } from "@/features/pro/store/useProUIStore";
+import { isProFocusModeBlockedPath } from "@/features/pro/proFocusModeRoutes";
 import { useEffect, useState } from "react";
-import { Outlet, useMatch } from "react-router-dom";
+import { Outlet, useMatch, useLocation, useNavigate } from "react-router-dom";
 import ProHeader from "./components/ProHeader";
 import ProRightPanel from "./components/ProRightPanel";
 import ProSidebar from "./components/ProSidebar";
@@ -15,6 +16,8 @@ export default function ProLayout() {
   const [isDesktop, setIsDesktop] = useState(isProViewportSupported);
   const isGalleryRoute = Boolean(useMatch({ path: "/pro", end: true }));
   const isFocusMode = useProUIStore((state) => state.isFocusMode);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleResize = () => {
@@ -25,6 +28,12 @@ export default function ProLayout() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isFocusMode) return;
+    if (!isProFocusModeBlockedPath(location.pathname)) return;
+    navigate("/pro", { replace: true });
+  }, [isFocusMode, location.pathname, navigate]);
 
   if (!isDesktop) {
     return (
@@ -38,12 +47,12 @@ export default function ProLayout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      {!isFocusMode ? <ProSidebar /> : null}
+    <div className="flex min-h-screen bg-gray-50">
+      <ProSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <ProHeader />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 p-6">
           <Outlet />
         </main>
       </div>

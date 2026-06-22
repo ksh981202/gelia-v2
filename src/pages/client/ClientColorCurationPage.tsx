@@ -229,7 +229,7 @@ export default function ClientColorCurationPage() {
 
   const heroQueryKeyword = COLOR_KEYWORD_MAPPING[currentColor] ?? currentColor
   const { data: heroData } = useGalleryInfiniteQuery(heroQueryKeyword, '인기순')
-  const heroNail = heroData?.pages[0]?.[0]
+  const heroNail = heroData?.pages[0]?.items[0]
   const themeItems = useMemo(
     () =>
       hubData

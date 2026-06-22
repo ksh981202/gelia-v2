@@ -122,54 +122,47 @@ export default function ProEditLookbookModal({
               </div>
 
               <div>
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-base font-medium text-stone-700">
-                    선택된 사진 ({selectedNails.length}장)
-                  </p>
+                <p className="mb-3 text-base font-medium text-stone-700">
+                  선택된 사진 ({selectedNails.length}장)
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {(selectedNails ?? []).map((nail) => (
+                    <div key={nail?.id ?? "unknown-nail"} className="flex flex-col">
+                      <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-stone-100">
+                        {nail?.imageUrl ? (
+                          <img
+                            src={nail.imageUrl}
+                            alt={nail?.title ?? "네일 디자인"}
+                            className="h-full w-full rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full rounded-lg bg-stone-200" aria-hidden />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => nail?.id && handleRemoveNail(nail.id)}
+                          disabled={isSubmitting}
+                          className="absolute right-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white transition-colors hover:bg-black/80 disabled:opacity-60"
+                          aria-label={`${nail?.title ?? "네일 디자인"} 삭제`}
+                        >
+                          X
+                        </button>
+                      </div>
+                      <p className="mt-2 truncate text-center text-sm font-medium text-stone-700">
+                        {nail?.title ?? "네일 디자인"}
+                      </p>
+                    </div>
+                  ))}
                   <button
                     type="button"
-                    onClick={() => setIsGalleryExpanded((prev) => !prev)}
-                    className="text-base text-stone-500 transition-colors hover:text-stone-800"
+                    onClick={() => setIsGalleryExpanded(true)}
+                    disabled={isSubmitting}
+                    className="flex aspect-[3/4] flex-col items-center justify-center rounded-lg border-2 border-dashed border-stone-300 text-stone-500 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    [ ➕ 사진 추가하기 ]
+                    + 디자인 추가
                   </button>
                 </div>
-
-                {(selectedNails ?? []).length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    {(selectedNails ?? []).map((nail) => (
-                      <div key={nail?.id ?? "unknown-nail"} className="flex flex-col">
-                        <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-stone-100">
-                          {nail?.imageUrl ? (
-                            <img
-                              src={nail.imageUrl}
-                              alt={nail?.title ?? "네일 디자인"}
-                              className="h-full w-full rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full rounded-lg bg-stone-200" aria-hidden />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => nail?.id && handleRemoveNail(nail.id)}
-                            disabled={isSubmitting}
-                            className="absolute right-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white transition-colors hover:bg-black/80 disabled:opacity-60"
-                            aria-label={`${nail?.title ?? "네일 디자인"} 삭제`}
-                          >
-                            X
-                          </button>
-                        </div>
-                        <p className="mt-2 truncate text-center text-sm font-medium text-stone-700">
-                          {nail?.title ?? "네일 디자인"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="rounded-xl border border-dashed border-stone-300 py-8 text-center text-sm text-stone-400">
-                    담긴 디자인이 없습니다. 최소 1장 이상 남겨 주세요.
-                  </p>
-                )}
               </div>
             </div>
 
