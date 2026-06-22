@@ -1,4 +1,6 @@
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
+import { useNailDetailViewTracking } from "@/features/nail-activity/useNailDetailViewTracking";
+import { useNailLikeToggle } from "@/features/nail-activity/useNailLikeToggle";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { Brush, Circle, Droplets, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -117,6 +119,16 @@ function formatEditorNote(raw: string): string {
   return raw.replace(/\. +/g, ".\n\n");
 }
 
+function formatStatCount(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function toHashtagLabel(chip: string): string {
+  const bare = chip.replace(/^#/, "").trim();
+  return bare ? `#${bare}` : "#";
+}
+
 export default function ProQuickViewModal({
   nail,
   isSelected,
@@ -124,7 +136,9 @@ export default function ProQuickViewModal({
   onToggleSelect,
 }: ProQuickViewModalProps) {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const { data: detail, isLoading: isDetailLoading } = useNailDetailQuery(nail?.id);
+  useNailDetailViewTracking(nail?.id);
 
   useEffect(() => {
     if (!nail) return;
@@ -151,6 +165,10 @@ export default function ProQuickViewModal({
   useEffect(() => {
     if (!nail) setIsZoomOpen(false);
   }, [nail]);
+
+  useEffect(() => {
+    setIsGuideOpen(false);
+  }, [nail?.id]);
 
   const resolvedDetail = detail ?? nail;
 
@@ -190,6 +208,12 @@ export default function ProQuickViewModal({
       apiLongTextField(detail?.procedure_guide) || apiLongTextField(nail?.procedure_guide);
     return raw.trim();
   }, [detail?.procedure_guide, nail?.procedure_guide]);
+  const { isLiked, toggleLike } = useNailLikeToggle(nail?.id);
+  const likeCount = formatStatCount(detail?.likes ?? nail?.likes);
+  const viewCount = formatStatCount(
+    detail?.popularity ?? detail?.views ?? nail?.popularity ?? nail?.views,
+  );
+  const saveCount = formatStatCount(detail?.saves ?? nail?.saves);
 
   if (!nail) return null;
 
@@ -242,33 +266,46 @@ export default function ProQuickViewModal({
                 {title}
               </h2>
 
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-500">
+                <span>❤️ {likeCount} 좋아요</span>
+                <span>👁️ {viewCount} 조회</span>
+                <span>🔖 {saveCount} 저장</span>
+              </div>
+
               <section className="mt-5">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">태그</p>
+                <div className="relative overflow-hidden rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">
+                    Editor&apos;s Note
+                  </p>
+                  <div className="relative mt-3">
+                    <span
+                      className="pointer-events-none absolute -left-0.5 top-0 font-serif text-5xl leading-none text-gray-100"
+                      aria-hidden
+                    >
+                      &ldquo;
+                    </span>
+                    <p className="relative z-[1] whitespace-pre-line break-keep pl-5 pt-1 text-[15px] font-medium leading-loose tracking-wide text-gray-800">
+                      {editorNote}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="mt-6">
                 {tagChips.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {tagChips.map((chip) => (
                       <span
                         key={chip}
-                        className="rounded-full bg-orange-50 px-3.5 py-1.5 text-sm font-medium tracking-tight text-gray-700"
+                        className="rounded-lg bg-stone-100 px-2 py-1 text-sm text-stone-600"
                       >
-                        {chip}
+                        {toHashtagLabel(chip)}
                       </span>
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400">표시할 태그가 없어요.</p>
                 )}
-              </section>
-
-              <section className="mt-6">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">
-                  Editor&apos;s Note
-                </p>
-                <div className="rounded-2xl bg-[#FFF9F5] p-5 shadow-sm">
-                  <p className="whitespace-pre-line text-[15px] font-medium leading-loose tracking-wide text-gray-800">
-                    {editorNote}
-                  </p>
-                </div>
               </section>
 
               <section className="mt-6">
@@ -299,50 +336,82 @@ export default function ProQuickViewModal({
                 )}
               </section>
 
-              <section className="mt-6">
-                <div className="mb-3 flex items-center gap-2">
-                  <p className="text-lg font-bold text-gray-900">네일 원장님을 위한 시술 가이드</p>
-                  <span className="rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold text-white">PRO</span>
-                </div>
+              <section className="mt-6 w-full">
+                <button
+                  type="button"
+                  onClick={() => setIsGuideOpen(!isGuideOpen)}
+                  className="flex w-full items-center justify-between border-b border-gray-200 py-3 text-left"
+                  aria-expanded={isGuideOpen}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold text-gray-900">네일 원장님을 위한 시술 가이드</p>
+                    <span className="rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold text-white">PRO</span>
+                  </div>
+                  <span className="shrink-0 text-sm text-gray-400" aria-hidden>
+                    {isGuideOpen ? "▲" : "▼"}
+                  </span>
+                </button>
 
-                <div className="rounded-2xl bg-[#FFF9F5] p-5">
-                  {isDetailLoading ? (
-                    <p className="text-sm text-gray-500">시술 가이드를 불러오는 중...</p>
-                  ) : procedureSteps.length > 0 ? (
-                    <div className="space-y-5">
-                      {procedureSteps.map((step, index) => (
-                        <div key={`${step.title}-${index}`}>
-                          {index > 0 ? <div className="mb-5 h-px w-full bg-orange-100" /> : null}
-                          <div className="flex gap-3">
-                            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-                              {index + 1}
+                {isGuideOpen ? (
+                  <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                    {isDetailLoading ? (
+                      <p className="text-sm text-gray-500">시술 가이드를 불러오는 중...</p>
+                    ) : procedureSteps.length > 0 ? (
+                      <>
+                        <div className="space-y-5">
+                          {procedureSteps.map((step, index) => (
+                            <div key={`${step.title}-${index}`}>
+                              {index > 0 ? <div className="mb-5 h-px w-full bg-gray-200" /> : null}
+                              <div className="flex gap-3">
+                                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+                                  {index + 1}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h4 className="text-base font-bold tracking-tight text-gray-900">{step.title}</h4>
+                                  <p className="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed tracking-tight text-gray-600">
+                                    {step.content}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="text-base font-bold tracking-tight text-gray-900">{step.title}</h4>
-                              <p className="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed tracking-tight text-gray-600">
-                                {step.content}
-                              </p>
-                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-5 border-t border-gray-200 pt-4">
+                          <div className="flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-400">
+                            <span className="shrink-0" aria-hidden>
+                              💡
+                            </span>
+                            <span>본 가이드는 참고용 디자인 레퍼런스로, 실제 시술 방식과 다를 수 있습니다.</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : procedureGuideFallback ? (
-                    <p className="whitespace-pre-line text-[15px] leading-relaxed text-gray-600">
-                      {procedureGuideFallback}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-500">등록된 시술 가이드가 없어요.</p>
-                  )}
-
-                  <p className="mt-4 border-t border-orange-100 pt-4 text-xs leading-relaxed text-gray-400">
-                    본 가이드는 참고용 디자인 레퍼런스로, 실제 시술 방식과 다를 수 있습니다.
-                  </p>
-                </div>
+                      </>
+                    ) : procedureGuideFallback ? (
+                      <p className="whitespace-pre-line text-[15px] leading-relaxed text-gray-600">
+                        {procedureGuideFallback}
+                      </p>
+                    ) : (
+                      <p className="text-center text-sm text-gray-500">등록된 시술 가이드가 없어요.</p>
+                    )}
+                  </div>
+                ) : null}
               </section>
             </div>
 
             <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-orange-100/80 bg-white px-6 py-4">
+              <button
+                type="button"
+                onClick={toggleLike}
+                className={[
+                  "flex shrink-0 items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition-colors",
+                  isLiked
+                    ? "border-rose-200 bg-rose-50 text-rose-600"
+                    : "border-orange-100 bg-white text-stone-600 hover:bg-orange-50/40",
+                ].join(" ")}
+                aria-pressed={isLiked}
+                aria-label={isLiked ? "좋아요 취소" : "좋아요"}
+              >
+                {isLiked ? "[ ❤️ ]" : "[ 🤍 ]"}
+              </button>
               <button
                 type="button"
                 onClick={onClose}

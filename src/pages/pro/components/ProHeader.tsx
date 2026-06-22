@@ -1,9 +1,13 @@
 import { useProSearchStore } from "@/features/pro/store/useProSearchStore";
+import { useProUIStore } from "@/features/pro/store/useProUIStore";
+import { cn } from "@/lib/utils";
 import { Clock, Search } from "lucide-react";
 
 export default function ProHeader() {
   const searchKeyword = useProSearchStore((state) => state.searchKeyword);
   const setSearchKeyword = useProSearchStore((state) => state.setSearchKeyword);
+  const isFocusMode = useProUIStore((state) => state.isFocusMode);
+  const toggleFocusMode = useProUIStore((state) => state.toggleFocusMode);
 
   return (
     <header className="flex h-16 shrink-0 items-center border-b border-stone-200/80 bg-[#FFFCF8] px-6">
@@ -23,6 +27,21 @@ export default function ProHeader() {
           />
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={toggleFocusMode}
+        className={cn(
+          "ml-4 flex shrink-0 items-center rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+          isFocusMode
+            ? "border-stone-800 bg-stone-800 text-white"
+            : "border-stone-200 bg-white text-stone-600",
+        )}
+        aria-pressed={isFocusMode}
+        aria-label={isFocusMode ? "대면 상담 모드 끄기" : "대면 상담 모드 켜기"}
+      >
+        {isFocusMode ? "✨ 대면 상담 모드 ON" : "🖥️ 대면 상담 모드"}
+      </button>
 
       <button
         type="button"

@@ -4,6 +4,7 @@ import {
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { toProCartNail, useProCartStore } from "@/features/pro/store/useProCartStore";
 import { useProSearchStore } from "@/features/pro/store/useProSearchStore";
+import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import ProGalleryWidget from "@/pages/pro/components/ProGalleryWidget";
 import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import { useDebounce } from "@/shared/hooks/useDebounce";
@@ -23,6 +24,7 @@ export default function ProDashboardPage() {
   const toggleNail = useProCartStore((state) => state.toggleNail);
   const searchKeyword = useProSearchStore((state) => state.searchKeyword);
   const debouncedKeyword = useDebounce(searchKeyword.trim(), 500);
+  const isFocusMode = useProUIStore((state) => state.isFocusMode);
 
   const { data: totalDesignCount, isLoading: isTotalCountLoading } = useGalleryCountQuery(DEFAULT_GALLERY_TAB);
 
@@ -39,22 +41,48 @@ export default function ProDashboardPage() {
   return (
     <div className="w-full">
       <header className="mb-8">
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-800">💅 전체 디자인 갤러리</h1>
-          <p className="pb-0.5 text-sm text-stone-600">
-            총{" "}
-            <span className="font-semibold text-[#5C4A3A]">{totalCountLabel}</span>
-            개의 프리미엄 디자인
-          </p>
-        </div>
-        <div className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-500">
-          <p className="mb-2">마음에 드는 사진 우측 상단의 [체크박스]를 눌러보세요.</p>
-          <p>
-            폴더로 묶어 &apos;⭐ 내 컬렉션&apos;에 보관하거나,
-            <br />
-            우측 패널에서 고객에게 보낼 &apos;상담 링크&apos;를 즉시 생성할 수 있습니다.
-          </p>
-        </div>
+        {isFocusMode ? (
+          <div className="mb-6">
+            <div className="flex items-end gap-3">
+              <h1 className="text-3xl font-bold text-stone-800 tracking-tight">✨ 프리미엄 디자인 룩북</h1>
+              <span className="text-base font-medium text-stone-500 mb-1">
+                총 {totalCountLabel}개의 프리미엄 디자인
+              </span>
+            </div>
+            <div className="mt-4 text-base text-stone-600 leading-relaxed border-l-4 border-stone-200 pl-4 py-1">
+              <p>👑 원장님이 고객님을 위해 엄선한 프리미엄 네일 갤러리입니다.</p>
+              <p className="mt-1">💎 편안하게 감상하시고, 마음에 드는 디자인을 골라주세요.</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-stone-800">💅 전체 디자인 갤러리</h1>
+              <p className="pb-0.5 text-sm text-stone-600">
+                총{" "}
+                <span className="font-semibold text-[#5C4A3A]">{totalCountLabel}</span>
+                개의 프리미엄 디자인
+              </p>
+            </div>
+            <div className="mt-4 text-sm text-stone-600 leading-relaxed">
+              <p className="mb-3">
+                사진 우측 상단의{" "}
+                <strong className="font-semibold text-stone-800">[☑️ 체크박스]</strong>를 눌러 디자인을 담고, 고객
+                맞춤 상담을 시작하세요.
+              </p>
+              <ul className="space-y-2">
+                <li>
+                  <strong className="font-semibold text-stone-800">⭐ 내 컬렉션 :</strong> 자주 사용하는 디자인을
+                  저장해 빠르게 활용
+                </li>
+                <li>
+                  <strong className="font-semibold text-stone-800">🔗 상담 링크 :</strong> 우측 패널에 담긴 디자인으로
+                  고객 전용 제안서 생성
+                </li>
+              </ul>
+            </div>
+          </>
+        )}
       </header>
 
       <ProGalleryWidget

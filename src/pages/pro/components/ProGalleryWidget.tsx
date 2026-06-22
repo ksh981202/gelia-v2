@@ -76,8 +76,11 @@ export type ProGalleryActiveFilters = {
 
 const FILTER_LABEL_CLASS = "mt-1 w-20 shrink-0 text-sm font-medium text-stone-700";
 
+const FILTER_ROW_WRAPPER_CLASS =
+  "scrollbar-hide flex min-w-0 items-center overflow-x-auto whitespace-nowrap [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+
 const FILTER_SCROLL_ROW_CLASS =
-  "scrollbar-hide flex min-w-0 flex-1 flex-nowrap gap-2 overflow-x-auto whitespace-nowrap [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+  "flex shrink-0 flex-nowrap gap-2";
 
 const MASONRY_CLASS_BY_VARIANT = {
   dashboard: "columns-2 gap-4 md:columns-3 lg:columns-4",
@@ -235,7 +238,7 @@ export default function ProGalleryWidget({
         ✨ 모든 디자인 전체보기
       </button>
 
-      <div className={`flex min-w-0 items-center ${filterRowGapClass}`}>
+      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
         <span className={FILTER_LABEL_CLASS}>시즌/테마</span>
         <div className={FILTER_SCROLL_ROW_CLASS}>
           {PRO_THEME_OPTIONS.map((option) => (
@@ -250,7 +253,7 @@ export default function ProGalleryWidget({
         </div>
       </div>
 
-      <div className={`flex min-w-0 items-center ${filterRowGapClass}`}>
+      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
         <span className={FILTER_LABEL_CLASS}>컬러</span>
         <div className={FILTER_SCROLL_ROW_CLASS}>
           {PRO_COLOR_OPTIONS.map((option) => (
@@ -265,7 +268,7 @@ export default function ProGalleryWidget({
         </div>
       </div>
 
-      <div className={`flex min-w-0 items-center ${filterRowGapClass}`}>
+      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
         <span className={FILTER_LABEL_CLASS}>무드</span>
         <div className={FILTER_SCROLL_ROW_CLASS}>
           {PRO_MOOD_OPTIONS.map((option) => (
@@ -280,7 +283,7 @@ export default function ProGalleryWidget({
         </div>
       </div>
 
-      <div className={`flex min-w-0 items-center ${filterRowGapClass}`}>
+      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
         <span className={FILTER_LABEL_CLASS}>쉐입</span>
         <div className={FILTER_SCROLL_ROW_CLASS}>
           {PRO_SHAPE_OPTIONS.map((option) => (
@@ -295,7 +298,7 @@ export default function ProGalleryWidget({
         </div>
       </div>
 
-      <div className={`flex min-w-0 items-center ${filterRowGapClass}`}>
+      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
         <span className={FILTER_LABEL_CLASS}>포인트/기법</span>
         <div className={FILTER_SCROLL_ROW_CLASS}>
           {PRO_POINT_OPTIONS.map((option) => (

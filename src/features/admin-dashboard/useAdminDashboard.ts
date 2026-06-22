@@ -39,22 +39,78 @@ const NAIL_DESIGN_COLUMNS = [
   'saves',
 ].join(',')
 
-export function useAdminDashboard() {
+export type AdminDashboardListParams = {
+  searchQuery: string
+  page: number
+  pageSize?: number
+}
+
+export type AdminDashboardListResult = {
+  items: NailDesignRow[]
+  totalCount: number
+}
+
+/** PostgREST `.or()` 구분자(`,`) 및 `ilike` 와일드카드 충돌 방지 */
+function escapePostgrestIlikePattern(raw: string): string {
+  return raw
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_')
+    .replace(/,/g, ' ')
+    .trim()
+}
+
+function buildAdminSearchOrFilter(searchQuery: string): string | null {
+  const pattern = escapePostgrestIlikePattern(searchQuery)
+  if (!pattern) return null
+
+  return [
+    `title.ilike.%${pattern}%`,
+    `title_en.ilike.%${pattern}%`,
+    `color.ilike.%${pattern}%`,
+    `mood.ilike.%${pattern}%`,
+    `source_filename.ilike.%${pattern}%`,
+  ].join(',')
+}
+
+export function useAdminDashboard({ searchQuery, page, pageSize = 12 }: AdminDashboardListParams) {
   const queryClient = useQueryClient()
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  const normalizedSearch = searchQuery.trim()
+  const normalizedPage = Math.max(1, page)
+  const normalizedPageSize = Math.max(1, pageSize)
+  const from = (normalizedPage - 1) * normalizedPageSize
+  const to = from + normalizedPageSize - 1
+
   const listQuery = useQuery({
-    queryKey: ['admin', 'nail-designs', 'list'],
-    queryFn: async (): Promise<NailDesignRow[]> => {
-      const { data, error } = await supabase
+    queryKey: [
+      'admin',
+      'nail-designs',
+      'list',
+      { searchQuery: normalizedSearch, page: normalizedPage, pageSize: normalizedPageSize },
+    ],
+    queryFn: async (): Promise<AdminDashboardListResult> => {
+      let query = supabase
         .from('nail_designs')
-        .select(NAIL_DESIGN_COLUMNS)
+        .select(NAIL_DESIGN_COLUMNS, { count: 'exact' })
         .order('source_filename', { ascending: false })
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
+
+      const searchFilter = buildAdminSearchOrFilter(normalizedSearch)
+      if (searchFilter) {
+        query = query.or(searchFilter)
+      }
+
+      const { data, error, count } = await query.range(from, to)
       if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as NailDesignRow[]
+
+      return {
+        items: (data ?? []) as unknown as NailDesignRow[],
+        totalCount: count ?? 0,
+      }
     },
   })
 

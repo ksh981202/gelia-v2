@@ -1,3 +1,4 @@
+import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import { useEffect, useState } from "react";
 import { Outlet, useMatch } from "react-router-dom";
 import ProHeader from "./components/ProHeader";
@@ -13,6 +14,7 @@ function isProViewportSupported(): boolean {
 export default function ProLayout() {
   const [isDesktop, setIsDesktop] = useState(isProViewportSupported);
   const isGalleryRoute = Boolean(useMatch({ path: "/pro", end: true }));
+  const isFocusMode = useProUIStore((state) => state.isFocusMode);
 
   useEffect(() => {
     const handleResize = () => {
@@ -37,7 +39,7 @@ export default function ProLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <ProSidebar />
+      {!isFocusMode ? <ProSidebar /> : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <ProHeader />
@@ -46,7 +48,7 @@ export default function ProLayout() {
         </main>
       </div>
 
-      {isGalleryRoute ? <ProRightPanel /> : null}
+      {isGalleryRoute && !isFocusMode ? <ProRightPanel /> : null}
     </div>
   );
 }

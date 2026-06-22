@@ -17,6 +17,7 @@ import {
 } from "@/features/admin-dashboard/mapNailDesignToAdminListRow";
 import { resolveSourceFilename } from "@/features/admin-dashboard/resolveSourceFilename";
 import { useAdminDashboard } from "@/features/admin-dashboard/useAdminDashboard";
+import { useDebounce } from "@/shared/hooks/useDebounce";
 import { RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatTextArrayForDisplay } from "@/shared/lib/formatTextArrayField";
@@ -132,23 +133,6 @@ function rowStatus(row: AdminNailListRow): { label: string; tone: "ok" | "warn" 
   return { label: category || "정상 노출", tone: "ok" };
 }
 
-function filterRowsBySearch(rows: AdminNailListRow[], searchQuery: string): AdminNailListRow[] {
-  const q = searchQuery.trim().toLowerCase();
-  if (!q) return rows;
-  return rows.filter((row) => {
-    const title = (row.title ?? "").toLowerCase();
-    const titleEn = (row.title_en ?? "").toLowerCase();
-    const fname = displayFilename(row).toLowerCase();
-    const category = (row.mood ?? row.color ?? "").toLowerCase();
-    return (
-      title.includes(q) ||
-      titleEn.includes(q) ||
-      fname.includes(q) ||
-      category.includes(q)
-    );
-  });
-}
-
 /** 1 … 중간 … 마지막 형태 (총 페이지가 많을 때) */
 function paginationItems(current: number, total: number): Array<number | "ellipsis"> {
   if (total <= 9) {
@@ -170,8 +154,17 @@ function paginationItems(current: number, total: number): Array<number | "ellips
 }
 
 const AdminManagePage = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [requestedPage, setRequestedPage] = useState(1);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingListRow, setEditingListRow] = useState<AdminNailListRow | null>(null);
+  const [editForm, setEditForm] = useState<AdminEditFormState>(() => emptyEditForm());
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
   const {
-    data: nailDesigns,
+    data: listData,
     isLoading,
     isError,
     error,
@@ -181,32 +174,28 @@ const AdminManagePage = () => {
     deletingId,
     deleteError,
     clearDeleteError,
-  } = useAdminDashboard();
+  } = useAdminDashboard({
+    searchQuery: debouncedSearchQuery,
+    page: requestedPage,
+    pageSize: PAGE_SIZE,
+  });
 
+  const totalCount = listData?.totalCount ?? 0;
   const rows = useMemo(
-    () => (nailDesigns ?? []).map(mapNailDesignToAdminListRow),
-    [nailDesigns],
+    () => (listData?.items ?? []).map(mapNailDesignToAdminListRow),
+    [listData?.items],
   );
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const [requestedPage, setRequestedPage] = useState(1);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingListRow, setEditingListRow] = useState<AdminNailListRow | null>(null);
-  const [editForm, setEditForm] = useState<AdminEditFormState>(() => emptyEditForm());
-  const selectAllRef = useRef<HTMLInputElement>(null);
-
-  const filteredRows = useMemo(() => filterRowsBySearch(rows, searchQuery), [rows, searchQuery]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
 
-  const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredRows.slice(start, start + PAGE_SIZE);
-  }, [filteredRows, currentPage]);
+  useEffect(() => {
+    if (requestedPage > totalPages) {
+      setRequestedPage(totalPages);
+    }
+  }, [requestedPage, totalPages]);
 
-  const pageIds = useMemo(() => paginatedRows.map((r) => r.id), [paginatedRows]);
+  const pageIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const selectedOnPageCount = useMemo(
     () => pageIds.filter((id) => selectedIds.has(id)).length,
     [pageIds, selectedIds],
@@ -384,16 +373,14 @@ const AdminManagePage = () => {
           <p className="py-16 text-center text-sm text-red-600">
             {error instanceof Error ? error.message : "목록을 불러오지 못했습니다."}
           </p>
-        ) : rows.length === 0 ? (
-          <p className="py-16 text-center text-sm text-slate-500">등록된 네일이 없습니다.</p>
+        ) : totalCount === 0 ? (
+          <p className="py-16 text-center text-sm text-slate-500">
+            {debouncedSearchQuery.trim() ? "검색 결과가 없습니다." : "등록된 네일이 없습니다."}
+          </p>
         ) : (
           <>
-            {filteredRows.length === 0 ? (
-              <p className="py-16 text-center text-sm text-slate-500">검색 결과가 없습니다.</p>
-            ) : (
-              <>
-                <div className="overflow-x-hidden">
-                  <table className="w-full table-fixed border-collapse text-left text-sm">
+            <div className="overflow-x-hidden">
+              <table className="w-full table-fixed border-collapse text-left text-sm">
                     <colgroup>
                       <col className="w-12" />
                       <col className="w-20" />
@@ -423,7 +410,7 @@ const AdminManagePage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedRows.map((row) => {
+                      {rows.map((row) => {
                         const status = rowStatus(row);
                         const checked = selectedIds.has(row.id);
                         return (
@@ -585,20 +572,16 @@ const AdminManagePage = () => {
                     </Button>
                   </div>
                 )}
-              </>
-            )}
           </>
         )}
       </div>
 
-      {rows.length > 0 && (
+      {totalCount > 0 && (
         <p className="mt-4 text-center text-xs text-slate-500">
-          {searchQuery.trim()
-            ? `검색 결과 ${filteredRows.length}건 (전체 ${rows.length}건)`
-            : `총 ${rows.length}건`}
-          {filteredRows.length > 0 && (
-            <span className="text-slate-400"> · {PAGE_SIZE}건씩</span>
-          )}
+          {debouncedSearchQuery.trim()
+            ? `검색 결과 ${totalCount}건`
+            : `총 ${totalCount}건`}
+          <span className="text-slate-400"> · {PAGE_SIZE}건씩</span>
         </p>
       )}
 

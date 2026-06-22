@@ -38,15 +38,12 @@ export default function ProRightPanel() {
   return (
     <>
       <aside className="flex h-full w-80 shrink-0 flex-col border-l border-stone-200/80 bg-[#FAF7F2]">
-        <div className="border-b border-stone-200/60 px-5 py-6">
-          <h2 className="text-base font-semibold text-stone-800">상담 제안서 세팅</h2>
-          <p className="mt-1 text-xs tracking-wide text-stone-400">Consultation Setup</p>
-        </div>
-
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
-          <p className="mb-3 text-sm font-semibold text-stone-700">
-            선택된 디자인 ({selectedNails.length}장)
-          </p>
+          <div className="border-b border-stone-200/60 pb-4 mb-4">
+            <p className="mb-2 text-lg font-bold text-stone-800">
+              선택된 디자인 ({selectedNails.length}장)
+            </p>
+          </div>
 
           {selectedNails.length === 0 ? (
             <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-stone-300/80 bg-[#FFFCF8] px-4 py-10 text-center">
@@ -55,12 +52,12 @@ export default function ProRightPanel() {
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {selectedNails.map((nail) => (
-                <div key={nail.id} className="relative aspect-square overflow-hidden rounded-md bg-stone-200">
+                <div key={nail.id} className="relative aspect-[3/4] overflow-hidden rounded-md bg-stone-200">
                   {nail.imageUrl ? (
                     <img
                       src={nail.imageUrl}
                       alt={nail.title}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full rounded-md object-cover"
                     />
                   ) : (
                     <div className="h-full w-full bg-stone-200" />
