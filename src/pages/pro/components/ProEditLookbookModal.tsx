@@ -122,9 +122,19 @@ export default function ProEditLookbookModal({
               </div>
 
               <div>
-                <p className="mb-3 text-base font-medium text-stone-700">
-                  선택된 사진 ({selectedNails.length}장)
-                </p>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <p className="text-base font-medium text-stone-700">
+                    선택된 사진 ({selectedNails.length}장)
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsGalleryExpanded((prev) => !prev)}
+                    disabled={isSubmitting}
+                    className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    [ ➕ 사진 추가하기 ]
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   {(selectedNails ?? []).map((nail) => (
@@ -154,14 +164,6 @@ export default function ProEditLookbookModal({
                       </p>
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => setIsGalleryExpanded(true)}
-                    disabled={isSubmitting}
-                    className="flex aspect-[3/4] flex-col items-center justify-center rounded-lg border-2 border-dashed border-stone-300 text-stone-500 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    + 디자인 추가
-                  </button>
                 </div>
               </div>
             </div>

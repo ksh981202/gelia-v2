@@ -5,7 +5,7 @@ const PRO_MENU_ITEMS = [
   { id: "curation", label: "🏆 젤리아 큐레이션", to: "/pro/curation" },
   { id: "designs", label: "💅 전체 디자인", to: "/pro", end: true },
   { id: "collection", label: "⭐ 내 컬렉션", to: "/pro/collections" },
-  { id: "proposals", label: "📋 보낸 제안서", to: "/pro/proposals" },
+  { id: "proposals", label: "📋 상담 제안서", to: "/pro/proposals" },
   { id: "growth", label: "📈 샵 성장 팁", to: "/pro/growth" },
 ] as const;
 
@@ -30,8 +30,7 @@ export default function ProSidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-stone-200/80 bg-[#FAF7F2]">
       <div className="border-b border-stone-200/60 px-6 py-7">
-        <p className="text-xs font-medium tracking-[0.28em] text-stone-400">GELIA</p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight text-stone-800">GELIA PRO</h1>
+        <span className="text-2xl font-black tracking-tighter text-stone-800">GELIA PRO</span>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-5" aria-label="PRO 메인 메뉴">
@@ -48,7 +47,15 @@ export default function ProSidebar() {
       </nav>
 
       {!isFocusMode ? (
-        <div className="border-t border-stone-200/60 p-3">
+        <div className="mt-auto border-t border-stone-200/60 p-3">
+          <a
+            href="https://pf.kakao.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900"
+          >
+            💡 기능 제안 / 문의하기
+          </a>
           <NavLink to="/pro/settings" className={proNavLinkClass}>
             ⚙️ 샵 프로필 설정
           </NavLink>

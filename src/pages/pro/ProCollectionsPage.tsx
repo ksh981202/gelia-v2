@@ -8,6 +8,7 @@ import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { toast } from "sonner";
 
 function formatCreatedAt(value: string): string {
   const date = new Date(value);
@@ -82,9 +83,9 @@ export default function ProCollectionsPage() {
     event.stopPropagation();
     try {
       await copyLookbookShareLink(lookbookId);
-      window.alert("링크가 클립보드에 복사되었습니다!");
+      toast.success("🔗 링크가 복사되었습니다! 원하는 곳에 붙여넣기하여 공유해 보세요.");
     } catch {
-      window.alert("링크 복사에 실패했습니다.");
+      toast.error("링크 복사에 실패했습니다.");
     }
   };
 
@@ -148,20 +149,30 @@ export default function ProCollectionsPage() {
     <div className={PAGE_ROOT_CLASS}>
       <header className="mb-8">
         {isFocusMode ? (
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight text-stone-800">✨ VIP 디자인 룩북</h1>
-            <div className="mt-4 border-l-4 border-stone-200 py-1 pl-4 text-base leading-relaxed text-stone-600">
-              <p>👑 원장님이 직접 엄선한 맞춤형 디자인 컬렉션입니다.</p>
-              <p className="mt-1">💎 마음에 드는 룩북을 편안하게 둘러보세요.</p>
+          <div className="mb-4 rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-end gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-stone-800 md:text-3xl">
+                ✨ VIP 디자인 룩북
+              </h1>
+            </div>
+            <div className="border-l-4 border-stone-200 py-1 pl-4">
+              <p className="text-base font-medium text-stone-600">
+                👑 원장님이 테마별로 직접 엄선해 둔 맞춤형 룩북입니다.
+              </p>
+              <p className="mt-1 text-base text-stone-600">
+                💎 마음에 드는 룩북을 선택해 편안하게 감상해 보세요.
+              </p>
             </div>
           </div>
         ) : (
-          <>
-            <h1 className="text-2xl font-semibold text-stone-800">⭐ 내 컬렉션</h1>
-            <p className="mt-2 text-sm text-stone-500">
+          <div className="mb-8 rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm">
+            <h1 className="mb-2 flex items-center gap-2 text-xl font-bold text-stone-800">
+              ⭐ 내 컬렉션
+            </h1>
+            <p className="text-sm font-medium text-stone-500">
               자주 쓰는 디자인을 폴더로 묶어 관리하고, 고정 링크로 언제든 공유하세요.
             </p>
-          </>
+          </div>
         )}
       </header>
 

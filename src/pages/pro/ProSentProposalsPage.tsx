@@ -1,6 +1,6 @@
 import {
   copyProposalShareLink,
-  deactivateProProposal,
+  deleteProProposal,
 } from "@/features/pro/api/proMutations";
 import type { ProProposalListItem } from "@/features/pro/api/fetchProProposalsList";
 import { useProProposalsListQuery } from "@/features/pro/api/useProProposalsListQuery";
@@ -11,6 +11,7 @@ import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { toast } from "sonner";
 
 function formatCreatedAt(value: string): string {
   const date = new Date(value);
@@ -74,9 +75,9 @@ export default function ProSentProposalsPage() {
     event.stopPropagation();
     try {
       await copyProposalShareLink(proposalId);
-      window.alert("링크가 클립보드에 복사되었습니다!");
+      toast.success("🔗 링크가 복사되었습니다! 원하는 곳에 붙여넣기하여 공유해 보세요.");
     } catch {
-      window.alert("링크 복사에 실패했습니다.");
+      toast.error("링크 복사에 실패했습니다.");
     }
   };
 
@@ -85,21 +86,19 @@ export default function ProSentProposalsPage() {
     openEditModal(proposal);
   };
 
-  const handleEndClick = async (event: MouseEvent, proposal: ProProposalListItem) => {
+  const handleDeleteClick = async (event: MouseEvent, proposal: ProProposalListItem) => {
     event.stopPropagation();
-    if (!proposal.is_active) {
-      window.alert("이미 종료된 제안서입니다.");
-      return;
-    }
-    if (!window.confirm("이 제안서를 종료하시겠습니까? 고객 링크가 더 이상 열리지 않습니다.")) {
+    if (
+      !window.confirm("이 제안서를 정말 삭제하시겠습니까? (삭제 시 고객이 링크를 볼 수 없습니다)")
+    ) {
       return;
     }
     try {
-      await deactivateProProposal(proposal.id);
+      await deleteProProposal(proposal.id);
       await refetch();
-      window.alert("제안서가 종료되었습니다.");
+      window.alert("제안서가 삭제되었습니다.");
     } catch {
-      window.alert("제안서 종료에 실패했습니다.");
+      window.alert("제안서 삭제에 실패했습니다.");
     }
   };
 
@@ -158,20 +157,30 @@ export default function ProSentProposalsPage() {
     <div className={PAGE_ROOT_CLASS}>
       <header className="mb-8">
         {isFocusMode ? (
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight text-stone-800">💌 고객 맞춤 제안서</h1>
-            <div className="mt-4 border-l-4 border-stone-200 py-1 pl-4 text-base leading-relaxed text-stone-600">
-              <p>👑 고객님을 위해 준비된 맞춤형 네일 제안서입니다.</p>
-              <p className="mt-1">💎 편안하게 감상하시고, 마음에 드는 디자인을 골라주세요.</p>
+          <div className="mb-4 rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-end gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-stone-800 md:text-3xl">
+                💌 프라이빗 맞춤 제안서
+              </h1>
+            </div>
+            <div className="border-l-4 border-stone-200 py-1 pl-4">
+              <p className="text-base font-medium text-stone-600">
+                👑 오직 고객님 한 분만을 위해 프라이빗하게 준비된 네일 제안서입니다.
+              </p>
+              <p className="mt-1 text-base text-stone-600">
+                💎 제안서를 클릭하여 나만의 디자인을 확인해 보세요.
+              </p>
             </div>
           </div>
         ) : (
-          <>
-            <h1 className="text-2xl font-semibold text-stone-800">📋 보낸 제안서 현황</h1>
-            <p className="mt-2 text-sm text-stone-500">
-              고객명을 클릭하거나 수정 버튼으로 제안서를 바로 편집할 수 있습니다.
+          <div className="mb-8 rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm">
+            <h1 className="mb-2 flex items-center gap-2 text-xl font-bold text-stone-800">
+              📋 상담 제안서 현황
+            </h1>
+            <p className="text-sm font-medium text-stone-500">
+              고객에게 보낸 디자인 제안서를 관리하고 공유 현황을 확인하세요.
             </p>
-          </>
+          </div>
         )}
       </header>
 
@@ -219,7 +228,7 @@ export default function ProSentProposalsPage() {
               }
               onEdit={(event) => handleEditClick(event, proposal)}
               onCopyLink={(event) => void handleCopyLink(event, proposal.id)}
-              onEnd={(event) => void handleEndClick(event, proposal)}
+              onDelete={(event) => void handleDeleteClick(event, proposal)}
             />
           ))}
         </div>
@@ -300,14 +309,14 @@ function ProposalCard({
   onImageClick,
   onEdit,
   onCopyLink,
-  onEnd,
+  onDelete,
 }: {
   proposal: ProProposalListItem;
   isFocusMode: boolean;
   onImageClick: () => void;
   onEdit: (event: MouseEvent) => void;
   onCopyLink: (event: MouseEvent) => void;
-  onEnd: (event: MouseEvent) => void;
+  onDelete: (event: MouseEvent) => void;
 }) {
   const nailCount = proposal.nails.length || proposal.nail_ids.length;
 
@@ -320,7 +329,7 @@ function ProposalCard({
       </button>
       <h3 className="truncate text-lg font-bold text-stone-800">{proposal.customer_name}</h3>
       <p className="mb-4 text-xs text-stone-500">
-        생성 {formatCreatedAt(proposal.created_at)} · 조회 {proposal.views ?? 0}회 · 디자인 {nailCount}장
+        {formatCreatedAt(proposal.created_at)} · 조회 {proposal.views ?? 0}회 · 디자인 {nailCount}장
         {!proposal.is_active ? " · 종료됨" : ""}
       </p>
       {!isFocusMode ? (
@@ -331,13 +340,8 @@ function ProposalCard({
           <button type="button" onClick={onCopyLink} className={ADMIN_BTN_CLASS}>
             링크복사
           </button>
-          <button
-            type="button"
-            onClick={onEnd}
-            disabled={!proposal.is_active}
-            className={ADMIN_BTN_DANGER_CLASS}
-          >
-            종료
+          <button type="button" onClick={onDelete} className={ADMIN_BTN_DANGER_CLASS}>
+            삭제
           </button>
         </div>
       ) : null}

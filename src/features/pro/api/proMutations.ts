@@ -196,3 +196,17 @@ export async function deactivateProProposal(proposalId: string): Promise<void> {
     throw new Error("제안서 종료 결과를 확인할 수 없습니다.");
   }
 }
+
+export async function deleteProProposal(proposalId: string): Promise<void> {
+  const id = proposalId.trim();
+  if (!id) {
+    throw new Error("삭제할 제안서 ID가 없습니다.");
+  }
+
+  const { data, error } = await supabase.from("pro_proposals").delete().eq("id", id).select("id").single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("제안서 삭제 결과를 확인할 수 없습니다.");
+  }
+}

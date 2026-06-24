@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguageContext } from '@/contexts/LanguageContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/shared/api/supabaseClient';
 import { mergeGuestRecentViewedToUser } from '@/shared/lib/recentViewedStorage';
 
@@ -8,10 +8,22 @@ function getAuthErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown Error';
 }
 
+function resolvePostLoginPath(redirectParam: string | null): string {
+  if (!redirectParam) return '/my';
+  if (!redirectParam.startsWith('/') || redirectParam.startsWith('//')) return '/my';
+  return redirectParam;
+}
+
+function buildOAuthRedirectUrl(postLoginPath: string): string {
+  return `${window.location.origin}${postLoginPath}`;
+}
+
 export default function ClientLoginPage() {
   const { language } = useLanguageContext();
   const isEnglish = language === 'en';
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const postLoginPath = resolvePostLoginPath(searchParams.get('redirect'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,16 +32,28 @@ export default function ClientLoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // 1. 이미 로그인된 유저는 마이페이지로 쫓아내기
+  // 1. 이미 로그인된 유저는 redirect 경로(또는 마이페이지)로 이동
   useEffect(() => {
     const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/my', { replace: true });
+        navigate(postLoginPath, { replace: true });
       }
     };
-    checkAuth();
-  }, [navigate]);
+    void checkAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+        navigate(postLoginPath, { replace: true });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, postLoginPath]);
 
   // 2. 이메일 로그인 / 회원가입
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -58,13 +82,13 @@ export default function ClientLoginPage() {
         const signedUpUserId = data.user?.id ?? data.session?.user?.id ?? "";
         if (signedUpUserId) mergeGuestRecentViewedToUser(signedUpUserId);
         // 이메일 인증이 꺼져있다면 가입 즉시 로그인됨
-        navigate('/my', { replace: true });
+        navigate(postLoginPath, { replace: true });
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         const signedInUserId = data.user?.id ?? data.session?.user?.id ?? "";
         if (signedInUserId) mergeGuestRecentViewedToUser(signedInUserId);
-        navigate('/my', { replace: true });
+        navigate(postLoginPath, { replace: true });
       }
     } catch (error) {
       const message = getAuthErrorMessage(error);
@@ -107,7 +131,7 @@ export default function ClientLoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/my`,
+          redirectTo: buildOAuthRedirectUrl(postLoginPath),
           queryParams: {
             prompt: 'select_account',
           },
@@ -119,6 +143,8 @@ export default function ClientLoginPage() {
       setLoading(false);
     }
   };
+
+  const isProRedirect = postLoginPath === '/pro';
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-12 font-sans tracking-tight">
@@ -157,14 +183,18 @@ export default function ClientLoginPage() {
 
         <div className="mb-8 text-center">
           <h2 className="mb-2 text-[24px] font-bold text-gray-900">
-            {isResetMode
+            {isProRedirect
+              ? 'GELIA PRO 시작하기'
+              : isResetMode
               ? (isEnglish ? 'Find Password' : '비밀번호 찾기')
               : isSignUp
                 ? (isEnglish ? 'Sign up for Gelia ✨' : '네일북 가입하기 ✨')
                 : (isEnglish ? 'Welcome!' : '환영합니다!')}
           </h2>
           <p className="text-[14px] text-gray-500">
-            {isResetMode
+            {isProRedirect
+              ? '로그인 후 샵 정보를 입력하면 PRO 대시보드로 이동합니다.'
+              : isResetMode
               ? (isEnglish ? 'We will send a reset link to your registered email.' : '가입한 이메일로 재설정 링크를 보내드릴게요.')
               : isSignUp
                 ? (isEnglish ? 'Get started easily with your email.' : '간단하게 이메일로 시작해 보세요.')

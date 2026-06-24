@@ -91,7 +91,7 @@ export default function ProRightPanel() {
             onClick={handleOpenLinkModal}
             className="mt-3 w-full rounded-xl bg-[#5C4A3A] px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#4A3B2E]"
           >
-            [ 🔗 상담 링크 생성 ]
+            [ 🔗 상담 제안서 생성 ]
           </button>
         </div>
       </aside>

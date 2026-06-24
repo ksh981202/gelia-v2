@@ -16,6 +16,9 @@ export default {
       },
     },
     extend: {
+      screens: {
+        '3xl': '1920px',
+      },
       fontFamily: {
         sans: [
           'Pretendard Variable',

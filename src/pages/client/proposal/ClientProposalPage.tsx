@@ -34,6 +34,12 @@ const TRUST_CHANNELS: Array<{
   { id: "kakao", label: "카톡 채널", Icon: MessageCircle },
 ];
 
+function formatCustomerDisplayName(name: string): string {
+  if (!name) return "고객님";
+  const pureName = name.replace(/고객님?|님/g, "").trim();
+  return `${pureName} 고객님`;
+}
+
 function openNailDetail(navigate: ReturnType<typeof useNavigate>, nail: NailDesignRow) {
   const imageUrl = String(nail.image_url ?? "").trim();
   const title = String(nail.title ?? "").trim() || "네일 디자인";
@@ -50,6 +56,47 @@ function openNailDetail(navigate: ReturnType<typeof useNavigate>, nail: NailDesi
       },
     },
   });
+}
+
+function ProposalGalleryNailCard({
+  nail,
+  originalIndex,
+  onOpen,
+}: {
+  nail: NailDesignRow;
+  originalIndex: number;
+  onOpen: (nail: NailDesignRow) => void;
+}) {
+  const imageUrl = String(nail.image_url ?? "").trim();
+  const title = String(nail.title ?? "").trim() || "네일 디자인";
+  const badgeLabel = String(originalIndex + 1).padStart(2, "0");
+
+  return (
+    <article className="w-full">
+      <button
+        type="button"
+        onClick={() => onOpen(nail)}
+        className="relative block w-full overflow-hidden rounded-2xl bg-white text-left shadow-sm transition-transform active:scale-[0.98]"
+        aria-label={`${badgeLabel} ${title} 상세 보기`}
+      >
+        <span className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/50 bg-white/80 text-[11px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
+          {badgeLabel}
+        </span>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="block w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="aspect-[3/4] w-full bg-stone-200" aria-hidden />
+        )}
+      </button>
+      <p className="mt-2 truncate px-1 text-center text-sm font-semibold text-stone-700">{title}</p>
+    </article>
+  );
 }
 
 export default function ClientProposalPage() {
@@ -82,87 +129,71 @@ export default function ClientProposalPage() {
     );
   }
 
+  const displayGreeting =
+    data.greetingMessage && data.greetingMessage !== data.customerName
+      ? data.greetingMessage
+      : "✨ 원장님이 고객님을 위해 엄선한 맞춤형 디자인입니다.\n가장 아름답게 완성할 특별한 무드를 만나보세요 🤍";
+
+  const galleryItems = data.nails.map((nail, index) => ({ nail, originalIndex: index }));
+  const leftColumnItems = galleryItems.filter(({ originalIndex }) => originalIndex % 2 === 0);
+  const rightColumnItems = galleryItems.filter(({ originalIndex }) => originalIndex % 2 === 1);
+
   return (
     <div className="bg-[#FAF7F2] px-5 pb-12 pt-8">
       <div className="mx-auto max-w-md">
-        <header className="mb-10 text-center">
-          <p
-            className="text-[1.85rem] font-semibold leading-snug tracking-wide text-stone-800 sm:text-3xl"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            Curated for {data.customerName}
+        <header className="mb-8 px-4 text-center">
+          <h1 className="mb-3 text-2xl font-bold tracking-tight text-stone-800">
+            For. {formatCustomerDisplayName(data.customerName)}
+          </h1>
+          <p className="whitespace-pre-line break-keep text-base leading-relaxed text-stone-600">
+            {displayGreeting}
           </p>
-          {data.greetingMessage ? (
-            <p className="mt-6 whitespace-pre-line px-2 text-sm leading-[1.85] text-stone-500 sm:text-base">
-              {data.greetingMessage}
-            </p>
-          ) : null}
         </header>
 
         {data.nails.length > 0 ? (
-          <section className="columns-2 gap-4" aria-label="추천 네일 디자인">
-            {data.nails.map((nail) => {
-              const imageUrl = String(nail.image_url ?? "").trim();
-              const title = String(nail.title ?? "").trim() || "네일 디자인";
-
-              return (
-                <button
+          <section className="grid grid-cols-2 items-start gap-4" aria-label="추천 네일 디자인">
+            <div className="flex flex-col gap-4">
+              {leftColumnItems.map(({ nail, originalIndex }) => (
+                <ProposalGalleryNailCard
                   key={nail.id}
-                  type="button"
-                  onClick={() => openNailDetail(navigate, nail)}
-                  className="mb-4 block w-full break-inside-avoid overflow-hidden rounded-2xl bg-white text-left shadow-sm transition-transform active:scale-[0.98]"
-                  aria-label={`${title} 상세 보기`}
-                >
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt=""
-                      className="block w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <div className="aspect-[3/4] w-full bg-stone-200" aria-hidden />
-                  )}
-                </button>
-              );
-            })}
+                  nail={nail}
+                  originalIndex={originalIndex}
+                  onOpen={(item) => openNailDetail(navigate, item)}
+                />
+              ))}
+            </div>
+            <div className="flex flex-col gap-4">
+              {rightColumnItems.map(({ nail, originalIndex }) => (
+                <ProposalGalleryNailCard
+                  key={nail.id}
+                  nail={nail}
+                  originalIndex={originalIndex}
+                  onOpen={(item) => openNailDetail(navigate, item)}
+                />
+              ))}
+            </div>
           </section>
         ) : (
           <p className="py-12 text-center text-sm text-stone-400">담긴 디자인이 없습니다.</p>
         )}
 
         <footer className="mt-12">
-          <p className="mb-5 text-center text-sm leading-relaxed text-stone-500">
-            마음에 드는 디자인이 있으시면 편하게 문의하세요
-          </p>
-
           <section
-            className="rounded-2xl bg-white p-6 shadow-md"
+            className="rounded-2xl bg-white p-8 shadow-md"
             aria-label="살롱 프로필"
           >
             <div className="flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EDE4D8]">
-                <span
-                  className="text-lg font-bold tracking-wide text-[#5C4A3A]"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  G
-                </span>
-              </div>
-
-              <p
-                className="mt-3 text-lg font-semibold text-stone-800"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
+              <h3 className="text-2xl font-extrabold tracking-tight text-stone-800">
                 청담 젤리아 네일
+              </h3>
+
+              <p className="mt-2 break-keep text-sm font-medium text-stone-500">
+                마음에 드는 디자인이 있으시면 편하게 문의하세요.
               </p>
 
-              <p className="mt-1 text-amber-400" aria-label="별점 5점">
-                ★★★★★
-              </p>
+              <hr className="mx-auto my-6 w-12 border-stone-200" />
 
-              <div className="mt-5 flex items-center justify-center gap-4">
+              <div className="flex justify-center gap-4">
                 {TRUST_CHANNELS.map(({ id: channelId, label, Icon }) => (
                   <button
                     key={channelId}

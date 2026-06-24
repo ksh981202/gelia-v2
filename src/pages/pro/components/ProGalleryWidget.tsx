@@ -74,6 +74,11 @@ export type ProGalleryActiveFilters = {
   pointFilter: ProPointOption;
 };
 
+const FILTER_STICKY_DASHBOARD_CLASS =
+  "sticky top-16 z-30 -mx-6 bg-gray-50 px-6 pt-2 pb-4";
+
+const FILTER_STICKY_COMPACT_CLASS = "shrink-0";
+
 const FILTER_LABEL_CLASS = "mt-1 w-20 shrink-0 text-sm font-medium text-stone-700";
 
 const FILTER_ROW_WRAPPER_CLASS =
@@ -83,7 +88,7 @@ const FILTER_SCROLL_ROW_CLASS =
   "flex shrink-0 flex-nowrap gap-2";
 
 const MASONRY_CLASS_BY_VARIANT = {
-  dashboard: "columns-2 gap-4 md:columns-3 lg:columns-4",
+  dashboard: "columns-2 gap-5 md:columns-3 lg:columns-4 xl:columns-5",
   compact: "columns-3 gap-3 lg:columns-4 xl:columns-5",
 } as const;
 
@@ -174,6 +179,7 @@ export default function ProGalleryWidget({
   const [moodFilter, setMoodFilter] = useState<ProMoodOption>("전체");
   const [shapeFilter, setShapeFilter] = useState<ProShapeOption>("전체");
   const [pointFilter, setPointFilter] = useState<ProPointOption>("전체");
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
   const observerRef = useRef<HTMLDivElement>(null);
 
   const galleryQuery = useMemo(
@@ -242,19 +248,36 @@ export default function ProGalleryWidget({
   const filterRowGapClass = isCompact ? "gap-2" : "gap-2.5";
 
   const filterSection = (
-    <section className={isCompact ? "mb-4 flex shrink-0 flex-col gap-2" : "mb-5 flex flex-col gap-2.5"}>
+    <section
+      className={
+        isCompact
+          ? `${FILTER_STICKY_COMPACT_CLASS} mb-4 flex flex-col gap-2`
+          : `${FILTER_STICKY_DASHBOARD_CLASS} mb-5 flex flex-col gap-2.5`
+      }
+    >
       {isCompact ? (
         <p className="text-lg font-semibold text-stone-700">디자인 갤러리</p>
       ) : null}
 
-      <button
-        type="button"
-        onClick={handleResetFilters}
-        className="mb-4 rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
-      >
-        ✨ 모든 디자인 전체보기
-      </button>
+      <div className="mb-4 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={handleResetFilters}
+          className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
+        >
+          ✨ 모든 디자인 전체보기
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsFilterOpen((prev) => !prev)}
+          className="flex items-center gap-1 text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
+        >
+          {isFilterOpen ? "🔼 필터 접기" : "🔽 필터 열기"}
+        </button>
+      </div>
 
+      {isFilterOpen ? (
+        <div className={`flex flex-col ${filterRowGapClass}`}>
       <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
         <span className={FILTER_LABEL_CLASS}>시즌/테마</span>
         <div className={FILTER_SCROLL_ROW_CLASS}>
@@ -329,6 +352,8 @@ export default function ProGalleryWidget({
           ))}
         </div>
       </div>
+        </div>
+      ) : null}
     </section>
   );
 

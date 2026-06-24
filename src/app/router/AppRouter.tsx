@@ -79,6 +79,7 @@ const TestStep3Page = lazy(() => import('../../pages/client/test/TestStep3Page')
 const TestResultPage = lazy(() => import('../../pages/client/test/TestResultPage'))
 const NotFoundPage = lazy(() => import('../../pages/client/NotFoundPage'))
 const ProLayout = lazy(() => import('../../pages/pro/ProLayout'))
+const ProAuthGuard = lazy(() => import('../../features/pro/auth/ProAuthGuard'))
 const ProDashboardPage = lazy(() => import('../../pages/pro/ProDashboardPage'))
 const ProSentProposalsPage = lazy(() => import('../../pages/pro/ProSentProposalsPage'))
 const ProCollectionsPage = lazy(() => import('../../pages/pro/ProCollectionsPage'))
@@ -170,14 +171,19 @@ const router = createBrowserRouter([
   },
   {
     path: '/pro',
-    element: <ProLayout />,
+    element: <ProAuthGuard />,
     children: [
-      { index: true, element: <ProDashboardPage /> },
-      { path: 'proposals', element: <ProSentProposalsPage /> },
-      { path: 'collections', element: <ProCollectionsPage /> },
-      { path: 'curation', element: <ProCurationPage /> },
-      { path: 'growth', element: <ProGrowthPage /> },
-      { path: 'settings', element: <ProSettingsPage /> },
+      {
+        element: <ProLayout />,
+        children: [
+          { index: true, element: <ProDashboardPage /> },
+          { path: 'proposals', element: <ProSentProposalsPage /> },
+          { path: 'collections', element: <ProCollectionsPage /> },
+          { path: 'curation', element: <ProCurationPage /> },
+          { path: 'growth', element: <ProGrowthPage /> },
+          { path: 'settings', element: <ProSettingsPage /> },
+        ],
+      },
     ],
   },
   {
