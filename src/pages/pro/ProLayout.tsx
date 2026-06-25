@@ -1,3 +1,4 @@
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import { isProFocusModeBlockedPath } from "@/features/pro/proFocusModeRoutes";
 import { useEffect, useState } from "react";
@@ -47,17 +48,19 @@ export default function ProLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <ProSidebar />
+    <LanguageProvider>
+      <div className="flex min-h-screen bg-gray-50">
+        <ProSidebar />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ProHeader />
-        <main className="flex-1 p-6">
-          <Outlet />
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <ProHeader />
+          <main className="flex-1 p-6">
+            <Outlet />
+          </main>
+        </div>
+
+        {isGalleryRoute && !isFocusMode ? <ProRightPanel /> : null}
       </div>
-
-      {isGalleryRoute && !isFocusMode ? <ProRightPanel /> : null}
-    </div>
+    </LanguageProvider>
   );
 }

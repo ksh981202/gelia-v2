@@ -4,6 +4,7 @@ const PRO_FOCUS_MODE_BLOCKED_PREFIXES = [
   "/pro/curation",
   "/pro/growth",
   "/pro/settings",
+  "/pro/faq",
 ] as const;
 
 export function isProFocusModeBlockedPath(pathname: string): boolean {

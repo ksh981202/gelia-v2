@@ -86,6 +86,7 @@ const ProCollectionsPage = lazy(() => import('../../pages/pro/ProCollectionsPage
 const ProCurationPage = lazy(() => import('../../pages/pro/ProCurationPage'))
 const ProGrowthPage = lazy(() => import('../../pages/pro/ProGrowthPage'))
 const ProSettingsPage = lazy(() => import('../../pages/pro/ProSettingsPage'))
+const ProFaqPage = lazy(() => import('../../pages/pro/ProFaqPage'))
 
 const router = createBrowserRouter([
   {
@@ -182,6 +183,7 @@ const router = createBrowserRouter([
           { path: 'curation', element: <ProCurationPage /> },
           { path: 'growth', element: <ProGrowthPage /> },
           { path: 'settings', element: <ProSettingsPage /> },
+          { path: 'faq', element: <ProFaqPage /> },
         ],
       },
     ],

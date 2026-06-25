@@ -7,6 +7,7 @@ import { supabase } from "@/shared/api/supabaseClient";
 const TYPE_LABEL: Record<string, string> = {
   notice: "공지사항",
   faq: "FAQ",
+  pro_faq: "원장님 FAQ",
   terms: "이용약관",
   privacy: "개인정보처리방침",
   magazine_editor: "매거진 - 에디터 픽",

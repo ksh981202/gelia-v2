@@ -56,6 +56,9 @@ export default function ProSidebar() {
           >
             💡 기능 제안 / 문의하기
           </a>
+          <NavLink to="/pro/faq" className={proNavLinkClass}>
+            ❓ 자주 묻는 질문 (FAQ)
+          </NavLink>
           <NavLink to="/pro/settings" className={proNavLinkClass}>
             ⚙️ 샵 프로필 설정
           </NavLink>

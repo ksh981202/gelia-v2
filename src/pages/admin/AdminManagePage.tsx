@@ -133,8 +133,10 @@ function rowStatus(row: AdminNailListRow): { label: string; tone: "ok" | "warn" 
   return { label: category || "정상 노출", tone: "ok" };
 }
 
+type PaginationItem = number | "ellipsis-prev" | "ellipsis-next";
+
 /** 1 … 중간 … 마지막 형태 (총 페이지가 많을 때) */
-function paginationItems(current: number, total: number): Array<number | "ellipsis"> {
+function paginationItems(current: number, total: number): PaginationItem[] {
   if (total <= 9) {
     return Array.from({ length: total }, (_, i) => i + 1);
   }
@@ -145,9 +147,11 @@ function paginationItems(current: number, total: number): Array<number | "ellips
     if (p >= 1 && p <= total) s.add(p);
   }
   const sorted = [...s].sort((a, b) => a - b);
-  const out: Array<number | "ellipsis"> = [];
+  const out: PaginationItem[] = [];
   for (let i = 0; i < sorted.length; i++) {
-    if (i > 0 && sorted[i]! - sorted[i - 1]! > 1) out.push("ellipsis");
+    if (i > 0 && sorted[i]! - sorted[i - 1]! > 1) {
+      out.push(sorted[i]! <= current ? "ellipsis-prev" : "ellipsis-next");
+    }
     out.push(sorted[i]!);
   }
   return out;
@@ -190,10 +194,12 @@ const AdminManagePage = () => {
   const currentPage = Math.min(Math.max(1, requestedPage), totalPages);
 
   useEffect(() => {
-    if (requestedPage > totalPages) {
+    if (!listData) return;
+
+    if (totalPages > 0 && requestedPage > totalPages) {
       setRequestedPage(totalPages);
     }
-  }, [requestedPage, totalPages]);
+  }, [requestedPage, totalPages, listData]);
 
   const pageIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const selectedOnPageCount = useMemo(
@@ -310,6 +316,10 @@ const AdminManagePage = () => {
     () => paginationItems(currentPage, totalPages),
     [currentPage, totalPages],
   );
+
+  const handlePageChange = useCallback((page: number) => {
+    setRequestedPage(page);
+  }, []);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-10">
@@ -533,32 +543,50 @@ const AdminManagePage = () => {
                       이전
                     </Button>
                     <div className="flex flex-wrap items-center justify-center gap-1 px-2">
-                      {pageList.map((item, idx) =>
-                        item === "ellipsis" ? (
-                          <span
-                            key={`e-${idx}`}
-                            className="px-2 text-sm text-slate-400"
-                            aria-hidden
-                          >
-                            …
-                          </span>
-                        ) : (
-                          <Button
-                            key={item}
+                      {pageList.map((item, idx) => {
+                        if (item === "ellipsis-prev") {
+                          return (
+                            <button
+                              key={`e-prev-${idx}`}
+                              type="button"
+                              onClick={() => handlePageChange(Math.max(1, currentPage - 5))}
+                              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
+                              title="이전 5페이지"
+                            >
+                              ...
+                            </button>
+                          );
+                        }
+
+                        if (item === "ellipsis-next") {
+                          return (
+                            <button
+                              key={`e-next-${idx}`}
+                              type="button"
+                              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 5))}
+                              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
+                              title="다음 5페이지"
+                            >
+                              ...
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={`p-${item}`}
                             type="button"
-                            variant={item === currentPage ? "default" : "outline"}
-                            size="sm"
-                            className={
-                              item === currentPage
-                                ? "h-9 min-w-9 px-2"
-                                : "h-9 min-w-9 border-slate-200 px-2"
-                            }
-                            onClick={() => setRequestedPage(item)}
+                            onClick={() => handlePageChange(item as number)}
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                              currentPage === item
+                                ? "bg-stone-900 text-white"
+                                : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                            }`}
                           >
                             {item}
-                          </Button>
-                        ),
-                      )}
+                          </button>
+                        );
+                      })}
                     </div>
                     <Button
                       type="button"
