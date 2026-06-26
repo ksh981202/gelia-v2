@@ -12,9 +12,20 @@ export type ProLookbookListItem = {
 };
 
 export async function fetchProLookbooksList(): Promise<ProLookbookListItem[]> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) throw userError;
+  if (!user?.id) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
   const { data, error } = await supabase
     .from("pro_lookbooks")
     .select("id, title, created_at, nail_ids")
+    .eq("user_id", user.id)
     .or("is_curation.eq.false,is_curation.is.null")
     .order("created_at", { ascending: false });
 

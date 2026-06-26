@@ -13,7 +13,6 @@ const AdminBoard = lazy(() => import('../../pages/admin/AdminBoard'))
 const AdminManagePage = lazy(() => import('../../pages/admin/AdminManagePage'))
 const ClientNailDetailPage = lazy(() => import('../../pages/client/ClientNailDetailPage'))
 const ClientGalleryPage = lazy(() => import('../../pages/client/ClientGalleryPage'))
-const ClientRankingPage = lazy(() => import('../../pages/client/ClientRankingPage'))
 const ClientMagazinePage = lazy(() => import('../../pages/client/magazine/ClientMagazinePage'))
 const ClientMagazineDetailPage = lazy(() => import('../../pages/client/magazine/ClientMagazineDetailPage'))
 const TrendPage = lazy(() => import('../../pages/client/trend/TrendPage'))
@@ -133,7 +132,7 @@ const router = createBrowserRouter([
       { path: 'account', element: <ClientAccountSettingsPage /> },
       { path: 'my', element: <ClientMyPage /> },
       { path: 'my/list/:type', element: <ClientMyNailListPage /> },
-      { path: 'ranking', element: <ClientRankingPage /> },
+      { path: 'ranking', element: <Navigate to="/trend" replace /> },
       { path: 'popular-design', element: <PopularDesignPage /> },
       { path: 'period-best-list', element: <PeriodBestListPage /> },
       { path: 'reaction-best-list', element: <ReactionBestListPage /> },

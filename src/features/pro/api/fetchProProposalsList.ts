@@ -15,9 +15,20 @@ export type ProProposalListItem = {
 };
 
 export async function fetchProProposalsList(): Promise<ProProposalListItem[]> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) throw userError;
+  if (!user?.id) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
   const { data, error } = await supabase
     .from("pro_proposals")
     .select("id, customer_name, greeting_message, created_at, views, nail_ids, is_active")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
