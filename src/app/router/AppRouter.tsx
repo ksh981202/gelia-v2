@@ -180,6 +180,7 @@ const router = createBrowserRouter([
           { index: true, element: <ProDashboardPage /> },
           { path: 'proposals', element: <ProSentProposalsPage /> },
           { path: 'collections', element: <ProCollectionsPage /> },
+          { path: 'collections/:id', element: <ProCollectionsPage /> },
           { path: 'curation', element: <ProCurationPage /> },
           { path: 'growth', element: <ProGrowthPage /> },
           { path: 'settings', element: <ProSettingsPage /> },

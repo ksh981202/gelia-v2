@@ -1,21 +1,14 @@
 import { fetchNailDesignsByIds } from "@/entities/nail-design/api/fetchNailDesignsByIds";
+import type { ProLookbookListItem } from "@/features/pro/api/fetchProLookbooksList";
 import type { ProCartNail } from "@/features/pro/store/useProCartStore";
 import { toProCartNail } from "@/features/pro/store/useProCartStore";
 import { supabase } from "@/shared/api/supabaseClient";
 
-export type ProLookbookListItem = {
-  id: string;
-  title: string;
-  created_at: string;
-  nail_ids: string[];
-  nails: ProCartNail[];
-};
-
-export async function fetchProLookbooksList(): Promise<ProLookbookListItem[]> {
+export async function fetchProCurationsList(): Promise<ProLookbookListItem[]> {
   const { data, error } = await supabase
     .from("pro_lookbooks")
     .select("id, title, created_at, nail_ids")
-    .or("is_curation.eq.false,is_curation.is.null")
+    .eq("is_curation", true)
     .order("created_at", { ascending: false });
 
   if (error) throw error;

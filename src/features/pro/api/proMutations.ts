@@ -4,7 +4,11 @@ const PROPOSAL_SHARE_BASE_URL = "https://gelia.app/proposal";
 const LOOKBOOK_SHARE_BASE_URL = "https://gelia.app/lookbook";
 
 export function buildProposalShareUrl(proposalId: string): string {
-  return `${PROPOSAL_SHARE_BASE_URL}/${proposalId}`;
+  const base =
+    typeof window !== "undefined" && window.location?.origin
+      ? `${window.location.origin}/proposal`
+      : PROPOSAL_SHARE_BASE_URL;
+  return `${base}/${proposalId}`;
 }
 
 export function buildLookbookShareUrl(lookbookId: string): string {
@@ -35,6 +39,31 @@ export async function saveProLookbook(title: string, nailIds: string[]): Promise
   }
 }
 
+export async function createProCuration(title: string, nailIds: string[]): Promise<void> {
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) {
+    throw new Error("큐레이션 이름을 입력해 주세요.");
+  }
+  if (nailIds.length === 0) {
+    throw new Error("큐레이션에 담을 디자인을 1개 이상 선택해 주세요.");
+  }
+
+  const { data, error } = await supabase
+    .from("pro_lookbooks")
+    .insert({
+      title: trimmedTitle,
+      nail_ids: nailIds,
+      is_curation: true,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("큐레이션 저장 결과를 확인할 수 없습니다.");
+  }
+}
+
 export async function duplicateProLookbook(lookbook: {
   title: string;
   nail_ids: string[];
@@ -58,6 +87,36 @@ export async function duplicateProLookbook(lookbook: {
   if (error) throw error;
   if (!data?.id) {
     throw new Error("컬렉션 복제 결과를 확인할 수 없습니다.");
+  }
+}
+
+export async function saveCurationToMyCollection(lookbook: {
+  title: string;
+  nail_ids: string[];
+}): Promise<void> {
+  const title = lookbook.title.trim();
+  const nailIds = (lookbook.nail_ids ?? []).map((id) => String(id ?? "").trim()).filter(Boolean);
+
+  if (!title) {
+    throw new Error("담을 컬렉션 이름이 없습니다.");
+  }
+  if (nailIds.length === 0) {
+    throw new Error("담을 디자인이 없습니다.");
+  }
+
+  const { data, error } = await supabase
+    .from("pro_lookbooks")
+    .insert({
+      title,
+      nail_ids: nailIds,
+      is_curation: false,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("내 컬렉션 담기 결과를 확인할 수 없습니다.");
   }
 }
 
@@ -208,5 +267,19 @@ export async function deleteProProposal(proposalId: string): Promise<void> {
   if (error) throw error;
   if (!data?.id) {
     throw new Error("제안서 삭제 결과를 확인할 수 없습니다.");
+  }
+}
+
+export async function deleteProLookbook(lookbookId: string): Promise<void> {
+  const id = lookbookId.trim();
+  if (!id) {
+    throw new Error("삭제할 컬렉션 ID가 없습니다.");
+  }
+
+  const { data, error } = await supabase.from("pro_lookbooks").delete().eq("id", id).select("id").single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("컬렉션 삭제 결과를 확인할 수 없습니다.");
   }
 }

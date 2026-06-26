@@ -251,7 +251,7 @@ export default function ClientMyPage() {
           </div>
           <div className="mt-4 text-xl font-bold text-gray-900">{nickname || "네일리버"}</div>
           <span className="mt-1.5 inline-flex items-center justify-center rounded-full bg-rose-50 px-3.5 py-1 text-center text-[13px] font-semibold text-rose-400">
-            좋은 하루 보내세요 🌷
+            {isEnglish ? "Have a great day 🌷" : "좋은 하루 보내세요 🌷"}
           </span>
         </section>
 

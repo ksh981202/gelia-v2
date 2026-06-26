@@ -1,4 +1,10 @@
-import { copyLookbookShareLink, duplicateProLookbook } from "@/features/pro/api/proMutations";
+import {
+  copyLookbookShareLink,
+  copyProposalShareLink,
+  createProProposal,
+  deleteProLookbook,
+  duplicateProLookbook,
+} from "@/features/pro/api/proMutations";
 import type { ProLookbookListItem } from "@/features/pro/api/fetchProLookbooksList";
 import { useProLookbooksListQuery } from "@/features/pro/api/useProLookbooksListQuery";
 import { toProCartNail, useProCartStore, type ProCartNail } from "@/features/pro/store/useProCartStore";
@@ -8,6 +14,7 @@ import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 function formatCreatedAt(value: string): string {
@@ -31,16 +38,25 @@ function proCartNailToDetailRow(nail: ProCartNail): NailDesignRow {
 const PAGE_ROOT_CLASS = "flex h-full w-full flex-col";
 const CARD_GRID_CLASS = "grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 const CARD_CONTAINER_CLASS =
-  "cursor-pointer rounded-2xl border border-stone-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md";
-const ADMIN_BTN_CLASS =
-  "rounded-full bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-200";
-const ADMIN_BTN_DANGER_CLASS =
-  "rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50";
+  "rounded-2xl border border-stone-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md";
+const CARD_ACTION_BTN_CLASS =
+  "flex-1 rounded-md bg-stone-50 py-2 text-center text-xs font-medium text-stone-600 transition-colors hover:bg-stone-100";
+const CARD_DELETE_BTN_CLASS =
+  "flex-1 rounded-md bg-red-50 py-2 text-center text-xs font-medium text-red-500 transition-colors hover:bg-red-100";
+const PROPOSAL_FIELD_CLASS =
+  "w-full rounded-xl border border-orange-100 bg-orange-50/30 px-4 py-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500 disabled:opacity-60";
 
 export default function ProCollectionsPage() {
+  const navigate = useNavigate();
+  const { id: collectionId } = useParams<{ id?: string }>();
   const [editTarget, setEditTarget] = useState<ProLookbookListItem | null>(null);
   const [viewingLookbook, setViewingLookbook] = useState<ProLookbookListItem | null>(null);
   const [selectedDetailNail, setSelectedDetailNail] = useState<NailDesignRow | null>(null);
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [selectedCollection, setSelectedCollection] = useState<ProLookbookListItem | null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const [greeting, setGreeting] = useState("");
+  const [isCreatingProposal, setIsCreatingProposal] = useState(false);
   const isFocusMode = useProUIStore((state) => state.isFocusMode);
   const selectedNails = useProCartStore((state) => state.selectedNails);
   const toggleNail = useProCartStore((state) => state.toggleNail);
@@ -59,7 +75,30 @@ export default function ProCollectionsPage() {
 
   const openEditModal = (lookbook: ProLookbookListItem) => {
     setEditTarget(lookbook);
+    navigate(`/pro/collections/${lookbook.id}`);
   };
+
+  const closeEditModal = useCallback(() => {
+    setEditTarget(null);
+    navigate("/pro/collections");
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isFocusMode || isLoading || !collectionId) {
+      if (!collectionId) setEditTarget(null);
+      return;
+    }
+
+    const target = lookbooks.find((lookbook) => lookbook.id === collectionId);
+    if (target) {
+      setEditTarget(target);
+      return;
+    }
+
+    if (!isError && lookbooks.length > 0) {
+      navigate("/pro/collections", { replace: true });
+    }
+  }, [collectionId, isFocusMode, isLoading, isError, lookbooks, navigate]);
 
   const handleToggleNail = useCallback(
     (item: NailDesignRow) => {
@@ -89,9 +128,68 @@ export default function ProCollectionsPage() {
     }
   };
 
-  const handleDeleteClick = (event: MouseEvent) => {
+  const handleDeleteClick = async (event: MouseEvent, lookbook: ProLookbookListItem) => {
     event.stopPropagation();
-    window.alert("준비 중");
+    if (!window.confirm("이 컬렉션을 정말 삭제하시겠습니까?")) {
+      return;
+    }
+    try {
+      await deleteProLookbook(lookbook.id);
+      if (editTarget?.id === lookbook.id) {
+        closeEditModal();
+      }
+      await refetch();
+      window.alert("컬렉션이 삭제되었습니다.");
+    } catch {
+      window.alert("컬렉션 삭제에 실패했습니다.");
+    }
+  };
+
+  const openProposalModal = (event: MouseEvent, lookbook: ProLookbookListItem) => {
+    event.stopPropagation();
+    setSelectedCollection(lookbook);
+    setCustomerName("");
+    setGreeting("");
+    setIsProposalModalOpen(true);
+  };
+
+  const closeProposalModal = useCallback(() => {
+    if (isCreatingProposal) return;
+    setIsProposalModalOpen(false);
+    setSelectedCollection(null);
+    setCustomerName("");
+    setGreeting("");
+  }, [isCreatingProposal]);
+
+  const handleCreateProposalAndCopy = async () => {
+    if (!selectedCollection || isCreatingProposal) return;
+
+    const nailIds = (selectedCollection.nail_ids ?? [])
+      .map((id) => String(id ?? "").trim())
+      .filter(Boolean);
+
+    setIsCreatingProposal(true);
+    try {
+      const proposalId = await createProProposal({
+        customerName,
+        greetingMessage: greeting,
+        nailIds,
+      });
+      await copyProposalShareLink(proposalId);
+      setIsProposalModalOpen(false);
+      setSelectedCollection(null);
+      setCustomerName("");
+      setGreeting("");
+      toast.success("상담 제안서 링크가 복사되었습니다!", {
+        description:
+          "생성된 내역은 좌측 [상담 제안서] 메뉴에서 언제든 확인하고 관리할 수 있습니다.",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "제안서 생성에 실패했습니다.";
+      toast.error(message);
+    } finally {
+      setIsCreatingProposal(false);
+    }
   };
 
   if (isFocusMode && viewingLookbook) {
@@ -218,13 +316,10 @@ export default function ProCollectionsPage() {
               onImageClick={() =>
                 isFocusMode ? setViewingLookbook(lookbook) : openEditModal(lookbook)
               }
-              onOpenEdit={(event) => {
-                event.stopPropagation();
-                openEditModal(lookbook);
-              }}
+              onSendProposal={(event) => openProposalModal(event, lookbook)}
               onDuplicate={(event) => void handleDuplicate(event, lookbook)}
               onCopyLink={(event) => void handleCopyLink(event, lookbook.id)}
-              onDelete={handleDeleteClick}
+              onDelete={(event) => void handleDeleteClick(event, lookbook)}
             />
           ))}
         </div>
@@ -233,12 +328,90 @@ export default function ProCollectionsPage() {
       {!isFocusMode && editTarget ? (
         <ProEditLookbookModal
           lookbook={editTarget}
-          onClose={() => setEditTarget(null)}
+          onClose={closeEditModal}
           onSaved={() => {
             void refetch();
-            setEditTarget(null);
+            closeEditModal();
           }}
         />
+      ) : null}
+
+      {!isFocusMode && isProposalModalOpen ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          role="presentation"
+          onClick={isCreatingProposal ? undefined : closeProposalModal}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="collection-proposal-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="collection-proposal-modal-title" className="text-xl font-semibold text-stone-800">
+              상담 제안서 링크 생성
+            </h2>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label
+                  htmlFor="collection-proposal-customer-name"
+                  className="mb-2 block text-sm font-semibold text-stone-800"
+                >
+                  고객명
+                </label>
+                <input
+                  id="collection-proposal-customer-name"
+                  type="text"
+                  value={customerName}
+                  onChange={(event) => setCustomerName(event.target.value)}
+                  placeholder="고객 이름 (예: 김지영 고객님)"
+                  disabled={isCreatingProposal}
+                  className={PROPOSAL_FIELD_CLASS}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="collection-proposal-greeting"
+                  className="mb-2 block text-sm font-semibold text-stone-800"
+                >
+                  인사말
+                </label>
+                <textarea
+                  id="collection-proposal-greeting"
+                  value={greeting}
+                  onChange={(event) => setGreeting(event.target.value)}
+                  rows={3}
+                  placeholder="고객에게 전달할 짧은 환영 메시지를 적어주세요. (예: 웨딩 촬영에 어울릴 추천 디자인입니다.)"
+                  disabled={isCreatingProposal}
+                  className={`${PROPOSAL_FIELD_CLASS} resize-none leading-relaxed`}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={closeProposalModal}
+                disabled={isCreatingProposal}
+                className="flex-1 rounded-xl border border-orange-100 bg-white px-4 py-3 text-sm font-medium text-stone-600 transition-colors hover:bg-orange-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                [ 취소 ]
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCreateProposalAndCopy()}
+                disabled={isCreatingProposal || !customerName.trim()}
+                className="flex-1 rounded-xl bg-stone-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCreatingProposal ? "생성 중..." : "[ 링크 생성 및 복사 ]"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );
@@ -306,7 +479,7 @@ function LookbookCard({
   lookbook,
   isFocusMode,
   onImageClick,
-  onOpenEdit,
+  onSendProposal,
   onDuplicate,
   onCopyLink,
   onDelete,
@@ -314,7 +487,7 @@ function LookbookCard({
   lookbook: ProLookbookListItem;
   isFocusMode: boolean;
   onImageClick: () => void;
-  onOpenEdit: (event: MouseEvent) => void;
+  onSendProposal: (event: MouseEvent) => void;
   onDuplicate: (event: MouseEvent) => void;
   onCopyLink: (event: MouseEvent) => void;
   onDelete: (event: MouseEvent) => void;
@@ -323,7 +496,12 @@ function LookbookCard({
 
   return (
     <article className={CARD_CONTAINER_CLASS}>
-      <button type="button" onClick={onImageClick} className="w-full text-left">
+      <button
+        type="button"
+        onClick={onImageClick}
+        className="w-full cursor-pointer text-left transition-opacity hover:opacity-95"
+        aria-label={`${lookbook.title} 열기`}
+      >
         <div className="mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
           <LookbookCoverImage nails={lookbook.nails} />
         </div>
@@ -333,19 +511,26 @@ function LookbookCard({
         생성 {formatCreatedAt(lookbook.created_at)} · 디자인 {nailCount}장
       </p>
       {!isFocusMode ? (
-        <div className="flex flex-wrap gap-2 border-t border-stone-100 pt-3">
-          <button type="button" onClick={onOpenEdit} className={ADMIN_BTN_CLASS}>
-            열기/수정
+        <div className="border-t border-stone-100 pt-3">
+          <button
+            type="button"
+            onClick={onSendProposal}
+            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-stone-400 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-500"
+          >
+            <span aria-hidden>📝</span>
+            상담 제안서로 만들기
           </button>
-          <button type="button" onClick={onDuplicate} className={ADMIN_BTN_CLASS}>
-            복제
-          </button>
-          <button type="button" onClick={onCopyLink} className={ADMIN_BTN_CLASS}>
-            링크복사
-          </button>
-          <button type="button" onClick={onDelete} className={ADMIN_BTN_DANGER_CLASS}>
-            삭제
-          </button>
+          <div className="flex w-full items-center gap-1.5">
+            <button type="button" onClick={onDuplicate} className={CARD_ACTION_BTN_CLASS}>
+              📑 복제
+            </button>
+            <button type="button" onClick={onCopyLink} className={CARD_ACTION_BTN_CLASS}>
+              🔗 기본 링크
+            </button>
+            <button type="button" onClick={onDelete} className={CARD_DELETE_BTN_CLASS}>
+              🗑️ 삭제
+            </button>
+          </div>
         </div>
       ) : null}
     </article>

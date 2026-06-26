@@ -139,7 +139,7 @@ export default function SearchMainPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
-      <header className="fixed inset-x-0 top-0 z-50 w-full border-b border-gray-100 bg-white">
+      <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white">
         {showResultHeader ? (
           <div className="flex h-14 w-full items-center gap-2 px-3">
             <button

@@ -88,8 +88,8 @@ const FILTER_SCROLL_ROW_CLASS =
   "flex shrink-0 flex-nowrap gap-2";
 
 const MASONRY_CLASS_BY_VARIANT = {
-  dashboard: "columns-2 gap-5 md:columns-3 lg:columns-4 xl:columns-5",
-  compact: "columns-3 gap-3 lg:columns-4 xl:columns-5",
+  dashboard: "min-w-0 columns-2 gap-4 sm:columns-3 lg:columns-4 xl:columns-5",
+  compact: "min-w-0 columns-2 gap-4 sm:columns-3 lg:columns-4",
 } as const;
 
 export function resolveProGalleryQuery(
@@ -474,9 +474,9 @@ export default function ProGalleryWidget({
 
   if (isCompact) {
     return (
-      <div className="flex h-full min-h-0 flex-col p-4">
+      <div className="flex h-full min-h-0 min-w-0 flex-col p-4">
         {filterSection}
-        <div className="min-h-0 flex-1 overflow-y-auto">{galleryBody}</div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">{galleryBody}</div>
       </div>
     );
   }

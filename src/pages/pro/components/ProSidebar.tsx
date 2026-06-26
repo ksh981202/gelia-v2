@@ -6,7 +6,8 @@ const PRO_MENU_ITEMS = [
   { id: "designs", label: "💅 전체 디자인", to: "/pro", end: true },
   { id: "collection", label: "⭐ 내 컬렉션", to: "/pro/collections" },
   { id: "proposals", label: "📋 상담 제안서", to: "/pro/proposals" },
-  { id: "growth", label: "📈 샵 성장 팁", to: "/pro/growth" },
+  // 런칭 초기 UX 집중: 임시 숨김 — 복구 시 아래 주석 해제
+  // { id: "growth", label: "📈 샵 성장 팁", to: "/pro/growth" },
 ] as const;
 
 const PRO_FOCUS_MENU_ITEMS = [

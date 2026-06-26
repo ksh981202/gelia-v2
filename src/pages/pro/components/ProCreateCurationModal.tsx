@@ -1,32 +1,19 @@
-import { updateProLookbook } from "@/features/pro/api/proMutations";
-import type { ProLookbookListItem } from "@/features/pro/api/fetchProLookbooksList";
+import { createProCuration } from "@/features/pro/api/proMutations";
 import type { ProCartNail } from "@/features/pro/store/useProCartStore";
 import ProEditProposalGalleryPanel from "@/pages/pro/components/ProEditProposalGalleryPanel";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-type ProEditLookbookModalProps = {
-  lookbook: ProLookbookListItem;
+type ProCreateCurationModalProps = {
   onClose: () => void;
   onSaved: () => void;
 };
 
-export default function ProEditLookbookModal({
-  lookbook,
-  onClose,
-  onSaved,
-}: ProEditLookbookModalProps) {
-  const [title, setTitle] = useState(lookbook?.title ?? "");
-  const [selectedNails, setSelectedNails] = useState<ProCartNail[]>([...(lookbook?.nails ?? [])]);
+export default function ProCreateCurationModal({ onClose, onSaved }: ProCreateCurationModalProps) {
+  const [title, setTitle] = useState("");
+  const [selectedNails, setSelectedNails] = useState<ProCartNail[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGalleryExpanded, setIsGalleryExpanded] = useState(false);
-
-  useEffect(() => {
-    setTitle(lookbook?.title ?? "");
-    setSelectedNails([...(lookbook?.nails ?? [])]);
-    setIsSubmitting(false);
-    setIsGalleryExpanded(false);
-  }, [lookbook]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -62,14 +49,14 @@ export default function ProEditLookbookModal({
 
     setIsSubmitting(true);
     try {
-      await updateProLookbook(lookbook?.id ?? "", {
+      await createProCuration(
         title,
-        nailIds: (selectedNails ?? []).map((nail) => nail?.id).filter((id): id is string => Boolean(id)),
-      });
-      window.alert("성공적으로 수정되었습니다.");
+        selectedNails.map((nail) => nail.id).filter(Boolean),
+      );
+      window.alert("큐레이션이 성공적으로 등록되었습니다.");
       onSaved();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "컬렉션 수정에 실패했습니다.";
+      const message = error instanceof Error ? error.message : "큐레이션 등록에 실패했습니다.";
       window.alert(message);
     } finally {
       setIsSubmitting(false);
@@ -89,12 +76,12 @@ export default function ProEditLookbookModal({
         ].join(" ")}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="pro-edit-lookbook-title"
+        aria-labelledby="pro-create-curation-title"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="shrink-0 border-b border-stone-100 px-6 py-5">
-          <h2 id="pro-edit-lookbook-title" className="text-xl font-semibold text-stone-900">
-            ⭐ 내 컬렉션 수정
+          <h2 id="pro-create-curation-title" className="text-xl font-semibold text-stone-900">
+            🏆 새 큐레이션 만들기
           </h2>
         </div>
 
@@ -107,15 +94,18 @@ export default function ProEditLookbookModal({
           >
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
               <div>
-                <label htmlFor="pro-edit-lookbook-title-input" className="mb-2 block text-base font-medium text-stone-700">
-                  컬렉션 이름
+                <label
+                  htmlFor="pro-create-curation-title-input"
+                  className="mb-2 block text-base font-medium text-stone-700"
+                >
+                  큐레이션 이름
                 </label>
                 <input
-                  id="pro-edit-lookbook-title-input"
+                  id="pro-create-curation-title-input"
                   type="text"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="예: 2026 여름 바캉스 추천 20선"
+                  placeholder="예: 2026 봄 시즌 베스트 20선"
                   disabled={isSubmitting}
                   className="w-full rounded-xl border border-orange-100 bg-[#FFF9F5] px-4 py-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:border-orange-200 focus:bg-white disabled:opacity-60"
                 />
@@ -137,13 +127,13 @@ export default function ProEditLookbookModal({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {(selectedNails ?? []).map((nail) => (
-                    <div key={nail?.id ?? "unknown-nail"} className="flex flex-col">
+                  {selectedNails.map((nail) => (
+                    <div key={nail.id} className="flex flex-col">
                       <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-stone-100">
-                        {nail?.imageUrl ? (
+                        {nail.imageUrl ? (
                           <img
                             src={nail.imageUrl}
-                            alt={nail?.title ?? "네일 디자인"}
+                            alt={nail.title}
                             className="h-full w-full rounded-lg object-cover"
                           />
                         ) : (
@@ -151,16 +141,16 @@ export default function ProEditLookbookModal({
                         )}
                         <button
                           type="button"
-                          onClick={() => nail?.id && handleRemoveNail(nail.id)}
+                          onClick={() => handleRemoveNail(nail.id)}
                           disabled={isSubmitting}
                           className="absolute right-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white transition-colors hover:bg-black/80 disabled:opacity-60"
-                          aria-label={`${nail?.title ?? "네일 디자인"} 삭제`}
+                          aria-label={`${nail.title} 삭제`}
                         >
                           X
                         </button>
                       </div>
                       <p className="mt-2 truncate text-center text-sm font-medium text-stone-700">
-                        {nail?.title ?? "네일 디자인"}
+                        {nail.title}
                       </p>
                     </div>
                   ))}
@@ -183,7 +173,7 @@ export default function ProEditLookbookModal({
                 disabled={isSubmitting}
                 className="flex-1 rounded-xl bg-stone-800 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-stone-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? "저장 중..." : "[ 💾 수정 내용 저장 ]"}
+                {isSubmitting ? "등록 중..." : "[ 💾 큐레이션 등록 ]"}
               </button>
             </div>
           </div>
