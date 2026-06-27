@@ -193,6 +193,7 @@ export async function updateProProposal(
     customerName: string;
     greetingMessage: string;
     nailIds: string[];
+    privateMemo?: string;
   },
 ): Promise<void> {
   const proposalId = id.trim();
@@ -214,6 +215,9 @@ export async function updateProProposal(
       customer_name: customerName,
       greeting_message: input.greetingMessage.trim() || null,
       nail_ids: input.nailIds,
+      ...(input.privateMemo !== undefined
+        ? { private_memo: input.privateMemo.trim() || null }
+        : {}),
     })
     .eq("id", proposalId)
     .select("id")
@@ -222,6 +226,28 @@ export async function updateProProposal(
   if (error) throw error;
   if (!data?.id) {
     throw new Error("제안서 수정 결과를 확인할 수 없습니다.");
+  }
+}
+
+export async function updateProProposalPrivateMemo(
+  id: string,
+  privateMemo: string,
+): Promise<void> {
+  const proposalId = id.trim();
+  if (!proposalId) {
+    throw new Error("수정할 제안서 ID가 없습니다.");
+  }
+
+  const { data, error } = await supabase
+    .from("pro_proposals")
+    .update({ private_memo: privateMemo.trim() || null })
+    .eq("id", proposalId)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  if (!data?.id) {
+    throw new Error("프라이빗 메모 저장 결과를 확인할 수 없습니다.");
   }
 }
 

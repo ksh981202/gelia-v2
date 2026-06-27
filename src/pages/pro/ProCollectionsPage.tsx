@@ -508,7 +508,7 @@ function LookbookCard({
       </button>
       <h3 className="truncate text-lg font-bold text-stone-800">{lookbook.title}</h3>
       <p className="mb-4 text-xs text-stone-500">
-        생성 {formatCreatedAt(lookbook.created_at)} · 디자인 {nailCount}장
+        생성 {formatCreatedAt(lookbook.created_at)} · 디자인 {nailCount}개
       </p>
       {!isFocusMode ? (
         <div className="border-t border-stone-100 pt-3">

@@ -7,8 +7,10 @@ export type ProProposalListItem = {
   id: string;
   customer_name: string;
   greeting_message: string | null;
+  private_memo: string | null;
   created_at: string;
   views: number;
+  last_viewed_at: string | null;
   nail_ids: string[];
   is_active: boolean;
   nails: ProCartNail[];
@@ -27,7 +29,7 @@ export async function fetchProProposalsList(): Promise<ProProposalListItem[]> {
 
   const { data, error } = await supabase
     .from("pro_proposals")
-    .select("id, customer_name, greeting_message, created_at, views, nail_ids, is_active")
+    .select("id, customer_name, greeting_message, private_memo, created_at, views, last_viewed_at, nail_ids, is_active")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 

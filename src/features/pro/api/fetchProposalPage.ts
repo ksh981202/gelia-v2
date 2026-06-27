@@ -9,13 +9,24 @@ export type ProposalPageData = {
 };
 
 async function incrementProposalViews(proposalId: string, currentViews: number): Promise<void> {
-  const { error } = await supabase
+  const lastViewedAt = new Date().toISOString();
+
+  const { error: rpcError } = await supabase.rpc("increment_proposal_view", {
+    p_proposal_id: proposalId,
+  });
+
+  if (!rpcError) return;
+
+  const { error: updateError } = await supabase
     .from("pro_proposals")
-    .update({ views: currentViews + 1 })
+    .update({
+      views: currentViews + 1,
+      last_viewed_at: lastViewedAt,
+    })
     .eq("id", proposalId);
 
-  if (error) {
-    console.warn("[fetchProposalPage] views increment failed:", error.message);
+  if (updateError) {
+    console.warn("[fetchProposalPage] views increment failed:", updateError.message, rpcError.message);
   }
 }
 
@@ -36,10 +47,9 @@ export async function fetchProposalPage(proposalId: string): Promise<ProposalPag
     ? proposal.nail_ids.filter((id): id is string => Boolean(id?.trim()))
     : [];
 
-  const [nails] = await Promise.all([
-    fetchNailDesignsByIds(nailIds),
-    incrementProposalViews(trimmedId, Number(proposal.views ?? 0)),
-  ]);
+  await incrementProposalViews(trimmedId, Number(proposal.views ?? 0));
+
+  const nails = await fetchNailDesignsByIds(nailIds);
 
   return {
     customerName: String(proposal.customer_name ?? "").trim() || "고객님",

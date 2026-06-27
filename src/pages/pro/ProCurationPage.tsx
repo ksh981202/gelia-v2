@@ -245,8 +245,10 @@ export default function ProCurationPage() {
             <h1 className="mb-2 flex items-center gap-2 text-xl font-bold text-stone-800">
               🏆 젤리아 큐레이션
             </h1>
-            <p className="text-sm font-medium text-stone-500">
-              젤리아 본사가 엄선한 시즌/테마별 프리미엄 디자인 큐레이션입니다.
+            <p className="text-sm font-medium leading-relaxed text-stone-500">
+              최신 트렌드와 계절의 무드를 담아 엄선한 프리미엄 디자인 룩북입니다.
+              <br className="hidden md:block" />
+              원장님만의 컬렉션으로 활용하거나, 1:1 맞춤 상담 제안서로 고객에게 제안해 보세요.
             </p>
           </div>
           {isAdmin ? (
@@ -501,7 +503,7 @@ function CurationCard({
       </button>
       <h3 className="truncate text-lg font-bold text-stone-800">{curation.title}</h3>
       <p className="mb-4 text-xs text-stone-500">
-        등록 {formatCreatedAt(curation.created_at)} · 디자인 {nailCount}장
+        등록 {formatCreatedAt(curation.created_at)} · 디자인 {nailCount}개
       </p>
       <div className="grid w-full grid-cols-2 gap-1.5 border-t border-stone-100 pt-3">
         <button type="button" onClick={onSaveToCollection} className={CARD_ACTION_BTN_CLASS}>

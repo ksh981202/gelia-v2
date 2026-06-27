@@ -1,6 +1,7 @@
 import {
   copyProposalShareLink,
   deleteProProposal,
+  updateProProposalPrivateMemo,
 } from "@/features/pro/api/proMutations";
 import type { ProProposalListItem } from "@/features/pro/api/fetchProProposalsList";
 import { useProProposalsListQuery } from "@/features/pro/api/useProProposalsListQuery";
@@ -23,14 +24,37 @@ function formatCreatedAt(value: string): string {
   });
 }
 
+function getTimeAgo(dateString: string) {
+  const now = new Date();
+  const past = new Date(dateString);
+  const diffMs = now.getTime() - past.getTime();
+
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffMins < 1) return "방금 전";
+  if (diffMins < 60) return `${diffMins}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffWeeks < 4) return `${diffWeeks}주일 전`;
+  if (diffMonths < 12) return `${diffMonths}개월 전`;
+  return `${diffYears}년 전`;
+}
+
 const PAGE_ROOT_CLASS = "flex h-full w-full flex-col";
 const CARD_GRID_CLASS = "grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 const CARD_CONTAINER_CLASS =
   "cursor-pointer rounded-2xl border border-stone-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md";
 const ADMIN_BTN_CLASS =
-  "rounded-full bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-200";
+  "flex-1 min-w-0 whitespace-nowrap rounded-full bg-stone-100 px-2 py-1 text-[11px] font-semibold text-stone-700 transition-colors hover:bg-stone-200";
 const ADMIN_BTN_DANGER_CLASS =
-  "rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex-1 min-w-0 whitespace-nowrap rounded-full bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50";
+const DASHBOARD_WIDGET_CLASS =
+  "flex flex-col items-center justify-center rounded-2xl border border-stone-200 bg-white p-5 text-center shadow-sm";
 
 function proCartNailToDetailRow(nail: ProCartNail): NailDesignRow {
   return {
@@ -44,12 +68,44 @@ export default function ProSentProposalsPage() {
   const [editingProposal, setEditingProposal] = useState<ProProposalListItem | null>(null);
   const [viewingProposal, setViewingProposal] = useState<ProProposalListItem | null>(null);
   const [selectedDetailNail, setSelectedDetailNail] = useState<NailDesignRow | null>(null);
+  const [viewFilter, setViewFilter] = useState<"all" | "read" | "unread">("all");
   const isFocusMode = useProUIStore((state) => state.isFocusMode);
   const selectedNails = useProCartStore((state) => state.selectedNails);
   const toggleNail = useProCartStore((state) => state.toggleNail);
   const { data: proposals = [], isLoading, isError, refetch } = useProProposalsListQuery();
 
   const selectedIdSet = useMemo(() => new Set(selectedNails.map((nail) => nail.id)), [selectedNails]);
+
+  const proposalStats = useMemo(() => {
+    const today = new Date().toLocaleDateString();
+    const totalProposals = proposals.length;
+    const readProposals = proposals.filter((proposal) => (proposal.views ?? 0) > 0).length;
+    const readRate =
+      totalProposals === 0 ? 0 : Math.floor((readProposals / totalProposals) * 100);
+    const totalViews = proposals.reduce((sum, proposal) => sum + (proposal.views ?? 0), 0);
+    const todayViewedCount = proposals.filter(
+      (proposal) =>
+        proposal.last_viewed_at &&
+        new Date(proposal.last_viewed_at).toLocaleDateString() === today,
+    ).length;
+
+    return {
+      totalViews,
+      totalProposals,
+      readRate,
+      todayViewedCount,
+    };
+  }, [proposals]);
+
+  const filteredProposals = useMemo(() => {
+    if (viewFilter === "read") {
+      return proposals.filter((proposal) => (proposal.views ?? 0) > 0);
+    }
+    if (viewFilter === "unread") {
+      return proposals.filter((proposal) => (proposal.views ?? 0) === 0);
+    }
+    return proposals;
+  }, [proposals, viewFilter]);
 
   useEffect(() => {
     if (!isFocusMode) {
@@ -79,11 +135,6 @@ export default function ProSentProposalsPage() {
     } catch {
       toast.error("링크 복사에 실패했습니다.");
     }
-  };
-
-  const handleEditClick = (event: MouseEvent, proposal: ProProposalListItem) => {
-    event.stopPropagation();
-    openEditModal(proposal);
   };
 
   const handleDeleteClick = async (event: MouseEvent, proposal: ProProposalListItem) => {
@@ -180,6 +231,30 @@ export default function ProSentProposalsPage() {
             <p className="text-sm font-medium text-stone-500">
               고객에게 보낸 디자인 제안서를 관리하고 공유 현황을 확인하세요.
             </p>
+            {!isLoading && !isError ? (
+              <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+                <div className={DASHBOARD_WIDGET_CLASS}>
+                  <p className="text-xs font-medium text-stone-500">총 열람</p>
+                  <p className="mt-2 text-2xl font-bold text-stone-800">{proposalStats.totalViews}회</p>
+                </div>
+                <div className={DASHBOARD_WIDGET_CLASS}>
+                  <p className="text-xs font-medium text-stone-500">총 제안서</p>
+                  <p className="mt-2 text-2xl font-bold text-stone-800">
+                    {proposalStats.totalProposals}건
+                  </p>
+                </div>
+                <div className={DASHBOARD_WIDGET_CLASS}>
+                  <p className="text-xs font-medium text-stone-500">열람률</p>
+                  <p className="mt-2 text-2xl font-bold text-stone-800">{proposalStats.readRate}%</p>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 p-5 text-center shadow-sm">
+                  <p className="text-xs font-medium text-blue-600">오늘 열람</p>
+                  <p className="mt-2 text-2xl font-bold text-blue-700">
+                    {proposalStats.todayViewedCount}건
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </header>
@@ -216,9 +291,53 @@ export default function ProSentProposalsPage() {
         </div>
       ) : null}
 
-      {!isLoading && !isError && proposals.length > 0 ? (
+      {!isLoading && !isError && !isFocusMode && proposals.length > 0 ? (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setViewFilter("all")}
+            className={
+              viewFilter === "all"
+                ? "rounded-full bg-stone-800 px-4 py-2 text-sm font-semibold text-white"
+                : "rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-200"
+            }
+          >
+            전체
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewFilter("read")}
+            className={
+              viewFilter === "read"
+                ? "rounded-full bg-stone-800 px-4 py-2 text-sm font-semibold text-white"
+                : "rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-200"
+            }
+          >
+            🔵 열람
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewFilter("unread")}
+            className={
+              viewFilter === "unread"
+                ? "rounded-full bg-stone-800 px-4 py-2 text-sm font-semibold text-white"
+                : "rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-200"
+            }
+          >
+            ⚪ 미열람
+          </button>
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && proposals.length > 0 && filteredProposals.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center">
+          <p className="text-sm text-stone-500">선택한 필터에 해당하는 제안서가 없습니다.</p>
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && filteredProposals.length > 0 ? (
         <div className={CARD_GRID_CLASS}>
-          {proposals.map((proposal) => (
+          {filteredProposals.map((proposal) => (
             <ProposalCard
               key={proposal.id}
               proposal={proposal}
@@ -226,9 +345,9 @@ export default function ProSentProposalsPage() {
               onImageClick={() =>
                 isFocusMode ? setViewingProposal(proposal) : openEditModal(proposal)
               }
-              onEdit={(event) => handleEditClick(event, proposal)}
               onCopyLink={(event) => void handleCopyLink(event, proposal.id)}
               onDelete={(event) => void handleDeleteClick(event, proposal)}
+              onMemoSaved={() => void refetch()}
             />
           ))}
         </div>
@@ -307,18 +426,41 @@ function ProposalCard({
   proposal,
   isFocusMode,
   onImageClick,
-  onEdit,
   onCopyLink,
   onDelete,
+  onMemoSaved,
 }: {
   proposal: ProProposalListItem;
   isFocusMode: boolean;
   onImageClick: () => void;
-  onEdit: (event: MouseEvent) => void;
   onCopyLink: (event: MouseEvent) => void;
   onDelete: (event: MouseEvent) => void;
+  onMemoSaved: () => void;
 }) {
   const nailCount = proposal.nails.length || proposal.nail_ids.length;
+  const viewCount = proposal.views ?? 0;
+  const hasSavedMemo = Boolean(proposal.private_memo?.trim());
+  const [isMemoOpen, setIsMemoOpen] = useState(false);
+  const [memoDraft, setMemoDraft] = useState(proposal.private_memo ?? "");
+  const [isSavingMemo, setIsSavingMemo] = useState(false);
+
+  useEffect(() => {
+    setMemoDraft(proposal.private_memo ?? "");
+  }, [proposal.id, proposal.private_memo]);
+
+  const handleSaveMemo = async (event: MouseEvent) => {
+    event.stopPropagation();
+    setIsSavingMemo(true);
+    try {
+      await updateProProposalPrivateMemo(proposal.id, memoDraft);
+      toast.success("프라이빗 메모가 저장되었습니다.");
+      onMemoSaved();
+    } catch {
+      toast.error("메모 저장에 실패했습니다.");
+    } finally {
+      setIsSavingMemo(false);
+    }
+  };
 
   return (
     <article className={CARD_CONTAINER_CLASS}>
@@ -328,22 +470,76 @@ function ProposalCard({
         </div>
       </button>
       <h3 className="truncate text-lg font-bold text-stone-800">{proposal.customer_name}</h3>
-      <p className="mb-4 text-xs text-stone-500">
-        {formatCreatedAt(proposal.created_at)} · 조회 {proposal.views ?? 0}회 · 디자인 {nailCount}장
+      <div className="mb-2 text-xs text-stone-500">
+        {formatCreatedAt(proposal.created_at)} · 디자인 {nailCount}개
         {!proposal.is_active ? " · 종료됨" : ""}
-      </p>
+      </div>
+      <div className="mb-4">
+        {viewCount === 0 ? (
+          <span className="inline-block rounded-md bg-stone-100 px-2 py-1 text-xs font-medium text-stone-600">
+            ⚪ 미열람
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600">
+            🔵 열람완료 ({viewCount}회)
+            {proposal.last_viewed_at ? (
+              <span className="ml-1.5 font-normal opacity-75">· {getTimeAgo(proposal.last_viewed_at)}</span>
+            ) : null}
+          </span>
+        )}
+      </div>
       {!isFocusMode ? (
-        <div className="flex flex-wrap gap-2 border-t border-stone-100 pt-3">
-          <button type="button" onClick={onEdit} className={ADMIN_BTN_CLASS}>
-            수정
-          </button>
-          <button type="button" onClick={onCopyLink} className={ADMIN_BTN_CLASS}>
-            링크복사
-          </button>
-          <button type="button" onClick={onDelete} className={ADMIN_BTN_DANGER_CLASS}>
-            삭제
-          </button>
-        </div>
+        <>
+          {isMemoOpen ? (
+            <div
+              className="mb-3 rounded-lg border border-yellow-100 bg-yellow-50/50 p-3"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <p className="mb-2 text-xs font-medium text-yellow-800/80">
+                고객 특이사항 메모 (고객에게는 보이지 않습니다)
+              </p>
+              <textarea
+                value={memoDraft}
+                onChange={(event) => setMemoDraft(event.target.value)}
+                rows={3}
+                placeholder="예: 손톱이 얇으심, 파스텔 톤 선호"
+                className="w-full resize-none rounded-md border border-yellow-100 bg-white/80 px-2.5 py-2 text-sm text-stone-700 placeholder:text-stone-400 focus:border-yellow-200 focus:outline-none focus:ring-1 focus:ring-yellow-200"
+              />
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={(event) => void handleSaveMemo(event)}
+                  disabled={isSavingMemo}
+                  className="rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-900 transition-colors hover:bg-yellow-200 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSavingMemo ? "저장 중..." : "저장"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+          <div className="flex gap-1.5 border-t border-stone-100 pt-3">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsMemoOpen((open) => !open);
+              }}
+              className={
+                hasSavedMemo
+                  ? "flex-1 min-w-0 whitespace-nowrap rounded-full bg-yellow-50 px-2 py-1 text-[11px] font-bold text-yellow-700 transition-colors hover:bg-yellow-100"
+                  : ADMIN_BTN_CLASS
+              }
+            >
+              📝 메모
+            </button>
+            <button type="button" onClick={onCopyLink} className={ADMIN_BTN_CLASS}>
+              🔗 링크복사
+            </button>
+            <button type="button" onClick={onDelete} className={ADMIN_BTN_DANGER_CLASS}>
+              🗑️ 삭제
+            </button>
+          </div>
+        </>
       ) : null}
     </article>
   );
