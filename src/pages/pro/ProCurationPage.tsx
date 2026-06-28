@@ -152,6 +152,7 @@ export default function ProCurationPage() {
         description:
           "생성된 내역은 좌측 [상담 제안서] 메뉴에서 언제든 확인하고 관리할 수 있습니다.",
       });
+      void queryClient.invalidateQueries({ queryKey: ["pro-proposals", "list"] });
     } catch (error) {
       const message = error instanceof Error ? error.message : "제안서 생성에 실패했습니다.";
       toast.error(message);

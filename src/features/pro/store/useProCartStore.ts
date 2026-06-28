@@ -18,7 +18,7 @@ type ProCartState = {
 
 export function toProCartNail(item: NailDesignRow): ProCartNail {
   return {
-    id: item.id,
+    id: String(item.id ?? "").trim(),
     imageUrl: String(item.image_url ?? "").trim(),
     title: String(item.title ?? "").trim() || "네일 디자인",
   };

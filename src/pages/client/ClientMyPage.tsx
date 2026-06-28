@@ -5,7 +5,7 @@ import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
 import { Bell, Bookmark, Camera, Heart, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 type ActiveTab = 'recent' | 'liked' | 'saved'
 type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
@@ -376,6 +376,20 @@ export default function ClientMyPage() {
               </div>
               <span className="text-gray-300 font-bold">{">"}</span>
             </button>
+          </div>
+
+          <div className="mb-8">
+            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">비즈니스</div>
+            <Link
+              to="/pro"
+              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">👑</span>
+                <span className="text-[15px] font-semibold text-gray-800">GELIA PRO (원장님 전용)</span>
+              </div>
+              <span className="text-gray-300 font-bold">{">"}</span>
+            </Link>
           </div>
         </section>
       </main>

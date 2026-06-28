@@ -24,10 +24,12 @@ export default function ProDashboardPage() {
   const selectedNails = useProCartStore((state) => state.selectedNails);
   const toggleNail = useProCartStore((state) => state.toggleNail);
   const searchKeyword = useProSearchStore((state) => state.searchKeyword);
-  const debouncedKeyword = useDebounce(searchKeyword.trim(), 500);
+  const debouncedKeyword = useDebounce((searchKeyword ?? "").trim(), 500);
+  const normalizedSearchKeyword = debouncedKeyword ?? "";
   const isFocusMode = useProUIStore((state) => state.isFocusMode);
 
   const selectedIdSet = useMemo(() => new Set(selectedNails.map((nail) => nail.id)), [selectedNails]);
+  const selectedDetailId = selectedDetailNail?.id ?? "";
   const countLabel = formatGalleryCountLabel(galleryStats.totalCount, galleryStats.isLoading);
 
   const handleGalleryStatsChange = useCallback((stats: ProGalleryStats) => {
@@ -106,13 +108,13 @@ export default function ProDashboardPage() {
         selectedIds={selectedIdSet}
         onToggleSelect={handleToggleNail}
         onOpenDetail={setSelectedDetailNail}
-        debouncedSearchKeyword={debouncedKeyword}
+        debouncedSearchKeyword={normalizedSearchKeyword}
         onGalleryStatsChange={handleGalleryStatsChange}
       />
 
       <ProQuickViewModal
         nail={selectedDetailNail}
-        isSelected={selectedDetailNail ? selectedIdSet.has(selectedDetailNail.id) : false}
+        isSelected={Boolean(selectedDetailId) && selectedIdSet.has(selectedDetailId)}
         onClose={() => setSelectedDetailNail(null)}
         onToggleSelect={handleToggleNail}
       />

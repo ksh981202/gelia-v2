@@ -1,5 +1,17 @@
 import { supabase } from "@/shared/api/supabaseClient";
 
+async function requireAuthenticatedUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+
+  const userId = data.user?.id?.trim();
+  if (!userId) {
+    throw new Error("로그인이 필요합니다. 다시 로그인 후 시도해 주세요.");
+  }
+
+  return userId;
+}
+
 const PROPOSAL_SHARE_BASE_URL = "https://gelia.app/proposal";
 const LOOKBOOK_SHARE_BASE_URL = "https://gelia.app/lookbook";
 
@@ -24,11 +36,14 @@ export async function saveProLookbook(title: string, nailIds: string[]): Promise
     throw new Error("저장할 디자인을 먼저 선택해 주세요.");
   }
 
+  const userId = await requireAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from("pro_lookbooks")
     .insert({
       title: trimmedTitle,
       nail_ids: nailIds,
+      user_id: userId,
     })
     .select("id")
     .single();
@@ -48,12 +63,15 @@ export async function createProCuration(title: string, nailIds: string[]): Promi
     throw new Error("큐레이션에 담을 디자인을 1개 이상 선택해 주세요.");
   }
 
+  const userId = await requireAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from("pro_lookbooks")
     .insert({
       title: trimmedTitle,
       nail_ids: nailIds,
       is_curation: true,
+      user_id: userId,
     })
     .select("id")
     .single();
@@ -75,11 +93,14 @@ export async function duplicateProLookbook(lookbook: {
     throw new Error("복제할 컬렉션 이름이 없습니다.");
   }
 
+  const userId = await requireAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from("pro_lookbooks")
     .insert({
       title,
       nail_ids: nailIds,
+      user_id: userId,
     })
     .select("id")
     .single();
@@ -104,12 +125,15 @@ export async function saveCurationToMyCollection(lookbook: {
     throw new Error("담을 디자인이 없습니다.");
   }
 
+  const userId = await requireAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from("pro_lookbooks")
     .insert({
       title,
       nail_ids: nailIds,
       is_curation: false,
+      user_id: userId,
     })
     .select("id")
     .single();
@@ -133,12 +157,15 @@ export async function createProProposal(input: {
     throw new Error("제안서에 담을 디자인을 먼저 선택해 주세요.");
   }
 
+  const userId = await requireAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from("pro_proposals")
     .insert({
       customer_name: customerName,
       greeting_message: input.greetingMessage.trim() || null,
       nail_ids: input.nailIds,
+      user_id: userId,
     })
     .select("id")
     .single();

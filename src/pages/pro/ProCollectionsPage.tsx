@@ -12,6 +12,7 @@ import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import ProEditLookbookModal from "@/pages/pro/components/ProEditLookbookModal";
 import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -47,6 +48,7 @@ const PROPOSAL_FIELD_CLASS =
   "w-full rounded-xl border border-orange-100 bg-orange-50/30 px-4 py-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500 disabled:opacity-60";
 
 export default function ProCollectionsPage() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { id: collectionId } = useParams<{ id?: string }>();
   const [editTarget, setEditTarget] = useState<ProLookbookListItem | null>(null);
@@ -184,6 +186,7 @@ export default function ProCollectionsPage() {
         description:
           "생성된 내역은 좌측 [상담 제안서] 메뉴에서 언제든 확인하고 관리할 수 있습니다.",
       });
+      void queryClient.invalidateQueries({ queryKey: ["pro-proposals", "list"] });
     } catch (error) {
       const message = error instanceof Error ? error.message : "제안서 생성에 실패했습니다.";
       toast.error(message);

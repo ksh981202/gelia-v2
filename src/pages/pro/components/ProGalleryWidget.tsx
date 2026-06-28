@@ -174,19 +174,25 @@ export default function ProGalleryWidget({
   const isCompact = variant === "compact";
   const masonryClass = MASONRY_CLASS_BY_VARIANT[variant];
 
-  const [themeFilter, setThemeFilter] = useState<ProThemeOption>("전체");
-  const [colorFilter, setColorFilter] = useState<ProColorOption>("전체");
-  const [moodFilter, setMoodFilter] = useState<ProMoodOption>("전체");
-  const [shapeFilter, setShapeFilter] = useState<ProShapeOption>("전체");
-  const [pointFilter, setPointFilter] = useState<ProPointOption>("전체");
+  const [themeFilter, setThemeFilter] = useState<string>("전체");
+  const [colorFilter, setColorFilter] = useState<string>("전체");
+  const [moodFilter, setMoodFilter] = useState<string>("전체");
+  const [shapeFilter, setShapeFilter] = useState<string>("전체");
+  const [pointFilter, setPointFilter] = useState<string>("전체");
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const observerRef = useRef<HTMLDivElement>(null);
 
   const galleryQuery = useMemo(
     () =>
       resolveProGalleryQuery(
-        { themeFilter, colorFilter, moodFilter, shapeFilter, pointFilter },
-        debouncedSearchKeyword,
+        {
+          themeFilter: themeFilter as ProThemeOption,
+          colorFilter: colorFilter as ProColorOption,
+          moodFilter: moodFilter as ProMoodOption,
+          shapeFilter: shapeFilter as ProShapeOption,
+          pointFilter: pointFilter as ProPointOption,
+        },
+        debouncedSearchKeyword ?? "",
       ),
     [themeFilter, colorFilter, moodFilter, shapeFilter, pointFilter, debouncedSearchKeyword],
   );
@@ -215,8 +221,8 @@ export default function ProGalleryWidget({
   }, [totalCount, hasActiveFilters, isLoading, onGalleryStatsChange]);
 
   const handleFilterToggle = useCallback(
-    <T extends string>(setter: (value: T | ((prev: T) => T)) => void, option: T) => {
-      setter((prev) => (prev === option ? ("전체" as T) : option));
+    (setter: (value: string) => void, current: string, option: string) => {
+      setter(current === option ? "전체" : option);
     },
     [],
   );
@@ -286,7 +292,7 @@ export default function ProGalleryWidget({
               key={`pro-gallery-theme-${option}`}
               label={option}
               selected={themeFilter === option}
-              onClick={() => handleFilterToggle(setThemeFilter, option)}
+              onClick={() => handleFilterToggle(setThemeFilter, themeFilter, option)}
               compact={isCompact}
             />
           ))}
@@ -301,7 +307,7 @@ export default function ProGalleryWidget({
               key={`pro-gallery-color-${option}`}
               label={option}
               selected={colorFilter === option}
-              onClick={() => handleFilterToggle(setColorFilter, option)}
+              onClick={() => handleFilterToggle(setColorFilter, colorFilter, option)}
               compact={isCompact}
             />
           ))}
@@ -316,7 +322,7 @@ export default function ProGalleryWidget({
               key={`pro-gallery-mood-${option}`}
               label={option}
               selected={moodFilter === option}
-              onClick={() => handleFilterToggle(setMoodFilter, option)}
+              onClick={() => handleFilterToggle(setMoodFilter, moodFilter, option)}
               compact={isCompact}
             />
           ))}
@@ -331,7 +337,7 @@ export default function ProGalleryWidget({
               key={`pro-gallery-shape-${option}`}
               label={option}
               selected={shapeFilter === option}
-              onClick={() => handleFilterToggle(setShapeFilter, option)}
+              onClick={() => handleFilterToggle(setShapeFilter, shapeFilter, option)}
               compact={isCompact}
             />
           ))}
@@ -346,7 +352,7 @@ export default function ProGalleryWidget({
               key={`pro-gallery-point-${option}`}
               label={option}
               selected={pointFilter === option}
-              onClick={() => handleFilterToggle(setPointFilter, option)}
+              onClick={() => handleFilterToggle(setPointFilter, pointFilter, option)}
               compact={isCompact}
             />
           ))}
@@ -389,7 +395,7 @@ export default function ProGalleryWidget({
       {!isLoading && !isError && galleryItems.length > 0 ? (
         <section className={masonryClass} aria-label={ariaLabel}>
           {galleryItems.map((item) => {
-            const isSelected = selectedIds.has(item.id);
+            const isSelected = selectedIds.has(String(item.id ?? "").trim());
             const imageUrl = String(item.image_url ?? "").trim();
             const title = String(item.title ?? "").trim() || "네일 디자인";
 
