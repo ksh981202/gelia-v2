@@ -8,6 +8,42 @@ export type ProposalPageData = {
   nails: NailDesignRow[];
 };
 
+type ProposalShareRow = {
+  customer_name?: string | null;
+  greeting_message?: string | null;
+  nail_ids?: string[] | null;
+  views?: number | null;
+  is_active?: boolean | null;
+};
+
+async function fetchProposalShareRow(proposalId: string): Promise<ProposalShareRow | null> {
+  const { data: rows, error: rpcError } = await supabase.rpc("get_public_proposal_share", {
+    p_proposal_id: proposalId,
+  });
+
+  if (!rpcError) {
+    const proposal = (Array.isArray(rows) ? rows[0] : rows) as ProposalShareRow | undefined;
+    return proposal ?? null;
+  }
+
+  const { data, error: selectError } = await supabase
+    .from("pro_proposals")
+    .select("customer_name, greeting_message, nail_ids, views, is_active")
+    .eq("id", proposalId)
+    .maybeSingle();
+
+  if (selectError) {
+    console.warn(
+      "[fetchProposalPage] RPC and direct select failed:",
+      rpcError.message,
+      selectError.message,
+    );
+    return null;
+  }
+
+  return (data as ProposalShareRow | null) ?? null;
+}
+
 async function incrementProposalViews(proposalId: string, currentViews: number): Promise<void> {
   const lastViewedAt = new Date().toISOString();
 
@@ -34,21 +70,7 @@ export async function fetchProposalPage(proposalId: string): Promise<ProposalPag
   const trimmedId = proposalId.trim();
   if (!trimmedId) return null;
 
-  const { data: rows, error } = await supabase.rpc("get_public_proposal_share", {
-    p_proposal_id: trimmedId,
-  });
-
-  if (error) throw error;
-
-  const proposal = (Array.isArray(rows) ? rows[0] : rows) as
-    | {
-        customer_name?: string | null;
-        greeting_message?: string | null;
-        nail_ids?: string[] | null;
-        views?: number | null;
-        is_active?: boolean | null;
-      }
-    | undefined;
+  const proposal = await fetchProposalShareRow(trimmedId);
 
   if (!proposal || proposal.is_active === false) return null;
 

@@ -24,7 +24,17 @@ export function buildProposalShareUrl(proposalId: string): string {
 }
 
 export function buildLookbookShareUrl(lookbookId: string): string {
-  return `${LOOKBOOK_SHARE_BASE_URL}/${lookbookId}`;
+  const base =
+    typeof window !== "undefined" && window.location?.origin
+      ? `${window.location.origin}/lookbook`
+      : LOOKBOOK_SHARE_BASE_URL;
+  return `${base}/${lookbookId}`;
+}
+
+export async function copyLookbookShareLink(lookbookId: string): Promise<string> {
+  const shareUrl = buildLookbookShareUrl(lookbookId);
+  await navigator.clipboard.writeText(shareUrl);
+  return shareUrl;
 }
 
 export async function saveProLookbook(title: string, nailIds: string[]): Promise<void> {
@@ -280,12 +290,6 @@ export async function updateProProposalPrivateMemo(
 
 export async function copyProposalShareLink(proposalId: string): Promise<string> {
   const shareUrl = buildProposalShareUrl(proposalId);
-  await navigator.clipboard.writeText(shareUrl);
-  return shareUrl;
-}
-
-export async function copyLookbookShareLink(lookbookId: string): Promise<string> {
-  const shareUrl = buildLookbookShareUrl(lookbookId);
   await navigator.clipboard.writeText(shareUrl);
   return shareUrl;
 }

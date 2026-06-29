@@ -71,6 +71,7 @@ const ClientColorThemeListPage = lazy(() => import('../../pages/client/ClientCol
 const ClientColorPopularListPage = lazy(() => import('../../pages/client/ClientColorPopularListPage'))
 const ClientTodaySpecialPage = lazy(() => import('../../pages/client/ClientTodaySpecialPage'))
 const ClientProposalPage = lazy(() => import('../../pages/client/proposal/ClientProposalPage'))
+const ClientLookbookPage = lazy(() => import('../../pages/client/lookbook/ClientLookbookPage'))
 const TestIntroPage = lazy(() => import('../../pages/client/test/TestIntroPage'))
 const TestStep1Page = lazy(() => import('../../pages/client/test/TestStep1Page'))
 const TestStep2Page = lazy(() => import('../../pages/client/test/TestStep2Page'))
@@ -116,6 +117,7 @@ const router = createBrowserRouter([
       },
       { path: 'detail/:id', element: <ClientNailDetailPage /> },
       { path: 'proposal/:id', element: <ClientProposalPage /> },
+      { path: 'lookbook/:id', element: <ClientLookbookPage /> },
       { path: 'gallery', element: <ClientGalleryPage /> },
       { path: 'magazine', element: <ClientMagazinePage /> },
       { path: 'magazine/:id', element: <ClientMagazineDetailPage /> },

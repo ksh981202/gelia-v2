@@ -2,315 +2,771 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://gelia.app</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://gelia.app/category</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/recommend</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/gallery</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://gelia.app/ranking</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://gelia.app/magazine</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/search</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/my</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/theme</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/theme-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/situation-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/style-curation</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/style-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/style-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/style-gallery-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/color-curation</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/color-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/color-theme-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/color-popular-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/today-special</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/season-curation</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/season-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/vacation-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/season-popular-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/popular-design</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/period-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/reaction-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/shape-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/search-trend-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/trend</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/texture</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/texture-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/syrup-best</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/texture-gallery</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/parts</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/parts-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/stone-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/marble-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/popular-art-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/chic-best-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/full-parts-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/art</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/pattern</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/pattern-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/mood</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/mood-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/popular-mood-list</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/faq</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/support</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/notice</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/terms</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://gelia.app/privacy</loc>
-    <lastmod>2026-06-28</lastmod>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/06c516ad-0a36-467a-b304-e4d9ed9a8022</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/6e5d11a7-cb24-41fd-9f15-a76b7cba18ea</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/b841d279-4c7f-4c2c-a2b7-3f37a7bd6f7c</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/8759769e-0bb0-4f70-abeb-7fe63c7c57c8</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/499c04f9-6160-4437-abb6-35cb07cfb07a</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/7c0ad8b5-dc96-4add-8664-774319df5ea2</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/0cfd5e9f-48c3-4697-a949-397539487650</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/2e232b81-bbb9-40ec-94b4-104025acd981</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/19887d97-24c2-40e1-b701-d4acb7db2bc9</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/0732b372-0e49-4dca-8967-67f3c7f8d815</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/7dc4ff0c-e439-450c-98d1-659e97079932</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/c03864ac-3c2b-4b67-848e-51eab2c5c2b5</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/91d9b2eb-21b1-45a5-a498-4b800b2b0c38</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/5dae84a1-4ef2-45e2-8224-98e4ccb8146c</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/b2ac2354-f376-4626-9739-c970fb38a86e</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/7b9ab10a-9907-4633-af64-a2fa0afe7912</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/d2dc09fa-c75b-4a20-8acc-70f628ff468b</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/83ed00b8-c2db-48cb-9663-c6000167909c</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/0a3b754b-9305-45b6-af4e-ed7087bc19c1</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/f1e8f918-8e8b-4d86-ab5f-c68d55e21a75</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/5bbf5d98-8747-42b4-92d3-6777b6bb1cab</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/c119d735-230b-41a0-9b47-27251463a7aa</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/0583fe24-d021-454b-9b87-7a8bf3c7bd2e</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/df11d7c1-378a-4f00-b5b0-edf06b481ed7</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/e9244330-0b6c-43b1-bdec-1aa4b252fe25</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/2e03321e-cafb-4239-9ee2-a46ab942eddf</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/bde468ff-2503-48bc-ae96-83e94c294e8b</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/5659ccf2-464d-4f2d-bfb0-c5cdeeace75f</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/65364408-bd66-449c-8e32-c37ea7dd8991</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/22282044-6f4a-461d-a7f6-230355c8d2bb</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/038db83b-8e56-4f45-b926-e6c994e76212</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/ff92b5b8-e383-40c9-bda4-cb1ded79c4fa</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/3d095001-b625-4fee-b61b-142a5903e2e6</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/48efbe1f-bc8e-4ab4-9869-a4b411c81b63</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/9000ee4c-f794-461e-b1d1-45044e3ae2b0</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/6f1b980b-a766-46f0-a5e2-646c7b860803</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/5bb07ee6-ac57-4a59-b0f9-4ba5fcc37d3a</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/d26827c9-e17b-4b9b-b606-62be92104bd8</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/e92e5fd6-fd8e-4adf-ac52-9957062bb5db</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/38e6f078-88f1-4570-954a-4a68569c93e5</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/342bad89-5459-4d91-9822-945b1a9974c3</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/c22a2b76-6fb5-42aa-bc4c-4554905fcdc0</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/31ee3e7a-94da-45f8-b36a-4db419aa8ab4</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/3bafd15b-7744-4406-9926-b1fd3524e3a7</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/069319b9-f1f7-4907-9a6c-8a8109a4185d</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/ccf0ed4c-454d-4cca-8bf6-23a0a9b0f8e4</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/a0800ab6-ce82-49b9-851a-145723fb8301</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/281a3613-7c28-43a6-9832-8087ed512a8e</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/3913d34b-9269-4f35-96ad-e3b317bb7beb</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/83010336-05e4-4788-bc5a-b1632df54b6b</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/4c530c46-bafc-4766-b463-c1367edbfa4a</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/2b0dac4b-347e-4411-b283-5152c58af0db</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/e35c3589-0d66-4cf8-bfe5-eb51301c71dc</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/22b8d7e6-a6f4-4e87-928e-adf945fabf8d</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/98f3a250-0342-4d46-b9b2-c8d0fd03d997</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/92b5c540-0e6c-419b-ad58-eabf83345ab9</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/c0b758eb-a9e9-4922-ac05-9fa66b9e1e3f</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/97f07e0b-c861-4f89-80f0-0e6863115aff</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/f8cad5eb-def1-470d-a5ec-8de1b3343b98</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/4f0bfef0-74c4-450e-99a6-6c5f1792a530</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/28eb61e6-3571-4195-93fc-1202960932ad</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/a14904e9-7979-406d-bb79-7d899e3d9162</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/fef3624a-798f-4497-9d40-30bae84af01d</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/66a74a96-2914-4861-adfa-1acf9005f8a7</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/c0182aed-1c3e-4e53-b6aa-95f0fa687311</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/a3766597-eb84-4816-8c40-72b1cd682bc9</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/9166ca37-df92-48a7-b3fc-4c1dcff86657</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/de0d7d83-536c-475d-b59a-c9e9683192d1</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/c3f21fba-ebf6-4dd1-ae47-f99688390a12</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/5cb01b68-e79d-438b-a30e-f1c6c2a75050</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/3d181229-5fc3-4335-ae74-a8f1ac374fff</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/4ef18410-0c93-437c-b3fb-f19b4d6cc0f8</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/1756f621-1048-465d-a213-a33730072521</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/5af42496-17ec-43bb-b973-bce83264a5b5</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/1ff9b099-11d9-44d4-82f4-7697cb685f61</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/detail/81503833-ba7c-4638-aa9c-3bf11f07cf54</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://gelia.app/detail/6acc9165-679b-4e7e-8fb0-0a48dcce430c</loc>
@@ -19221,6 +19677,12 @@
   <url>
     <loc>https://gelia.app/detail/e59b03f2-2bdb-47c1-904a-a6466e6b82f6</loc>
     <lastmod>2026-05-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gelia.app/magazine/b9f29114-50d3-422c-afb9-718fe3ad71e4</loc>
+    <lastmod>2026-06-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

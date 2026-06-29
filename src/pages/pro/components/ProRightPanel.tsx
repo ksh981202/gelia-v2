@@ -1,9 +1,11 @@
 import { useProCartStore } from "@/features/pro/store/useProCartStore";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import ProConsultationLinkModal from "./ProConsultationLinkModal";
 import ProLookbookModal from "./ProLookbookModal";
 
 export default function ProRightPanel() {
+  const queryClient = useQueryClient();
   const [isLookbookModalOpen, setIsLookbookModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -104,6 +106,7 @@ export default function ProRightPanel() {
           setIsLookbookModalOpen(false);
           clearCart();
           setSuccessToast("내 컬렉션에 보관되었습니다!");
+          void queryClient.invalidateQueries({ queryKey: ["pro-lookbooks", "list"] });
         }}
       />
 

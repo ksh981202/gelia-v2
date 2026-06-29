@@ -124,7 +124,7 @@ export default function ProCollectionsPage() {
     event.stopPropagation();
     try {
       await copyLookbookShareLink(lookbookId);
-      toast.success("🔗 링크가 복사되었습니다! 원하는 곳에 붙여넣기하여 공유해 보세요.");
+      toast.success("기본 공유 링크가 복사되었습니다.");
     } catch {
       toast.error("링크 복사에 실패했습니다.");
     }
@@ -271,7 +271,7 @@ export default function ProCollectionsPage() {
               ⭐ 내 컬렉션
             </h1>
             <p className="text-sm font-medium text-stone-500">
-              자주 쓰는 디자인을 폴더로 묶어 관리하고, 고정 링크로 언제든 공유하세요.
+              자주 쓰는 디자인을 폴더로 묶어 관리하고, 상담 제안서로 고객에게 맞춤 룩북을 전달하세요.
             </p>
           </div>
         )}
