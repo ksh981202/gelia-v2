@@ -2,6 +2,7 @@ import {
   copyProposalShareLink,
   createProProposal,
 } from "@/features/pro/api/proMutations";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 type ProConsultationLinkModalProps = {
@@ -15,6 +16,7 @@ export default function ProConsultationLinkModal({
   onClose,
   onSuccess,
 }: ProConsultationLinkModalProps) {
+  const queryClient = useQueryClient();
   const [customerName, setCustomerName] = useState("");
   const [greetingMessage, setGreetingMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +48,7 @@ export default function ProConsultationLinkModal({
       });
       await copyProposalShareLink(proposalId);
       window.alert("링크가 생성되어 복사되었습니다!");
+      void queryClient.invalidateQueries({ queryKey: ["pro-proposals", "list"] });
       onSuccess();
     } catch (error) {
       const message = error instanceof Error ? error.message : "링크 생성에 실패했습니다.";

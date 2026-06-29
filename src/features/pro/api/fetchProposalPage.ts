@@ -34,13 +34,22 @@ export async function fetchProposalPage(proposalId: string): Promise<ProposalPag
   const trimmedId = proposalId.trim();
   if (!trimmedId) return null;
 
-  const { data: proposal, error } = await supabase
-    .from("pro_proposals")
-    .select("customer_name, greeting_message, nail_ids, views, is_active")
-    .eq("id", trimmedId)
-    .maybeSingle();
+  const { data: rows, error } = await supabase.rpc("get_public_proposal_share", {
+    p_proposal_id: trimmedId,
+  });
 
   if (error) throw error;
+
+  const proposal = (Array.isArray(rows) ? rows[0] : rows) as
+    | {
+        customer_name?: string | null;
+        greeting_message?: string | null;
+        nail_ids?: string[] | null;
+        views?: number | null;
+        is_active?: boolean | null;
+      }
+    | undefined;
+
   if (!proposal || proposal.is_active === false) return null;
 
   const nailIds = Array.isArray(proposal.nail_ids)
