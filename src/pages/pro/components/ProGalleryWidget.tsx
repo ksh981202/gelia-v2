@@ -200,7 +200,7 @@ export default function ProGalleryWidget({
   const {
     galleryItems,
     totalCount,
-    isLoading,
+    isPending,
     isError,
     fetchNextPage,
     hasNextPage,
@@ -216,9 +216,9 @@ export default function ProGalleryWidget({
     onGalleryStatsChange?.({
       totalCount,
       hasActiveFilters,
-      isLoading,
+      isLoading: isPending,
     });
-  }, [totalCount, hasActiveFilters, isLoading, onGalleryStatsChange]);
+  }, [totalCount, hasActiveFilters, isPending, onGalleryStatsChange]);
 
   const handleFilterToggle = useCallback(
     (setter: (value: string) => void, current: string, option: string) => {
@@ -365,7 +365,7 @@ export default function ProGalleryWidget({
 
   const galleryBody = (
     <>
-      {isLoading ? (
+      {isPending ? (
         <div className={masonryClass}>
           {Array.from({ length: isCompact ? 6 : 8 }).map((_, index) => (
             <div
@@ -378,21 +378,15 @@ export default function ProGalleryWidget({
             />
           ))}
         </div>
-      ) : null}
-
-      {isError ? (
+      ) : isError ? (
         <p className={`text-center text-sm text-stone-500 ${isCompact ? "py-12" : "py-16"}`}>
           디자인을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
         </p>
-      ) : null}
-
-      {!isLoading && !isError && galleryItems.length === 0 ? (
+      ) : galleryItems.length === 0 ? (
         <p className={`text-center text-sm text-stone-500 ${isCompact ? "py-12" : "py-16"}`}>
           선택한 필터에 맞는 디자인이 없습니다.
         </p>
-      ) : null}
-
-      {!isLoading && !isError && galleryItems.length > 0 ? (
+      ) : (
         <section className={masonryClass} aria-label={ariaLabel}>
           {galleryItems.map((item) => {
             const isSelected = selectedIds.has(String(item.id ?? "").trim());
@@ -466,7 +460,7 @@ export default function ProGalleryWidget({
             );
           })}
         </section>
-      ) : null}
+      )}
 
       <div ref={observerRef} className={isCompact ? "h-4 w-full" : "h-6 w-full"} aria-hidden />
 

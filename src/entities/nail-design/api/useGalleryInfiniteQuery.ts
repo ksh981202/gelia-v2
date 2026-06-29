@@ -48,16 +48,82 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   리본: ['3D리본', '엠보리본', '발레코어'],
   숏네일: ['짧은', '귀여운', '조약돌', '동글'],
   연장: ['롱네일', '팁', '아크릴', '화려한'],
+  '올드머니/시크': [
+    '고급스러운',
+    '클래식',
+    '우아한',
+    '심플한',
+    '단정한',
+    'old money',
+    '올드머니',
+    '모던',
+    '블랙',
+    '도도한',
+    '무채색',
+    '도시적인',
+    'chic',
+    '시크',
+  ],
+  '화이트/누드': ['화이트', '크림', '아이보리', '순백', '누드', '스킨톤', '베이지', '살구', '여리여리'],
+  '핑크/코랄': ['핑크', '코랄', '로즈', '피치'],
+  '레드/버건디': ['레드', '버건디', '와인', '체리', '빨강'],
+  '블루/네이비': ['블루', '네이비', '블루네이비'],
+  '블랙/무채색': ['블랙', '다크', '무채색', '시크', '검정'],
+  '우아한 롱/연장': ['우아한', '롱', '연장', '롱네일', '팁', '아크릴', '화려한'],
+  '아몬드/오발': ['아몬드', '오발'],
+  '스톤/큐빅': ['스톤', '큐빅', '스와로브스키', '보석', '스와', '다이아', '파츠'],
+  '웨딩/하객': ['웨딩', '결혼', '신부', '본식', '하객', '하객룩', '단정', '격식', '우아한'],
+  '여행/바캉스': ['여행', '바캉스', '휴가', '여름휴가', '해변', '물놀이', '리조트', '호캉스', '바다'],
+  '파티/페스티벌': ['파티', '페스티벌', '연말', '클럽', '화려한', '블링블링', '이벤트'],
 }
 
 /** PostgREST `.or()` 구분자(`,`) 및 `ilike` 와일드카드 충돌 방지 */
 function escapePostgrestIlikePattern(raw: string): string {
   return raw
     .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
     .replace(/%/g, '\\%')
     .replace(/_/g, '\\_')
     .replace(/,/g, ' ')
     .trim()
+}
+
+/** 공백 포함 토큰은 PostgREST `.or()` 파싱 오류 방지를 위해 `%…%` 패턴 전체를 더블 쿼트로 감쌈 */
+function buildIlikeOrCondition(column: string, rawToken: string): string {
+  const escaped = escapePostgrestIlikePattern(rawToken)
+  if (!escaped) return ''
+
+  if (/\s/.test(escaped)) {
+    return `${column}.ilike."%${escaped}%"`
+  }
+
+  return `${column}.ilike.%${escaped}%`
+}
+
+function collectTabFilterTokens(tab: string): string[] {
+  const trimmed = tab.trim()
+  if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return []
+
+  if (NAIL_SYNONYMS[trimmed]) {
+    return expandSynonymTokens(trimmed, [trimmed])
+  }
+
+  const normalizedSpace = trimmed
+    .replace(/\//g, ' ')
+    .replace(/,/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (NAIL_SYNONYMS[normalizedSpace]) {
+    return expandSynonymTokens(normalizedSpace, [normalizedSpace])
+  }
+
+  const baseTokens = normalizedSpace
+    .split(' ')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0 && part !== DEFAULT_GALLERY_TAB)
+
+  return expandSynonymTokens(normalizedSpace, baseTokens)
 }
 
 function expandSynonymTokens(normalizedTab: string, tokens: string[]): string[] {
@@ -79,46 +145,35 @@ function expandSynonymTokens(normalizedTab: string, tokens: string[]): string[] 
 }
 
 export function buildTabOrFilter(tab: string): string {
-  const normalized = tab
-    .replace(/\//g, ' ')
-    .replace(/,/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (!normalized) return ''
-
-  const baseTokens = normalized
-    .split(' ')
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0 && part !== DEFAULT_GALLERY_TAB)
   const tokens = [
     ...new Set(
-      expandSynonymTokens(normalized, baseTokens)
-        .map((part) => escapePostgrestIlikePattern(part))
-        .filter((ilike) => ilike.length > 0),
+      collectTabFilterTokens(tab)
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0),
     ),
   ]
 
   if (tokens.length === 0) return ''
 
   const parts: string[] = []
-  for (const ilike of tokens) {
+  for (const token of tokens) {
     parts.push(
-      `title.ilike.%${ilike}%`,
-      `category.ilike.%${ilike}%`,
-      `nail_length.ilike.%${ilike}%`,
-      `color.ilike.%${ilike}%`,
-      `mood.ilike.%${ilike}%`,
-      `design_elements.ilike.%${ilike}%`,
+      buildIlikeOrCondition('title', token),
+      buildIlikeOrCondition('category', token),
+      buildIlikeOrCondition('nail_length', token),
+      buildIlikeOrCondition('color', token),
+      buildIlikeOrCondition('mood', token),
+      buildIlikeOrCondition('design_elements', token),
     )
     for (const index of ARRAY_TEXT_FILTER_INDEXES) {
       parts.push(
-        `situations->>${index}.ilike.%${ilike}%`,
-        `styles->>${index}.ilike.%${ilike}%`,
-        `tags->>${index}.ilike.%${ilike}%`,
+        buildIlikeOrCondition(`situations->>${index}`, token),
+        buildIlikeOrCondition(`styles->>${index}`, token),
+        buildIlikeOrCondition(`tags->>${index}`, token),
       )
     }
   }
-  return parts.join(',')
+  return parts.filter(Boolean).join(',')
 }
 
 export function applyGallerySort<T extends { order: (column: string, options: { ascending: boolean }) => T }>(
