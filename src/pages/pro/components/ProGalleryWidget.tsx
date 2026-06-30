@@ -202,6 +202,7 @@ export default function ProGalleryWidget({
     totalCount,
     isPending,
     isError,
+    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -379,9 +380,12 @@ export default function ProGalleryWidget({
           ))}
         </div>
       ) : isError ? (
-        <p className={`text-center text-sm text-stone-500 ${isCompact ? "py-12" : "py-16"}`}>
-          디자인을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
-        </p>
+        <div className="relative z-50 m-4 flex flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-8 text-red-600">
+          <p className="mb-2 text-lg font-bold">🚨 디자인 조회 실패 (에러 발생)</p>
+          <code className="w-full overflow-x-auto whitespace-pre-wrap break-all rounded border border-red-100 bg-white p-4 text-xs shadow-inner">
+            {error instanceof Error ? error.message : JSON.stringify(error)}
+          </code>
+        </div>
       ) : galleryItems.length === 0 ? (
         <p className={`text-center text-sm text-stone-500 ${isCompact ? "py-12" : "py-16"}`}>
           선택한 필터에 맞는 디자인이 없습니다.

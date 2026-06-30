@@ -9,7 +9,18 @@ export const DEFAULT_GALLERY_SORT = '인기순'
 
 export const GALLERY_COLUMNS =
   'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length,color,mood,design_elements'
-const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const
+/** 탭 필터 ilike 대상 스칼라 컬럼 */
+const TAB_FILTER_ILIKE_COLUMNS = [
+  'title',
+  'color',
+  'mood',
+  'nail_length',
+  'design_technique',
+  'design_elements',
+] as const
+/** 탭 필터 배열 포함(cs) 대상 — text[] 전용 */
+const TAB_FILTER_ARRAY_CS_COLUMNS = ['situations'] as const
+const MAX_TAB_FILTER_TOKENS = 20
 const NAIL_SYNONYMS: Record<string, string[]> = {
   형광: ['네온', '비비드', '팝', '원색', 'neon', 'vivid', 'fluorescent', '형광'],
   올드머니: ['고급스러운', '클래식', '우아한', '심플한', '단정한', 'old money', '올드머니'],
@@ -17,7 +28,10 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   은하수: ['우주', '별', '갤럭시', '글리터', '밤하늘', '마그네틱', '은하수'],
   소라: ['스카이블루', '하늘색', '연하늘', '파스텔블루', '소라'],
   '시크 파스텔': ['모던 파스텔', '톤다운 파스텔', '뮤트', '시크 파스텔'],
-  겨울: ['니트', '눈', '크리스마스', '포근한', '연말', '겨울'],
+  봄: ['봄', '스프링', 'spring'],
+  여름: ['여름', '서머', '썸머', 'summer'],
+  가을: ['가을', '어텀', 'autumn', '추석'],
+  겨울: ['겨울', '윈터', 'winter', '눈', '크리스마스'],
   테라조: ['대리석', '메추리알', '도트', '점박이', '테라조'],
   딥한: ['다크', '진한', '가을', '블랙', '딥'],
   엠보: ['입체', '3D', '니트', '물방울', '볼록', '엠보'],
@@ -46,6 +60,9 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   미러파우더: ['메탈', '파우더', '크롬', '홀로그램', '오로라파우더'],
   스톤: ['큐빅', '스와로브스키', '보석', '스와', '다이아', '파츠'],
   리본: ['3D리본', '엠보리본', '발레코어'],
+  발레코어: ['발레코어', '발레리나', '토슈즈'],
+  트위드: ['트위드', 'tweed', '체크'],
+  진주: ['진주', 'pearl'],
   숏네일: ['짧은', '귀여운', '조약돌', '동글'],
   연장: ['롱네일', '팁', '아크릴', '화려한'],
   '올드머니/시크': [
@@ -77,27 +94,31 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   '파티/페스티벌': ['파티', '페스티벌', '연말', '클럽', '화려한', '블링블링', '이벤트'],
 }
 
-/** PostgREST `.or()` 구분자(`,`) 및 `ilike` 와일드카드 충돌 방지 */
 function escapePostgrestIlikePattern(raw: string): string {
-  return raw
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/%/g, '\\%')
-    .replace(/_/g, '\\_')
-    .replace(/,/g, ' ')
-    .trim()
+  if (!raw) return '';
+  return raw.replace(/[%_\\"/]/g, '\\$&').trim();
 }
 
-/** 공백 포함 토큰은 PostgREST `.or()` 파싱 오류 방지를 위해 `%…%` 패턴 전체를 더블 쿼트로 감쌈 */
-function buildIlikeOrCondition(column: string, rawToken: string): string {
-  const escaped = escapePostgrestIlikePattern(rawToken)
-  if (!escaped) return ''
-
+function buildIlikeOrCondition(column: string, escaped: string): string {
   if (/\s/.test(escaped)) {
-    return `${column}.ilike."%${escaped}%"`
+    return `${column}.ilike.*"${escaped}"*`;
   }
+  return `${column}.ilike.*${escaped}*`;
+}
 
-  return `${column}.ilike.%${escaped}%`
+function escapePostgrestCsArrayToken(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  if (/[",{}\\\s]/.test(trimmed)) {
+    return `"${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return trimmed
+}
+
+function buildArrayCsOrCondition(column: string, token: string): string {
+  const csToken = escapePostgrestCsArrayToken(token)
+  if (!csToken) return ''
+  return `${column}.cs.{${csToken}}`
 }
 
 function collectTabFilterTokens(tab: string): string[] {
@@ -144,36 +165,59 @@ function expandSynonymTokens(normalizedTab: string, tokens: string[]): string[] 
   return [...expanded]
 }
 
-export function buildTabOrFilter(tab: string): string {
-  const tokens = [
+function limitTabFilterTokens(tab: string, tokens: string[]): string[] {
+  if (tokens.length <= MAX_TAB_FILTER_TOKENS) return tokens
+
+  const trimmed = tab.trim()
+  const limited: string[] = []
+
+  if (trimmed) {
+    const tabToken = tokens.find((token) => token === trimmed)
+    if (tabToken) limited.push(tabToken)
+  }
+
+  for (const token of tokens) {
+    if (limited.includes(token)) continue
+    limited.push(token)
+    if (limited.length >= MAX_TAB_FILTER_TOKENS) break
+  }
+
+  return limited
+}
+
+export function buildTabOrFilter(tab: string): string | null {
+  const trimmed = tab.trim()
+  if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return null
+
+  const tokens = limitTabFilterTokens(trimmed, [
     ...new Set(
-      collectTabFilterTokens(tab)
+      collectTabFilterTokens(trimmed)
         .map((part) => part.trim())
         .filter((part) => part.length > 0),
     ),
-  ]
+  ])
 
-  if (tokens.length === 0) return ''
+  if (tokens.length === 0) return null
 
-  const parts: string[] = []
+  const conditions: string[] = []
   for (const token of tokens) {
-    parts.push(
-      buildIlikeOrCondition('title', token),
-      buildIlikeOrCondition('category', token),
-      buildIlikeOrCondition('nail_length', token),
-      buildIlikeOrCondition('color', token),
-      buildIlikeOrCondition('mood', token),
-      buildIlikeOrCondition('design_elements', token),
-    )
-    for (const index of ARRAY_TEXT_FILTER_INDEXES) {
-      parts.push(
-        buildIlikeOrCondition(`situations->>${index}`, token),
-        buildIlikeOrCondition(`styles->>${index}`, token),
-        buildIlikeOrCondition(`tags->>${index}`, token),
-      )
+    const trimmedToken = token.trim()
+    if (!trimmedToken) continue
+
+    const escaped = escapePostgrestIlikePattern(trimmedToken)
+    if (escaped) {
+      for (const column of TAB_FILTER_ILIKE_COLUMNS) {
+        conditions.push(buildIlikeOrCondition(column, escaped))
+      }
+    }
+
+    for (const column of TAB_FILTER_ARRAY_CS_COLUMNS) {
+      const csCondition = buildArrayCsOrCondition(column, trimmedToken)
+      if (csCondition) conditions.push(csCondition)
     }
   }
-  return parts.filter(Boolean).join(',')
+
+  return conditions.length > 0 ? conditions.join(',') : null
 }
 
 export function applyGallerySort<T extends { order: (column: string, options: { ascending: boolean }) => T }>(
@@ -273,7 +317,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
       const from = (page - 1) * GALLERY_PAGE_SIZE
       const to = page * GALLERY_PAGE_SIZE - 1
 
-      let query = supabase.from('nail_designs').select(GALLERY_COLUMNS, { count: 'exact' })
+      let query = supabase.from('nail_designs').select(GALLERY_COLUMNS, { count: 'estimated' })
       query = applyGalleryFilterTabs(query, filterTabs)
 
       query = applyGallerySort(query, normalizedSort)
@@ -307,26 +351,25 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
 export function useGalleryCountQuery(tab: string, options?: GalleryQueryOptions) {
   const normalizedTab = tab.trim() || DEFAULT_GALLERY_TAB
   const normalizedBaseTab = options?.baseTab?.trim() ?? ''
+  const normalizedExtraTabs = options?.extraTabs ?? []
+  const filterTabs = collectGalleryFilterTabs(normalizedTab, normalizedBaseTab, normalizedExtraTabs)
 
   return useQuery({
-    queryKey: ['nail-designs', 'gallery', 'count', { tab: normalizedTab, baseTab: normalizedBaseTab }],
+    queryKey: [
+      'nail-designs',
+      'gallery',
+      'count',
+      { tab: normalizedTab, baseTab: normalizedBaseTab, extraTabs: normalizedExtraTabs },
+    ],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
     queryFn: async ({ signal }) => {
       let query = supabase
         .from('nail_designs')
-        .select('*', { count: 'exact', head: true })
+        .select('*', { count: 'estimated', head: true })
 
-      if (normalizedBaseTab && normalizedBaseTab !== DEFAULT_GALLERY_TAB) {
-        const baseFilter = buildTabOrFilter(normalizedBaseTab)
-        if (baseFilter) query = query.or(baseFilter)
-      }
-
-      if (normalizedTab !== DEFAULT_GALLERY_TAB) {
-        const orFilter = buildTabOrFilter(normalizedTab)
-        if (orFilter && normalizedTab !== normalizedBaseTab) query = query.or(orFilter)
-      }
+      query = applyGalleryFilterTabs(query, filterTabs)
 
       const { count, error } = await query.abortSignal(signal)
       if (error) throw error
