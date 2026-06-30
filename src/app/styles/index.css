@@ -33,6 +33,10 @@
     scrollbar-gutter: stable;
   }
 
+  body {
+    @apply font-sans antialiased text-stone-900;
+  }
+
   html,
   body,
   #root {

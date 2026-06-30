@@ -936,11 +936,11 @@ const Detail = () => {
 
         <main className="px-4 pb-32 pt-4 md:pb-10">{main}</main>
 
-        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100/80 bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden">
-          <div className="grid grid-cols-[7fr_13fr] gap-2.5">
+        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white md:hidden">
+          <div className="flex w-full gap-3 px-5 py-3">
             <button
               type="button"
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-orange-200/90 bg-white px-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-orange-50/40 active:scale-[0.97]"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
               aria-pressed={isSaved}
               onClick={toggleSave}
             >
@@ -954,11 +954,11 @@ const Detail = () => {
             </button>
             <button
               type="button"
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-orange-500 px-2.5 text-sm font-bold text-white shadow-md shadow-orange-900/25 transition hover:bg-orange-600 active:scale-95"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
               onClick={() => void handleShareDesign()}
             >
               <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
-              <span className="min-w-0 text-center leading-tight">
+              <span className="min-w-0 truncate text-center leading-tight">
                 {isEnglish ? "Share Design" : "네일 디자인 공유"}
               </span>
             </button>
@@ -1395,38 +1395,26 @@ const Detail = () => {
         </div>
       </section>
 
-      <div className="mt-10 hidden border-t border-gray-100 pt-8 md:flex md:gap-4">
+      <div className="mt-10 hidden border-t border-gray-100 pt-8 md:flex md:gap-3">
         <button
           type="button"
-          className="flex flex-1 min-h-[56px] items-center justify-center gap-2 rounded-xl border border-orange-200/90 bg-white px-4 text-base font-semibold text-gray-800 shadow-sm transition hover:bg-orange-50/40 active:scale-[0.98]"
+          className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
           aria-pressed={isSaved}
           onClick={toggleSave}
         >
-          <Heart
-            className={`h-5 w-5 shrink-0 ${isSaved ? "fill-rose-500 text-rose-500" : "text-rose-500"}`}
+          <Bookmark
+            className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
             strokeWidth={2}
           />
           <span>{isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}</span>
         </button>
         <button
           type="button"
-          className="flex flex-1 min-h-[56px] items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-base font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-[0.98]"
+          className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
           onClick={() => void handleShareDesign()}
         >
-          <Share2 className="h-5 w-5 shrink-0 text-gray-700" strokeWidth={2} aria-hidden />
-          <span>{isEnglish ? "Share" : "공유하기"}</span>
-        </button>
-        <button
-          type="button"
-          className="flex flex-1 min-h-[56px] items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 text-base font-bold text-white shadow-md shadow-orange-900/25 transition hover:bg-orange-600 active:scale-[0.98]"
-          aria-pressed={isSaved}
-          onClick={toggleSave}
-        >
-          <Bookmark
-            className={`h-5 w-5 shrink-0 ${isSaved ? "fill-white text-white" : "text-white"}`}
-            strokeWidth={2}
-          />
-          <span>{isSaved ? (isEnglish ? "Added" : "담김") : isEnglish ? "Add Design" : "이 디자인 담기"}</span>
+          <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
+          <span>{isEnglish ? "Share Design" : "네일 디자인 공유"}</span>
         </button>
       </div>
       </div>

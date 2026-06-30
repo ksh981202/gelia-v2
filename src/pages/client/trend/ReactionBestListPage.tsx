@@ -52,6 +52,7 @@ function useReactionBestQuery(sortBy: ReactionBestSortColumn, maxLimit: number) 
       const { data, error } = await supabase
         .from("nail_designs")
         .select(REACTION_BEST_COLUMNS)
+        .gt(sortBy, 0)
         .order(sortBy, { ascending: false })
         .order("id", { ascending: false })
         .limit(maxLimit)

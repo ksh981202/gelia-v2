@@ -1,3 +1,4 @@
+import { filterNonZeroRankingRpcRows } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
@@ -55,7 +56,7 @@ function useStyleBestRankingQuery(period: string, maxLimit: number) {
         .rpc("get_ranking_nails", { p_period: period, p_limit: maxLimit })
         .abortSignal(signal);
       if (error) throw error;
-      return (data ?? []) as RankingNailRow[];
+      return filterNonZeroRankingRpcRows((data ?? []) as RankingNailRow[]);
     },
   });
 }

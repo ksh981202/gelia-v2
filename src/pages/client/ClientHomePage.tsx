@@ -1,18 +1,20 @@
 import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
-import { mapPcGallerySortToQuery } from "@/features/client-home/clientPcSidebarConfig";
+import { mapPcGallerySortToQuery, mapRankingFilterToGallerySort, findActivePcSidebarFilter, formatGalleryCount } from "@/features/client-home/clientPcSidebarConfig";
 import {
   useClientPcFilterStore,
   useClientPcGalleryExtraTabs,
 } from "@/features/client-home/useClientPcFilterStore";
 import {
   DEFAULT_GALLERY_TAB,
+  RANKING_WEEKLY_LIMIT,
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { useUserStore } from "@/features/user-actions/useUserStore";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import ClientHeaderUtilityIcons from "@/components/client/ClientHeaderUtilityIcons";
 import type { NailDesignRow } from "@/shared/types/database.types";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -110,9 +112,48 @@ function PcHomeGalleryCard({
           <span>{isEnglish ? "Save" : "저장"}</span>
         </button>
       </div>
-      <p className="mt-2.5 truncate px-2 text-center text-[13px] font-medium text-stone-700">
+      <p className="mt-3 truncate px-2 text-center text-[14px] font-semibold text-stone-800">
         {homeNailTitle(card, isEnglish)}
       </p>
+    </div>
+  );
+}
+
+function PcGalleryNavigatorBar({
+  totalCount,
+  activeFilter,
+  isLoading,
+  isEnglish,
+}: {
+  totalCount: number | null;
+  activeFilter: ReturnType<typeof findActivePcSidebarFilter>;
+  isLoading: boolean;
+  isEnglish: boolean;
+}) {
+  const countLabel = isLoading ? "…" : formatGalleryCount(totalCount);
+
+  return (
+    <div className="mb-6 flex items-end justify-between border-b border-stone-200 pb-3">
+      <h2 className="text-[18px] font-bold tracking-tight text-stone-900">
+        {activeFilter ? (
+          <>
+            <span aria-hidden>✨ </span>
+            {activeFilter.categoryLabel} / {activeFilter.filterName}{" "}
+            <span className="font-bold text-stone-800">
+              ({isEnglish ? "total " : "총 "}
+              <span className="text-[#FF7E67]">{countLabel}</span>
+              {isEnglish ? "" : "개"})
+            </span>
+          </>
+        ) : (
+          <>
+            <span aria-hidden>💅 </span>
+            {isEnglish ? "Total " : "총 "}
+            <span className="text-[#FF7E67]">{countLabel}</span>
+            {isEnglish ? " premium designs" : "개의 프리미엄 디자인"}
+          </>
+        )}
+      </h2>
     </div>
   );
 }
@@ -131,20 +172,62 @@ export default function ClientHomePage() {
   const gallerySort = useClientPcFilterStore((state) => state.gallerySort);
   const searchKeyword = useClientPcFilterStore((state) => state.searchKeyword);
   const setSearchKeyword = useClientPcFilterStore((state) => state.setSearchKeyword);
+  const themeFilter = useClientPcFilterStore((state) => state.themeFilter);
+  const colorFilter = useClientPcFilterStore((state) => state.colorFilter);
+  const moodFilter = useClientPcFilterStore((state) => state.moodFilter);
+  const shapeFilter = useClientPcFilterStore((state) => state.shapeFilter);
+  const pointFilter = useClientPcFilterStore((state) => state.pointFilter);
+  const rankingFilter = useClientPcFilterStore((state) => state.rankingFilter);
+  const quickChipKeyword = useClientPcFilterStore((state) => state.quickChipKeyword);
   const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
   const pcGalleryExtraTabs = useClientPcGalleryExtraTabs(debouncedSearchKeyword);
 
+  const pcGallerySortQuery = useMemo(
+    () => mapRankingFilterToGallerySort(rankingFilter) ?? mapPcGallerySortToQuery(gallerySort),
+    [rankingFilter, gallerySort],
+  );
+
+  const isPcRankingMode = rankingFilter !== "전체";
+
+  const activePcGalleryFilter = useMemo(
+    () =>
+      findActivePcSidebarFilter(
+        {
+          rankingFilter,
+          themeFilter,
+          colorFilter,
+          moodFilter,
+          shapeFilter,
+          pointFilter,
+        },
+        debouncedSearchKeyword,
+        quickChipKeyword,
+      ),
+    [
+      rankingFilter,
+      themeFilter,
+      colorFilter,
+      moodFilter,
+      shapeFilter,
+      pointFilter,
+      debouncedSearchKeyword,
+      quickChipKeyword,
+    ],
+  );
+
   const {
     galleryItems: pcGalleryItems,
+    totalCount: pcGalleryTotalCount,
     isPending: isPcGalleryPending,
     isError: isPcGalleryError,
     error: pcGalleryError,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGalleryInfiniteQuery(DEFAULT_GALLERY_TAB, mapPcGallerySortToQuery(gallerySort), {
+  } = useGalleryInfiniteQuery(DEFAULT_GALLERY_TAB, pcGallerySortQuery, {
     enabled: isDesktop,
     extraTabs: pcGalleryExtraTabs,
+    maxItems: isPcRankingMode ? RANKING_WEEKLY_LIMIT : undefined,
   });
 
   const recommendNails = useMemo(
@@ -301,16 +384,23 @@ export default function ClientHomePage() {
           <span onClick={() => navigate('/trend')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
 
-        <div className="sticky top-0 z-40 mb-4 hidden border-b border-stone-100 bg-white/95 px-4 pb-4 pt-5 backdrop-blur-sm md:block md:px-6">
-          <label className="mx-auto block w-full max-w-2xl">
+        <div className="sticky top-0 z-40 mb-4 hidden items-center justify-between gap-6 border-b border-stone-100 bg-white/95 px-6 pb-4 pt-5 backdrop-blur-sm md:flex">
+          <label className="relative block w-full max-w-2xl shrink-0">
+            <Search
+              size={20}
+              strokeWidth={2}
+              className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-stone-400"
+              aria-hidden
+            />
             <input
               type="search"
               value={searchKeyword}
               onChange={(event) => setSearchKeyword(event.target.value)}
-              placeholder={isEnglish ? "🔍 What nail design are you looking for?" : "🔍 어떤 네일을 찾고 계신가요?"}
-              className="w-full rounded-full bg-stone-50 px-6 py-3 text-center text-[14px] font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:bg-stone-100"
+              placeholder={isEnglish ? "What nail design are you looking for?" : "어떤 네일을 찾고 계신가요?"}
+              className="w-full max-w-2xl rounded-full bg-stone-50 py-4 pl-12 pr-6 text-[16px] text-stone-900 transition-all placeholder:text-[16px] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
             />
           </label>
+          <ClientHeaderUtilityIcons />
         </div>
 
         <div className="grid grid-cols-3 gap-3 md:hidden">
@@ -330,7 +420,14 @@ export default function ClientHomePage() {
                 </div>
               ))}
         </div>
-        <div className="hidden min-w-0 gap-3 px-4 pb-8 pt-4 md:grid md:grid-cols-4 lg:grid-cols-5 lg:gap-4">
+        <div className="hidden min-w-0 px-4 pb-8 pt-4 md:block">
+          <PcGalleryNavigatorBar
+            totalCount={pcGalleryTotalCount}
+            activeFilter={activePcGalleryFilter}
+            isLoading={isPcGalleryPending}
+            isEnglish={isEnglish}
+          />
+          <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4">
           {isPcGalleryPending
             ? Array.from({ length: 20 }, (_, i) => (
                 <div key={`pc-gallery-skel-${i}`} className="break-inside-avoid" aria-hidden>
@@ -378,6 +475,7 @@ export default function ClientHomePage() {
                   <div ref={pcGalleryObserverRef} className="col-span-full h-4 w-full" aria-hidden />
                 </>
               )}
+          </div>
         </div>
       </section>
 

@@ -8,7 +8,9 @@ export const DEFAULT_GALLERY_TAB = '전체'
 export const DEFAULT_GALLERY_SORT = '인기순'
 
 export const GALLERY_COLUMNS =
-  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length,color,mood,design_elements'
+  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,views,situations,styles,nail_length,color,mood,design_elements'
+
+export const RANKING_WEEKLY_LIMIT = 100
 /** 탭 필터 ilike 대상 스칼라 컬럼 */
 const TAB_FILTER_ILIKE_COLUMNS = [
   'title',
@@ -220,24 +222,66 @@ export function buildTabOrFilter(tab: string): string | null {
   return conditions.length > 0 ? conditions.join(',') : null
 }
 
-export function applyGallerySort<T extends { order: (column: string, options: { ascending: boolean }) => T }>(
+export type ApplyGallerySortOptions = {
+  /** TOP 100 랭킹 모드 — 인기순 시 popularity 0점 깡통 차단 */
+  enforcePopularityThreshold?: boolean
+}
+
+export function applyGallerySort<
+  T extends {
+    order: (column: string, options: { ascending: boolean }) => T
+    gt: (column: string, value: number) => T
+  },
+>(
   query: T,
   sort: string,
+  options?: ApplyGallerySortOptions,
 ): T {
   if (sort === '최신순') {
     return query.order('created_at', { ascending: false }).order('id', { ascending: false })
   }
   if (sort === '저장 많은 순') {
-    return query.order('saves', { ascending: false }).order('id', { ascending: false })
+    return query.gt('saves', 0).order('saves', { ascending: false }).order('id', { ascending: false })
   }
-  return query.order('popularity', { ascending: false }).order('id', { ascending: false })
+  if (sort === '조회 많은 순') {
+    return query.gt('popularity', 0).order('popularity', { ascending: false }).order('id', { ascending: false })
+  }
+  let next = query
+  if (options?.enforcePopularityThreshold) {
+    next = next.gt('popularity', 0)
+  }
+  return next.order('popularity', { ascending: false }).order('id', { ascending: false })
+}
+
+/** RPC 랭킹 응답에서 ranking_score 0점 깡통 데이터 제거 */
+export function filterNonZeroRankingRpcRows<T extends { ranking_score?: number | null }>(rows: T[]): T[] {
+  return rows.filter((row) => (row.ranking_score ?? 0) > 0)
+}
+
+async function fetchWeeklyRankingGalleryPage(
+  page: number,
+  signal: AbortSignal,
+): Promise<GalleryInfinitePage> {
+  const { data, error } = await supabase
+    .rpc('get_ranking_nails', { p_period: 'weekly', p_limit: RANKING_WEEKLY_LIMIT })
+    .abortSignal(signal)
+
+  if (error) throw error
+
+  const allItems = filterNonZeroRankingRpcRows((data ?? []) as (NailDesignRow & { ranking_score?: number })[])
+  const from = (page - 1) * GALLERY_PAGE_SIZE
+
+  return {
+    items: allItems.slice(from, from + GALLERY_PAGE_SIZE),
+    totalCount: allItems.length,
+  }
 }
 
 export function normalizeGallerySort(raw: string | null): string {
   if (raw === 'realtime' || raw === 'weekly' || raw === 'monthly' || raw === 'alltime') {
     return raw
   }
-  if (raw === '최신순' || raw === '저장 많은 순' || raw === '인기순') return raw
+  if (raw === '최신순' || raw === '저장 많은 순' || raw === '조회 많은 순' || raw === '인기순') return raw
   return DEFAULT_GALLERY_SORT
 }
 
@@ -262,6 +306,7 @@ type GalleryQueryOptions = {
   enabled?: boolean
   baseTab?: string
   extraTabs?: readonly string[]
+  maxItems?: number
 }
 
 function applyGalleryFilterTabs<T extends { or: (filters: string) => T }>(
@@ -299,6 +344,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
   const normalizedSort = normalizeGallerySort(sort)
   const normalizedBaseTab = options?.baseTab?.trim() ?? ''
   const normalizedExtraTabs = options?.extraTabs ?? []
+  const maxItems = options?.maxItems
   const extraTabsKey =
     normalizedExtraTabs.length > 0 ? [...normalizedExtraTabs].sort().join('\u0001') : ''
   const filterTabs = collectGalleryFilterTabs(normalizedTab, normalizedBaseTab, normalizedExtraTabs)
@@ -308,7 +354,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
       'nail-designs',
       'gallery',
       'infinite',
-      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabsKey },
+      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabsKey, maxItems },
     ],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -316,22 +362,52 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
       const page = pageParam as number
+
+      if (normalizedSort === 'weekly') {
+        return fetchWeeklyRankingGalleryPage(page, signal)
+      }
+
       const from = (page - 1) * GALLERY_PAGE_SIZE
       const to = page * GALLERY_PAGE_SIZE - 1
+
+      if (maxItems != null && from >= maxItems) {
+        return { items: [], totalCount: maxItems } satisfies GalleryInfinitePage
+      }
+
+      const cappedTo =
+        maxItems != null ? Math.min(to, maxItems - 1) : to
 
       let query = supabase.from('nail_designs').select(GALLERY_COLUMNS, { count: 'estimated' })
       query = applyGalleryFilterTabs(query, filterTabs)
 
-      query = applyGallerySort(query, normalizedSort)
+      query = applyGallerySort(query, normalizedSort, {
+        enforcePopularityThreshold: maxItems != null && normalizedSort === '인기순',
+      })
 
-      const { data, error, count } = await query.range(from, to).abortSignal(signal)
+      const { data, error, count } = await query.range(from, cappedTo).abortSignal(signal)
       if (error) throw error
+      const items = (data ?? []) as NailDesignRow[]
+      const totalCount =
+        maxItems != null
+          ? maxItems
+          : page === 1
+            ? (count ?? null)
+            : null
       return {
-        items: (data ?? []) as NailDesignRow[],
-        totalCount: page === 1 ? (count ?? null) : null,
+        items,
+        totalCount,
       } satisfies GalleryInfinitePage
     },
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+    getNextPageParam: (lastPage, allPages, lastPageParam) => {
+      if (normalizedSort === 'weekly') {
+        const totalLoaded = allPages.reduce((sum, galleryPage) => sum + galleryPage.items.length, 0)
+        const totalCount = allPages[0]?.totalCount ?? 0
+        if (totalLoaded >= totalCount || lastPage.items.length < GALLERY_PAGE_SIZE) return undefined
+        return (lastPageParam as number) + 1
+      }
+
+      const totalLoaded = allPages.reduce((sum, galleryPage) => sum + galleryPage.items.length, 0)
+      if (maxItems != null && totalLoaded >= maxItems) return undefined
       if (lastPage.items.length < GALLERY_PAGE_SIZE) return undefined
       return (lastPageParam as number) + 1
     },

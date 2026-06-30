@@ -1,4 +1,19 @@
-import { BarChart2, BookOpen, ChevronDown, Home, Search, Settings, User } from 'lucide-react'
+import {
+  BarChart2,
+  BookOpen,
+  CalendarHeart,
+  ChevronDown,
+  ChevronUp,
+  Home,
+  Palette,
+  Scissors,
+  Search,
+  Sparkles,
+  Trophy,
+  User,
+  Wand2,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   NavLink,
@@ -8,21 +23,19 @@ import {
   useNavigationType,
 } from 'react-router-dom'
 import { LanguageProvider, useLanguageContext } from '@/contexts/LanguageContext'
-import LanguageToggle from '@/components/LanguageToggle'
+import ClientHeaderUtilityIcons from '@/components/client/ClientHeaderUtilityIcons'
+import GeliaWordmark from '@/components/client/GeliaWordmark'
 import {
   useClientPcFilterStore,
   type ClientPcFilterKey,
 } from '@/features/client-home/useClientPcFilterStore'
 import {
-  PC_COLOR_SIDEBAR,
-  PC_MOOD_SIDEBAR,
-  PC_POINT_SIDEBAR,
-  PC_SEASON_SIDEBAR,
-  PC_SHAPE_SIDEBAR,
-  PC_TODAY_TREND_SIDEBAR,
+  PC_SIDEBAR_CATEGORIES,
+  PC_SIDEBAR_DEFAULT_OPEN_IDS,
+  type PcSidebarCategoryFilterKey,
+  type PcSidebarCategoryId,
   type SidebarFilterItem,
 } from '@/features/client-home/clientPcSidebarConfig'
-import { supabase } from '@/shared/api/supabaseClient'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -31,59 +44,72 @@ const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(' ')
 
 const SIDEBAR_ITEM_BASE_CLASS =
-  'w-full cursor-pointer rounded-lg px-3 py-2 text-left text-[13px] font-medium text-stone-600 transition-all hover:bg-stone-100 hover:text-stone-900'
+  'w-full cursor-pointer py-2 text-left text-[15px] font-medium text-stone-700 transition-colors hover:text-black'
 
-const SIDEBAR_ACCORDION_HEADER_CLASS =
-  'flex w-full cursor-pointer items-center justify-between rounded-lg px-2 py-3 text-[12px] font-bold uppercase tracking-widest text-stone-800 transition-colors hover:bg-stone-50'
+const SIDEBAR_ITEM_ACTIVE_CLASS = 'font-bold text-black'
 
-const SIDEBAR_CATEGORY_TITLES = {
-  todayTrend: "🔥 Today's Trend",
-  color: '🎨 컬러',
-  mood: '✨ 무드',
-  point: '💎 포인트/기법',
-  season: '🌸 시즌/상황',
-  shape: '💅 쉐입/길이',
-} as const
+const SIDEBAR_CATEGORY_TEXT_CLASS = 'text-[16px] font-bold text-stone-900'
 
-const DEFAULT_OPEN_CATEGORIES: Record<string, boolean> = {
-  [SIDEBAR_CATEGORY_TITLES.todayTrend]: true,
-  [SIDEBAR_CATEGORY_TITLES.color]: true,
-}
+const SIDEBAR_CATEGORY_BUTTON_CLASS =
+  'flex w-full cursor-pointer items-center justify-between'
+
+const SIDEBAR_CATEGORY_ICONS = {
+  ranking: Trophy,
+  season: CalendarHeart,
+  color: Palette,
+  mood: Sparkles,
+  shape: Scissors,
+  technique: Wand2,
+} as const satisfies Record<PcSidebarCategoryId, LucideIcon>
+
+const DEFAULT_OPEN_CATEGORIES: Record<string, boolean> = Object.fromEntries(
+  PC_SIDEBAR_CATEGORIES.map((category) => [
+    category.id,
+    PC_SIDEBAR_DEFAULT_OPEN_IDS.includes(category.id),
+  ]),
+)
 
 function SidebarAccordionSection({
-  title,
+  label,
+  englishTitle,
+  icon: Icon,
   isOpen,
   onToggleOpen,
   children,
+  showDivider = true,
+  isFirst = false,
 }: {
-  title: string
+  label: string
+  englishTitle: string
+  icon: LucideIcon
   isOpen: boolean
   onToggleOpen: () => void
   children: ReactNode
+  showDivider?: boolean
+  isFirst?: boolean
 }) {
+  const ChevronIcon = isOpen ? ChevronUp : ChevronDown
+
   return (
-    <section className="mb-1 border-b border-stone-100/80 last:border-b-0">
-      <button
-        type="button"
-        onClick={onToggleOpen}
-        aria-expanded={isOpen}
-        className={SIDEBAR_ACCORDION_HEADER_CLASS}
-      >
-        <span>{title}</span>
-        <ChevronDown
-          size={16}
-          strokeWidth={2.25}
-          className={[
-            'shrink-0 text-stone-400 transition-transform duration-200',
-            isOpen ? 'rotate-180' : '',
-          ].join(' ')}
-          aria-hidden
-        />
-      </button>
-      {isOpen ? (
-        <div className="mb-4 flex flex-col gap-0.5 pb-2 pl-1">{children}</div>
-      ) : null}
-    </section>
+    <>
+      <section>
+        <button
+          type="button"
+          onClick={onToggleOpen}
+          aria-expanded={isOpen}
+          aria-label={`${englishTitle} ${label}`}
+          className={[isFirst ? 'mt-4' : 'mt-6', 'mb-4', SIDEBAR_CATEGORY_BUTTON_CLASS].join(' ')}
+        >
+          <span className="flex items-center gap-2.5">
+            <Icon size={20} strokeWidth={2} className="shrink-0 text-stone-400" aria-hidden />
+            <span className={SIDEBAR_CATEGORY_TEXT_CLASS}>{label}</span>
+          </span>
+          <ChevronIcon size={18} strokeWidth={1.5} className="shrink-0 text-stone-400" aria-hidden />
+        </button>
+        {isOpen ? <div className="mb-2 flex flex-col gap-0.5 pl-8">{children}</div> : null}
+      </section>
+      {showDivider ? <div className="my-4 border-t border-stone-100" aria-hidden /> : null}
+    </>
   )
 }
 
@@ -113,7 +139,7 @@ function SidebarFilterItems({
             }}
             className={[
               SIDEBAR_ITEM_BASE_CLASS,
-              isSelected ? 'bg-stone-100 font-semibold text-stone-900' : '',
+              isSelected ? SIDEBAR_ITEM_ACTIVE_CLASS : '',
             ].join(' ')}
           >
             {item.label}
@@ -125,98 +151,54 @@ function SidebarFilterItems({
 }
 
 function PcSidebarFilters({
-  todayTrendFilter,
-  colorFilter,
-  moodFilter,
-  pointFilter,
-  themeFilter,
-  shapeFilter,
-  toggleTodayTrend,
+  filterValues,
+  toggleRankingFilter,
   togglePcFilter,
 }: {
-  todayTrendFilter: string
-  colorFilter: string
-  moodFilter: string
-  pointFilter: string
-  themeFilter: string
-  shapeFilter: string
-  toggleTodayTrend: (option: string) => void
+  filterValues: Record<PcSidebarCategoryFilterKey, string>
+  toggleRankingFilter: (option: string) => void
   togglePcFilter: (key: ClientPcFilterKey, option: string) => void
 }) {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(DEFAULT_OPEN_CATEGORIES)
 
-  const toggleCategory = (title: string) => {
-    setOpenCategories((prev) => ({ ...prev, [title]: !prev[title] }))
+  const toggleCategory = (categoryId: string) => {
+    setOpenCategories((prev) => ({ ...prev, [categoryId]: !prev[categoryId] }))
+  }
+
+  const handleSelect = (filterKey: PcSidebarCategoryFilterKey, value: string) => {
+    if (filterKey === 'rankingFilter') {
+      toggleRankingFilter(value)
+    } else {
+      togglePcFilter(filterKey, value)
+    }
+
+    if (location.pathname !== '/') {
+      navigate('/')
+    }
   }
 
   return (
     <>
-      <SidebarAccordionSection
-        title={SIDEBAR_CATEGORY_TITLES.todayTrend}
-        isOpen={Boolean(openCategories[SIDEBAR_CATEGORY_TITLES.todayTrend])}
-        onToggleOpen={() => toggleCategory(SIDEBAR_CATEGORY_TITLES.todayTrend)}
-      >
-        <SidebarFilterItems
-          items={PC_TODAY_TREND_SIDEBAR}
-          selected={todayTrendFilter}
-          onSelect={toggleTodayTrend}
-        />
-      </SidebarAccordionSection>
-      <SidebarAccordionSection
-        title={SIDEBAR_CATEGORY_TITLES.color}
-        isOpen={Boolean(openCategories[SIDEBAR_CATEGORY_TITLES.color])}
-        onToggleOpen={() => toggleCategory(SIDEBAR_CATEGORY_TITLES.color)}
-      >
-        <SidebarFilterItems
-          items={PC_COLOR_SIDEBAR}
-          selected={colorFilter}
-          onSelect={(value) => togglePcFilter('colorFilter', value)}
-        />
-      </SidebarAccordionSection>
-      <SidebarAccordionSection
-        title={SIDEBAR_CATEGORY_TITLES.mood}
-        isOpen={Boolean(openCategories[SIDEBAR_CATEGORY_TITLES.mood])}
-        onToggleOpen={() => toggleCategory(SIDEBAR_CATEGORY_TITLES.mood)}
-      >
-        <SidebarFilterItems
-          items={PC_MOOD_SIDEBAR}
-          selected={moodFilter}
-          onSelect={(value) => togglePcFilter('moodFilter', value)}
-        />
-      </SidebarAccordionSection>
-      <SidebarAccordionSection
-        title={SIDEBAR_CATEGORY_TITLES.point}
-        isOpen={Boolean(openCategories[SIDEBAR_CATEGORY_TITLES.point])}
-        onToggleOpen={() => toggleCategory(SIDEBAR_CATEGORY_TITLES.point)}
-      >
-        <SidebarFilterItems
-          items={PC_POINT_SIDEBAR}
-          selected={pointFilter}
-          onSelect={(value) => togglePcFilter('pointFilter', value)}
-        />
-      </SidebarAccordionSection>
-      <SidebarAccordionSection
-        title={SIDEBAR_CATEGORY_TITLES.season}
-        isOpen={Boolean(openCategories[SIDEBAR_CATEGORY_TITLES.season])}
-        onToggleOpen={() => toggleCategory(SIDEBAR_CATEGORY_TITLES.season)}
-      >
-        <SidebarFilterItems
-          items={PC_SEASON_SIDEBAR}
-          selected={themeFilter}
-          onSelect={(value) => togglePcFilter('themeFilter', value)}
-        />
-      </SidebarAccordionSection>
-      <SidebarAccordionSection
-        title={SIDEBAR_CATEGORY_TITLES.shape}
-        isOpen={Boolean(openCategories[SIDEBAR_CATEGORY_TITLES.shape])}
-        onToggleOpen={() => toggleCategory(SIDEBAR_CATEGORY_TITLES.shape)}
-      >
-        <SidebarFilterItems
-          items={PC_SHAPE_SIDEBAR}
-          selected={shapeFilter}
-          onSelect={(value) => togglePcFilter('shapeFilter', value)}
-        />
-      </SidebarAccordionSection>
+      {PC_SIDEBAR_CATEGORIES.map((category, index) => (
+        <SidebarAccordionSection
+          key={category.id}
+          label={category.label}
+          englishTitle={category.title}
+          icon={SIDEBAR_CATEGORY_ICONS[category.id]}
+          isOpen={Boolean(openCategories[category.id])}
+          onToggleOpen={() => toggleCategory(category.id)}
+          isFirst={index === 0}
+          showDivider={index < PC_SIDEBAR_CATEGORIES.length - 1}
+        >
+          <SidebarFilterItems
+            items={category.items}
+            selected={filterValues[category.filterKey]}
+            onSelect={(value) => handleSelect(category.filterKey, value)}
+          />
+        </SidebarAccordionSection>
+      ))}
     </>
   )
 }
@@ -232,46 +214,26 @@ export default function ClientLayout() {
 function ClientLayoutContent() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
-  const [isAdminUser, setIsAdminUser] = useState(false)
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter)
   const colorFilter = useClientPcFilterStore((state) => state.colorFilter)
   const moodFilter = useClientPcFilterStore((state) => state.moodFilter)
   const shapeFilter = useClientPcFilterStore((state) => state.shapeFilter)
   const pointFilter = useClientPcFilterStore((state) => state.pointFilter)
-  const todayTrendFilter = useClientPcFilterStore((state) => state.todayTrendFilter)
+  const rankingFilter = useClientPcFilterStore((state) => state.rankingFilter)
   const togglePcFilter = useClientPcFilterStore((state) => state.toggleFilter)
-  const toggleTodayTrend = useClientPcFilterStore((state) => state.toggleTodayTrend)
+  const toggleRankingFilter = useClientPcFilterStore((state) => state.toggleRankingFilter)
+  const resetPcFilters = useClientPcFilterStore((state) => state.resetFilters)
+
+  const handleLogoClick = () => {
+    resetPcFilters()
+  }
 
   useEffect(() => {
     if (navigationType === 'POP') return
     window.scrollTo(0, 0)
   }, [pathname, navigationType])
-
-  useEffect(() => {
-    let cancelled = false
-
-    const applyAdminEmail = (email: string | undefined) => {
-      if (!cancelled) setIsAdminUser(email?.trim().toLowerCase() === 'k981202@naver.com')
-    }
-
-    void supabase.auth.getUser().then(({ data }) => {
-      applyAdminEmail(data.user?.email)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      applyAdminEmail(session?.user?.email)
-    })
-
-    return () => {
-      cancelled = true
-      subscription.unsubscribe()
-    }
-  }, [])
 
   const hideTopHeader =
     pathname.startsWith('/test') ||
@@ -338,44 +300,25 @@ function ClientLayoutContent() {
     : 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0'
 
   return (
-    <div className="min-h-[100dvh] overflow-clip bg-background">
+    <div className="min-h-[100dvh] overflow-clip bg-background font-sans antialiased text-stone-900">
       <div className="relative mx-auto min-h-[100dvh] w-full max-w-md md:flex md:max-w-[1600px] md:flex-row md:items-start">
         {/* PC 전용 좌측 사이드바 (모바일은 숨김) */}
-        <aside className="hidden md:z-50 md:sticky md:top-0 md:flex md:h-screen md:w-[260px] md:shrink-0 md:flex-col md:border-r md:border-stone-200 md:bg-[#FAF8F5]">
+        <aside className="hidden md:z-50 md:sticky md:top-0 md:flex md:h-screen md:w-[260px] md:shrink-0 md:flex-col md:border-r md:border-stone-200 md:bg-[#FCFAF8] md:shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)]">
           <div className="p-6 pb-2">
-            <div className="mb-8 text-3xl font-black tracking-tighter text-stone-900">GELIA</div>
-            <nav className="mb-6 flex flex-col gap-1">
-              <NavLink
-                to="/"
-                end
-                className="flex items-center gap-3 rounded-xl border border-stone-100 bg-white px-4 py-2.5 text-[14px] font-bold text-stone-900 shadow-sm"
-              >
-                🏠 홈
-              </NavLink>
-              <NavLink
-                to="/curation"
-                className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-[14px] font-semibold text-stone-500 transition-all hover:bg-white hover:text-stone-900"
-              >
-                🏆 젤리아 큐레이션
-              </NavLink>
-              <NavLink
-                to="/my"
-                className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-[14px] font-semibold text-stone-500 transition-all hover:bg-white hover:text-stone-900"
-              >
-                👤 마이페이지
-              </NavLink>
-            </nav>
+            <GeliaWordmark className="mb-8" onClick={handleLogoClick} />
           </div>
 
           <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-8 pt-1">
             <PcSidebarFilters
-              todayTrendFilter={todayTrendFilter}
-              colorFilter={colorFilter}
-              moodFilter={moodFilter}
-              pointFilter={pointFilter}
-              themeFilter={themeFilter}
-              shapeFilter={shapeFilter}
-              toggleTodayTrend={toggleTodayTrend}
+              filterValues={{
+                rankingFilter,
+                themeFilter,
+                colorFilter,
+                moodFilter,
+                shapeFilter,
+                pointFilter,
+              }}
+              toggleRankingFilter={toggleRankingFilter}
               togglePcFilter={togglePcFilter}
             />
           </div>
@@ -384,42 +327,8 @@ function ClientLayoutContent() {
         <div className="flex min-w-0 flex-1 flex-col w-full">
         {!hideTopHeader && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl md:hidden">
-          <h1
-            className="shrink-0 cursor-pointer whitespace-nowrap text-[28px] font-bold tracking-wide text-gray-900 sm:text-[30px]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-            onClick={() => navigate('/')}
-          >
-            GELIA
-          </h1>
-          <div className="flex shrink-0 items-center gap-2">
-            <LanguageToggle compact />
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
-              onClick={() => navigate('/search')}
-              aria-label="검색"
-            >
-              <Search size={18} className="text-foreground" />
-            </button>
-            {isAdminUser && import.meta.env.DEV ? (
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90 sm:h-10 sm:w-10"
-                onClick={() => navigate('/admin')}
-                aria-label="관리자 페이지"
-              >
-                <Settings size={18} className="text-foreground" strokeWidth={2} />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
-              onClick={() => navigate('/my')}
-              aria-label="마이페이지"
-            >
-              <User size={18} className="text-foreground" />
-            </button>
-          </div>
+          <GeliaWordmark onClick={handleLogoClick} />
+          <ClientHeaderUtilityIcons className="gap-2" />
         </header>
         )}
 
