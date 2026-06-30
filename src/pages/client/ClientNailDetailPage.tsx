@@ -879,7 +879,7 @@ const Detail = () => {
 
   const pageShell = (main: ReactNode) => (
     <div className="min-h-screen w-full bg-[#fdfaf7]">
-      <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900 md:max-w-[1200px]">
+      <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900">
         <nav className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <button
@@ -934,9 +934,9 @@ const Detail = () => {
           </div>
         </nav>
 
-        <main className="px-4 pb-32 pt-4 md:pb-10">{main}</main>
+        <main className="px-4 pb-32 pt-4">{main}</main>
 
-        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100/80 bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden">
+        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100/80 bg-white/95 px-4 py-3 backdrop-blur-sm">
           <div className="grid grid-cols-[7fr_13fr] gap-2.5">
             <button
               type="button"
@@ -1009,16 +1009,10 @@ const Detail = () => {
 
   if (isLoading && !displayRow) {
     return pageShell(
-      <div
-        className="md:flex md:flex-row md:items-start md:gap-12 md:max-w-[1200px] md:mx-auto md:px-8"
-        aria-busy="true"
-        aria-label={isEnglish ? "Loading nail details" : "네일 상세 로딩 중"}
-      >
-        <div className="md:w-1/2 md:sticky md:top-24 md:h-[calc(100vh-120px)] md:flex md:flex-col md:justify-center">
-          <div className="aspect-[4/5] w-full animate-pulse rounded-3xl bg-gray-100 shadow-xl shadow-primary/5 md:aspect-auto md:h-full md:rounded-2xl" />
-        </div>
+      <div aria-busy="true" aria-label={isEnglish ? "Loading nail details" : "네일 상세 로딩 중"}>
+        <div className="aspect-[4/5] w-full animate-pulse rounded-3xl bg-gray-100 shadow-xl shadow-primary/5" />
 
-        <div className="mt-5 flex flex-col gap-3 md:mt-0 md:w-1/2 md:py-10 md:overflow-y-auto">
+        <div className="mt-5 flex flex-col gap-3">
           <div className="h-8 w-4/5 animate-pulse rounded bg-gray-100" />
           <div className="flex flex-wrap items-center gap-4">
             <div className="h-5 w-20 animate-pulse rounded bg-gray-100" />
@@ -1033,6 +1027,7 @@ const Detail = () => {
               <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
             </div>
           </div>
+        </div>
 
         <div className="mt-6 flex flex-wrap gap-2.5">
           {Array.from({ length: 4 }, (_, index) => (
@@ -1076,7 +1071,6 @@ const Detail = () => {
             ))}
           </div>
         </section>
-        </div>
       </div>,
     );
   }
@@ -1100,50 +1094,46 @@ const Detail = () => {
   const imageSrc = displayRow.image_url?.trim() || "";
 
   return pageShell(
-    <div className="md:flex md:flex-row md:items-start md:gap-12 md:max-w-[1200px] md:mx-auto md:px-8">
-      <div className="md:w-1/2 md:sticky md:top-24 md:h-[calc(100vh-120px)] md:flex md:flex-col md:justify-center">
-        <div
-          className="relative aspect-[4/5] w-full select-none overflow-hidden rounded-3xl bg-primary/5 shadow-xl shadow-primary/5 touch-manipulation md:aspect-auto md:h-full md:rounded-2xl"
-          onTouchEnd={handleMainImageTouchEnd}
-          role="presentation"
-        >
-          {imageSrc ? (
-            <img
-              src={imageSrc}
-              alt={displayTitle}
-              className="mx-auto block h-full w-full object-cover object-center md:w-full md:h-auto md:object-cover md:rounded-2xl"
-              draggable={false}
-              onDoubleClick={handleMainImageDoubleClick}
-              decoding="async"
-            />
-          ) : (
-            <div className="mx-auto block aspect-[4/5] w-full animate-pulse bg-gray-100 md:rounded-2xl" aria-hidden />
-          )}
-          {showFloatingHeart ? (
-            <div
-              key={floatingHeartKey}
-              className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
-              aria-hidden
-            >
-              <Heart
-                className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
-                strokeWidth={1.5}
-                aria-hidden
-              />
-            </div>
-          ) : null}
-          <button
-            type="button"
-            className="absolute bottom-3 right-3 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
-            onClick={() => setIsZoomOpen(true)}
-            aria-label="이미지 확대"
+    <>
+      <div
+        className="relative aspect-[4/5] w-full select-none overflow-hidden rounded-3xl bg-primary/5 shadow-xl shadow-primary/5 touch-manipulation"
+        onTouchEnd={handleMainImageTouchEnd}
+        role="presentation"
+      >
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={displayTitle}
+            className="mx-auto block h-full w-full object-cover object-center"
+            draggable={false}
+            onDoubleClick={handleMainImageDoubleClick}
+            decoding="async"
+          />
+        ) : (
+          <div className="mx-auto block aspect-[4/5] w-full animate-pulse bg-gray-100" aria-hidden />
+        )}
+        {showFloatingHeart ? (
+          <div
+            key={floatingHeartKey}
+            className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+            aria-hidden
           >
-            <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
-          </button>
-        </div>
+            <Heart
+              className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
+              strokeWidth={1.5}
+              aria-hidden
+            />
+          </div>
+        ) : null}
+        <button
+          type="button"
+          className="absolute bottom-3 right-3 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+          onClick={() => setIsZoomOpen(true)}
+          aria-label="이미지 확대"
+        >
+          <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+        </button>
       </div>
-
-      <div className="md:w-1/2 md:py-10 md:overflow-y-auto">
       {isZoomOpen ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
@@ -1394,43 +1384,7 @@ const Detail = () => {
           })}
         </div>
       </section>
-
-      <div className="mt-10 hidden border-t border-gray-100 pt-8 md:flex md:gap-4">
-        <button
-          type="button"
-          className="flex flex-1 min-h-[56px] items-center justify-center gap-2 rounded-xl border border-orange-200/90 bg-white px-4 text-base font-semibold text-gray-800 shadow-sm transition hover:bg-orange-50/40 active:scale-[0.98]"
-          aria-pressed={isSaved}
-          onClick={toggleSave}
-        >
-          <Heart
-            className={`h-5 w-5 shrink-0 ${isSaved ? "fill-rose-500 text-rose-500" : "text-rose-500"}`}
-            strokeWidth={2}
-          />
-          <span>{isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}</span>
-        </button>
-        <button
-          type="button"
-          className="flex flex-1 min-h-[56px] items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-base font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-[0.98]"
-          onClick={() => void handleShareDesign()}
-        >
-          <Share2 className="h-5 w-5 shrink-0 text-gray-700" strokeWidth={2} aria-hidden />
-          <span>{isEnglish ? "Share" : "공유하기"}</span>
-        </button>
-        <button
-          type="button"
-          className="flex flex-1 min-h-[56px] items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 text-base font-bold text-white shadow-md shadow-orange-900/25 transition hover:bg-orange-600 active:scale-[0.98]"
-          aria-pressed={isSaved}
-          onClick={toggleSave}
-        >
-          <Bookmark
-            className={`h-5 w-5 shrink-0 ${isSaved ? "fill-white text-white" : "text-white"}`}
-            strokeWidth={2}
-          />
-          <span>{isSaved ? (isEnglish ? "Added" : "담김") : isEnglish ? "Add Design" : "이 디자인 담기"}</span>
-        </button>
-      </div>
-      </div>
-    </div>,
+    </>,
   );
 };
 

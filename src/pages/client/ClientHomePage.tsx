@@ -1,19 +1,8 @@
 import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
-import { mapPcGallerySortToQuery } from "@/features/client-home/clientPcSidebarConfig";
-import {
-  useClientPcFilterStore,
-  useClientPcGalleryExtraTabs,
-} from "@/features/client-home/useClientPcFilterStore";
-import {
-  DEFAULT_GALLERY_TAB,
-  useGalleryInfiniteQuery,
-} from "@/entities/nail-design/api/useGalleryInfiniteQuery";
-import { useUserStore } from "@/features/user-actions/useUserStore";
-import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 type HomeNailCard = { id: string; title: string; titleEn: string; image: string };
@@ -42,110 +31,15 @@ function homeNailTitle(nail: HomeNailCard, isEnglish: boolean) {
   return isEnglish && en ? en : ko || en || "";
 }
 
-function useIsMdDesktop() {
-  const [isDesktop, setIsDesktop] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 768px)");
-    const onChange = () => setIsDesktop(mediaQuery.matches);
-    mediaQuery.addEventListener("change", onChange);
-    return () => mediaQuery.removeEventListener("change", onChange);
-  }, []);
-
-  return isDesktop;
-}
-
-function PcHomeGalleryCard({
-  item,
-  index,
-  isEnglish,
-  onOpen,
-}: {
-  item: NailDesignRow;
-  index: number;
-  isEnglish: boolean;
-  onOpen: (id: string) => void;
-}) {
-  const card = toHomeNailCard(item);
-  const savedNails = useUserStore((state) => state.savedNails);
-  const toggleSave = useUserStore((state) => state.toggleSave);
-  const isSaved = savedNails.includes(item.id);
-
-  const handleSaveClick = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    toggleSave(item.id);
-  };
-
-  return (
-    <div
-      className="group cursor-pointer break-inside-avoid"
-      onClick={() => onOpen(item.id)}
-    >
-      <div className="relative overflow-hidden rounded-2xl border border-black/5 shadow-sm">
-        <img
-          src={card.image}
-          alt={homeNailTitle(card, isEnglish)}
-          loading={index < 12 ? "eager" : "lazy"}
-          fetchPriority={index < 4 ? "high" : undefined}
-          decoding="async"
-          className="h-auto w-full object-cover object-center"
-        />
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/55 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          aria-hidden
-        />
-        <button
-          type="button"
-          onClick={handleSaveClick}
-          className={[
-            "absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shadow-md backdrop-blur-sm transition-all duration-300",
-            "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
-            isSaved ? "bg-[#FF7E67]/95" : "bg-black/45 hover:bg-black/60",
-          ].join(" ")}
-          aria-label={isEnglish ? "Save nail design" : "네일 저장"}
-        >
-          <span aria-hidden>❤️</span>
-          <span>{isEnglish ? "Save" : "저장"}</span>
-        </button>
-      </div>
-      <p className="mt-2.5 truncate px-2 text-center text-[13px] font-medium text-stone-700">
-        {homeNailTitle(card, isEnglish)}
-      </p>
-    </div>
-  );
-}
-
 export default function ClientHomePage() {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const pcGalleryObserverRef = useRef<HTMLDivElement>(null);
   const autoPlayIndexRef = useRef(0);
   const [isFooterOpen, setIsFooterOpen] = useState(false);
   const [isAutoPlayPaused, setIsAutoPlayPaused] = useState(false);
-  const isDesktop = useIsMdDesktop();
   const { data: feed, isLoading } = useClientHomeFeed();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
-  const gallerySort = useClientPcFilterStore((state) => state.gallerySort);
-  const searchKeyword = useClientPcFilterStore((state) => state.searchKeyword);
-  const setSearchKeyword = useClientPcFilterStore((state) => state.setSearchKeyword);
-  const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
-  const pcGalleryExtraTabs = useClientPcGalleryExtraTabs(debouncedSearchKeyword);
-
-  const {
-    galleryItems: pcGalleryItems,
-    isPending: isPcGalleryPending,
-    isError: isPcGalleryError,
-    error: pcGalleryError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useGalleryInfiniteQuery(DEFAULT_GALLERY_TAB, mapPcGallerySortToQuery(gallerySort), {
-    enabled: isDesktop,
-    extraTabs: pcGalleryExtraTabs,
-  });
 
   const recommendNails = useMemo(
     () => (feed?.recommend ?? []).map(toHomeNailCard),
@@ -176,24 +70,6 @@ export default function ClientHomePage() {
   );
 
   useEffect(() => {
-    if (!isDesktop) return;
-
-    const target = pcGalleryObserverRef.current;
-    if (!target || !hasNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting || isFetchingNextPage) return;
-        void fetchNextPage();
-      },
-      { root: null, rootMargin: "320px", threshold: 0 },
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isDesktop]);
-
-  useEffect(() => {
     if (isLoading || isAutoPlayPaused || recommendNails.length <= 1) return;
 
     const timer = window.setInterval(() => {
@@ -215,8 +91,8 @@ export default function ClientHomePage() {
   }, [isAutoPlayPaused, isLoading, recommendNails.length]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fdfaf7] pb-4 md:bg-white md:pb-0">
-      <section className="mt-2 px-5 md:hidden">
+    <div className="w-full flex flex-col min-h-screen overflow-x-hidden bg-[#fdfaf7] pb-4">
+      <section className="mt-2 px-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
             {isEnglish ? "Recommended Nails" : "추천 네일"}
@@ -273,7 +149,7 @@ export default function ClientHomePage() {
         </div>
       </section>
 
-      <div className="mb-10 mt-10 w-full px-5 md:hidden">
+      <div className="w-full mt-10 mb-10 px-5">
         <div className="relative w-full overflow-hidden rounded-[24px] bg-gradient-to-br from-[#fff5f5] to-[#fffafa] px-6 py-7 shadow-sm border border-rose-50">
           <div className="relative z-10 flex flex-col items-start w-[65%]">
             <h3 className="text-[18px] font-bold text-gray-900 leading-tight">{isEnglish ? "Find Nails Made for Your Hands" : "내 손에 찰떡인 네일 찾기"}</h3>
@@ -295,25 +171,12 @@ export default function ClientHomePage() {
         </div>
       </div>
 
-      <section className="mb-12 px-5 md:mb-0 md:mt-0 md:px-0 md:pt-0">
-        <div className="mb-5 flex items-center justify-between md:hidden">
+      <section className="mb-12 px-5">
+        <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">{isEnglish ? "Trending Nails" : "트렌드 네일"}</h2>
           <span onClick={() => navigate('/trend')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
-
-        <div className="sticky top-0 z-40 mb-4 hidden border-b border-stone-100 bg-white/95 px-4 pb-4 pt-5 backdrop-blur-sm md:block md:px-6">
-          <label className="mx-auto block w-full max-w-2xl">
-            <input
-              type="search"
-              value={searchKeyword}
-              onChange={(event) => setSearchKeyword(event.target.value)}
-              placeholder={isEnglish ? "🔍 What nail design are you looking for?" : "🔍 어떤 네일을 찾고 계신가요?"}
-              className="w-full rounded-full bg-stone-50 px-6 py-3 text-center text-[14px] font-medium text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:bg-stone-100"
-            />
-          </label>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 md:hidden">
+        <div className="grid grid-cols-3 gap-3">
           {isLoading
             ? [0, 1, 2].map((i) => (
                 <div key={`trend-skel-${i}`} className="flex w-full flex-col items-center" aria-hidden>
@@ -330,58 +193,9 @@ export default function ClientHomePage() {
                 </div>
               ))}
         </div>
-        <div className="hidden min-w-0 gap-3 px-4 pb-8 pt-4 md:grid md:grid-cols-4 lg:grid-cols-5 lg:gap-4">
-          {isPcGalleryPending
-            ? Array.from({ length: 20 }, (_, i) => (
-                <div key={`pc-gallery-skel-${i}`} className="break-inside-avoid" aria-hidden>
-                  <div
-                    className="w-full animate-pulse rounded-2xl bg-gray-200"
-                    style={{ height: `${11 + (i % 4) * 2.5}rem` }}
-                  />
-                </div>
-              ))
-            : isPcGalleryError ? (
-                <div className="col-span-full rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-600">
-                  {pcGalleryError instanceof Error
-                    ? pcGalleryError.message
-                    : isEnglish
-                      ? "Could not load designs."
-                      : "디자인을 불러오지 못했습니다."}
-                </div>
-              )
-            : pcGalleryItems.length === 0 ? (
-                <p className="col-span-full py-12 text-center text-sm text-gray-500">
-                  {isEnglish ? "No designs to show." : "표시할 네일이 없습니다."}
-                </p>
-              )
-            : (
-                <>
-                  {pcGalleryItems.map((item, index) => (
-                    <PcHomeGalleryCard
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      isEnglish={isEnglish}
-                      onOpen={(id) => navigate(`/detail/${id}`)}
-                    />
-                  ))}
-                  {isFetchingNextPage
-                    ? Array.from({ length: 8 }, (_, i) => (
-                        <div key={`pc-gallery-more-skel-${i}`} className="break-inside-avoid" aria-hidden>
-                          <div
-                            className="w-full animate-pulse rounded-2xl bg-gray-200"
-                            style={{ height: `${10 + (i % 3) * 2}rem` }}
-                          />
-                        </div>
-                      ))
-                    : null}
-                  <div ref={pcGalleryObserverRef} className="col-span-full h-4 w-full" aria-hidden />
-                </>
-              )}
-        </div>
       </section>
 
-      <section className="mb-12 px-5 md:hidden">
+      <section className="mb-12 px-5">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">{isEnglish ? "Popular Nail Designs" : "인기 네일 디자인"}</h2>
           <span onClick={() => navigate('/popular-design')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
@@ -405,7 +219,7 @@ export default function ClientHomePage() {
         </div>
       </section>
 
-      <section className="mb-10 mt-8 px-5 md:hidden">
+      <section className="mb-10 mt-8 px-5">
         <div className="mb-5 flex w-full items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
             {isEnglish ? "Explore Categories" : "카테고리 탐색"}
@@ -443,7 +257,7 @@ export default function ClientHomePage() {
         </div>
       </section>
 
-      <footer className="w-full border-t border-gray-200 bg-gray-50 px-5 pb-8 pt-10 text-left font-sans md:hidden">
+      <footer className="w-full border-t border-gray-200 bg-gray-50 px-5 pb-8 pt-10 text-left font-sans">
         <div className="mb-8 rounded-2xl border border-gray-200 bg-white px-4 py-5 shadow-sm">
           <p className="text-center text-[13px] font-medium leading-[1.6] text-gray-700">
             {isEnglish ? "All GELIA images are AI-created designs 😉" : "젤리아의 모든 이미지는 AI로 만든 디자인이에요 😉"}<br />{isEnglish ? "Use them as inspiration to find your own nail style!" : "나만의 네일 스타일 찾는 데 참고해보세요!"}

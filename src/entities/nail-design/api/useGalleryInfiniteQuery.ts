@@ -299,8 +299,6 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
   const normalizedSort = normalizeGallerySort(sort)
   const normalizedBaseTab = options?.baseTab?.trim() ?? ''
   const normalizedExtraTabs = options?.extraTabs ?? []
-  const extraTabsKey =
-    normalizedExtraTabs.length > 0 ? [...normalizedExtraTabs].sort().join('\u0001') : ''
   const filterTabs = collectGalleryFilterTabs(normalizedTab, normalizedBaseTab, normalizedExtraTabs)
 
   const query = useInfiniteQuery({
@@ -308,7 +306,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
       'nail-designs',
       'gallery',
       'infinite',
-      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabsKey },
+      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabs: normalizedExtraTabs },
     ],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
