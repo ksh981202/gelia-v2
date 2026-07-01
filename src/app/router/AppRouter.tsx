@@ -52,6 +52,7 @@ const ClientTermsPage = lazy(() => import('../../pages/client/ClientTermsPage'))
 const ClientPrivacyPage = lazy(() => import('../../pages/client/ClientPrivacyPage'))
 const ClientMyPage = lazy(() => import('../../pages/client/ClientMyPage'))
 const ClientMyNailListPage = lazy(() => import('../../pages/client/ClientMyNailListPage'))
+const ClientCollectionPage = lazy(() => import('../../pages/client/ClientCollectionPage'))
 const ClientHomePage = lazy(() => import('../../pages/client/ClientHomePage'))
 const ClientRecommendPage = lazy(() => import('../../pages/client/ClientRecommendPage'))
 const ClientPage = lazy(() => import('../../pages/client/ClientPage'))
@@ -134,6 +135,7 @@ const router = createBrowserRouter([
       { path: 'account', element: <ClientAccountSettingsPage /> },
       { path: 'my', element: <ClientMyPage /> },
       { path: 'my/list/:type', element: <ClientMyNailListPage /> },
+      { path: 'collection/:id', element: <ClientCollectionPage /> },
       { path: 'ranking', element: <Navigate to="/trend" replace /> },
       { path: 'popular-design', element: <PopularDesignPage /> },
       { path: 'period-best-list', element: <PeriodBestListPage /> },

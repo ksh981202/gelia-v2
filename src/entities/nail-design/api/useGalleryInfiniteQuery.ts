@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 
 export const GALLERY_PAGE_SIZE = 20
 export const DEFAULT_GALLERY_TAB = '전체'
-export const DEFAULT_GALLERY_SORT = '인기순'
+export const DEFAULT_GALLERY_SORT = '최신순'
 
 export const GALLERY_COLUMNS =
   'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,views,situations,styles,nail_length,color,mood,design_elements'

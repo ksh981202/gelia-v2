@@ -60,24 +60,24 @@ export default function ClientNotificationSettingsPage() {
   const [nightQuiet, setNightQuiet] = useState(true)
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-50"
-          aria-label="뒤로 가기"
-        >
-          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
-        </button>
-        <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
-          {isEnglish ? 'Notification Settings' : '알림 설정'}
-        </h1>
-      </header>
+    <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
+      <div className="mx-auto w-full max-w-3xl px-4 py-8">
+        <div className="mb-8 flex w-full items-center gap-2 border-b border-stone-200 pb-5">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="-ml-2 cursor-pointer rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+            aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+          >
+            <ChevronLeft size={26} strokeWidth={2.5} />
+          </button>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-stone-900">
+            {isEnglish ? 'Notification Settings' : '알림 설정'}
+          </h1>
+        </div>
 
-      <main className="w-full pb-10 pt-14">
-        <section className="w-full">
-          <h2 className="w-full bg-gray-50 px-5 py-2.5 text-[12px] font-medium text-gray-500">
+        <section className="mb-6 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+          <h2 className="w-full bg-stone-50 px-5 py-2.5 text-[12px] font-medium text-stone-500">
             {isEnglish ? 'Service Notifications' : '서비스 알림'}
           </h2>
           <NotificationRow
@@ -98,8 +98,8 @@ export default function ClientNotificationSettingsPage() {
           />
         </section>
 
-        <section className="w-full">
-          <h2 className="w-full bg-gray-50 px-5 py-2.5 text-[12px] font-medium text-gray-500">
+        <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+          <h2 className="w-full bg-stone-50 px-5 py-2.5 text-[12px] font-medium text-stone-500">
             {isEnglish ? 'Benefits & Event Notifications' : '혜택 및 이벤트 알림'}
           </h2>
           <NotificationRow
@@ -123,7 +123,7 @@ export default function ClientNotificationSettingsPage() {
             onChange={setNightQuiet}
           />
         </section>
-      </main>
+      </div>
     </div>
   )
 }

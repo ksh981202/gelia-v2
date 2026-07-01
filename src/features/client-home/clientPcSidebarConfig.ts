@@ -22,7 +22,6 @@ export type PcSidebarCategoryFilterKey =
 export const PC_SIDEBAR_RANKING_VALUES = [
   "ranking_weekly",
   "ranking_saves",
-  "ranking_views",
 ] as const;
 
 export type PcSidebarRankingValue = (typeof PC_SIDEBAR_RANKING_VALUES)[number];
@@ -48,7 +47,6 @@ export const PC_SIDEBAR_CATEGORIES: readonly PcSidebarCategory[] = [
     items: [
       { label: "주간 베스트 디자인", value: "ranking_weekly" },
       { label: "유저 반응 랭킹", value: "ranking_saves" },
-      { label: "가장 많이 본 디자인", value: "ranking_views" },
     ],
   },
   {
@@ -165,7 +163,6 @@ export function mapPcGallerySortToQuery(sort: PcGallerySortTab): string {
 export function mapRankingFilterToGallerySort(rankingFilter: string): string | null {
   if (rankingFilter === "ranking_weekly") return "인기순";
   if (rankingFilter === "ranking_saves") return "저장 많은 순";
-  if (rankingFilter === "ranking_views") return "조회 많은 순";
   return null;
 }
 

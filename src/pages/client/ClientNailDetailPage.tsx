@@ -19,6 +19,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
+import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 
@@ -433,6 +434,7 @@ const Detail = () => {
   );
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const currentUserId = useCurrentUserId();
   const [reactionOverride, setReactionOverride] = useState<{
     key: string;
@@ -786,46 +788,20 @@ const Detail = () => {
     })();
   }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
 
-  const toggleSave = useCallback(() => {
-    if (!displayRow?.id) return;
-    if (!currentUserId) {
-      alert("로그인이 필요한 기능입니다.");
-      navigate("/login");
-      return;
-    }
-    const nailDesignId = displayRow.id;
-    const next = !isSaved;
-    const previousState = { key: reactionKey, isLiked, isSaved };
-
-    setReactionOverride({ key: reactionKey, isLiked, isSaved: next });
-    setDbReactionState({ key: reactionKey, isLiked, isSaved: next });
-
-    void (async () => {
-      try {
-        const query = supabase.from("user_saves");
-        const { error } = next
-          ? await query.insert({ user_id: currentUserId, nail_id: nailDesignId })
-          : await query.delete().match({ user_id: currentUserId, nail_id: nailDesignId });
-        if (error) throw error;
-        const { error: saveCountError } = await supabase.rpc("increment_saves", {
-          nail_id: nailDesignId,
-          increment_value: next ? 1 : -1,
-        });
-        if (saveCountError) throw saveCountError;
-        queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] });
-        queryClient.invalidateQueries({ queryKey: ['my-page-count', 'saved', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'saved', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'saved', currentUserId] });
-        void trackNailActivity(nailDesignId, next ? "save" : "unsave", currentUserId);
-      } catch (error) {
-        setReactionOverride(previousState);
-        setDbReactionState(previousState);
-        if (import.meta.env.DEV) {
-          console.warn("[Detail] save update failed", error);
-        }
+  const handleOpenFolderModal = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!displayRow?.id) return;
+      if (!currentUserId) {
+        alert("로그인이 필요한 기능입니다.");
+        navigate("/login");
+        return;
       }
-    })();
-  }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
+      setIsFolderModalOpen(true);
+    },
+    [currentUserId, displayRow?.id, navigate],
+  );
 
   const playFloatingHeart = useCallback(() => {
     setFloatingHeartKey((k) => k + 1);
@@ -942,7 +918,7 @@ const Detail = () => {
               type="button"
               className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
               aria-pressed={isSaved}
-              onClick={toggleSave}
+              onClick={handleOpenFolderModal}
             >
               <Bookmark
                 className={`h-4 w-4 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
@@ -1003,6 +979,11 @@ const Detail = () => {
               : "링크가 복사되었어요! 친구에게 공유해 보세요 ✨"}
           </div>
         ) : null}
+        <FolderSelectModal
+          isOpen={isFolderModalOpen}
+          onClose={() => setIsFolderModalOpen(false)}
+          nailId={displayRow?.id ?? nailId}
+        />
       </div>
     </div>
   );
@@ -1010,15 +991,15 @@ const Detail = () => {
   if (isLoading && !displayRow) {
     return pageShell(
       <div
-        className="md:flex md:flex-row md:items-start md:gap-12 md:max-w-[1200px] md:mx-auto md:px-8"
+        className="flex w-full flex-col items-start gap-8 lg:max-w-[1200px] lg:flex-row lg:gap-12 lg:mx-auto lg:px-8"
         aria-busy="true"
         aria-label={isEnglish ? "Loading nail details" : "네일 상세 로딩 중"}
       >
-        <div className="md:w-1/2 md:sticky md:top-24 md:h-[calc(100vh-120px)] md:flex md:flex-col md:justify-center">
-          <div className="aspect-[4/5] w-full animate-pulse rounded-3xl bg-gray-100 shadow-xl shadow-primary/5 md:aspect-auto md:h-full md:rounded-2xl" />
+        <div className="relative h-fit w-full shrink-0 self-start lg:sticky lg:top-24 lg:w-[500px] xl:w-[600px]">
+          <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100 shadow-sm" />
         </div>
 
-        <div className="mt-5 flex flex-col gap-3 md:mt-0 md:w-1/2 md:py-10 md:overflow-y-auto">
+        <div className="flex min-w-0 w-full flex-1 flex-col gap-3 lg:mt-3">
           <div className="h-8 w-4/5 animate-pulse rounded bg-gray-100" />
           <div className="flex flex-wrap items-center gap-4">
             <div className="h-5 w-20 animate-pulse rounded bg-gray-100" />
@@ -1062,16 +1043,15 @@ const Detail = () => {
           </div>
         </div>
 
-        <section className="mt-10 overflow-hidden">
+        <section className="mt-10">
           <div className="mb-4 flex items-center justify-between">
             <div className="h-6 w-40 animate-pulse rounded bg-gray-100" />
             <div className="h-5 w-14 animate-pulse rounded bg-gray-100" />
           </div>
-          <div className="min-w-0 -mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-4">
             {Array.from({ length: 5 }, (_, index) => (
-              <div key={`similar-nail-skel-${index}`} className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2">
-                <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100" />
-                <div className="h-4 w-4/5 animate-pulse rounded bg-gray-100" />
+              <div key={`similar-nail-skel-${index}`} className="w-full">
+                <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
               </div>
             ))}
           </div>
@@ -1100,50 +1080,7 @@ const Detail = () => {
   const imageSrc = displayRow.image_url?.trim() || "";
 
   return pageShell(
-    <div className="md:flex md:flex-row md:items-start md:gap-12 md:max-w-[1200px] md:mx-auto md:px-8">
-      <div className="md:w-1/2 md:sticky md:top-24 md:h-[calc(100vh-120px)] md:flex md:flex-col md:justify-center">
-        <div
-          className="relative aspect-[4/5] w-full select-none overflow-hidden rounded-3xl bg-primary/5 shadow-xl shadow-primary/5 touch-manipulation md:aspect-auto md:h-full md:rounded-2xl"
-          onTouchEnd={handleMainImageTouchEnd}
-          role="presentation"
-        >
-          {imageSrc ? (
-            <img
-              src={imageSrc}
-              alt={displayTitle}
-              className="mx-auto block h-full w-full object-cover object-center md:w-full md:h-auto md:object-cover md:rounded-2xl"
-              draggable={false}
-              onDoubleClick={handleMainImageDoubleClick}
-              decoding="async"
-            />
-          ) : (
-            <div className="mx-auto block aspect-[4/5] w-full animate-pulse bg-gray-100 md:rounded-2xl" aria-hidden />
-          )}
-          {showFloatingHeart ? (
-            <div
-              key={floatingHeartKey}
-              className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
-              aria-hidden
-            >
-              <Heart
-                className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
-                strokeWidth={1.5}
-                aria-hidden
-              />
-            </div>
-          ) : null}
-          <button
-            type="button"
-            className="absolute bottom-3 right-3 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
-            onClick={() => setIsZoomOpen(true)}
-            aria-label="이미지 확대"
-          >
-            <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
-          </button>
-        </div>
-      </div>
-
-      <div className="md:w-1/2 md:py-10 md:overflow-y-auto">
+    <>
       {isZoomOpen ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
@@ -1176,61 +1113,103 @@ const Detail = () => {
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-col gap-3">
-        <h1 className="text-left text-2xl font-bold tracking-tight text-gray-900 break-keep font-sans antialiased">
-          {displayTitle}
-        </h1>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-          <button
-            type="button"
-            onClick={toggleLike}
-            className="inline-flex items-center gap-1.5 rounded-lg py-0.5 pr-1 transition-colors hover:bg-gray-100/80"
-            aria-pressed={isLiked}
-            aria-label={isEnglish ? "Like" : "좋아요"}
-          >
-            <Heart
-              className={`h-4 w-4 shrink-0 transition-colors ${
-                isLiked ? "fill-rose-500 text-rose-500" : "text-gray-500"
-              }`}
-              strokeWidth={1.5}
+      <div className="flex w-full flex-col items-start gap-8 lg:max-w-[1200px] lg:flex-row lg:gap-12 lg:mx-auto lg:px-8">
+        <div
+          className="relative h-fit w-full shrink-0 self-start lg:sticky lg:top-24 lg:w-[500px] xl:w-[600px]"
+          onTouchEnd={handleMainImageTouchEnd}
+          role="presentation"
+        >
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt={displayTitle}
+              className="block h-auto w-full rounded-2xl object-cover object-top shadow-sm"
+              draggable={false}
+              onDoubleClick={handleMainImageDoubleClick}
+              decoding="async"
             />
-            <span>
-              <span className="font-medium tabular-nums text-gray-500">{formatCount(likeDisplayCount)}</span>{" "}
-              {isEnglish ? "Likes" : "좋아요"}
-            </span>
-          </button>
-          <span className="inline-flex items-center gap-1.5">
-            <Eye className="h-4 w-4 shrink-0 text-indigo-400" strokeWidth={1.5} />
-            <span>
-              <span className="font-medium tabular-nums text-gray-500">{formatCount(views)}</span>{" "}
-              {isEnglish ? "Views" : "조회"}
-            </span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Bookmark className="h-4 w-4 shrink-0 text-orange-500" strokeWidth={1.5} />
-            <span>
-              <span className="font-medium tabular-nums text-gray-500">{formatCount(saveDisplayCount)}</span>{" "}
-              {isEnglish ? "Saves" : "저장"}
-            </span>
-          </span>
-        </div>
-        <div className="relative overflow-hidden rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Editor&apos;s Note</p>
-          <div className="relative mt-3">
-            <span
-              className="pointer-events-none absolute -left-0.5 top-0 font-serif text-5xl leading-none text-gray-100"
+          ) : (
+            <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+          )}
+          {showFloatingHeart ? (
+            <div
+              key={floatingHeartKey}
+              className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
               aria-hidden
             >
-              &ldquo;
-            </span>
-            <p className="relative z-[1] break-keep whitespace-pre-line pl-5 pt-1 text-[15px] font-medium leading-loose tracking-wide text-gray-800">
-              {formattedDescription}
-            </p>
-          </div>
+              <Heart
+                className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
+                strokeWidth={1.5}
+                aria-hidden
+              />
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="absolute bottom-4 right-4 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+            onClick={() => setIsZoomOpen(true)}
+            aria-label="이미지 확대"
+          >
+            <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+          </button>
         </div>
-      </div>
 
-      <div className="mt-6 flex flex-wrap gap-2.5">
+        <div className="min-w-0 w-full flex-1 lg:mt-3">
+          <div className="flex flex-col gap-3">
+            <h1 className="text-left text-2xl font-bold leading-none tracking-tight text-gray-900 break-keep font-sans antialiased">
+              {displayTitle}
+            </h1>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+              <button
+                type="button"
+                onClick={toggleLike}
+                className="inline-flex items-center gap-1.5 rounded-lg py-0.5 pr-1 transition-colors hover:bg-gray-100/80"
+                aria-pressed={isLiked}
+                aria-label={isEnglish ? "Like" : "좋아요"}
+              >
+                <Heart
+                  className={`h-4 w-4 shrink-0 transition-colors ${
+                    isLiked ? "fill-rose-500 text-rose-500" : "text-gray-500"
+                  }`}
+                  strokeWidth={1.5}
+                />
+                <span>
+                  <span className="font-medium tabular-nums text-gray-500">{formatCount(likeDisplayCount)}</span>{" "}
+                  {isEnglish ? "Likes" : "좋아요"}
+                </span>
+              </button>
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-4 w-4 shrink-0 text-indigo-400" strokeWidth={1.5} />
+                <span>
+                  <span className="font-medium tabular-nums text-gray-500">{formatCount(views)}</span>{" "}
+                  {isEnglish ? "Views" : "조회"}
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Bookmark className="h-4 w-4 shrink-0 text-orange-500" strokeWidth={1.5} />
+                <span>
+                  <span className="font-medium tabular-nums text-gray-500">{formatCount(saveDisplayCount)}</span>{" "}
+                  {isEnglish ? "Saves" : "저장"}
+                </span>
+              </span>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Editor&apos;s Note</p>
+              <div className="relative mt-3">
+                <span
+                  className="pointer-events-none absolute -left-0.5 top-0 font-serif text-5xl leading-none text-gray-100"
+                  aria-hidden
+                >
+                  &ldquo;
+                </span>
+                <p className="relative z-[1] break-keep whitespace-pre-line pl-5 pt-1 text-[15px] font-medium leading-loose tracking-wide text-gray-800">
+                  {formattedDescription}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2.5">
         {displayTags.length > 0 ? (
           displayTags.map((token, chipIdx) => {
             const bare = token.replace(/^#/, "").trim();
@@ -1350,7 +1329,7 @@ const Detail = () => {
         )}
       </div>
 
-      <section className="mt-10 overflow-hidden">
+      <section className="mt-10">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">
             {isEnglish ? "Similar Nail Designs" : "이 디자인과 비슷한 네일"}
@@ -1363,62 +1342,61 @@ const Detail = () => {
             {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
-        <div className="min-w-0 -mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-4">
           {similarDisplay.map((item) => {
             const simSrc = item.image_url?.trim() || "";
+            const simTitle = pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail Design" : "네일 디자인");
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => navigate(`/detail/${item.id}`)}
-                className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2"
+                className="block w-full"
+                aria-label={simTitle}
               >
                 {simSrc ? (
                   <img
                     src={simSrc}
-                    alt={pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail" : "네일")}
-                    className="aspect-[3/4] h-full w-full rounded-2xl object-cover object-center"
+                    alt={simTitle}
+                    className="aspect-[3/4] w-full rounded-xl object-cover object-center"
                     loading="lazy"
                     decoding="async"
                   />
                 ) : (
-                  <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+                  <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" aria-hidden />
                 )}
-                <div className="flex w-full min-w-0 max-w-full shrink-0 justify-center">
-                  <p className="w-full min-w-0 max-w-full truncate text-center text-sm font-medium tracking-tight text-gray-800 font-sans">
-                    {pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail Design" : "네일 디자인")}
-                  </p>
-                </div>
+                <p className="mt-1 hidden truncate text-[11px] text-stone-400">{simTitle}</p>
               </button>
             );
           })}
         </div>
       </section>
 
-      <div className="mt-10 hidden border-t border-gray-100 pt-8 md:flex md:gap-3">
-        <button
-          type="button"
-          className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
-          aria-pressed={isSaved}
-          onClick={toggleSave}
-        >
-          <Bookmark
-            className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
-            strokeWidth={2}
-          />
-          <span>{isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}</span>
-        </button>
-        <button
-          type="button"
-          className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
-          onClick={() => void handleShareDesign()}
-        >
-          <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
-          <span>{isEnglish ? "Share Design" : "네일 디자인 공유"}</span>
-        </button>
+          <div className="mt-10 hidden border-t border-gray-100 pt-8 lg:flex lg:gap-3">
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
+              aria-pressed={isSaved}
+              onClick={handleOpenFolderModal}
+            >
+              <Bookmark
+                className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
+                strokeWidth={2}
+              />
+              <span>{isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}</span>
+            </button>
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
+              onClick={() => void handleShareDesign()}
+            >
+              <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
+              <span>{isEnglish ? "Share Design" : "네일 디자인 공유"}</span>
+            </button>
+          </div>
+        </div>
       </div>
-      </div>
-    </div>,
+    </>,
   );
 };
 

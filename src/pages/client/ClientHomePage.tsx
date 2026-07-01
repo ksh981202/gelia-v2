@@ -9,6 +9,7 @@ import {
   RANKING_WEEKLY_LIMIT,
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
+import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { useUserStore } from "@/features/user-actions/useUserStore";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
@@ -72,15 +73,17 @@ function PcHomeGalleryCard({
 }) {
   const card = toHomeNailCard(item);
   const savedNails = useUserStore((state) => state.savedNails);
-  const toggleSave = useUserStore((state) => state.toggleSave);
   const isSaved = savedNails.includes(item.id);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
 
   const handleSaveClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
     event.stopPropagation();
-    toggleSave(item.id);
+    setIsFolderModalOpen(true);
   };
 
   return (
+    <>
     <div
       className="group cursor-pointer break-inside-avoid"
       onClick={() => onOpen(item.id)}
@@ -116,6 +119,12 @@ function PcHomeGalleryCard({
         {homeNailTitle(card, isEnglish)}
       </p>
     </div>
+    <FolderSelectModal
+      isOpen={isFolderModalOpen}
+      onClose={() => setIsFolderModalOpen(false)}
+      nailId={item.id}
+    />
+    </>
   );
 }
 
@@ -427,7 +436,7 @@ export default function ClientHomePage() {
             isLoading={isPcGalleryPending}
             isEnglish={isEnglish}
           />
-          <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4">
+          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-4">
           {isPcGalleryPending
             ? Array.from({ length: 20 }, (_, i) => (
                 <div key={`pc-gallery-skel-${i}`} className="break-inside-avoid" aria-hidden>
