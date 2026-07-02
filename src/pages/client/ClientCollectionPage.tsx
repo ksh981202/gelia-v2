@@ -4,6 +4,7 @@ import {
 } from '@/features/collection/api/useClientFolderApi'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Link as LinkIcon, Loader2 } from 'lucide-react'
@@ -141,13 +142,14 @@ export default function ClientCollectionPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
+      <ClientGlobalHeader showBackButton />
       <main className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
         <div className="mb-6 flex w-full items-center justify-between border-b border-stone-100 pb-4">
           <div className="flex min-w-0 flex-1 items-center gap-2 pr-4">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="-ml-2 flex cursor-pointer items-center justify-center rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+              className="-ml-2 flex cursor-pointer items-center justify-center rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100 md:hidden"
               aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
             >
               <ChevronLeft size={26} strokeWidth={2.5} />

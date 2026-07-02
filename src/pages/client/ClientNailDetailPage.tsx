@@ -23,6 +23,7 @@ import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 
 type NailPhotoDetail = {
   id: string;
@@ -885,7 +886,9 @@ const Detail = () => {
   const pageShell = (main: ReactNode) => (
     <div className="min-h-screen w-full bg-[#fdfaf7]">
       <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900 md:max-w-[1200px]">
-        <nav className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 py-4 backdrop-blur-md">
+        <ClientGlobalHeader showBackButton />
+
+        <nav className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 py-4 backdrop-blur-md md:hidden">
           <div className="flex items-center gap-2.5">
             <button
               type="button"
@@ -903,20 +906,6 @@ const Detail = () => {
               aria-label="GELIA 홈"
             >
               GELIA
-            </button>
-          </div>
-
-          <div className="mx-8 hidden max-w-2xl flex-1 md:block">
-            <button
-              type="button"
-              onClick={() => navigate("/search")}
-              className="flex h-11 w-full items-center gap-2 rounded-full bg-stone-100 px-4 text-left text-stone-400 transition-colors hover:bg-stone-200/70"
-              aria-label={isEnglish ? "Search" : "검색"}
-            >
-              <Search className="h-5 w-5 shrink-0 text-stone-400" strokeWidth={2} aria-hidden />
-              <span className="truncate text-[15px]">
-                {isEnglish ? "What nail design are you looking for?" : "어떤 네일을 찾고 계신가요?"}
-              </span>
             </button>
           </div>
 

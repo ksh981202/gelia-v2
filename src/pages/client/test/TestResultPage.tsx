@@ -266,7 +266,7 @@ const TestResultPage = () => {
   );
 
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col overflow-x-hidden bg-[#FCFAF7] pb-32">
+    <main className="relative flex flex-col w-full max-w-md mx-auto min-h-[100dvh] bg-white shadow-sm border-x border-stone-100 overflow-hidden pb-32">
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5">
         <button
           type="button"
@@ -284,7 +284,7 @@ const TestResultPage = () => {
         </button>
       </header>
 
-      <main className="flex-1 px-4">
+      <div className="flex-1 px-4">
         <h2 className="mt-8 text-center text-[22px] font-semibold leading-snug text-gray-900 sm:text-[24px]">
           {isEnglish ? "Nails Perfect for You" : "당신에게 어울리는 네일"}
         </h2>
@@ -370,8 +370,8 @@ const TestResultPage = () => {
             )}
           </div>
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 };
 

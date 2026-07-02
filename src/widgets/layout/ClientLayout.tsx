@@ -309,17 +309,6 @@ function ClientLayoutContent() {
             <GeliaWordmark className="mb-8" onClick={handleLogoClick} />
           </div>
 
-          <div className="mb-2 mt-4 flex w-full flex-col px-5">
-            <Link
-              to="/magazine"
-              className="flex items-center gap-2 py-3 text-[16px] font-extrabold tracking-tight text-stone-900 transition-colors hover:text-orange-600"
-            >
-              <span aria-hidden>📖</span>
-              <span>GELIA Magazine</span>
-            </Link>
-          </div>
-          <div className="mb-2 h-px w-full bg-stone-100" aria-hidden />
-
           <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-8 pt-1">
             <PcSidebarFilters
               filterValues={{
@@ -333,6 +322,24 @@ function ClientLayoutContent() {
               toggleRankingFilter={toggleRankingFilter}
               togglePcFilter={togglePcFilter}
             />
+
+            <div className="mt-6 mb-2 h-px w-full bg-stone-100" aria-hidden />
+            <div className="flex w-full flex-col">
+              <Link
+                to="/test-intro"
+                className="flex items-center gap-2 py-3 text-[15px] font-extrabold tracking-tight text-stone-900 transition-colors hover:text-orange-600"
+              >
+                <span aria-hidden>✨</span>
+                <span>퍼스널 네일 찾기</span>
+              </Link>
+              <Link
+                to="/magazine"
+                className="flex items-center gap-2 py-3 font-['Playfair_Display',_serif] text-[17px] font-bold tracking-widest text-stone-900 transition-colors hover:text-orange-600"
+              >
+                <span className="font-sans text-[15px]" aria-hidden>📖</span>
+                <span>GELIA Magazine</span>
+              </Link>
+            </div>
           </div>
         </aside>
 

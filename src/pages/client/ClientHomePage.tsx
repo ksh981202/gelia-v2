@@ -13,9 +13,9 @@ import FolderSelectModal from "@/features/collection/components/FolderSelectModa
 import { useUserStore } from "@/features/user-actions/useUserStore";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
-import ClientHeaderUtilityIcons from "@/components/client/ClientHeaderUtilityIcons";
+import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import type { NailDesignRow } from "@/shared/types/database.types";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -180,7 +180,6 @@ export default function ClientHomePage() {
   const isEnglish = language === "en";
   const gallerySort = useClientPcFilterStore((state) => state.gallerySort);
   const searchKeyword = useClientPcFilterStore((state) => state.searchKeyword);
-  const setSearchKeyword = useClientPcFilterStore((state) => state.setSearchKeyword);
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter);
   const colorFilter = useClientPcFilterStore((state) => state.colorFilter);
   const moodFilter = useClientPcFilterStore((state) => state.moodFilter);
@@ -190,6 +189,15 @@ export default function ClientHomePage() {
   const quickChipKeyword = useClientPcFilterStore((state) => state.quickChipKeyword);
   const debouncedSearchKeyword = useDebounce(searchKeyword, 300);
   const pcGalleryExtraTabs = useClientPcGalleryExtraTabs(debouncedSearchKeyword);
+
+  const hasActiveFilter =
+    rankingFilter !== "전체" ||
+    themeFilter !== "전체" ||
+    colorFilter !== "전체" ||
+    moodFilter !== "전체" ||
+    shapeFilter !== "전체" ||
+    pointFilter !== "전체" ||
+    quickChipKeyword !== null;
 
   const pcGallerySortQuery = useMemo(
     () => mapRankingFilterToGallerySort(rankingFilter) ?? mapPcGallerySortToQuery(gallerySort),
@@ -393,24 +401,7 @@ export default function ClientHomePage() {
           <span onClick={() => navigate('/trend')} className="cursor-pointer text-sm font-medium text-gray-500">{isEnglish ? "See All" : "전체보기"} {">"}</span>
         </div>
 
-        <div className="sticky top-0 z-40 mb-4 hidden items-center justify-between gap-6 border-b border-stone-100 bg-white/95 px-6 pb-4 pt-5 backdrop-blur-sm md:flex">
-          <label className="relative block w-full max-w-2xl shrink-0">
-            <Search
-              size={20}
-              strokeWidth={2}
-              className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-stone-400"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={searchKeyword}
-              onChange={(event) => setSearchKeyword(event.target.value)}
-              placeholder={isEnglish ? "What nail design are you looking for?" : "어떤 네일을 찾고 계신가요?"}
-              className="w-full max-w-2xl rounded-full bg-stone-50 py-4 pl-12 pr-6 text-[16px] text-stone-900 transition-all placeholder:text-[16px] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
-            />
-          </label>
-          <ClientHeaderUtilityIcons />
-        </div>
+        <ClientGlobalHeader isMainHome showBackButton={hasActiveFilter} />
 
         <div className="grid grid-cols-3 gap-3 md:hidden">
           {isLoading

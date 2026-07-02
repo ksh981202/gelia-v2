@@ -107,7 +107,7 @@ export default function TestStep3Page() {
   const tipText = isEnglish ? currentTip.en : currentTip.ko;
 
   return (
-    <div className="relative mx-auto flex h-full min-h-[100dvh] w-full flex-col overflow-y-scroll overflow-x-hidden box-border bg-white pb-40 font-sans">
+    <main className="relative flex flex-col w-full max-w-md mx-auto min-h-[100dvh] bg-white shadow-sm border-x border-stone-100 overflow-hidden">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white w-full">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -132,7 +132,7 @@ export default function TestStep3Page() {
         </div>
       </header>
 
-      <main className="box-border w-full flex-1 px-5 pt-8">
+      <div className="box-border w-full flex-1 px-5 pt-8">
         <h2 className="mb-1 whitespace-pre-line font-sans text-[20px] font-bold leading-snug tracking-tight text-gray-900 sm:text-[22px]">
           {isEnglish ? "Choose a color you like" : "끌리는 컬러를 선택해주세요"}
         </h2>
@@ -201,9 +201,9 @@ export default function TestStep3Page() {
             {tipText}
           </p>
         </div>
-      </main>
+      </div>
 
-      <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="sticky bottom-0 w-full p-4 bg-white/90 backdrop-blur-md border-t border-stone-100">
         <button
           type="button"
           disabled={!selectedColor}
@@ -216,6 +216,6 @@ export default function TestStep3Page() {
           {isEnglish ? "View Results" : "결과 보기"}
         </button>
       </div>
-    </div>
+    </main>
   );
 }

@@ -10,8 +10,7 @@ const TestIntroPage = () => {
   const isEnglish = language === "en";
 
   return (
-    // 🚨 족쇄 해제: max-w-md(너비 제한)를 삭제하고 w-full을 주입하여 화면 전체를 쓰도록 강제
-    <div className="w-full flex min-h-[100dvh] flex-col overflow-x-hidden overflow-y-auto bg-white pb-40 font-sans">
+    <main className="relative flex flex-col w-full max-w-md mx-auto min-h-[100dvh] bg-white shadow-sm border-x border-stone-100 overflow-hidden">
       
       {/* 헤더: px-5 여백 */}
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-gray-100 bg-white px-5">
@@ -31,7 +30,7 @@ const TestIntroPage = () => {
 
       <div className="flex w-full flex-1 flex-col">
         {/* 메인 콘텐츠: px-5 여백 */}
-        <main className="flex w-full flex-1 flex-col px-5 pt-8 text-center">
+        <div className="flex w-full flex-1 flex-col px-5 pt-8 text-center">
           
           {/* 이미지 영역 */}
           <div className="relative mx-auto mb-10 mt-6 h-72 w-72">
@@ -80,11 +79,11 @@ const TestIntroPage = () => {
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
 
-      {/* 하단 바: w-full 및 좌우 px-5 여백 통일 */}
-      <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      {/* 하단 바: 카드 내부 하단 고정 */}
+      <div className="sticky bottom-0 w-full p-4 bg-white/90 backdrop-blur-md border-t border-stone-100">
         <button
           type="button"
           onClick={() => navigate("/test-step1")}
@@ -94,7 +93,7 @@ const TestIntroPage = () => {
         </button>
       </div>
 
-    </div>
+    </main>
   );
 };
 

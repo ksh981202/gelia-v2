@@ -26,7 +26,7 @@ const TestStep1Page = () => {
   const canNext = selectedLength && selectedType;
 
   return (
-    <div className="mx-auto flex max-w-md min-h-[100dvh] flex-col overflow-hidden bg-white pb-40 font-sans [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <main className="relative flex flex-col w-full max-w-md mx-auto min-h-[100dvh] bg-white shadow-sm border-x border-stone-100 overflow-hidden">
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white">
         <div className="flex h-14 w-full items-center justify-between px-5">
           <button
@@ -52,7 +52,7 @@ const TestStep1Page = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4">
+      <div className="flex-1 overflow-y-auto px-4">
         <h2 className="mt-4 font-sans text-[18px] font-bold tracking-tight text-gray-900 sm:text-[20px]">
           {isEnglish ? "Choose your nail length" : "손톱 길이를 골라주세요"}
         </h2>
@@ -107,9 +107,9 @@ const TestStep1Page = () => {
             </button>
           ))}
         </div>
-      </main>
+      </div>
 
-      <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white px-5 py-4 pb-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+      <div className="sticky bottom-0 w-full p-4 bg-white/90 backdrop-blur-md border-t border-stone-100">
         <button
           type="button"
           disabled={!canNext}
@@ -123,7 +123,7 @@ const TestStep1Page = () => {
           {isEnglish ? "Next" : "다음"}
         </button>
       </div>
-    </div>
+    </main>
   );
 };
 

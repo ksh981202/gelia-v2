@@ -1,4 +1,5 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
@@ -213,7 +214,9 @@ export default function ClientMagazineDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-background/90 px-4 backdrop-blur-xl">
+      <ClientGlobalHeader showBackButton />
+
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-background/90 px-4 backdrop-blur-xl md:hidden">
         <button
           type="button"
           onClick={() => navigate(-1)}
