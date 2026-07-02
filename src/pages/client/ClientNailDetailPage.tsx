@@ -10,12 +10,13 @@ import {
   Search,
   Share2,
   Sparkles,
+  User,
   X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
@@ -549,8 +550,36 @@ const Detail = () => {
   const detailViewTrackedForIdRef = useRef<string | null>(null);
 
   const similarExcludeId = displayRow?.id ?? nailId;
-  const { data: similarNails = [] } = useSimilarNailsQuery(similarExcludeId || undefined);
+  const similarTags = useMemo(() => {
+    if (!displayRow) return [];
+    const candidates = [
+      displayRow.styles?.[0],
+      displayRow.color,
+      displayRow.mood,
+      displayRow.design_technique,
+      displayRow.nail_length,
+      displayRow.situations?.[0],
+    ];
+    const seen = new Set<string>();
+    for (const raw of candidates) {
+      const trimmed = String(raw ?? "").trim();
+      if (trimmed) seen.add(trimmed);
+    }
+    return [...seen];
+  }, [displayRow]);
+  const { data: similarNails = [] } = useSimilarNailsQuery(similarExcludeId || undefined, {
+    tags: similarTags,
+  });
   const similarDisplay = useMemo(() => similarNails, [similarNails]);
+
+  const similarMainTag = similarTags[0] ?? "";
+  const handleSeeAllSimilar = useCallback(() => {
+    if (similarMainTag) {
+      navigate(`/search?q=${encodeURIComponent(similarMainTag)}`);
+    } else {
+      navigate("/gallery");
+    }
+  }, [navigate, similarMainTag]);
 
 
   useEffect(() => {
@@ -856,7 +885,7 @@ const Detail = () => {
   const pageShell = (main: ReactNode) => (
     <div className="min-h-screen w-full bg-[#fdfaf7]">
       <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900 md:max-w-[1200px]">
-        <nav className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 backdrop-blur-md">
+        <nav className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 py-4 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <button
               type="button"
@@ -869,13 +898,28 @@ const Detail = () => {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="text-[22px] sm:text-[24px] font-semibold text-gray-900 tracking-widest cursor-pointer leading-none"
+              className="text-[22px] sm:text-[24px] font-semibold text-gray-900 tracking-widest cursor-pointer leading-none md:hidden"
               style={{ fontFamily: "'Playfair Display', serif" }}
-              aria-label="이미지 확대"
+              aria-label="GELIA 홈"
             >
               GELIA
             </button>
           </div>
+
+          <div className="mx-8 hidden max-w-2xl flex-1 md:block">
+            <button
+              type="button"
+              onClick={() => navigate("/search")}
+              className="flex h-11 w-full items-center gap-2 rounded-full bg-stone-100 px-4 text-left text-stone-400 transition-colors hover:bg-stone-200/70"
+              aria-label={isEnglish ? "Search" : "검색"}
+            >
+              <Search className="h-5 w-5 shrink-0 text-stone-400" strokeWidth={2} aria-hidden />
+              <span className="truncate text-[15px]">
+                {isEnglish ? "What nail design are you looking for?" : "어떤 네일을 찾고 계신가요?"}
+              </span>
+            </button>
+          </div>
+
           <div className="flex items-center gap-1">
             <button
             type="button"
@@ -907,12 +951,19 @@ const Detail = () => {
             >
               <Share2 className="h-5 w-5 text-slate-800" />
             </button>
+            <Link
+              to="/my"
+              className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full transition-colors hover:bg-primary/10"
+              aria-label={isEnglish ? "My Page" : "마이페이지"}
+            >
+              <User className="h-5 w-5 text-slate-800" strokeWidth={2} />
+            </Link>
           </div>
         </nav>
 
-        <main className="px-4 pb-32 pt-4 md:pb-10">{main}</main>
+        <main className="px-4 pb-32 pt-4 lg:pb-10">{main}</main>
 
-        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white md:hidden">
+        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white lg:hidden">
           <div className="flex w-full gap-3 px-5 py-3">
             <button
               type="button"
@@ -1048,9 +1099,9 @@ const Detail = () => {
             <div className="h-6 w-40 animate-pulse rounded bg-gray-100" />
             <div className="h-5 w-14 animate-pulse rounded bg-gray-100" />
           </div>
-          <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-4">
+          <div className="flex w-full gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:snap-none lg:[&>*:nth-child(n+4)]:hidden">
             {Array.from({ length: 5 }, (_, index) => (
-              <div key={`similar-nail-skel-${index}`} className="w-full">
+              <div key={`similar-nail-skel-${index}`} className="w-[130px] shrink-0 snap-start lg:w-auto">
                 <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
               </div>
             ))}
@@ -1114,44 +1165,69 @@ const Detail = () => {
       ) : null}
 
       <div className="flex w-full flex-col items-start gap-8 lg:max-w-[1200px] lg:flex-row lg:gap-12 lg:mx-auto lg:px-8">
-        <div
-          className="relative h-fit w-full shrink-0 self-start lg:sticky lg:top-24 lg:w-[500px] xl:w-[600px]"
-          onTouchEnd={handleMainImageTouchEnd}
-          role="presentation"
-        >
-          {imageSrc ? (
-            <img
-              src={imageSrc}
-              alt={displayTitle}
-              className="block h-auto w-full rounded-2xl object-cover object-top shadow-sm"
-              draggable={false}
-              onDoubleClick={handleMainImageDoubleClick}
-              decoding="async"
-            />
-          ) : (
-            <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
-          )}
-          {showFloatingHeart ? (
-            <div
-              key={floatingHeartKey}
-              className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
-              aria-hidden
-            >
-              <Heart
-                className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
-                strokeWidth={1.5}
-                aria-hidden
-              />
-            </div>
-          ) : null}
-          <button
-            type="button"
-            className="absolute bottom-4 right-4 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
-            onClick={() => setIsZoomOpen(true)}
-            aria-label="이미지 확대"
+        <div className="w-full shrink-0 self-start lg:sticky lg:top-24 lg:w-[500px] xl:w-[600px]">
+          <div
+            className="relative h-fit w-full"
+            onTouchEnd={handleMainImageTouchEnd}
+            role="presentation"
           >
-            <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
-          </button>
+            {imageSrc ? (
+              <img
+                src={imageSrc}
+                alt={displayTitle}
+                className="block h-auto w-full rounded-2xl object-cover object-top shadow-sm"
+                draggable={false}
+                onDoubleClick={handleMainImageDoubleClick}
+                decoding="async"
+              />
+            ) : (
+              <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+            )}
+            {showFloatingHeart ? (
+              <div
+                key={floatingHeartKey}
+                className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+                aria-hidden
+              >
+                <Heart
+                  className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="absolute bottom-4 right-4 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+              onClick={() => setIsZoomOpen(true)}
+              aria-label="이미지 확대"
+            >
+              <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+            </button>
+          </div>
+
+          <div className="mt-6 hidden w-full gap-3 lg:flex">
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
+              aria-pressed={isSaved}
+              onClick={handleOpenFolderModal}
+            >
+              <Bookmark
+                className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
+                strokeWidth={2}
+              />
+              <span>{isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}</span>
+            </button>
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
+              onClick={() => void handleShareDesign()}
+            >
+              <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
+              <span>{isEnglish ? "Share Design" : "네일 디자인 공유"}</span>
+            </button>
+          </div>
         </div>
 
         <div className="min-w-0 w-full flex-1 lg:mt-3">
@@ -1337,12 +1413,12 @@ const Detail = () => {
           <button
             type="button"
             className="cursor-pointer text-sm font-medium text-gray-500"
-            onClick={() => navigate("/gallery")}
+            onClick={handleSeeAllSimilar}
           >
             {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
-        <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-4">
+        <div className="flex w-full gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:snap-none lg:[&>*:nth-child(n+4)]:hidden">
           {similarDisplay.map((item) => {
             const simSrc = item.image_url?.trim() || "";
             const simTitle = pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail Design" : "네일 디자인");
@@ -1351,7 +1427,7 @@ const Detail = () => {
                 key={item.id}
                 type="button"
                 onClick={() => navigate(`/detail/${item.id}`)}
-                className="block w-full"
+                className="block w-[130px] shrink-0 snap-start lg:w-auto"
                 aria-label={simTitle}
               >
                 {simSrc ? (
@@ -1365,35 +1441,12 @@ const Detail = () => {
                 ) : (
                   <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" aria-hidden />
                 )}
-                <p className="mt-1 hidden truncate text-[11px] text-stone-400">{simTitle}</p>
+                <p className="mt-2 truncate text-center text-[13px] font-semibold text-stone-800">{simTitle}</p>
               </button>
             );
           })}
         </div>
       </section>
-
-          <div className="mt-10 hidden border-t border-gray-100 pt-8 lg:flex lg:gap-3">
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
-              aria-pressed={isSaved}
-              onClick={handleOpenFolderModal}
-            >
-              <Bookmark
-                className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
-                strokeWidth={2}
-              />
-              <span>{isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}</span>
-            </button>
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
-              onClick={() => void handleShareDesign()}
-            >
-              <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
-              <span>{isEnglish ? "Share Design" : "네일 디자인 공유"}</span>
-            </button>
-          </div>
         </div>
       </div>
     </>,

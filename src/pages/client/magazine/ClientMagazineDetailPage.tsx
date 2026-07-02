@@ -235,7 +235,7 @@ export default function ClientMagazineDetailPage() {
         </button>
       </header>
 
-      <main className="px-5 pb-10 pt-5">
+      <main className="mx-auto w-full max-w-[700px] px-4 py-8 lg:px-0">
         {showLoading ? (
           <MagazineDetailSkeleton isEnglish={isEnglish} />
         ) : isError ? (

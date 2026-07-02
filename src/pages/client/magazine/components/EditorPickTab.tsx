@@ -125,62 +125,38 @@ export default function EditorPickTab() {
     )
   }
 
-  const [heroPost, ...listPosts] = posts
-  const heroTitle = getPostTitle(heroPost, isEnglish)
-
   return (
-    <section className="mt-8 space-y-6">
-      <Link to={`/magazine/${heroPost.id}`} className="block cursor-pointer">
-        <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100">
-          {heroPost.thumbnail_url ? (
-            <img
-              src={heroPost.thumbnail_url}
-              alt={heroTitle}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <ThumbnailPlaceholder />
-          )}
-        </div>
-        <div className="mt-4 space-y-2">
-          <h2 className="text-xl font-bold tracking-tight leading-snug text-gray-900 mt-4">
-            {renderHighlightedTitle(heroTitle)}
-          </h2>
-        </div>
-      </Link>
+    <section className="mt-8">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {posts.map((post) => {
+          const title = getPostTitle(post, isEnglish)
 
-      {listPosts.length > 0 ? (
-        <div className="space-y-4">
-          {listPosts.map((post) => {
-            const title = getPostTitle(post, isEnglish)
-
-            return (
-              <Link
-                key={post.id}
-                to={`/magazine/${post.id}`}
-                className="flex cursor-pointer gap-4 border-t border-gray-100 pt-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[15px] font-bold tracking-tight leading-snug text-gray-800 line-clamp-2">
-                    {renderHighlightedTitle(title)}
-                  </h3>
-                </div>
-                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-                  {post.thumbnail_url ? (
-                    <img
-                      src={post.thumbnail_url}
-                      alt={title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <ThumbnailPlaceholder />
-                  )}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      ) : null}
+          return (
+            <Link
+              key={post.id}
+              to={`/magazine/${post.id}`}
+              className="group block cursor-pointer"
+            >
+              <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100">
+                {post.thumbnail_url ? (
+                  <img
+                    src={post.thumbnail_url}
+                    alt={title}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <ThumbnailPlaceholder />
+                )}
+              </div>
+              <h3 className="mt-3 text-[15px] font-bold leading-snug tracking-tight text-gray-800 line-clamp-2">
+                {renderHighlightedTitle(title)}
+              </h3>
+            </Link>
+          )
+        })}
+      </div>
       <div ref={sentinelRef} className="h-1" aria-hidden="true" />
       {isFetchingNextPage ? (
         <p className="py-4 text-center text-xs font-semibold text-gray-400">

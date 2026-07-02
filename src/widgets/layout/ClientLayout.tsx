@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
+  Link,
   NavLink,
   Outlet,
   useLocation,
@@ -308,6 +309,17 @@ function ClientLayoutContent() {
             <GeliaWordmark className="mb-8" onClick={handleLogoClick} />
           </div>
 
+          <div className="mb-2 mt-4 flex w-full flex-col px-5">
+            <Link
+              to="/magazine"
+              className="flex items-center gap-2 py-3 text-[16px] font-extrabold tracking-tight text-stone-900 transition-colors hover:text-orange-600"
+            >
+              <span aria-hidden>📖</span>
+              <span>GELIA Magazine</span>
+            </Link>
+          </div>
+          <div className="mb-2 h-px w-full bg-stone-100" aria-hidden />
+
           <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-8 pt-1">
             <PcSidebarFilters
               filterValues={{
@@ -327,7 +339,7 @@ function ClientLayoutContent() {
         <div className="flex min-w-0 flex-1 flex-col w-full">
         {!hideTopHeader && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl md:hidden">
-          <GeliaWordmark onClick={handleLogoClick} />
+          <GeliaWordmark className="md:hidden" onClick={handleLogoClick} />
           <ClientHeaderUtilityIcons className="gap-2" />
         </header>
         )}
