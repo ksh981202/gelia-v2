@@ -88,6 +88,21 @@ const ProCurationPage = lazy(() => import('../../pages/pro/ProCurationPage'))
 const ProGrowthPage = lazy(() => import('../../pages/pro/ProGrowthPage'))
 const ProSettingsPage = lazy(() => import('../../pages/pro/ProSettingsPage'))
 const ProFaqPage = lazy(() => import('../../pages/pro/ProFaqPage'))
+const ProTestIntroPage = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestIntroPage })),
+)
+const ProTestStep1Page = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestStep1Page })),
+)
+const ProTestStep2Page = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestStep2Page })),
+)
+const ProTestStep3Page = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestStep3Page })),
+)
+const ProTestResultPage = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestResultPage })),
+)
 
 const router = createBrowserRouter([
   {
@@ -188,6 +203,11 @@ const router = createBrowserRouter([
           { path: 'growth', element: <ProGrowthPage /> },
           { path: 'settings', element: <ProSettingsPage /> },
           { path: 'faq', element: <ProFaqPage /> },
+          { path: 'test-intro', element: <ProTestIntroPage /> },
+          { path: 'test-step1', element: <ProTestStep1Page /> },
+          { path: 'test-step2', element: <ProTestStep2Page /> },
+          { path: 'test-step3', element: <ProTestStep3Page /> },
+          { path: 'test-result', element: <ProTestResultPage /> },
         ],
       },
     ],

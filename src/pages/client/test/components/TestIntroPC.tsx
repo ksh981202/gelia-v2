@@ -1,20 +1,20 @@
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 
 const INTRO_IMAGE = "/quiz/intro-main.jpg";
 
-const TestIntroPC = () => {
+type TestIntroPCProps = {
+  isProMode?: boolean;
+};
+
+const TestIntroPC = ({ isProMode = false }: TestIntroPCProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
 
   return (
-    <div className="flex flex-col min-h-screen bg-stone-50 w-full">
-      <ClientGlobalHeader showBackButton={false} isMainHome={false} />
-
-      <main className="flex-1 flex flex-col items-center justify-start pt-12 pb-8 px-6">
-        <div className="w-full max-w-3xl bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center text-center">
+    <main className="w-full max-w-3xl mx-auto bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center text-center">
 
           <div className="flex flex-col items-center gap-6">
             {/* 둥근 네일 이미지 */}
@@ -71,15 +71,13 @@ const TestIntroPC = () => {
           {/* 테스트 시작 버튼 */}
           <button
             type="button"
-            onClick={() => navigate("/test-step1")}
+            onClick={() => navigate(`${basePath}/test-step1`)}
             className="w-full max-w-sm mt-10 h-14 flex-shrink-0 rounded-xl bg-[#FF7D66] px-4 py-4 font-sans text-[16px] font-bold text-white shadow-lg shadow-[#FF7D66]/30 transition-transform active:scale-95"
           >
             {isEnglish ? "Start Test" : "테스트 시작"}
           </button>
 
-        </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
+
+type TestStep2PCProps = {
+  isProMode?: boolean;
+};
 
 const styleOptions = [
   { id: "simple", label: "심플·깔끔", labelEn: "Simple & Clean", image: "/quiz/mood-simple.jpg" },
@@ -45,10 +48,11 @@ const MOOD_CURATOR_TIPS: Record<(typeof styleOptions)[number]["id"], { ko: strin
   },
 };
 
-const TestStep2PC = () => {
+const TestStep2PC = ({ isProMode = false }: TestStep2PCProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
   const [selectedStyle, setSelectedStyle] = useState("");
 
   const curatorTip =
@@ -58,11 +62,7 @@ const TestStep2PC = () => {
   const curatorTipBody = isEnglish ? curatorTip.en : curatorTip.ko;
 
   return (
-    <div className="flex flex-col min-h-screen bg-stone-50 w-full">
-      <ClientGlobalHeader showBackButton={true} isMainHome={false} />
-
-      <main className="flex-1 flex flex-col items-center justify-start pt-12 pb-8 px-6">
-        <div className="w-full max-w-3xl bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center">
+    <main className="w-full max-w-3xl mx-auto bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center">
           <div className="w-full max-w-xl mx-auto">
             {/* 진행률 */}
             <div className="mb-2 flex items-center justify-end">
@@ -125,16 +125,14 @@ const TestStep2PC = () => {
               disabled={!selectedStyle}
               onClick={() => {
                 if (selectedStyle) sessionStorage.setItem("diagnosis.moodId", selectedStyle);
-                navigate("/test-step3");
+                navigate(`${basePath}/test-step3`);
               }}
               className="mt-12 w-full rounded-xl bg-[#FF7D66] py-3.5 font-bold text-white shadow-lg shadow-[#FF7D66]/30 disabled:opacity-40"
             >
               {isEnglish ? "Next" : "다음"}
             </button>
           </div>
-        </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

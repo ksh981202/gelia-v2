@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
+
+type TestStep1PCProps = {
+  isProMode?: boolean;
+};
 
 const nailLengthOptions = [
   { id: "length-short", label: "짧은 손톱", labelEn: "Short Nails", image: "/quiz/length-short.jpg" },
@@ -16,21 +19,18 @@ const handTypeOptions = [
   { id: "slim-hand", label: "🩰 손이 마른 편", labelEn: "🩰 Slim Hands" },
 ] as const;
 
-const TestStep1PC = () => {
+const TestStep1PC = ({ isProMode = false }: TestStep1PCProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
   const [selectedLength, setSelectedLength] = useState("");
   const [selectedType, setSelectedType] = useState("");
 
   const canNext = selectedLength && selectedType;
 
   return (
-    <div className="flex flex-col min-h-screen bg-stone-50 w-full">
-      <ClientGlobalHeader showBackButton={true} isMainHome={false} />
-
-      <main className="flex-1 flex flex-col items-center justify-start pt-12 pb-8 px-6">
-        <div className="w-full max-w-3xl bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center">
+    <main className="w-full max-w-3xl mx-auto bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center">
           <div className="w-full max-w-xl mx-auto">
             {/* 진행률 */}
             <div className="mb-2 flex items-center justify-end">
@@ -104,16 +104,14 @@ const TestStep1PC = () => {
               onClick={() => {
                 if (selectedLength) sessionStorage.setItem("diagnosis.lengthId", selectedLength);
                 if (selectedType) sessionStorage.setItem("diagnosis.handTypeId", selectedType);
-                navigate("/test-step2");
+                navigate(`${basePath}/test-step2`);
               }}
               className="mt-12 w-full rounded-xl bg-[#FF7D66] py-3.5 font-sans text-[16px] font-bold tracking-wide text-white shadow-lg shadow-[#FF7D66]/30 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isEnglish ? "Next" : "다음"}
             </button>
           </div>
-        </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

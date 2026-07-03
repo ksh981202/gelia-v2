@@ -4,10 +4,15 @@ import { useNavigate } from "react-router-dom";
 
 const INTRO_IMAGE = "/quiz/intro-main.jpg";
 
-const TestIntroPage = () => {
+type TestIntroMobileProps = {
+  isProMode?: boolean;
+};
+
+const TestIntroPage = ({ isProMode = false }: TestIntroMobileProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
 
   return (
     // 🚨 족쇄 해제: max-w-md(너비 제한)를 삭제하고 w-full을 주입하여 화면 전체를 쓰도록 강제
@@ -87,7 +92,7 @@ const TestIntroPage = () => {
       <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 mx-auto w-full max-w-md bg-white px-5 py-4 pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button
           type="button"
-          onClick={() => navigate("/test-step1")}
+          onClick={() => navigate(`${basePath}/test-step1`)}
           className="h-14 w-full flex-shrink-0 rounded-xl bg-[#FF7D66] px-4 py-4 font-sans text-[16px] font-bold text-white shadow-lg shadow-[#FF7D66]/30 transition-transform active:scale-95"
         >
           {isEnglish ? "Start Test" : "테스트 시작"}

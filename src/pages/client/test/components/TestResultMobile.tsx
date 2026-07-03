@@ -225,7 +225,11 @@ function useDiagnosisNailsQuery() {
   });
 }
 
-const TestResultPage = () => {
+type TestResultMobileProps = {
+  onNailClick?: (item: NailDesignRow) => void;
+};
+
+const TestResultPage = ({ onNailClick }: TestResultMobileProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
@@ -244,6 +248,10 @@ const TestResultPage = () => {
   }, []);
 
   const openDetail = (item: NailDesignRow) => {
+    if (onNailClick) {
+      onNailClick(item);
+      return;
+    }
     navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });

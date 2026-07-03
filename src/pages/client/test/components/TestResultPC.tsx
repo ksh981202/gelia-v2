@@ -4,7 +4,6 @@ import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 
 const LENGTH_KEYWORDS: Record<string, string[]> = {
   "length-short": ["짧은", "숏", "쇼트", "short"],
@@ -225,7 +224,11 @@ function useDiagnosisNailsQuery() {
   });
 }
 
-const TestResultPC = () => {
+type TestResultPCProps = {
+  onNailClick?: (item: NailDesignRow) => void;
+};
+
+const TestResultPC = ({ onNailClick }: TestResultPCProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
@@ -243,6 +246,10 @@ const TestResultPC = () => {
   }, []);
 
   const openDetail = (item: NailDesignRow) => {
+    if (onNailClick) {
+      onNailClick(item);
+      return;
+    }
     navigate(`/detail/${item.id}`, {
       state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
     });
@@ -265,11 +272,7 @@ const TestResultPC = () => {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-stone-50 w-full">
-      <ClientGlobalHeader showBackButton={true} isMainHome={false} />
-
-      <main className="flex-1 flex flex-col items-center justify-start pt-12 pb-8 px-6">
-        <div className="w-full max-w-3xl bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center">
+    <main className="w-full max-w-3xl mx-auto bg-white border border-stone-200 rounded-2xl shadow-sm px-10 py-12 flex flex-col items-center">
           <div className="w-full">
             {/* 헤딩 */}
             <h2 className="text-center text-[26px] font-semibold leading-snug text-gray-900">
@@ -323,9 +326,7 @@ const TestResultPC = () => {
               )}
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+    </main>
   );
 };
 

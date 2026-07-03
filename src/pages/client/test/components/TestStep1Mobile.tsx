@@ -16,10 +16,15 @@ const handTypeOptions = [
   { id: "slim-hand", label: "🩰 손이 마른 편", labelEn: "🩰 Slim Hands" },
 ] as const;
 
-const TestStep1Page = () => {
+type TestStep1MobileProps = {
+  isProMode?: boolean;
+};
+
+const TestStep1Page = ({ isProMode = false }: TestStep1MobileProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
   const [selectedLength, setSelectedLength] = useState("");
   const [selectedType, setSelectedType] = useState("");
 
@@ -116,7 +121,7 @@ const TestStep1Page = () => {
           onClick={() => {
             if (selectedLength) sessionStorage.setItem("diagnosis.lengthId", selectedLength);
             if (selectedType) sessionStorage.setItem("diagnosis.handTypeId", selectedType);
-            navigate("/test-step2");
+            navigate(`${basePath}/test-step2`);
           }}
           className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-sans text-[16px] font-bold tracking-wide text-white shadow-lg shadow-[#FF7D66]/30 disabled:cursor-not-allowed disabled:opacity-40"
         >

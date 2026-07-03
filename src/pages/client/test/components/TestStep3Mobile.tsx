@@ -97,11 +97,16 @@ const COLOR_TIPS: Record<string, { ko: string; en: string }> = {
   },
 };
 
-export default function TestStep3Page() {
+type TestStep3MobileProps = {
+  isProMode?: boolean;
+};
+
+export default function TestStep3Page({ isProMode = false }: TestStep3MobileProps) {
   const navigate = useNavigate();
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
 
   const currentTip = selectedColor ? COLOR_TIPS[selectedColor] : COLOR_TIPS.default;
   const tipText = isEnglish ? currentTip.en : currentTip.ko;
@@ -209,7 +214,7 @@ export default function TestStep3Page() {
           disabled={!selectedColor}
           onClick={() => {
             if (selectedColor) sessionStorage.setItem("diagnosis.colorId", selectedColor);
-            navigate("/test-result");
+            navigate(`${basePath}/test-result`);
           }}
           className="h-[56px] w-full shrink-0 rounded-xl bg-[#FF7D66] font-sans text-[16px] font-bold tracking-tight text-white shadow-lg shadow-[#FF7D66]/30 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >

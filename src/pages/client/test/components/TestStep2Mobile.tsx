@@ -44,10 +44,15 @@ const MOOD_CURATOR_TIPS: Record<(typeof styleOptions)[number]["id"], { ko: strin
   },
 };
 
-const TestStep2Page = () => {
+type TestStep2MobileProps = {
+  isProMode?: boolean;
+};
+
+const TestStep2Page = ({ isProMode = false }: TestStep2MobileProps) => {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
+  const basePath = isProMode ? "/pro" : "";
   const [selectedStyle, setSelectedStyle] = useState("");
 
   const curatorTip =
@@ -139,7 +144,7 @@ const TestStep2Page = () => {
           disabled={!selectedStyle}
           onClick={() => {
             if (selectedStyle) sessionStorage.setItem("diagnosis.moodId", selectedStyle);
-            navigate("/test-step3");
+            navigate(`${basePath}/test-step3`);
           }}
           className="w-full rounded-xl bg-[#FF7D66] py-3.5 font-bold text-white shadow-lg shadow-[#FF7D66]/30 disabled:opacity-40"
         >

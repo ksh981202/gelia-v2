@@ -13,6 +13,7 @@ const PRO_MENU_ITEMS = [
 const PRO_FOCUS_MENU_ITEMS = [
   { id: "designs", label: "💅 프리미엄 디자인", to: "/pro", end: true },
   { id: "collection", label: "⭐ VIP 룩북", to: "/pro/collections" },
+  { id: "test", label: "✨ 퍼스널 네일 찾기", to: "/pro/test-intro" },
 ] as const;
 
 const proNavLinkClass = ({ isActive }: { isActive: boolean }) =>
