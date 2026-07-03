@@ -2,69 +2,38 @@ import {
   DEFAULT_GALLERY_TAB,
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
+import {
+  PC_SIDEBAR_CATEGORIES,
+  mapRankingFilterToGallerySort,
+  type PcSidebarCategoryId,
+} from "@/features/client-home/clientPcSidebarConfig";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export const PRO_THEME_OPTIONS = [
-  "봄",
-  "여름",
-  "가을",
-  "겨울",
-  "데일리",
-  "데이트",
-  "오피스",
-  "웨딩/하객",
-  "여행/바캉스",
-  "파티/페스티벌",
-] as const;
+/**
+ * B2C(ClientLayout) 좌측 사이드바 목차(PC_SIDEBAR_CATEGORIES)를 Single Source of
+ * Truth로 삼아, PRO 갤러리 필터의 대분류/소분류 순서와 텍스트를 100% 동일하게
+ * 복제(Sync)한다. 목차를 수정할 때는 clientPcSidebarConfig.ts 한 곳만 고치면 된다.
+ */
+function categoryItemValues(id: PcSidebarCategoryId): string[] {
+  return (
+    PC_SIDEBAR_CATEGORIES.find((category) => category.id === id)?.items.map(
+      (item) => item.value,
+    ) ?? []
+  );
+}
 
-export const PRO_COLOR_OPTIONS = [
-  "화이트/누드",
-  "핑크/코랄",
-  "레드/버건디",
-  "블루/네이비",
-  "블랙/무채색",
-  "파스텔",
-  "글리터",
-] as const;
+export const PRO_THEME_OPTIONS = categoryItemValues("season");
+export const PRO_COLOR_OPTIONS = categoryItemValues("color");
+export const PRO_MOOD_OPTIONS = categoryItemValues("mood");
+export const PRO_SHAPE_OPTIONS = categoryItemValues("shape");
+export const PRO_POINT_OPTIONS = categoryItemValues("technique");
 
-export const PRO_MOOD_OPTIONS = [
-  "심플",
-  "화려한",
-  "단아/청순",
-  "러블리",
-  "힙/스트릿",
-  "발레코어",
-  "올드머니/시크",
-] as const;
-
-export const PRO_SHAPE_OPTIONS = [
-  "귀여운 숏네일",
-  "우아한 롱/연장",
-  "라운드",
-  "스퀘어",
-  "아몬드/오발",
-] as const;
-
-export const PRO_POINT_OPTIONS = [
-  "시럽",
-  "무광",
-  "프렌치",
-  "마블",
-  "그라데이션",
-  "트위드",
-  "스톤/큐빅",
-  "리본",
-  "진주",
-  "자석",
-  "미러파우더",
-] as const;
-
-type ProThemeOption = (typeof PRO_THEME_OPTIONS)[number] | "전체";
-type ProColorOption = (typeof PRO_COLOR_OPTIONS)[number] | "전체";
-type ProMoodOption = (typeof PRO_MOOD_OPTIONS)[number] | "전체";
-type ProShapeOption = (typeof PRO_SHAPE_OPTIONS)[number] | "전체";
-type ProPointOption = (typeof PRO_POINT_OPTIONS)[number] | "전체";
+type ProThemeOption = string;
+type ProColorOption = string;
+type ProMoodOption = string;
+type ProShapeOption = string;
+type ProPointOption = string;
 
 export type ProGalleryActiveFilters = {
   themeFilter: ProThemeOption;
@@ -79,7 +48,7 @@ const FILTER_STICKY_DASHBOARD_CLASS =
 
 const FILTER_STICKY_COMPACT_CLASS = "shrink-0";
 
-const FILTER_LABEL_CLASS = "mt-1 w-20 shrink-0 text-sm font-medium text-stone-700";
+const FILTER_LABEL_CLASS = "mt-1 w-24 shrink-0 break-keep text-sm font-medium text-stone-700";
 
 const FILTER_ROW_WRAPPER_CLASS =
   "scrollbar-hide flex min-w-0 items-center overflow-x-auto whitespace-nowrap [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
@@ -174,6 +143,7 @@ export default function ProGalleryWidget({
   const isCompact = variant === "compact";
   const masonryClass = MASONRY_CLASS_BY_VARIANT[variant];
 
+  const [rankingFilter, setRankingFilter] = useState<string>("전체");
   const [themeFilter, setThemeFilter] = useState<string>("전체");
   const [colorFilter, setColorFilter] = useState<string>("전체");
   const [moodFilter, setMoodFilter] = useState<string>("전체");
@@ -182,20 +152,28 @@ export default function ProGalleryWidget({
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const observerRef = useRef<HTMLDivElement>(null);
 
-  const galleryQuery = useMemo(
-    () =>
-      resolveProGalleryQuery(
-        {
-          themeFilter: themeFilter as ProThemeOption,
-          colorFilter: colorFilter as ProColorOption,
-          moodFilter: moodFilter as ProMoodOption,
-          shapeFilter: shapeFilter as ProShapeOption,
-          pointFilter: pointFilter as ProPointOption,
-        },
-        debouncedSearchKeyword ?? "",
-      ),
-    [themeFilter, colorFilter, moodFilter, shapeFilter, pointFilter, debouncedSearchKeyword],
-  );
+  const isRankingActive = rankingFilter !== "전체";
+
+  const galleryQuery = useMemo(() => {
+    // 젤리아 TOP 100(랭킹) 모드: 개별 필터를 비우고 전체 갤러리를 랭킹 정렬로 노출
+    if (isRankingActive) {
+      return { tab: DEFAULT_GALLERY_TAB, baseTab: "", extraTabs: [] as string[] };
+    }
+    return resolveProGalleryQuery(
+      {
+        themeFilter: themeFilter as ProThemeOption,
+        colorFilter: colorFilter as ProColorOption,
+        moodFilter: moodFilter as ProMoodOption,
+        shapeFilter: shapeFilter as ProShapeOption,
+        pointFilter: pointFilter as ProPointOption,
+      },
+      debouncedSearchKeyword ?? "",
+    );
+  }, [isRankingActive, themeFilter, colorFilter, moodFilter, shapeFilter, pointFilter, debouncedSearchKeyword]);
+
+  const gallerySort = isRankingActive
+    ? mapRankingFilterToGallerySort(rankingFilter) ?? "최신순"
+    : "최신순";
 
   const {
     galleryItems,
@@ -206,12 +184,12 @@ export default function ProGalleryWidget({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGalleryInfiniteQuery(galleryQuery.tab, "최신순", {
+  } = useGalleryInfiniteQuery(galleryQuery.tab, gallerySort, {
     baseTab: galleryQuery.baseTab,
     extraTabs: galleryQuery.extraTabs,
   });
 
-  const hasActiveFilters = galleryQuery.extraTabs.length > 0;
+  const hasActiveFilters = isRankingActive || galleryQuery.extraTabs.length > 0;
 
   useEffect(() => {
     onGalleryStatsChange?.({
@@ -221,14 +199,44 @@ export default function ProGalleryWidget({
     });
   }, [totalCount, hasActiveFilters, isPending, onGalleryStatsChange]);
 
-  const handleFilterToggle = useCallback(
-    (setter: (value: string) => void, current: string, option: string) => {
-      setter(current === option ? "전체" : option);
+  // B2C 사이드바와 동일하게 대분류 간 상호 배타(exclusive)로 동작 — 한 번에 한 필터만 활성
+  const handleDimensionSelect = useCallback(
+    (id: PcSidebarCategoryId, current: string, option: string) => {
+      const next = current === option ? "전체" : option;
+
+      setRankingFilter("전체");
+      setThemeFilter("전체");
+      setColorFilter("전체");
+      setMoodFilter("전체");
+      setShapeFilter("전체");
+      setPointFilter("전체");
+
+      switch (id) {
+        case "ranking":
+          setRankingFilter(next);
+          break;
+        case "season":
+          setThemeFilter(next);
+          break;
+        case "color":
+          setColorFilter(next);
+          break;
+        case "mood":
+          setMoodFilter(next);
+          break;
+        case "shape":
+          setShapeFilter(next);
+          break;
+        case "technique":
+          setPointFilter(next);
+          break;
+      }
     },
     [],
   );
 
   const handleResetFilters = useCallback(() => {
+    setRankingFilter("전체");
     setThemeFilter("전체");
     setColorFilter("전체");
     setMoodFilter("전체");
@@ -253,6 +261,15 @@ export default function ProGalleryWidget({
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, galleryQuery, isCompact]);
 
   const filterRowGapClass = isCompact ? "gap-2" : "gap-2.5";
+
+  const filterValueById: Record<PcSidebarCategoryId, string> = {
+    ranking: rankingFilter,
+    season: themeFilter,
+    color: colorFilter,
+    mood: moodFilter,
+    shape: shapeFilter,
+    technique: pointFilter,
+  };
 
   const filterSection = (
     <section
@@ -285,80 +302,30 @@ export default function ProGalleryWidget({
 
       {isFilterOpen ? (
         <div className={`flex flex-col ${filterRowGapClass}`}>
-      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
-        <span className={FILTER_LABEL_CLASS}>시즌/테마</span>
-        <div className={FILTER_SCROLL_ROW_CLASS}>
-          {PRO_THEME_OPTIONS.map((option) => (
-            <FilterPill
-              key={`pro-gallery-theme-${option}`}
-              label={option}
-              selected={themeFilter === option}
-              onClick={() => handleFilterToggle(setThemeFilter, themeFilter, option)}
-              compact={isCompact}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
-        <span className={FILTER_LABEL_CLASS}>컬러</span>
-        <div className={FILTER_SCROLL_ROW_CLASS}>
-          {PRO_COLOR_OPTIONS.map((option) => (
-            <FilterPill
-              key={`pro-gallery-color-${option}`}
-              label={option}
-              selected={colorFilter === option}
-              onClick={() => handleFilterToggle(setColorFilter, colorFilter, option)}
-              compact={isCompact}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
-        <span className={FILTER_LABEL_CLASS}>무드</span>
-        <div className={FILTER_SCROLL_ROW_CLASS}>
-          {PRO_MOOD_OPTIONS.map((option) => (
-            <FilterPill
-              key={`pro-gallery-mood-${option}`}
-              label={option}
-              selected={moodFilter === option}
-              onClick={() => handleFilterToggle(setMoodFilter, moodFilter, option)}
-              compact={isCompact}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
-        <span className={FILTER_LABEL_CLASS}>쉐입</span>
-        <div className={FILTER_SCROLL_ROW_CLASS}>
-          {PRO_SHAPE_OPTIONS.map((option) => (
-            <FilterPill
-              key={`pro-gallery-shape-${option}`}
-              label={option}
-              selected={shapeFilter === option}
-              onClick={() => handleFilterToggle(setShapeFilter, shapeFilter, option)}
-              compact={isCompact}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}>
-        <span className={FILTER_LABEL_CLASS}>포인트/기법</span>
-        <div className={FILTER_SCROLL_ROW_CLASS}>
-          {PRO_POINT_OPTIONS.map((option) => (
-            <FilterPill
-              key={`pro-gallery-point-${option}`}
-              label={option}
-              selected={pointFilter === option}
-              onClick={() => handleFilterToggle(setPointFilter, pointFilter, option)}
-              compact={isCompact}
-            />
-          ))}
-        </div>
-      </div>
+          {PC_SIDEBAR_CATEGORIES.map((category) => {
+            const currentValue = filterValueById[category.id];
+            return (
+              <div
+                key={`pro-gallery-row-${category.id}`}
+                className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}
+              >
+                <span className={FILTER_LABEL_CLASS}>{category.label}</span>
+                <div className={FILTER_SCROLL_ROW_CLASS}>
+                  {category.items.map((item) => (
+                    <FilterPill
+                      key={`pro-gallery-${category.id}-${item.value}`}
+                      label={item.label}
+                      selected={currentValue === item.value}
+                      onClick={() =>
+                        handleDimensionSelect(category.id, currentValue, item.value)
+                      }
+                      compact={isCompact}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </section>

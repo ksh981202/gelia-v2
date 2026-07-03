@@ -315,7 +315,7 @@ export default function ClientHomePage() {
   }, [isAutoPlayPaused, isLoading, recommendNails.length]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fdfaf7] pb-4 md:bg-white md:pb-0">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fdfaf7] pb-4 md:overflow-x-visible md:bg-white md:pb-0">
       <section className="mt-2 px-5 md:hidden">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">

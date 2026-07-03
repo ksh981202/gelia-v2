@@ -35,7 +35,7 @@ export default function ClientGlobalHeader({
   }
 
   return (
-    <header className="sticky top-0 z-40 hidden h-[70px] w-full items-center justify-between border-b border-stone-100 bg-white/95 px-8 backdrop-blur-sm md:flex">
+    <header className="sticky top-0 z-50 hidden h-[70px] w-full items-center justify-between border-b border-stone-100 bg-white/95 px-8 backdrop-blur-sm md:flex">
       <div className="flex flex-1 justify-start">
         {showBackButton ? (
           <button

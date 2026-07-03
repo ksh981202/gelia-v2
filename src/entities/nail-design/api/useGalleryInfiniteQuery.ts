@@ -44,7 +44,7 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   데이트: ['러블리', '소개팅', '기념일', '여리여리', '사랑스러운'],
   오피스: ['단정', '깔끔', '심플', '데일리', '면접', '직장인'],
   웨딩: ['결혼', '신부', '본식', '웨딩촬영', '촬영', '청순', '화이트', '드레스'],
-  하객: ['하객룩', '단정', '격식', '우아한'],
+  하객: ['하객룩', '단정', '격식', '우아한', '오피스', '심플', '웨딩'],
   바캉스: ['휴가', '여름휴가', '여행', '해변', '물놀이', '리조트', '호캉스', '바다'],
   파티: ['연말', '페스티벌', '클럽', '화려한', '블링블링', '이벤트'],
   누드: ['스킨톤', '베이지', '살구', '여리여리'],
@@ -145,11 +145,39 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   바다갈때: ['바캉스', '해변', '바다', '물놀이'],
   놀러갈때: ['바캉스', '여행', '휴가'],
   휴가: ['바캉스', '여행', '리조트', '호캉스'],
+
+  // ── B2C 현장 은어/비유 표현 대규모 병합 ──
+  // 색상 및 질감 비유
+  딸기우유: ['파스텔', '핑크', '연핑크', '시럽'],
+  메추리알: ['테라조', '도트', '점박이'],
+  조약돌: ['숏네일', '시럽', '맑은', '동글'],
+  얼음: ['유리알', '투명', '맑은', '클리어', '미러파우더', '여름'],
+  유리알: ['시럽', '맑은', '투명', '얼음'],
+  형광펜: ['네온', '비비드', '팝', '원색'],
+
+  // 스타일 및 무드 비유
+  인어공주: ['진주', '글리터', '펄', '여름', '바다'],
+  꾸안꾸: ['심플', '데일리', '누드', '스킨톤', '단정'],
+  키치: ['키치한', 'Y2K', '귀여운', '팝', '화려한'],
+  키치한: ['키치', 'Y2K', '귀여운'],
+  'Y2K': ['키치', '힙한', '화려한'],
+
+  // 기법 및 재료 줄임말/은어
+  파츠: ['스톤', '큐빅', '스와로브스키', '보석'],
+  그라: ['그라데이션', '옴브레', '시럽그라'],
+  시럽그라: ['그라데이션', '시럽', '옴브레'],
+  체크: ['트위드', '아가일', '체크무늬'],
+  호피: ['레오파드', '동물', '애니멀'],
+
+  // ── 쉐입/기법 특수 키워드 (괄호 등 특수문자 포함 메뉴 대응) ──
+  스틸레토: ['스틸레토', '뾰족', '아몬드', '롱', '연장'],
+  '애니멀(호피/지브라)': ['호피', '레오파드', '지브라', '얼룩말', '동물', '애니멀'],
 }
 
 function escapePostgrestIlikePattern(raw: string): string {
   if (!raw) return '';
-  return raw.replace(/[%_\\"/]/g, '\\$&').trim();
+  // 괄호 () 는 PostgREST .or() 논리 그룹 구분자이므로 반드시 백슬래시 이스케이프한다.
+  return raw.replace(/[%_\\"/()]/g, '\\$&').trim();
 }
 
 function buildIlikeOrCondition(column: string, escaped: string): string {
@@ -162,7 +190,8 @@ function buildIlikeOrCondition(column: string, escaped: string): string {
 function escapePostgrestCsArrayToken(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed) return ''
-  if (/[",{}\\\s]/.test(trimmed)) {
+  // 괄호 () · 슬래시 / 도 PostgREST 예약문자이므로 큰따옴표로 감싸 파서 붕괴를 막는다.
+  if (/[",{}()/\\\s]/.test(trimmed)) {
     return `"${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
   }
   return trimmed
@@ -200,18 +229,41 @@ function collectTabFilterTokens(tab: string): string[] {
   return expandSynonymTokens(normalizedSpace, baseTokens)
 }
 
+// '휴가네일', '웨딩아트'처럼 접미사가 붙은 복합 명사를 순수 키워드로 정제한다.
+// 사전에 정확한 키가 이미 존재하면 원형을 유지하고(예: '숏네일', '반짝이네일'),
+// 없을 때만 접미사('네일'/'아트'/'디자인')를 제거해 재조회용 키를 만든다.
+const NAIL_KEYWORD_SUFFIX_REGEX = /(네일|아트|디자인)$/
+
+function stripNailKeywordSuffix(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed || NAIL_SYNONYMS[trimmed]) return trimmed
+
+  const stripped = trimmed.replace(NAIL_KEYWORD_SUFFIX_REGEX, '').trim()
+  return stripped.length > 0 ? stripped : trimmed
+}
+
 function expandSynonymTokens(normalizedTab: string, tokens: string[]): string[] {
   const expanded = new Set<string>(tokens)
 
-  for (const synonym of NAIL_SYNONYMS[normalizedTab] ?? []) {
-    const normalizedSynonym = synonym.trim()
-    if (normalizedSynonym) expanded.add(normalizedSynonym)
+  const tabKeys = new Set<string>([normalizedTab, stripNailKeywordSuffix(normalizedTab)])
+  for (const tabKey of tabKeys) {
+    if (!tabKey) continue
+    if (tabKey !== normalizedTab) expanded.add(tabKey)
+    for (const synonym of NAIL_SYNONYMS[tabKey] ?? []) {
+      const normalizedSynonym = synonym.trim()
+      if (normalizedSynonym) expanded.add(normalizedSynonym)
+    }
   }
 
   for (const token of tokens) {
-    for (const synonym of NAIL_SYNONYMS[token] ?? []) {
-      const normalizedSynonym = synonym.trim()
-      if (normalizedSynonym) expanded.add(normalizedSynonym)
+    const tokenKeys = new Set<string>([token, stripNailKeywordSuffix(token)])
+    for (const tokenKey of tokenKeys) {
+      if (!tokenKey) continue
+      if (tokenKey !== token) expanded.add(tokenKey)
+      for (const synonym of NAIL_SYNONYMS[tokenKey] ?? []) {
+        const normalizedSynonym = synonym.trim()
+        if (normalizedSynonym) expanded.add(normalizedSynonym)
+      }
     }
   }
 

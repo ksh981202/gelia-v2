@@ -131,7 +131,6 @@ export const PC_SIDEBAR_CATEGORIES: readonly PcSidebarCategory[] = [
       "진주",
       "수채화/드로잉",
       "트위드",
-      "애니멀(호피/지브라)",
     ]),
   },
 ] as const;

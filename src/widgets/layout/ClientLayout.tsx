@@ -301,7 +301,7 @@ function ClientLayoutContent() {
     : 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0'
 
   return (
-    <div className="min-h-[100dvh] overflow-clip bg-background font-sans antialiased text-stone-900">
+    <div className="min-h-[100dvh] bg-background font-sans antialiased text-stone-900">
       <div className="relative mx-auto min-h-[100dvh] w-full max-w-md md:flex md:max-w-[1600px] md:flex-row md:items-start">
         {/* PC 전용 좌측 사이드바 (모바일은 숨김) */}
         <aside className="hidden md:z-50 md:sticky md:top-0 md:flex md:h-screen md:w-[260px] md:shrink-0 md:flex-col md:border-r md:border-stone-200 md:bg-[#FCFAF8] md:shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)]">
@@ -327,7 +327,7 @@ function ClientLayoutContent() {
             <div className="flex w-full flex-col">
               <Link
                 to="/test-intro"
-                className="flex items-center gap-2 py-3 text-[15px] font-extrabold tracking-tight text-stone-900 transition-colors hover:text-orange-600"
+                className="flex items-center gap-2 py-3 text-[16px] font-bold text-stone-900 transition-colors hover:text-orange-600"
               >
                 <span aria-hidden>✨</span>
                 <span>퍼스널 네일 찾기</span>
@@ -339,6 +339,30 @@ function ClientLayoutContent() {
                 <span className="font-sans text-[15px]" aria-hidden>📖</span>
                 <span>GELIA Magazine</span>
               </Link>
+            </div>
+
+            <div className="mt-8 flex w-full flex-col break-keep pb-10 pl-8 text-left text-[12px] leading-loose tracking-wide text-stone-500">
+              <p className="text-stone-500">
+                GELIA의 모든 이미지는 AI 디자인입니다.<br />
+                나만의 스타일을 찾는 데 참고해 보세요.
+              </p>
+              <div className="mt-6 flex w-full items-center gap-2">
+                <Link
+                  to="/terms"
+                  className="whitespace-nowrap font-semibold text-stone-500 transition-colors hover:text-stone-900"
+                >
+                  이용약관
+                </Link>
+                <span className="text-stone-300">|</span>
+                <Link
+                  to="/privacy"
+                  className="whitespace-nowrap font-semibold text-stone-500 transition-colors hover:text-stone-900"
+                >
+                  개인정보처리방침
+                </Link>
+              </div>
+              <p className="mt-4 font-semibold text-stone-500">젤리아 스튜디오 (GELIA Studio)</p>
+              <p className="font-normal text-stone-400">© 2026 GELIA Studio.<br />All rights reserved.</p>
             </div>
           </div>
         </aside>
