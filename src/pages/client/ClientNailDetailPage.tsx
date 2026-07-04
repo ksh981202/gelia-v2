@@ -546,7 +546,7 @@ const Detail = () => {
   const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
 
   const views = (displayRow?.popularity ?? 0) + (displayRow?.id === optimisticViewNailId ? 1 : 0);
-  const saveDisplayCount = (displayRow?.saves ?? 0) + (isSaved ? 1 : 0);
+  const saveDisplayCount = displayRow?.saves ?? 0;
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
   const detailViewTrackedForIdRef = useRef<string | null>(null);
 
@@ -833,6 +833,24 @@ const Detail = () => {
     [currentUserId, displayRow?.id, navigate],
   );
 
+  const handleSaveSuccess = useCallback(() => {
+    const nailDesignId = displayRow?.id ?? nailId;
+    if (!nailDesignId || !currentUserId) return;
+
+    const key = `${nailDesignId}:${currentUserId}`;
+    setReactionOverride({ key, isLiked, isSaved: true });
+    setDbReactionState({ key, isLiked, isSaved: true });
+
+    queryClient.setQueryData(
+      ['nail-design', 'detail', 'supabase', nailDesignId],
+      (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        const row = old as { saves?: number | null };
+        return { ...row, saves: (Number(row.saves) || 0) + 1 };
+      },
+    );
+  }, [currentUserId, displayRow?.id, isLiked, nailId, queryClient]);
+
   const playFloatingHeart = useCallback(() => {
     setFloatingHeartKey((k) => k + 1);
     setShowFloatingHeart(true);
@@ -1023,6 +1041,7 @@ const Detail = () => {
           isOpen={isFolderModalOpen}
           onClose={() => setIsFolderModalOpen(false)}
           nailId={displayRow?.id ?? nailId}
+          onSaveSuccess={handleSaveSuccess}
         />
       </div>
     </div>

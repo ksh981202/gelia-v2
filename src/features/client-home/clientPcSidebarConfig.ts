@@ -135,7 +135,7 @@ export const PC_SIDEBAR_CATEGORIES: readonly PcSidebarCategory[] = [
   },
 ] as const;
 
-export const PC_SIDEBAR_DEFAULT_OPEN_IDS: readonly PcSidebarCategoryId[] = ["ranking", "color"];
+export const PC_SIDEBAR_DEFAULT_OPEN_IDS: readonly PcSidebarCategoryId[] = ["ranking"];
 
 export const PC_GALLERY_SORT_TABS = [
   { id: "인기순", label: "인기순" },

@@ -309,7 +309,7 @@ function ClientLayoutContent() {
             <GeliaWordmark className="mb-8" onClick={handleLogoClick} />
           </div>
 
-          <div className="no-scrollbar flex-1 overflow-y-auto px-6 pb-8 pt-1">
+          <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-6 pb-8 pt-1">
             <PcSidebarFilters
               filterValues={{
                 rankingFilter,
@@ -341,28 +341,26 @@ function ClientLayoutContent() {
               </Link>
             </div>
 
-            <div className="mt-8 flex w-full flex-col break-keep pb-10 pl-8 text-left text-[12px] leading-loose tracking-wide text-stone-500">
-              <p className="text-stone-500">
-                GELIA의 모든 이미지는 AI 디자인입니다.<br />
-                나만의 스타일을 찾는 데 참고해 보세요.
-              </p>
-              <div className="mt-6 flex w-full items-center gap-2">
-                <Link
-                  to="/terms"
-                  className="whitespace-nowrap font-semibold text-stone-500 transition-colors hover:text-stone-900"
-                >
+            <div className="mt-12 mb-10 w-full">
+              <div className="mb-6 w-full break-keep rounded-xl border border-stone-200 bg-stone-50 p-4 text-[13px] leading-relaxed text-stone-500">
+                GELIA의 모든 이미지는 AI로 만든 디자인이에요 😉 나만의 네일 스타일 찾는 데 참고해 보세요!
+              </div>
+              <div className="mb-3 flex items-center gap-2 text-[13px] text-stone-500">
+                <Link to="/terms" className="transition-colors hover:text-stone-800">
                   이용약관
                 </Link>
-                <span className="text-stone-300">|</span>
+                <span className="text-[10px] text-stone-300">|</span>
                 <Link
                   to="/privacy"
-                  className="whitespace-nowrap font-semibold text-stone-500 transition-colors hover:text-stone-900"
+                  className="font-bold text-stone-700 transition-colors hover:text-stone-900"
                 >
                   개인정보처리방침
                 </Link>
               </div>
-              <p className="mt-4 font-semibold text-stone-500">젤리아 스튜디오 (GELIA Studio)</p>
-              <p className="font-normal text-stone-400">© 2026 GELIA Studio.<br />All rights reserved.</p>
+              <div className="flex flex-col gap-0.5 break-keep text-[12px] text-stone-400">
+                <p className="mb-0.5 font-semibold text-stone-500">젤리아 스튜디오 (GELIA Studio)</p>
+                <p>© 2026 GELIA Studio. All rights reserved.</p>
+              </div>
             </div>
           </div>
         </aside>

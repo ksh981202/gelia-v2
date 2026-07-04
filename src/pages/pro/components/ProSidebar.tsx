@@ -1,5 +1,5 @@
 import { useProUIStore } from "@/features/pro/store/useProUIStore";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 
 const PRO_MENU_ITEMS = [
   { id: "curation", label: "🏆 젤리아 큐레이션", to: "/pro/curation" },
@@ -31,7 +31,12 @@ export default function ProSidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-stone-200/80 bg-[#FAF7F2]">
       <div className="border-b border-stone-200/60 px-6 py-7">
-        <span className="text-2xl font-black tracking-tighter text-stone-800">GELIA PRO</span>
+        <Link
+          to="/pro"
+          className="text-2xl font-black tracking-tighter text-stone-800 transition-colors hover:text-stone-900"
+        >
+          GELIA PRO
+        </Link>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-5" aria-label="PRO 메인 메뉴">
@@ -49,6 +54,12 @@ export default function ProSidebar() {
 
       {!isFocusMode ? (
         <div className="mt-auto border-t border-stone-200/60 p-3">
+          <Link
+            to="/"
+            className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900"
+          >
+            🏠 일반 젤리아 홈으로
+          </Link>
           <a
             href="https://pf.kakao.com/"
             target="_blank"

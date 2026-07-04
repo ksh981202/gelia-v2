@@ -17,6 +17,28 @@ export const DEFAULT_COLLECTION_FOLDER_ID = 'default'
 export const CLIENT_FOLDER_COVERS_QUERY_KEY = 'client-folder-covers'
 export const DEFAULT_SAVE_COVER_QUERY_KEY = 'default-save-cover'
 
+const NAIL_DETAIL_QUERY_KEY_PREFIX = ['nail-design', 'detail', 'supabase'] as const
+
+async function incrementNailSavesCount(nailId: string): Promise<void> {
+  const trimmedNailId = nailId.trim()
+  if (!trimmedNailId) return
+
+  const { error } = await supabase.rpc('increment_saves', {
+    nail_id: trimmedNailId,
+    increment_value: 1,
+  })
+  if (error) throw error
+}
+
+export function invalidateNailDetailQuery(queryClient: QueryClient, nailId: string): void {
+  const trimmedNailId = nailId.trim()
+  if (!trimmedNailId) return
+
+  void queryClient.invalidateQueries({
+    queryKey: [...NAIL_DETAIL_QUERY_KEY_PREFIX, trimmedNailId],
+  })
+}
+
 const CLIENT_FOLDER_COLUMNS = 'id,user_id,name,is_public,created_at'
 const FOLDER_NAIL_COLUMNS = 'id,title,title_en,image_url,category'
 const COVER_NAIL_COLUMNS = 'id,image_url'
@@ -367,6 +389,8 @@ export function useRemoveFolderItemsMutation() {
 }
 
 export function useSaveToFolderMutation() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: async ({
       folderId,
@@ -390,6 +414,21 @@ export function useSaveToFolderMutation() {
         if (error.code === '23505') return
         throw error
       }
+
+      await incrementNailSavesCount(trimmedNailId)
+    },
+    onSuccess: (_data, variables) => {
+      const trimmedFolderId = variables.folderId.trim()
+      const trimmedNailId = variables.nailId.trim()
+
+      invalidateNailDetailQuery(queryClient, trimmedNailId)
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDERS_QUERY_KEY] })
+      if (trimmedFolderId) {
+        void queryClient.invalidateQueries({
+          queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, trimmedFolderId],
+        })
+      }
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
     },
   })
 }
@@ -423,6 +462,7 @@ export async function saveToDefaultUserSaves(
 
   void trackNailActivity(trimmedNailId, 'save', trimmedUserId)
 
+  invalidateNailDetailQuery(queryClient, trimmedNailId)
   void queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] })
   void queryClient.invalidateQueries({ queryKey: ['my-page-count', 'saved', trimmedUserId] })
   void queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'saved', trimmedUserId] })

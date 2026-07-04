@@ -112,7 +112,7 @@ export default function ClientCollectionPage() {
 
   const isOwner =
     Boolean(currentUserId) && Boolean(folder) && folder!.user_id === currentUserId
-  const canDeleteFolder = !isDefaultFolder
+  const canDeleteFolder = isOwner && !isDefaultFolder
 
   useEffect(() => {
     if (!isDefaultFolder) return
@@ -227,6 +227,13 @@ export default function ClientCollectionPage() {
   const handleRemoveSelected = useCallback(async () => {
     if (!currentUserId || selectedIds.length === 0) return
 
+    const confirmed = window.confirm(
+      isEnglish
+        ? `Are you sure you want to remove ${selectedIds.length} selected items?`
+        : `선택한 ${selectedIds.length}개의 네일 디자인을 정말 빼시겠습니까?`,
+    )
+    if (!confirmed) return
+
     const isRemoving =
       removeFolderItemsMutation.isPending || deleteDefaultSavesMutation.isPending
     if (isRemoving) return
@@ -322,7 +329,7 @@ export default function ClientCollectionPage() {
                 type="button"
                 onClick={() => void handleDeleteFolder()}
                 disabled={isFolderDeletePending}
-                className="cursor-pointer text-[14px] font-bold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-4 py-1.5 text-[13px] font-medium text-red-500 shadow-sm transition-all hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isEnglish ? '🗑️ Delete Folder' : '🗑️ 폴더 삭제'}
               </button>
@@ -330,7 +337,7 @@ export default function ClientCollectionPage() {
             <button
               type="button"
               onClick={() => void handleShare()}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-[13px] font-medium text-stone-700 transition-all hover:bg-stone-50"
+              className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-1.5 text-[13px] font-medium text-stone-600 shadow-sm transition-all hover:bg-stone-50"
             >
               <LinkIcon size={14} className="text-stone-500" strokeWidth={2.25} aria-hidden />
               {isEnglish ? 'Copy Share Link' : '공유 링크 복사'}
@@ -366,7 +373,7 @@ export default function ClientCollectionPage() {
                     <button
                       type="button"
                       onClick={() => setIsEditing(true)}
-                      className="text-[13px] font-semibold text-stone-500 transition-colors hover:text-stone-800"
+                      className="rounded-full border border-stone-200 bg-white px-4 py-1.5 text-[13px] font-medium text-stone-600 shadow-sm transition-all hover:bg-stone-50"
                     >
                       {isEnglish ? 'Edit' : '편집'}
                     </button>
@@ -376,7 +383,12 @@ export default function ClientCollectionPage() {
                         type="button"
                         onClick={() => void handleRemoveSelected()}
                         disabled={selectedIds.length === 0 || isRemovePending}
-                        className="text-[13px] font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        className={[
+                          'rounded-full px-4 py-1.5 text-[13px] font-medium transition-all',
+                          selectedIds.length > 0
+                            ? 'bg-red-500 text-white shadow-sm hover:bg-red-600'
+                            : 'cursor-not-allowed bg-stone-200 text-stone-400',
+                        ].join(' ')}
                       >
                         {isEnglish
                           ? `Remove (${selectedIds.length})`
@@ -386,7 +398,7 @@ export default function ClientCollectionPage() {
                         type="button"
                         onClick={handleCancelEdit}
                         disabled={isRemovePending}
-                        className="text-[13px] font-semibold text-stone-400 transition-colors hover:text-stone-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="rounded-full bg-stone-100 px-4 py-1.5 text-[13px] font-medium text-stone-600 transition-all hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {isEnglish ? 'Cancel' : '취소'}
                       </button>

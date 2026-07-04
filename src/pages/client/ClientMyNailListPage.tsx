@@ -213,6 +213,13 @@ export default function ClientMyNailListPage() {
   const handleBulkDelete = useCallback(async () => {
     if (!currentUserId || selectedIds.length === 0 || !listType || listType === 'saved') return
 
+    const confirmed = window.confirm(
+      isEnglish
+        ? `Are you sure you want to delete ${selectedIds.length} selected items?`
+        : `선택한 ${selectedIds.length}개의 네일 디자인을 정말 삭제하시겠습니까?`,
+    )
+    if (!confirmed) return
+
     const isDeleting =
       deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
     if (isDeleting) return
@@ -239,6 +246,7 @@ export default function ClientMyNailListPage() {
     currentUserId,
     deleteLikesMutation,
     deleteRecentViewsMutation,
+    isEnglish,
     listType,
     selectedIds,
   ])
@@ -283,13 +291,13 @@ export default function ClientMyNailListPage() {
             ) : null}
           </div>
           {showEditControls ? (
-            <div className="flex shrink-0 items-center gap-2 pl-2">
+            <div className="flex shrink-0 items-center gap-2">
               {!isEditing ? (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
                   disabled={isLoading || nails.length === 0}
-                  className="text-[15px] font-semibold text-stone-700 transition-colors hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-full border border-stone-200 bg-white px-4 py-1.5 text-[13px] font-medium text-stone-600 transition-all hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {isEnglish ? 'Edit' : '편집'}
                 </button>
@@ -299,7 +307,12 @@ export default function ClientMyNailListPage() {
                     type="button"
                     onClick={() => void handleBulkDelete()}
                     disabled={selectedIds.length === 0 || isDeletePending}
-                    className="text-[15px] font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    className={[
+                      'rounded-full px-4 py-1.5 text-[13px] font-medium transition-all',
+                      selectedIds.length > 0
+                        ? 'bg-red-500 text-white shadow-sm hover:bg-red-600'
+                        : 'cursor-not-allowed bg-stone-200 text-stone-400 shadow-none',
+                    ].join(' ')}
                   >
                     {isEnglish
                       ? `Delete (${selectedIds.length})`
@@ -309,7 +322,7 @@ export default function ClientMyNailListPage() {
                     type="button"
                     onClick={handleCancelEdit}
                     disabled={isDeletePending}
-                    className="text-[15px] font-semibold text-stone-400 transition-colors hover:text-stone-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-full bg-stone-100 px-4 py-1.5 text-[13px] font-medium text-stone-600 transition-all hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {isEnglish ? 'Cancel' : '취소'}
                   </button>

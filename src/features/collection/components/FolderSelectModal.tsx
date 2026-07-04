@@ -14,9 +14,15 @@ type FolderSelectModalProps = {
   isOpen: boolean
   onClose: () => void
   nailId: string
+  onSaveSuccess?: () => void
 }
 
-export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSelectModalProps) {
+export default function FolderSelectModal({
+  isOpen,
+  onClose,
+  nailId,
+  onSaveSuccess,
+}: FolderSelectModalProps) {
   const queryClient = useQueryClient()
   const currentUserId = useCurrentUserId()
   const { data: folders = [], isLoading, isError } = useClientFoldersQuery(currentUserId)
@@ -65,13 +71,14 @@ export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSel
     try {
       await saveToDefaultUserSaves(currentUserId, nailId, queryClient)
       toast.success("'기본 저장'에 저장되었습니다.")
+      onSaveSuccess?.()
       onClose()
     } catch (error) {
       handleSaveError(error)
     } finally {
       setPendingAction(null)
     }
-  }, [currentUserId, handleSaveError, nailId, onClose, queryClient])
+  }, [currentUserId, handleSaveError, nailId, onClose, onSaveSuccess, queryClient])
 
   const handleFolderSelect = useCallback(
     async (folderId: string, folderName: string) => {
@@ -84,6 +91,7 @@ export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSel
       try {
         await saveToFolderMutation.mutateAsync({ folderId, nailId })
         toast.success(`'${folderName}' 폴더에 저장되었습니다.`)
+        onSaveSuccess?.()
         onClose()
       } catch (error) {
         handleSaveError(error)
@@ -91,7 +99,7 @@ export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSel
         setPendingAction(null)
       }
     },
-    [currentUserId, handleSaveError, nailId, onClose, saveToFolderMutation],
+    [currentUserId, handleSaveError, nailId, onClose, onSaveSuccess, saveToFolderMutation],
   )
 
   const handleCreateFolderAndSave = useCallback(async () => {
@@ -115,6 +123,7 @@ export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSel
       await saveToFolderMutation.mutateAsync({ folderId: folder.id, nailId })
       toast.success(`'${trimmedName}' 폴더에 저장되었습니다.`)
       setNewFolderName('')
+      onSaveSuccess?.()
       onClose()
     } catch (error) {
       handleSaveError(error)
@@ -127,6 +136,7 @@ export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSel
     handleSaveError,
     nailId,
     newFolderName,
+    onSaveSuccess,
     onClose,
     saveToFolderMutation,
   ])
