@@ -42,7 +42,7 @@ export default function ClientPrivacyPage() {
 
   return (
     <div className="min-h-screen w-full bg-white">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4">
+      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4 md:static md:mb-6 md:max-w-full md:border-b-0 md:bg-transparent md:px-0">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -56,7 +56,7 @@ export default function ClientPrivacyPage() {
         </h1>
       </header>
 
-      <main className="w-full px-5 pb-10 pt-14 leading-relaxed">
+      <main className="w-full px-5 pt-14 pb-10 md:mx-auto md:max-w-3xl md:px-0 md:pt-10 md:pb-20">
         {isLoading ? (
           <div className="py-12 text-center text-sm text-gray-500">
             {isEnglish ? 'Loading content...' : '내용을 불러오는 중입니다.'}
@@ -66,10 +66,10 @@ export default function ClientPrivacyPage() {
             {isEnglish ? 'No content available.' : '등록된 내용이 없습니다.'}
           </div>
         ) : (
-          <section>
-            <h2 className="mb-4 mt-6 text-base font-bold text-gray-900">{title}</h2>
+          <section className="py-6 md:rounded-2xl md:border md:border-stone-200 md:bg-white md:p-10 md:shadow-sm">
+            <h2 className="mb-4 text-base font-bold text-gray-900 md:mt-0 md:text-lg">{title}</h2>
             <div
-              className="whitespace-pre-wrap break-words break-all overflow-hidden text-sm leading-relaxed text-gray-600 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
+              className="overflow-hidden whitespace-pre-wrap break-keep text-[14px] leading-loose text-stone-600 md:text-[15px] [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
           </section>

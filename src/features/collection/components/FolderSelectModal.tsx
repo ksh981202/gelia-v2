@@ -146,19 +146,29 @@ export default function FolderSelectModal({ isOpen, onClose, nailId }: FolderSel
         aria-labelledby="folder-select-modal-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4">
-          <h2 id="folder-select-modal-title" className="text-lg font-bold text-stone-900">
-            어느 폴더에 담을까요?
-          </h2>
+        <div className="relative px-5 pt-4 pb-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isBusy}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-50"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-50"
             aria-label="닫기"
           >
             <X className="h-5 w-5" strokeWidth={1.5} />
           </button>
+          <div className="mb-2 text-center">
+            <h2
+              id="folder-select-modal-title"
+              className="mb-2 text-[20px] font-extrabold tracking-tight text-stone-900"
+            >
+              어느 컬렉션에 담아볼까요?
+            </h2>
+            <p className="break-keep text-[13px] font-medium leading-relaxed text-stone-500">
+              마음에 드는 디자인을 폴더별로 모아,
+              <br />
+              네일샵 원장님이나 친구에게 링크로 쉽게 공유해 보세요!
+            </p>
+          </div>
         </div>
 
         <div className="max-h-[min(50vh,320px)] overflow-y-auto px-3 py-2">

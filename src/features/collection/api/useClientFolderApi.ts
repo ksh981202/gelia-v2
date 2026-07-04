@@ -253,7 +253,7 @@ export function useCreateFolderMutation() {
         .insert({
           user_id: userId,
           name: trimmedName,
-          is_public: true,
+          is_public: false,
         })
         .select(CLIENT_FOLDER_COLUMNS)
         .single()
@@ -265,6 +265,103 @@ export function useCreateFolderMutation() {
       void queryClient.invalidateQueries({
         queryKey: [CLIENT_FOLDERS_QUERY_KEY, variables.userId],
       })
+    },
+  })
+}
+
+export function useMakeFolderPublicMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ folderId }: { folderId: string }): Promise<void> => {
+      const trimmedFolderId = folderId.trim()
+      if (!trimmedFolderId) {
+        throw new Error('폴더 정보가 올바르지 않습니다.')
+      }
+
+      const { error } = await supabase
+        .from('client_folders')
+        .update({ is_public: true })
+        .eq('id', trimmedFolderId)
+
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, variables.folderId.trim()],
+      })
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDERS_QUERY_KEY] })
+    },
+  })
+}
+
+export function useDeleteFolderMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      folderId,
+      userId,
+    }: {
+      folderId: string
+      userId: string
+    }): Promise<void> => {
+      const trimmedFolderId = folderId.trim()
+      const trimmedUserId = userId.trim()
+      if (!trimmedFolderId || !trimmedUserId) {
+        throw new Error('폴더 정보가 올바르지 않습니다.')
+      }
+
+      const { error } = await supabase
+        .from('client_folders')
+        .delete()
+        .eq('id', trimmedFolderId)
+        .eq('user_id', trimmedUserId)
+
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: [CLIENT_FOLDERS_QUERY_KEY, variables.userId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, variables.folderId.trim()],
+      })
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
+    },
+  })
+}
+
+export function useRemoveFolderItemsMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      folderId,
+      nailIds,
+    }: {
+      folderId: string
+      nailIds: string[]
+    }): Promise<void> => {
+      const trimmedFolderId = folderId.trim()
+      const normalizedNailIds = nailIds.map((id) => id.trim()).filter(Boolean)
+      if (!trimmedFolderId || normalizedNailIds.length === 0) {
+        throw new Error('삭제할 항목 정보가 올바르지 않습니다.')
+      }
+
+      const { error } = await supabase
+        .from('client_folder_items')
+        .delete()
+        .eq('folder_id', trimmedFolderId)
+        .in('nail_id', normalizedNailIds)
+
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, variables.folderId.trim()],
+      })
+      void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
     },
   })
 }

@@ -1,11 +1,15 @@
+import {
+  useDeleteLikesMutation,
+  useDeleteRecentViewsMutation,
+} from '@/features/nail-activity/api/useClientActivityApi'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { ChevronLeft } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { CheckCircle2, ChevronLeft } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 type ListType = 'recent' | 'liked' | 'saved'
@@ -97,6 +101,11 @@ export default function ClientMyNailListPage() {
   const { type: typeParam } = useParams<{ type: string }>()
   const currentUserId = useCurrentUserId()
   const observerRef = useRef<HTMLDivElement | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const deleteRecentViewsMutation = useDeleteRecentViewsMutation()
+  const deleteLikesMutation = useDeleteLikesMutation()
 
   const listType = isListType(typeParam) ? typeParam : null
   const pageTitle = listType ? LIST_TITLES[listType][isEnglish ? 'en' : 'ko'] : ''
@@ -118,6 +127,11 @@ export default function ClientMyNailListPage() {
       navigate('/my', { replace: true })
     }
   }, [typeParam, navigate])
+
+  useEffect(() => {
+    setIsEditing(false)
+    setSelectedIds([])
+  }, [listType])
 
   const {
     data,
@@ -178,6 +192,61 @@ export default function ClientMyNailListPage() {
     })
   }
 
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false)
+    setSelectedIds([])
+  }, [])
+
+  const handleCardClick = useCallback(
+    (nailId: string, title: string, imageUrl: string) => {
+      if (isEditing) {
+        setSelectedIds((prev) =>
+          prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
+        )
+        return
+      }
+      openDetail(nailId, title, imageUrl)
+    },
+    [isEditing, navigate],
+  )
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!currentUserId || selectedIds.length === 0 || !listType || listType === 'saved') return
+
+    const isDeleting =
+      deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
+    if (isDeleting) return
+
+    try {
+      if (listType === 'recent') {
+        await deleteRecentViewsMutation.mutateAsync({
+          userId: currentUserId,
+          nailIds: selectedIds,
+        })
+      } else if (listType === 'liked') {
+        await deleteLikesMutation.mutateAsync({
+          userId: currentUserId,
+          nailIds: selectedIds,
+        })
+      }
+      setIsEditing(false)
+      setSelectedIds([])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '삭제에 실패했습니다.'
+      window.alert(message)
+    }
+  }, [
+    currentUserId,
+    deleteLikesMutation,
+    deleteRecentViewsMutation,
+    listType,
+    selectedIds,
+  ])
+
+  const isDeletePending =
+    deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
+  const showEditControls = listType === 'recent' || listType === 'liked'
+
   if (!listType) {
     return null
   }
@@ -189,7 +258,7 @@ export default function ClientMyNailListPage() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="-ml-2 flex cursor-pointer items-center justify-center rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+            className="-ml-2 flex shrink-0 cursor-pointer items-center justify-center rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
             aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
           >
             <ChevronLeft size={26} strokeWidth={2.5} />
@@ -213,8 +282,42 @@ export default function ClientMyNailListPage() {
               </span>
             ) : null}
           </div>
+          {showEditControls ? (
+            <div className="flex shrink-0 items-center gap-2 pl-2">
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isLoading || nails.length === 0}
+                  className="text-[15px] font-semibold text-stone-700 transition-colors hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isEnglish ? 'Edit' : '편집'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleBulkDelete()}
+                    disabled={selectedIds.length === 0 || isDeletePending}
+                    className="text-[15px] font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isEnglish
+                      ? `Delete (${selectedIds.length})`
+                      : `삭제 (${selectedIds.length})`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={isDeletePending}
+                    className="text-[15px] font-semibold text-stone-400 transition-colors hover:text-stone-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isEnglish ? 'Cancel' : '취소'}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : null}
         </div>
-
         {listType === 'saved' ? (
           <SavedFoldersGrid
             userId={currentUserId}
@@ -243,27 +346,43 @@ export default function ClientMyNailListPage() {
                 nails.map((item) => {
                   const title = nailDisplayTitle(item, isEnglish)
                   const imageUrl = String(item.image_url ?? '').trim()
+                  const isSelected = selectedIds.includes(item.id)
                   return (
                     <article
                       key={item.id}
-                      className="flex cursor-pointer flex-col"
+                      className={`flex cursor-pointer flex-col ${isEditing && isSelected ? 'ring-2 ring-orange-500 ring-offset-2 rounded-xl md:rounded-2xl' : ''}`}
                       role="button"
                       tabIndex={0}
-                      onClick={() => openDetail(item.id, title, imageUrl)}
+                      onClick={() => handleCardClick(item.id, title, imageUrl)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          openDetail(item.id, title, imageUrl)
+                          handleCardClick(item.id, title, imageUrl)
                         }
                       }}
                     >
-                      <div className="aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
+                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
                             alt={title}
-                            className="h-full w-full object-cover transition-transform hover:scale-105"
+                            className={`h-full w-full object-cover transition-transform ${isEditing ? '' : 'hover:scale-105'}`}
                           />
+                        ) : null}
+                        {isEditing ? (
+                          <span
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center"
+                            aria-hidden
+                          >
+                            {isSelected ? (
+                              <CheckCircle2
+                                className="h-7 w-7 fill-orange-500 text-white drop-shadow-md"
+                                strokeWidth={2}
+                              />
+                            ) : (
+                              <span className="h-6 w-6 rounded-full border-2 border-white bg-black/25 shadow-sm" />
+                            )}
+                          </span>
                         ) : null}
                       </div>
                       <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">

@@ -1,14 +1,18 @@
 import {
   DEFAULT_COLLECTION_FOLDER_ID,
   useClientFolderDetailQuery,
+  useDeleteFolderMutation,
+  useMakeFolderPublicMutation,
+  useRemoveFolderItemsMutation,
 } from '@/features/collection/api/useClientFolderApi'
+import { useDeleteDefaultSavesMutation } from '@/features/nail-activity/api/useClientActivityApi'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
-import { ChevronLeft, Link as LinkIcon, Loader2 } from 'lucide-react'
-import { useCallback, useEffect } from 'react'
+import { CheckCircle2, ChevronLeft, Link as LinkIcon, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -21,40 +25,59 @@ function nailTitle(item: NailDesignRow, isEnglish: boolean): string {
 function CollectionNailCard({
   item,
   isEnglish,
-  onOpen,
+  isEditing,
+  isSelected,
+  onInteract,
 }: {
   item: NailDesignRow
   isEnglish: boolean
-  onOpen: (id: string, title: string, imageUrl: string) => void
+  isEditing: boolean
+  isSelected: boolean
+  onInteract: (id: string, title: string, imageUrl: string) => void
 }) {
   const imageUrl = String(item.image_url ?? '').trim()
   const title = nailTitle(item, isEnglish)
 
   return (
     <article
-      className="mb-4 break-inside-avoid cursor-pointer"
+      className={`mb-4 break-inside-avoid cursor-pointer ${isEditing && isSelected ? 'rounded-2xl ring-2 ring-orange-500 ring-offset-2' : ''}`}
       role="button"
       tabIndex={0}
-      onClick={() => onOpen(item.id, title, imageUrl)}
+      onClick={() => onInteract(item.id, title, imageUrl)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          onOpen(item.id, title, imageUrl)
+          onInteract(item.id, title, imageUrl)
         }
       }}
     >
-      <div className="overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={title}
-            className="h-auto w-full object-cover transition-transform hover:scale-[1.02]"
+            className={`h-auto w-full object-cover ${isEditing ? '' : 'transition-transform hover:scale-[1.02]'}`}
             loading="lazy"
             decoding="async"
           />
         ) : (
           <div className="aspect-[4/5] w-full bg-gray-100" aria-hidden />
         )}
+        {isEditing ? (
+          <span
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center"
+            aria-hidden
+          >
+            {isSelected ? (
+              <CheckCircle2
+                className="h-7 w-7 fill-orange-500 text-white drop-shadow-md"
+                strokeWidth={2}
+              />
+            ) : (
+              <span className="h-6 w-6 rounded-full border-2 border-white bg-black/25 shadow-sm" />
+            )}
+          </span>
+        ) : null}
       </div>
       <p className="mt-2 truncate px-1 text-center text-[13px] font-semibold text-stone-800">
         {title}
@@ -72,9 +95,24 @@ export default function ClientCollectionPage() {
   const folderId = (id ?? '').trim()
   const isDefaultFolder = folderId === DEFAULT_COLLECTION_FOLDER_ID
 
+  const [isEditing, setIsEditing] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
   const { data, isLoading, isError } = useClientFolderDetailQuery(folderId || undefined, {
     userId: currentUserId,
   })
+  const makeFolderPublicMutation = useMakeFolderPublicMutation()
+  const deleteFolderMutation = useDeleteFolderMutation()
+  const removeFolderItemsMutation = useRemoveFolderItemsMutation()
+  const deleteDefaultSavesMutation = useDeleteDefaultSavesMutation()
+
+  const folder = data?.folder
+  const nails = data?.nails ?? []
+  const nailCount = nails.length
+
+  const isOwner =
+    Boolean(currentUserId) && Boolean(folder) && folder!.user_id === currentUserId
+  const canDeleteFolder = !isDefaultFolder
 
   useEffect(() => {
     if (!isDefaultFolder) return
@@ -91,11 +129,25 @@ export default function ClientCollectionPage() {
     void checkAuth()
   }, [isDefaultFolder, navigate])
 
+  useEffect(() => {
+    setIsEditing(false)
+    setSelectedIds([])
+  }, [folderId])
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false)
+    setSelectedIds([])
+  }, [])
+
   const handleShare = useCallback(async () => {
     const url = window.location.href
-    const shareTitle = data?.folder.name ?? (isEnglish ? 'GELIA Collection' : '젤리아 컬렉션')
+    const shareTitle = folder?.name ?? (isEnglish ? 'GELIA Collection' : '젤리아 컬렉션')
 
     try {
+      if (!isDefaultFolder && folderId && isOwner) {
+        await makeFolderPublicMutation.mutateAsync({ folderId })
+      }
+
       if (typeof navigator.share === 'function') {
         await navigator.share({
           title: shareTitle,
@@ -117,7 +169,7 @@ export default function ClientCollectionPage() {
         window.alert(isEnglish ? 'Failed to copy the link.' : '링크 복사에 실패했습니다.')
       }
     }
-  }, [data?.folder.name, isEnglish])
+  }, [folder?.name, folderId, isDefaultFolder, isEnglish, isOwner, makeFolderPublicMutation])
 
   const openDetail = useCallback(
     (nailId: string, title: string, imageUrl: string) => {
@@ -136,9 +188,89 @@ export default function ClientCollectionPage() {
     [navigate],
   )
 
-  const folder = data?.folder
-  const nails = data?.nails ?? []
-  const nailCount = nails.length
+  const handleCardInteract = useCallback(
+    (nailId: string, title: string, imageUrl: string) => {
+      if (isEditing) {
+        setSelectedIds((prev) =>
+          prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
+        )
+        return
+      }
+      openDetail(nailId, title, imageUrl)
+    },
+    [isEditing, openDetail],
+  )
+
+  const handleDeleteFolder = useCallback(async () => {
+    if (!folderId || isDefaultFolder) return
+
+    const confirmed = window.confirm(
+      isEnglish ? 'Are you sure you want to delete this folder?' : '정말 이 폴더를 삭제하시겠습니까?',
+    )
+    if (!confirmed) return
+
+    if (!currentUserId) {
+      window.alert(isEnglish ? 'Please sign in to delete this folder.' : '폴더를 삭제하려면 로그인이 필요합니다.')
+      return
+    }
+
+    try {
+      await deleteFolderMutation.mutateAsync({ folderId, userId: currentUserId })
+      toast.success(isEnglish ? 'Folder deleted.' : '폴더가 삭제되었습니다.')
+      navigate('/my', { replace: true })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '폴더 삭제에 실패했습니다.'
+      window.alert(message)
+    }
+  }, [currentUserId, deleteFolderMutation, folderId, isDefaultFolder, isEnglish, navigate])
+
+  const handleRemoveSelected = useCallback(async () => {
+    if (!currentUserId || selectedIds.length === 0) return
+
+    const isRemoving =
+      removeFolderItemsMutation.isPending || deleteDefaultSavesMutation.isPending
+    if (isRemoving) return
+
+    try {
+      if (isDefaultFolder) {
+        await deleteDefaultSavesMutation.mutateAsync({
+          userId: currentUserId,
+          nailIds: selectedIds,
+        })
+      } else {
+        await removeFolderItemsMutation.mutateAsync({
+          folderId,
+          nailIds: selectedIds,
+        })
+      }
+      toast.success(
+        isEnglish
+          ? `Removed ${selectedIds.length} design(s).`
+          : `${selectedIds.length}개의 디자인을 폴더에서 뺐어요.`,
+      )
+      setIsEditing(false)
+      setSelectedIds([])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '삭제에 실패했습니다.'
+      window.alert(message)
+    }
+  }, [
+    currentUserId,
+    deleteDefaultSavesMutation,
+    folderId,
+    isDefaultFolder,
+    isEnglish,
+    removeFolderItemsMutation,
+    selectedIds,
+  ])
+
+  const isRemovePending =
+    removeFolderItemsMutation.isPending || deleteDefaultSavesMutation.isPending
+  const isFolderDeletePending = deleteFolderMutation.isPending
+
+  const gallerySubtitle = isEnglish
+    ? `${nailCount} curated design${nailCount === 1 ? '' : 's'}`
+    : `엄선된 네일 디자인 ${nailCount}개`
 
   return (
     <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
@@ -184,14 +316,26 @@ export default function ClientCollectionPage() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => void handleShare()}
-            className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-[13px] font-medium text-stone-700 transition-all hover:bg-stone-50"
-          >
-            <LinkIcon size={14} className="text-stone-500" strokeWidth={2.25} aria-hidden />
-            {isEnglish ? 'Copy Share Link' : '공유 링크 복사'}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {canDeleteFolder ? (
+              <button
+                type="button"
+                onClick={() => void handleDeleteFolder()}
+                disabled={isFolderDeletePending}
+                className="cursor-pointer text-[14px] font-bold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isEnglish ? '🗑️ Delete Folder' : '🗑️ 폴더 삭제'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleShare()}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-[13px] font-medium text-stone-700 transition-all hover:bg-stone-50"
+            >
+              <LinkIcon size={14} className="text-stone-500" strokeWidth={2.25} aria-hidden />
+              {isEnglish ? 'Copy Share Link' : '공유 링크 복사'}
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -213,16 +357,58 @@ export default function ClientCollectionPage() {
             {isEnglish ? 'No designs in this folder yet.' : '이 폴더에 담긴 디자인이 아직 없어요.'}
           </p>
         ) : (
-          <div className="columns-2 gap-4 md:columns-3 lg:columns-4">
-            {nails.map((item) => (
-              <CollectionNailCard
-                key={item.id}
-                item={item}
-                isEnglish={isEnglish}
-                onOpen={openDetail}
-              />
-            ))}
-          </div>
+          <>
+            {isOwner ? (
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-[14px] font-medium text-stone-600">{gallerySubtitle}</p>
+                <div className="flex shrink-0 items-center gap-2">
+                  {!isEditing ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="text-[13px] font-semibold text-stone-500 transition-colors hover:text-stone-800"
+                    >
+                      {isEnglish ? 'Edit' : '편집'}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => void handleRemoveSelected()}
+                        disabled={selectedIds.length === 0 || isRemovePending}
+                        className="text-[13px] font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isEnglish
+                          ? `Remove (${selectedIds.length})`
+                          : `빼기 (${selectedIds.length})`}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        disabled={isRemovePending}
+                        className="text-[13px] font-semibold text-stone-400 transition-colors hover:text-stone-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isEnglish ? 'Cancel' : '취소'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="columns-2 gap-4 md:columns-3 lg:columns-4">
+              {nails.map((item) => (
+                <CollectionNailCard
+                  key={item.id}
+                  item={item}
+                  isEnglish={isEnglish}
+                  isEditing={isEditing && isOwner}
+                  isSelected={selectedIds.includes(item.id)}
+                  onInteract={handleCardInteract}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>
