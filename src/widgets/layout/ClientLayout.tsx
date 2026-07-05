@@ -33,6 +33,7 @@ import {
 import {
   PC_SIDEBAR_CATEGORIES,
   PC_SIDEBAR_DEFAULT_OPEN_IDS,
+  resolveSidebarLabel,
   type PcSidebarCategoryFilterKey,
   type PcSidebarCategoryId,
   type SidebarFilterItem,
@@ -130,10 +131,12 @@ function SidebarFilterItems({
   items,
   selected,
   onSelect,
+  isEnglish,
 }: {
   items: readonly SidebarFilterItem[]
   selected: string
   onSelect: (value: string) => void
+  isEnglish: boolean
 }) {
   return (
     <>
@@ -155,7 +158,7 @@ function SidebarFilterItems({
               isSelected ? SIDEBAR_ITEM_ACTIVE_CLASS : '',
             ].join(' ')}
           >
-            {item.label}
+            {resolveSidebarLabel(item.label, isEnglish)}
           </span>
         )
       })}
@@ -167,10 +170,12 @@ function PcSidebarFilters({
   filterValues,
   toggleRankingFilter,
   togglePcFilter,
+  isEnglish,
 }: {
   filterValues: Record<PcSidebarCategoryFilterKey, string>
   toggleRankingFilter: (option: string) => void
   togglePcFilter: (key: ClientPcFilterKey, option: string) => void
+  isEnglish: boolean
 }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -197,7 +202,7 @@ function PcSidebarFilters({
       {PC_SIDEBAR_CATEGORIES.map((category, index) => (
         <SidebarAccordionSection
           key={category.id}
-          label={category.label}
+          label={resolveSidebarLabel(category.label, isEnglish)}
           englishTitle={category.title}
           icon={SIDEBAR_CATEGORY_ICONS[category.id]}
           isOpen={Boolean(openCategories[category.id])}
@@ -209,6 +214,7 @@ function PcSidebarFilters({
             items={category.items}
             selected={filterValues[category.filterKey]}
             onSelect={(value) => handleSelect(category.filterKey, value)}
+            isEnglish={isEnglish}
           />
         </SidebarAccordionSection>
       ))}
@@ -335,6 +341,7 @@ function ClientLayoutContent() {
               }}
               toggleRankingFilter={toggleRankingFilter}
               togglePcFilter={togglePcFilter}
+              isEnglish={isEnglish}
             />
 
             <div className="mt-6 mb-2 h-px w-full bg-stone-100" aria-hidden />
@@ -345,7 +352,7 @@ function ClientLayoutContent() {
               >
                 <div className="flex items-center gap-2 text-[16px] font-bold text-stone-900">
                   <Heart className="h-5 w-5 fill-red-500 text-red-500" strokeWidth={2} aria-hidden />
-                  <span>내 컬렉션 보관함</span>
+                  <span>{isEnglish ? 'My Collections' : '내 컬렉션 보관함'}</span>
                 </div>
                 {savedCount > 0 ? (
                   <span className="text-sm font-semibold tabular-nums text-stone-400">({savedCount})</span>
@@ -356,7 +363,7 @@ function ClientLayoutContent() {
                 className="flex items-center gap-2 py-3 text-[16px] font-bold text-stone-900 transition-colors hover:text-orange-600"
               >
                 <span aria-hidden>✨</span>
-                <span>퍼스널 네일 찾기</span>
+                <span>{isEnglish ? 'Find Personal Nail' : '퍼스널 네일 찾기'}</span>
               </Link>
               <Link
                 to="/magazine"
@@ -369,22 +376,36 @@ function ClientLayoutContent() {
 
             <div className="mt-12 mb-10 w-full">
               <div className="mb-6 w-full break-keep rounded-xl border border-stone-200 bg-stone-50 p-4 text-[13px] leading-relaxed text-stone-500">
-                GELIA의 모든 이미지는 AI로 만든 디자인이에요 😉 나만의 네일 스타일 찾는 데 참고해 보세요!
+                {isEnglish ? (
+                  <>
+                    All GELIA images are AI designs 😉
+                    <br />
+                    Use them to find your own style!
+                  </>
+                ) : (
+                  <>
+                    GELIA의 모든 이미지는 AI로 만든 디자인이에요 😉
+                    <br />
+                    나만의 네일 스타일 찾는 데 참고해 보세요!
+                  </>
+                )}
               </div>
               <div className="mb-3 flex items-center gap-2 text-[13px] text-stone-500">
                 <Link to="/terms" className="transition-colors hover:text-stone-800">
-                  이용약관
+                  {isEnglish ? 'Terms of Service' : '이용약관'}
                 </Link>
                 <span className="text-[10px] text-stone-300">|</span>
                 <Link
                   to="/privacy"
                   className="font-bold text-stone-700 transition-colors hover:text-stone-900"
                 >
-                  개인정보처리방침
+                  {isEnglish ? 'Privacy Policy' : '개인정보처리방침'}
                 </Link>
               </div>
               <div className="flex flex-col gap-0.5 break-keep text-[12px] text-stone-400">
-                <p className="mb-0.5 font-semibold text-stone-500">젤리아 스튜디오 (GELIA Studio)</p>
+                <p className="mb-0.5 font-semibold text-stone-500">
+                  {isEnglish ? 'GELIA Studio' : '젤리아 스튜디오 (GELIA Studio)'}
+                </p>
                 <p>© 2026 GELIA Studio. All rights reserved.</p>
               </div>
             </div>

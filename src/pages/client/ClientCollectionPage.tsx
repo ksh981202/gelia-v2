@@ -341,10 +341,12 @@ export default function ClientCollectionPage() {
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 text-[15px] font-semibold text-stone-800 shadow-sm transition-colors hover:bg-stone-50"
             >
               <LinkIcon className="h-5 w-5 text-stone-500" strokeWidth={2.25} aria-hidden />
-              컬렉션 링크 공유하기
+              {isEnglish ? 'Share Collection Link' : '컬렉션 링크 공유하기'}
             </button>
             <p className="mt-3 text-center text-[12px] text-stone-500 tracking-wide">
-              💡 좋아하는 디자인을 모아 간편하게 전달해 보세요.
+              {isEnglish
+                ? '💡 Collect your favorite designs and easily share them.'
+                : '💡 좋아하는 디자인을 모아 간편하게 전달해 보세요.'}
             </p>
           </div>
         ) : null}

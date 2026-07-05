@@ -1,3 +1,4 @@
+import { USER_SAVED_COUNT_QUERY_KEY } from '@/features/my-page/useUserSavedCountQuery'
 import { trackNailActivity } from '@/features/nail-activity/trackNailActivity'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
@@ -36,6 +37,15 @@ export function invalidateNailDetailQuery(queryClient: QueryClient, nailId: stri
 
   void queryClient.invalidateQueries({
     queryKey: [...NAIL_DETAIL_QUERY_KEY_PREFIX, trimmedNailId],
+  })
+}
+
+function invalidateUserSavedCountQuery(queryClient: QueryClient, userId: string): void {
+  const trimmedUserId = userId.trim()
+  if (!trimmedUserId) return
+
+  void queryClient.invalidateQueries({
+    queryKey: [USER_SAVED_COUNT_QUERY_KEY, 'saved', trimmedUserId],
   })
 }
 
@@ -350,6 +360,7 @@ export function useDeleteFolderMutation() {
         queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, variables.folderId.trim()],
       })
       void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
+      invalidateUserSavedCountQuery(queryClient, variables.userId)
     },
   })
 }
@@ -384,6 +395,11 @@ export function useRemoveFolderItemsMutation() {
         queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, variables.folderId.trim()],
       })
       void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        const trimmedUserId = session?.user?.id?.trim()
+        if (!trimmedUserId) return
+        invalidateUserSavedCountQuery(queryClient, trimmedUserId)
+      })
     },
   })
 }
@@ -429,6 +445,11 @@ export function useSaveToFolderMutation() {
         })
       }
       void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        const trimmedUserId = session?.user?.id?.trim()
+        if (!trimmedUserId) return
+        invalidateUserSavedCountQuery(queryClient, trimmedUserId)
+      })
     },
   })
 }
@@ -464,7 +485,7 @@ export async function saveToDefaultUserSaves(
 
   invalidateNailDetailQuery(queryClient, trimmedNailId)
   void queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] })
-  void queryClient.invalidateQueries({ queryKey: ['my-page-count', 'saved', trimmedUserId] })
+  invalidateUserSavedCountQuery(queryClient, trimmedUserId)
   void queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'saved', trimmedUserId] })
   void queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'saved', trimmedUserId] })
 }

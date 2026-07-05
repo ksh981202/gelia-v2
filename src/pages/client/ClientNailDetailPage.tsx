@@ -983,7 +983,7 @@ const Detail = () => {
                 strokeWidth={2}
               />
               <span className="truncate">
-                {isSaved ? (isEnglish ? "Saved" : "컬렉션에 담김") : isEnglish ? "Save" : "컬렉션에 담기"}
+                {isSaved ? (isEnglish ? "Added" : "컬렉션에 담김") : isEnglish ? "Add to Collection" : "컬렉션에 담기"}
               </span>
             </button>
             <button
@@ -1225,7 +1225,7 @@ const Detail = () => {
                 className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
                 strokeWidth={2}
               />
-              <span>{isSaved ? (isEnglish ? "Saved" : "컬렉션에 담김") : isEnglish ? "Save" : "컬렉션에 담기"}</span>
+              <span>{isSaved ? (isEnglish ? "Added" : "컬렉션에 담김") : isEnglish ? "Add to Collection" : "컬렉션에 담기"}</span>
             </button>
             <button
               type="button"

@@ -8,6 +8,7 @@ import {
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { PageContainer } from '@/shared/ui/PageContainer'
+import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -218,10 +219,6 @@ export default function ClientStyleGalleryListPage() {
             <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
 
-          <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,16rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-            {isEnglish ? 'Style Nail Gallery' : '스타일별 네일 갤러리'}
-          </h1>
-
           <Link
             to="/gallery"
             className="-mr-2 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
@@ -257,19 +254,13 @@ export default function ClientStyleGalleryListPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>
-                Total <strong className="font-bold text-pink-500">{totalCountLabel}</strong> designs
-              </>
-            ) : (
-              <>
-                총 <strong className="font-bold text-pink-500">{totalCountLabel}</strong>개의 디자인
-              </>
-            )}
-          </span>
-          <div ref={sortMenuRef} className="relative">
+        <GalleryListHeaderWithSort
+          breadcrumb={isEnglish ? 'Style Nail Gallery' : '스타일별 네일 갤러리'}
+          mainTitle={displayStyleGalleryTabLabel(activeTabLabel, isEnglish)}
+          totalCount={totalCount}
+          isEnglish={isEnglish}
+          sortControl={
+            <div ref={sortMenuRef} className="relative">
             <button
               type="button"
               onClick={() => setIsSortOpen((prev) => !prev)}
@@ -307,7 +298,8 @@ export default function ClientStyleGalleryListPage() {
               </div>
             )}
           </div>
-        </div>
+          }
+        />
       </div>
 
       <div className="min-h-0 flex-1">

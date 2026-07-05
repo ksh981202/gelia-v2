@@ -1,3 +1,4 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import {
   saveToDefaultUserSaves,
   useClientFoldersQuery,
@@ -23,6 +24,7 @@ export default function FolderSelectModal({
   nailId,
   onSaveSuccess,
 }: FolderSelectModalProps) {
+  const { isEnglish } = useLanguageContext()
   const queryClient = useQueryClient()
   const currentUserId = useCurrentUserId()
   const { data: folders = [], isLoading, isError } = useClientFoldersQuery(currentUserId)
@@ -56,21 +58,29 @@ export default function FolderSelectModal({
     }
   }, [isBusy, isOpen, onClose])
 
-  const handleSaveError = useCallback((error: unknown) => {
-    const message = error instanceof Error ? error.message : '저장에 실패했습니다.'
-    window.alert(message)
-  }, [])
+  const handleSaveError = useCallback(
+    (error: unknown) => {
+      const fallback = isEnglish ? 'Failed to save.' : '저장에 실패했습니다.'
+      const message = error instanceof Error ? error.message : fallback
+      window.alert(message)
+    },
+    [isEnglish],
+  )
 
   const handleDefaultSave = useCallback(async () => {
     if (!currentUserId) {
-      window.alert('로그인이 필요한 기능입니다.')
+      window.alert(
+        isEnglish ? 'Please sign in to use this feature.' : '로그인이 필요한 기능입니다.',
+      )
       return
     }
 
     setPendingAction('default')
     try {
       await saveToDefaultUserSaves(currentUserId, nailId, queryClient)
-      toast.success("'기본 보관함'에 담겼습니다.")
+      toast.success(
+        isEnglish ? "Added to 'Default Archive'." : "'기본 보관함'에 담겼습니다.",
+      )
       onSaveSuccess?.()
       onClose()
     } catch (error) {
@@ -78,19 +88,25 @@ export default function FolderSelectModal({
     } finally {
       setPendingAction(null)
     }
-  }, [currentUserId, handleSaveError, nailId, onClose, onSaveSuccess, queryClient])
+  }, [currentUserId, handleSaveError, isEnglish, nailId, onClose, onSaveSuccess, queryClient])
 
   const handleFolderSelect = useCallback(
     async (folderId: string, folderName: string) => {
       if (!currentUserId) {
-        window.alert('로그인이 필요한 기능입니다.')
+        window.alert(
+          isEnglish ? 'Please sign in to use this feature.' : '로그인이 필요한 기능입니다.',
+        )
         return
       }
 
       setPendingAction(folderId)
       try {
         await saveToFolderMutation.mutateAsync({ folderId, nailId })
-        toast.success(`'${folderName}' 컬렉션에 담겼습니다.`)
+        toast.success(
+          isEnglish
+            ? `Added to '${folderName}' collection.`
+            : `'${folderName}' 컬렉션에 담겼습니다.`,
+        )
         onSaveSuccess?.()
         onClose()
       } catch (error) {
@@ -99,18 +115,22 @@ export default function FolderSelectModal({
         setPendingAction(null)
       }
     },
-    [currentUserId, handleSaveError, nailId, onClose, onSaveSuccess, saveToFolderMutation],
+    [currentUserId, handleSaveError, isEnglish, nailId, onClose, onSaveSuccess, saveToFolderMutation],
   )
 
   const handleCreateFolderAndSave = useCallback(async () => {
     if (!currentUserId) {
-      window.alert('로그인이 필요한 기능입니다.')
+      window.alert(
+        isEnglish ? 'Please sign in to use this feature.' : '로그인이 필요한 기능입니다.',
+      )
       return
     }
 
     const trimmedName = newFolderName.trim()
     if (!trimmedName) {
-      window.alert('폴더 이름을 입력해 주세요.')
+      window.alert(
+        isEnglish ? 'Please enter a folder name.' : '폴더 이름을 입력해 주세요.',
+      )
       return
     }
 
@@ -121,7 +141,11 @@ export default function FolderSelectModal({
         name: trimmedName,
       })
       await saveToFolderMutation.mutateAsync({ folderId: folder.id, nailId })
-      toast.success(`'${trimmedName}' 컬렉션에 담겼습니다.`)
+      toast.success(
+        isEnglish
+          ? `Added to '${trimmedName}' collection.`
+          : `'${trimmedName}' 컬렉션에 담겼습니다.`,
+      )
       setNewFolderName('')
       onSaveSuccess?.()
       onClose()
@@ -134,6 +158,7 @@ export default function FolderSelectModal({
     createFolderMutation,
     currentUserId,
     handleSaveError,
+    isEnglish,
     nailId,
     newFolderName,
     onSaveSuccess,
@@ -162,7 +187,7 @@ export default function FolderSelectModal({
             onClick={onClose}
             disabled={isBusy}
             className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 disabled:opacity-50"
-            aria-label="닫기"
+            aria-label={isEnglish ? 'Close' : '닫기'}
           >
             <X className="h-5 w-5" strokeWidth={1.5} />
           </button>
@@ -171,12 +196,22 @@ export default function FolderSelectModal({
               id="folder-select-modal-title"
               className="mb-2 text-[20px] font-extrabold tracking-tight text-stone-900"
             >
-              어느 컬렉션에 담아볼까요?
+              {isEnglish ? 'Which collection would you like to add to?' : '어느 컬렉션에 담아볼까요?'}
             </h2>
             <p className="break-keep text-[13px] font-medium leading-relaxed text-stone-500">
-              마음에 드는 디자인을 폴더별로 모아,
-              <br />
-              네일샵 원장님이나 친구에게 링크로 쉽게 공유해 보세요!
+              {isEnglish ? (
+                <>
+                  Organize your favorite designs into folders,
+                  <br />
+                  and easily share them with a link.
+                </>
+              ) : (
+                <>
+                  마음에 드는 디자인을 폴더별로 모아,
+                  <br />
+                  네일샵 원장님이나 친구에게 링크로 쉽게 공유해 보세요!
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -198,23 +233,29 @@ export default function FolderSelectModal({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-stone-900">기본 보관함</span>
-              <span className="block text-xs text-stone-500">컬렉션 목록에 바로 담기</span>
+              <span className="block text-sm font-semibold text-stone-900">
+                {isEnglish ? 'Default Archive' : '기본 보관함'}
+              </span>
+              <span className="block text-xs text-stone-500">
+                {isEnglish ? 'Add directly to your collection' : '컬렉션 목록에 바로 담기'}
+              </span>
             </span>
           </button>
 
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-stone-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              폴더 불러오는 중…
+              {isEnglish ? 'Loading folders…' : '폴더 불러오는 중…'}
             </div>
           ) : isError ? (
             <p className="px-3 py-6 text-center text-sm text-red-500">
-              폴더 목록을 불러오지 못했습니다.
+              {isEnglish ? 'Failed to load folders.' : '폴더 목록을 불러오지 못했습니다.'}
             </p>
           ) : folders.length === 0 ? (
             <p className="px-3 py-4 text-center text-sm text-stone-400">
-              아직 만든 폴더가 없어요. 아래에서 새 폴더를 만들어 보세요.
+              {isEnglish
+                ? 'No folders yet. Create one below.'
+                : '아직 만든 폴더가 없어요. 아래에서 새 폴더를 만들어 보세요.'}
             </p>
           ) : (
             <ul className="space-y-0.5">
@@ -258,7 +299,7 @@ export default function FolderSelectModal({
                   void handleCreateFolderAndSave()
                 }
               }}
-              placeholder="새 폴더 이름 (예: 웨딩 네일)"
+              placeholder={isEnglish ? 'Folder name' : '폴더 이름'}
               disabled={isBusy}
               maxLength={40}
               className="min-w-0 flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#FF7E67] focus:outline-none focus:ring-2 focus:ring-[#FF7E67]/20 disabled:opacity-50"
@@ -274,7 +315,7 @@ export default function FolderSelectModal({
               ) : (
                 <FolderPlus className="h-4 w-4" strokeWidth={2} />
               )}
-              + 새 폴더 만들기
+              {isEnglish ? '+ Create New Folder' : '+ 새 폴더 만들기'}
             </button>
           </div>
         </div>

@@ -6,13 +6,12 @@ export const USER_SAVED_COUNT_QUERY_KEY = 'my-page-count' as const
 export async function fetchUserSavesCount(userId: string | null): Promise<number> {
   if (!userId) return 0
 
-  const { count, error } = await supabase
-    .from('user_saves')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
+  const { data, error } = await supabase.rpc('get_user_unique_collection_count', {
+    p_user_id: userId,
+  })
 
   if (error) throw error
-  return count ?? 0
+  return Number(data ?? 0)
 }
 
 export function useUserSavedCountQuery(userId: string | null) {

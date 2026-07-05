@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 
 export default function TextureGalleryListPage() {
@@ -14,9 +15,6 @@ export default function TextureGalleryListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2 transition-colors hover:bg-gray-100 rounded-full">
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
-            추천 갤러리
-          </h1>
           <button type="button" className="z-10 p-2 -mr-2 transition-colors hover:bg-gray-100 rounded-full">
             <Search className="h-6 w-6 text-gray-900" />
           </button>
@@ -47,16 +45,18 @@ export default function TextureGalleryListPage() {
           <div className="w-4 shrink-0" />
         </section>
 
-        {/* 갯수 및 정렬 바 */}
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            총 <span className="font-bold text-[#ff765e]">2,558</span>개의 디자인
-          </span>
-          <button type="button" className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700">
-            <span>인기순</span>
-            <ChevronDown size={14} className="text-gray-500" />
-          </button>
-        </div>
+        <GalleryListHeaderWithSort
+          breadcrumb="추천 갤러리"
+          mainTitle="전체"
+          totalCount={2558}
+          isEnglish={false}
+          sortControl={
+            <button type="button" className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1.5 text-sm font-medium text-gray-700">
+              <span>인기순</span>
+              <ChevronDown size={14} className="text-gray-500" />
+            </button>
+          }
+        />
       </div>
 
       {/* 메인 2열 그리드 (더미 데이터) */}

@@ -4,7 +4,8 @@ import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
+import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 
 const TAB_ITEMS = [
   { id: "save", name: "📌 압도적 저장", period: "압도적 저장" },
@@ -131,9 +132,6 @@ export default function ReactionBestListPage() {
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-lg font-bold tracking-tight text-gray-900">
-            {isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
-          </h1>
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate("/search")}>
             <Search className="w-5 h-5" />
           </button>
@@ -155,6 +153,16 @@ export default function ReactionBestListPage() {
               {displayTabLabel(tab, isEnglish)}
             </button>
           ))}
+        </div>
+
+        <div className="px-4 pb-3">
+          <GalleryListTypographyHeader
+            breadcrumb={isEnglish ? "User Reaction BEST" : "유저 반응 BEST"}
+            mainTitle={displayTabLabel(activeTab, isEnglish)}
+            totalCount={data.length}
+            isEnglish={isEnglish}
+            className="mb-0 md:mb-0"
+          />
         </div>
       </header>
 

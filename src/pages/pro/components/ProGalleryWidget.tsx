@@ -5,6 +5,7 @@ import {
 import {
   PC_SIDEBAR_CATEGORIES,
   mapRankingFilterToGallerySort,
+  resolveSidebarLabel,
   type PcSidebarCategoryId,
 } from "@/features/client-home/clientPcSidebarConfig";
 import type { NailDesignRow } from "@/shared/types/database.types";
@@ -56,9 +57,9 @@ const FILTER_ROW_WRAPPER_CLASS =
 const FILTER_SCROLL_ROW_CLASS =
   "flex shrink-0 flex-nowrap gap-2";
 
-const MASONRY_CLASS_BY_VARIANT = {
-  dashboard: "min-w-0 columns-2 gap-4 sm:columns-3 lg:columns-4 xl:columns-5",
-  compact: "min-w-0 columns-2 gap-4 sm:columns-3 lg:columns-4",
+const GRID_CLASS_BY_VARIANT = {
+  dashboard: "grid min-w-0 w-full grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4",
+  compact: "grid min-w-0 w-full grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4",
 } as const;
 
 export function resolveProGalleryQuery(
@@ -141,7 +142,7 @@ export default function ProGalleryWidget({
   onGalleryStatsChange,
 }: ProGalleryWidgetProps) {
   const isCompact = variant === "compact";
-  const masonryClass = MASONRY_CLASS_BY_VARIANT[variant];
+  const gridClass = GRID_CLASS_BY_VARIANT[variant];
 
   const [rankingFilter, setRankingFilter] = useState<string>("전체");
   const [themeFilter, setThemeFilter] = useState<string>("전체");
@@ -309,12 +310,12 @@ export default function ProGalleryWidget({
                 key={`pro-gallery-row-${category.id}`}
                 className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}
               >
-                <span className={FILTER_LABEL_CLASS}>{category.label}</span>
+                <span className={FILTER_LABEL_CLASS}>{resolveSidebarLabel(category.label, false)}</span>
                 <div className={FILTER_SCROLL_ROW_CLASS}>
                   {category.items.map((item) => (
                     <FilterPill
                       key={`pro-gallery-${category.id}-${item.value}`}
-                      label={item.label}
+                      label={resolveSidebarLabel(item.label, false)}
                       selected={currentValue === item.value}
                       onClick={() =>
                         handleDimensionSelect(category.id, currentValue, item.value)
@@ -334,15 +335,14 @@ export default function ProGalleryWidget({
   const galleryBody = (
     <>
       {isPending ? (
-        <div className={masonryClass}>
+        <div className={gridClass}>
           {Array.from({ length: isCompact ? 6 : 8 }).map((_, index) => (
             <div
               key={`pro-gallery-skeleton-${index}`}
               className={[
-                "break-inside-avoid animate-pulse bg-stone-200",
-                isCompact ? "mb-3 rounded-xl" : "mb-4 rounded-2xl",
+                "aspect-[3/4] animate-pulse bg-stone-200",
+                isCompact ? "rounded-xl" : "rounded-2xl",
               ].join(" ")}
-              style={{ height: `${(isCompact ? 10 : 12) + (index % (isCompact ? 3 : 4)) * (isCompact ? 2.5 : 3)}rem` }}
             />
           ))}
         </div>
@@ -358,14 +358,14 @@ export default function ProGalleryWidget({
           선택한 필터에 맞는 디자인이 없습니다.
         </p>
       ) : (
-        <section className={masonryClass} aria-label={ariaLabel}>
+        <section className={gridClass} aria-label={ariaLabel}>
           {galleryItems.map((item) => {
             const isSelected = selectedIds.has(String(item.id ?? "").trim());
             const imageUrl = String(item.image_url ?? "").trim();
             const title = String(item.title ?? "").trim() || "네일 디자인";
 
             return (
-              <article key={item.id} className={isCompact ? "mb-3 break-inside-avoid" : "mb-4 break-inside-avoid"}>
+              <article key={item.id} className="min-w-0">
                 <div
                   className={[
                     "group relative overflow-hidden bg-stone-200",

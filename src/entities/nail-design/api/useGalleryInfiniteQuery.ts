@@ -14,6 +14,7 @@ export const RANKING_WEEKLY_LIMIT = 100
 /** 탭 필터 ilike 대상 스칼라 컬럼 */
 const TAB_FILTER_ILIKE_COLUMNS = [
   'title',
+  'category',
   'color',
   'mood',
   'nail_length',
@@ -21,7 +22,7 @@ const TAB_FILTER_ILIKE_COLUMNS = [
   'design_elements',
 ] as const
 /** 탭 필터 배열 포함(cs) 대상 — text[] 전용 */
-const TAB_FILTER_ARRAY_CS_COLUMNS = ['situations'] as const
+const TAB_FILTER_ARRAY_CS_COLUMNS = ['situations', 'styles'] as const
 const MAX_TAB_FILTER_TOKENS = 20
 const NAIL_SYNONYMS: Record<string, string[]> = {
   형광: ['네온', '비비드', '팝', '원색', 'neon', 'vivid', 'fluorescent', '형광'],
@@ -65,8 +66,9 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   발레코어: ['발레코어', '발레리나', '토슈즈'],
   트위드: ['트위드', 'tweed', '체크'],
   진주: ['진주', 'pearl'],
-  숏네일: ['짧은', '귀여운', '조약돌', '동글'],
-  연장: ['롱네일', '팁', '아크릴', '화려한'],
+  숏네일: ['짧은', '숏네일', '귀여운 숏네일'],
+  연장: ['롱네일', '연장', '긴손톱'],
+  롱네일: ['롱네일', '연장', '긴손톱'],
   '올드머니/시크': [
     '고급스러운',
     '클래식',
@@ -97,14 +99,16 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
 
   // ── B2C 고객 언어 역방향 매핑 (일상어 입력 → DB 표준 태그로 치환) ──
   // 쉐입/길이
-  짧은손톱: ['숏네일', '짧은', '귀여운'],
-  짧은네일: ['숏네일', '짧은'],
-  몽툭한손톱: ['숏네일', '짧은', '동글'],
-  작은손톱: ['숏네일', '짧은', '동글'],
-  긴손톱: ['연장', '롱네일', '팁'],
-  긴네일: ['연장', '롱네일', '팁'],
-  손톱연장: ['연장', '롱네일', '아크릴', '팁'],
-  연장네일: ['연장', '롱네일', '아크릴', '팁'],
+  짧은: ['숏네일', '짧은손톱'],
+  숏: ['숏네일', '짧은손톱'],
+  짧은손톱: ['숏네일', '짧은', '귀여운 숏네일'],
+  짧은네일: ['숏네일', '짧은', '귀여운 숏네일'],
+  몽툭한손톱: ['숏네일', '짧은', '귀여운 숏네일'],
+  작은손톱: ['숏네일', '짧은', '귀여운 숏네일'],
+  긴손톱: ['롱네일', '연장', '긴손톱'],
+  긴네일: ['롱네일', '연장', '긴손톱'],
+  손톱연장: ['롱네일', '연장', '긴손톱'],
+  연장네일: ['롱네일', '연장', '긴손톱'],
   네모난손톱: ['스퀘어', '각진'],
   각진손톱: ['스퀘어', '각진'],
   뾰족한손톱: ['아몬드', '오발', '뾰족'],
@@ -150,7 +154,7 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   // 색상 및 질감 비유
   딸기우유: ['파스텔', '핑크', '연핑크', '시럽'],
   메추리알: ['테라조', '도트', '점박이'],
-  조약돌: ['숏네일', '시럽', '맑은', '동글'],
+  조약돌: ['숏네일', '귀여운 숏네일', '짧은'],
   얼음: ['유리알', '투명', '맑은', '클리어', '미러파우더', '여름'],
   유리알: ['시럽', '맑은', '투명', '얼음'],
   형광펜: ['네온', '비비드', '팝', '원색'],
@@ -229,10 +233,10 @@ function collectTabFilterTokens(tab: string): string[] {
   return expandSynonymTokens(normalizedSpace, baseTokens)
 }
 
-// '휴가네일', '웨딩아트'처럼 접미사가 붙은 복합 명사를 순수 키워드로 정제한다.
+// '휴가네일', '짧은손톱네일'처럼 접미사가 붙은 복합 명사를 순수 키워드로 정제한다.
 // 사전에 정확한 키가 이미 존재하면 원형을 유지하고(예: '숏네일', '반짝이네일'),
-// 없을 때만 접미사('네일'/'아트'/'디자인')를 제거해 재조회용 키를 만든다.
-const NAIL_KEYWORD_SUFFIX_REGEX = /(네일|아트|디자인)$/
+// 없을 때만 접미사('네일'/'아트'/'디자인'/'손톱')를 제거해 재조회용 키를 만든다.
+const NAIL_KEYWORD_SUFFIX_REGEX = /(네일|아트|디자인|손톱)$/
 
 function stripNailKeywordSuffix(raw: string): string {
   const trimmed = raw.trim()

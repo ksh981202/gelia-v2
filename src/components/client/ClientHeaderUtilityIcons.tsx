@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import LanguageToggle from '@/components/LanguageToggle'
 import { supabase } from '@/shared/api/supabaseClient'
+import { isAdminEmail } from '@/shared/constants/auth'
 
 type ClientHeaderUtilityIconsProps = {
   className?: string
@@ -16,7 +17,7 @@ export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeade
     let cancelled = false
 
     const applyAdminEmail = (email: string | undefined) => {
-      if (!cancelled) setIsAdminUser(email?.trim().toLowerCase() === 'k981202@naver.com')
+      if (!cancelled) setIsAdminUser(isAdminEmail(email))
     }
 
     void supabase.auth.getUser().then(({ data }) => {

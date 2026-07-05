@@ -1,6 +1,7 @@
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -184,9 +185,6 @@ export default function ShapeBestListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
-          <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            {isEnglish ? "Shape BEST Nails" : "손톱 형태별 인기 네일"}
-          </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>
@@ -214,19 +212,13 @@ export default function ShapeBestListPage() {
           <div className="w-4 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>Total <span className="font-bold text-[#FF7E67]">{maxLimit}</span> designs</>
-            ) : (
-              <>총 <span className="font-bold text-[#FF7E67]">{maxLimit}</span>개의 디자인</>
-            )}
-          </span>
-          <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
-            <span>{isEnglish ? "Popular" : "인기순"}</span>
-            <ChevronDown size={14} className="text-gray-500" />
-          </span>
-        </div>
+        <GalleryListTypographyHeader
+          breadcrumb={isEnglish ? "Shape BEST Nails" : "손톱 형태별 인기 네일"}
+          mainTitle={displayShapeTabLabel(activeTab, isEnglish)}
+          totalCount={maxLimit}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0 px-4 pb-3 pt-2"
+        />
       </div>
 
       <main className="grid grid-cols-2 gap-4 px-5 pt-4 pb-8">

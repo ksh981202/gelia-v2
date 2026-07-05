@@ -17,7 +17,7 @@ const GALLERY_PREVIEW_LIMIT = 10
 const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '내 컬렉션 보관함', en: 'Saved Nails' },
+  saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
 }
 
 const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; orderColumn: string }> = {
@@ -318,7 +318,7 @@ export default function ClientMyPage() {
                 {isSavedCountLoading ? '...' : savedCount}
               </span>
               <span className="text-[14px] font-semibold text-stone-700">
-                {isEnglish ? 'Saved Nails' : '내 컬렉션 보관함'}
+                {isEnglish ? tabLabels.saved.en : tabLabels.saved.ko}
               </span>
             </button>
           </div>

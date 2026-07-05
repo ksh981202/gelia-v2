@@ -18,7 +18,7 @@ type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
 const LIST_TITLES: Record<ListType, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '내 컬렉션 보관함', en: 'Saved Nails' },
+  saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
 }
 
 const LIST_PAGE_SIZE = 10

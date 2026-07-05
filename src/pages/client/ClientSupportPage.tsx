@@ -1,4 +1,5 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { ADMIN_EMAILS } from '@/shared/constants/auth'
 import { ChevronLeft, ChevronRight, Mail } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -40,7 +41,7 @@ export default function ClientSupportPage() {
 
   const handleEmailCopy = async () => {
     try {
-      await navigator.clipboard.writeText("k981202@naver.com")
+      await navigator.clipboard.writeText(ADMIN_EMAILS[0])
       setShowToast(true)
       setTimeout(() => {
         setShowToast(false)

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import AdminGuard from '../../widgets/layout/AdminGuard'
+import AdminGuard from './guards/AdminGuard'
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
 import {

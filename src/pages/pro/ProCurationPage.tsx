@@ -11,13 +11,12 @@ import ProCreateCurationModal from "@/pages/pro/components/ProCreateCurationModa
 import ProEditLookbookModal from "@/pages/pro/components/ProEditLookbookModal";
 import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
 import { supabase } from "@/shared/api/supabaseClient";
+import { isAdminEmail } from "@/shared/constants/auth";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-const GELIA_HEAD_ADMIN_EMAIL = "k981202@naver.com";
 
 const PAGE_ROOT_CLASS = "flex h-full w-full flex-col";
 const CARD_GRID_CLASS = "grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
@@ -66,7 +65,8 @@ export default function ProCurationPage() {
   const { data: curations = [], isLoading, isError, refetch } = useProCurationsListQuery();
 
   const selectedIdSet = useMemo(() => new Set(selectedNails.map((nail) => nail.id)), [selectedNails]);
-  const isAdmin = user?.email === GELIA_HEAD_ADMIN_EMAIL;
+  const userEmail = user?.email ?? null;
+  const isAdmin = isAdminEmail(userEmail);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +94,7 @@ export default function ProCurationPage() {
   );
 
   const handleCreateCuration = () => {
+    if (!isAdminEmail(userEmail)) return;
     setIsCreateModalOpen(true);
   };
 
@@ -163,11 +164,13 @@ export default function ProCurationPage() {
 
   const handleEdit = (event: MouseEvent, lookbook: ProLookbookListItem) => {
     event.stopPropagation();
+    if (!isAdminEmail(userEmail)) return;
     setEditTarget(lookbook);
   };
 
   const handleDelete = async (event: MouseEvent, lookbook: ProLookbookListItem) => {
     event.stopPropagation();
+    if (!isAdminEmail(userEmail)) return;
     if (!window.confirm("이 큐레이션을 정말 삭제하시겠습니까?")) {
       return;
     }
@@ -322,7 +325,7 @@ export default function ProCurationPage() {
         />
       ) : null}
 
-      {isCreateModalOpen ? (
+      {isAdmin && isCreateModalOpen ? (
         <ProCreateCurationModal
           onClose={() => setIsCreateModalOpen(false)}
           onSaved={() => {

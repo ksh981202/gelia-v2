@@ -1,5 +1,6 @@
 import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
-import { mapPcGallerySortToQuery, mapRankingFilterToGallerySort, findActivePcSidebarFilter, formatGalleryCount } from "@/features/client-home/clientPcSidebarConfig";
+import { mapPcGallerySortToQuery, mapRankingFilterToGallerySort, findActivePcSidebarFilter, resolveSidebarLabel } from "@/features/client-home/clientPcSidebarConfig";
+import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import {
   useClientPcFilterStore,
   useClientPcGalleryExtraTabs,
@@ -13,6 +14,7 @@ import FolderSelectModal from "@/features/collection/components/FolderSelectModa
 import { useUserStore } from "@/features/user-actions/useUserStore";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { ADMIN_EMAILS } from "@/shared/constants/auth";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
@@ -139,30 +141,27 @@ function PcGalleryNavigatorBar({
   isLoading: boolean;
   isEnglish: boolean;
 }) {
-  const countLabel = isLoading ? "…" : formatGalleryCount(totalCount);
+  const count = isLoading || totalCount == null ? 0 : totalCount;
 
   return (
-    <div className="mb-6 flex items-end justify-between border-b border-stone-200 pb-3">
-      <h2 className="text-[18px] font-bold tracking-tight text-stone-900">
-        {activeFilter ? (
-          <>
-            <span aria-hidden>✨ </span>
-            {activeFilter.categoryLabel} / {activeFilter.filterName}{" "}
-            <span className="font-bold text-stone-800">
-              ({isEnglish ? "total " : "총 "}
-              <span className="text-[#FF7E67]">{countLabel}</span>
-              {isEnglish ? "" : "개"})
-            </span>
-          </>
-        ) : (
-          <>
-            <span aria-hidden>💅 </span>
-            {isEnglish ? "Total " : "총 "}
-            <span className="text-[#FF7E67]">{countLabel}</span>
-            {isEnglish ? " premium designs" : "개의 프리미엄 디자인"}
-          </>
-        )}
-      </h2>
+    <div className="mb-6 border-b border-stone-200 pb-3">
+      {activeFilter ? (
+        <GalleryListTypographyHeader
+          breadcrumb={resolveSidebarLabel(activeFilter.categoryLabel, isEnglish)}
+          mainTitle={resolveSidebarLabel(activeFilter.filterName, isEnglish)}
+          totalCount={count}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0"
+        />
+      ) : (
+        <GalleryListTypographyHeader
+          breadcrumb={isEnglish ? "GELIA Gallery" : "젤리아 갤러리"}
+          mainTitle={isEnglish ? "Premium Nail Designs" : "프리미엄 네일 디자인"}
+          totalCount={count}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0"
+        />
+      )}
     </div>
   );
 }
@@ -555,7 +554,9 @@ export default function ClientHomePage() {
           {isFooterOpen && (
             <div className="mt-2 space-y-1.5">
               <p className="text-[13px] text-gray-500">{isEnglish ? "A new standard for finding your own nail style, GELIA" : "나만의 네일 스타일을 찾는 새로운 기준, 젤리아"}</p>
-              <p className="text-[13px] text-gray-500">{isEnglish ? "Contact: k981202@naver.com" : "문의: k981202@naver.com"}</p>
+              <p className="text-[13px] text-gray-500">
+                {isEnglish ? `Contact: ${ADMIN_EMAILS[0]}` : `문의: ${ADMIN_EMAILS[0]}`}
+              </p>
             </div>
           )}
         </div>

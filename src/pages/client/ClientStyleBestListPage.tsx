@@ -3,6 +3,7 @@ import { filterNonZeroRankingRpcRows } from '@/entities/nail-design/api/useGalle
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { PageContainer } from '@/shared/ui/PageContainer'
+import { GalleryListTypographyHeader } from '@/widgets/gallery-list/GalleryListTypographyHeader'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -180,10 +181,6 @@ export default function ClientStyleBestListPage() {
               <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
             </button>
 
-            <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,18rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-              {isEnglish ? 'Most Popular Styles BEST ✨' : '가장 많이 찾은 스타일 BEST ✨'}
-            </h1>
-
             <Link
               to="/gallery"
               className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
@@ -220,22 +217,13 @@ export default function ClientStyleBestListPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>
-                Total <strong className="font-bold text-pink-500">{maxLimit}</strong> designs
-              </>
-            ) : (
-              <>
-                총 <strong className="font-bold text-pink-500">{maxLimit}</strong>개의 디자인
-              </>
-            )}
-          </span>
-          <span className="text-[11px] text-gray-400">
-            {isEnglish ? 'Based on Views, Saves, Likes' : '조회·저장·좋아요 합산 기준'}
-          </span>
-        </div>
+        <GalleryListTypographyHeader
+          breadcrumb={isEnglish ? 'Style BEST' : '스타일 BEST'}
+          mainTitle={displayStyleBestTabLabel(activeTabLabel, isEnglish)}
+          totalCount={maxLimit}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0"
+        />
       </div>
 
       <div className="min-h-0 flex-1">

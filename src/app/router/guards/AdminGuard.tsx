@@ -1,8 +1,7 @@
+import { isAdminEmail } from '@/shared/constants/auth'
 import { useEffect, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { supabase } from '@/shared/api/supabaseClient'
-
-const ADMIN_EMAIL = 'k981202@naver.com'
 
 export default function AdminGuard() {
   const navigate = useNavigate()
@@ -14,11 +13,10 @@ export default function AdminGuard() {
 
     const checkAdminSession = async () => {
       const { data } = await supabase.auth.getSession()
-      const email = data.session?.user?.email?.trim().toLowerCase()
 
       if (cancelled) return
 
-      if (email !== ADMIN_EMAIL) {
+      if (!isAdminEmail(data.session?.user?.email)) {
         alert('최고 관리자만 접근할 수 있습니다.')
         navigate('/', { replace: true })
         return
