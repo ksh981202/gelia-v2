@@ -40,7 +40,7 @@ function CollectionNailCard({
 
   return (
     <article
-      className={`mb-4 break-inside-avoid cursor-pointer ${isEditing && isSelected ? 'rounded-2xl ring-2 ring-orange-500 ring-offset-2' : ''}`}
+      className={`mb-4 break-inside-avoid cursor-pointer ${isEditing && isSelected ? 'rounded-2xl ring-2 ring-stone-800 ring-offset-2' : ''}`}
       role="button"
       tabIndex={0}
       onClick={() => onInteract(item.id, title, imageUrl)}
@@ -70,7 +70,7 @@ function CollectionNailCard({
           >
             {isSelected ? (
               <CheckCircle2
-                className="h-7 w-7 fill-orange-500 text-white drop-shadow-md"
+                className="h-7 w-7 fill-stone-800 text-white drop-shadow-md"
                 strokeWidth={2}
               />
             ) : (
@@ -275,10 +275,6 @@ export default function ClientCollectionPage() {
     removeFolderItemsMutation.isPending || deleteDefaultSavesMutation.isPending
   const isFolderDeletePending = deleteFolderMutation.isPending
 
-  const gallerySubtitle = isEnglish
-    ? `${nailCount} curated design${nailCount === 1 ? '' : 's'}`
-    : `엄선된 네일 디자인 ${nailCount}개`
-
   return (
     <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
       <ClientGlobalHeader showBackButton />
@@ -334,16 +330,24 @@ export default function ClientCollectionPage() {
                 {isEnglish ? '🗑️ Delete Folder' : '🗑️ 폴더 삭제'}
               </button>
             ) : null}
+          </div>
+        </div>
+
+        {canDeleteFolder && folder ? (
+          <div className="mb-8 flex w-full flex-col">
             <button
               type="button"
               onClick={() => void handleShare()}
-              className="flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-1.5 text-[13px] font-medium text-stone-600 shadow-sm transition-all hover:bg-stone-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 text-[15px] font-semibold text-stone-800 shadow-sm transition-colors hover:bg-stone-50"
             >
-              <LinkIcon size={14} className="text-stone-500" strokeWidth={2.25} aria-hidden />
-              {isEnglish ? 'Copy Share Link' : '공유 링크 복사'}
+              <LinkIcon className="h-5 w-5 text-stone-500" strokeWidth={2.25} aria-hidden />
+              컬렉션 링크 공유하기
             </button>
+            <p className="mt-3 text-center text-[12px] text-stone-500 tracking-wide">
+              💡 좋아하는 디자인을 모아 간편하게 전달해 보세요.
+            </p>
           </div>
-        </div>
+        ) : null}
 
         {isLoading ? (
           <div className="columns-2 gap-4 md:columns-3 lg:columns-4">
@@ -366,8 +370,7 @@ export default function ClientCollectionPage() {
         ) : (
           <>
             {isOwner ? (
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="text-[14px] font-medium text-stone-600">{gallerySubtitle}</p>
+              <div className="mb-4 flex items-center justify-end gap-3">
                 <div className="flex shrink-0 items-center gap-2">
                   {!isEditing ? (
                     <button

@@ -18,7 +18,7 @@ type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
 const LIST_TITLES: Record<ListType, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '저장한 네일', en: 'Saved Nails' },
+  saved: { ko: '내 컬렉션 보관함', en: 'Saved Nails' },
 }
 
 const LIST_PAGE_SIZE = 10
@@ -363,7 +363,7 @@ export default function ClientMyNailListPage() {
                   return (
                     <article
                       key={item.id}
-                      className={`flex cursor-pointer flex-col ${isEditing && isSelected ? 'ring-2 ring-orange-500 ring-offset-2 rounded-xl md:rounded-2xl' : ''}`}
+                      className={`flex cursor-pointer flex-col ${isEditing && isSelected ? 'rounded-xl ring-2 ring-stone-800 ring-offset-2 md:rounded-2xl' : ''}`}
                       role="button"
                       tabIndex={0}
                       onClick={() => handleCardClick(item.id, title, imageUrl)}
@@ -389,7 +389,7 @@ export default function ClientMyNailListPage() {
                           >
                             {isSelected ? (
                               <CheckCircle2
-                                className="h-7 w-7 fill-orange-500 text-white drop-shadow-md"
+                                className="h-7 w-7 fill-stone-800 text-white drop-shadow-md"
                                 strokeWidth={2}
                               />
                             ) : (

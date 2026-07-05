@@ -70,7 +70,7 @@ export default function FolderSelectModal({
     setPendingAction('default')
     try {
       await saveToDefaultUserSaves(currentUserId, nailId, queryClient)
-      toast.success("'기본 저장'에 저장되었습니다.")
+      toast.success("'기본 보관함'에 담겼습니다.")
       onSaveSuccess?.()
       onClose()
     } catch (error) {
@@ -90,7 +90,7 @@ export default function FolderSelectModal({
       setPendingAction(folderId)
       try {
         await saveToFolderMutation.mutateAsync({ folderId, nailId })
-        toast.success(`'${folderName}' 폴더에 저장되었습니다.`)
+        toast.success(`'${folderName}' 컬렉션에 담겼습니다.`)
         onSaveSuccess?.()
         onClose()
       } catch (error) {
@@ -121,7 +121,7 @@ export default function FolderSelectModal({
         name: trimmedName,
       })
       await saveToFolderMutation.mutateAsync({ folderId: folder.id, nailId })
-      toast.success(`'${trimmedName}' 폴더에 저장되었습니다.`)
+      toast.success(`'${trimmedName}' 컬렉션에 담겼습니다.`)
       setNewFolderName('')
       onSaveSuccess?.()
       onClose()
@@ -145,12 +145,12 @@ export default function FolderSelectModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 p-0 md:items-center md:p-4"
       role="presentation"
       onClick={isBusy ? undefined : onClose}
     >
       <div
-        className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="mt-auto flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl transition-all md:mt-0 md:max-h-[85vh] md:max-w-md md:rounded-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="folder-select-modal-title"
@@ -198,8 +198,8 @@ export default function FolderSelectModal({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold text-stone-900">기본 저장</span>
-              <span className="block text-xs text-stone-500">저장한 네일 목록에 바로 담기</span>
+              <span className="block text-sm font-semibold text-stone-900">기본 보관함</span>
+              <span className="block text-xs text-stone-500">컬렉션 목록에 바로 담기</span>
             </span>
           </button>
 
@@ -246,7 +246,7 @@ export default function FolderSelectModal({
           )}
         </div>
 
-        <div className="border-t border-stone-100 bg-stone-50/80 px-4 py-4">
+        <div className="border-t border-stone-100 bg-stone-50/80 px-4 pt-4 pb-8 md:pb-4">
           <div className="flex gap-2">
             <input
               type="text"

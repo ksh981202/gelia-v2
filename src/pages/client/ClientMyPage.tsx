@@ -1,6 +1,7 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
@@ -16,7 +17,7 @@ const GALLERY_PREVIEW_LIMIT = 10
 const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '저장한 네일', en: 'Saved Nails' },
+  saved: { ko: '내 컬렉션 보관함', en: 'Saved Nails' },
 }
 
 const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; orderColumn: string }> = {
@@ -124,12 +125,7 @@ export default function ClientMyPage() {
     enabled: Boolean(currentUserId),
     staleTime: 30_000,
   })
-  const { data: savedCount = 0, isLoading: isSavedCountLoading } = useQuery({
-    queryKey: ['my-page-count', 'saved', currentUserId],
-    queryFn: () => fetchActivityCount('user_saves', currentUserId),
-    enabled: Boolean(currentUserId),
-    staleTime: 30_000,
-  })
+  const { data: savedCount = 0, isLoading: isSavedCountLoading } = useUserSavedCountQuery(currentUserId)
 
   useEffect(() => {
     let cancelled = false
@@ -322,7 +318,7 @@ export default function ClientMyPage() {
                 {isSavedCountLoading ? '...' : savedCount}
               </span>
               <span className="text-[14px] font-semibold text-stone-700">
-                {isEnglish ? 'Saved Nails' : '저장한 네일'}
+                {isEnglish ? 'Saved Nails' : '내 컬렉션 보관함'}
               </span>
             </button>
           </div>

@@ -134,7 +134,7 @@ export function useClientFolderDetailQuery(
         const virtualFolder: ClientFolderRow = {
           id: DEFAULT_COLLECTION_FOLDER_ID,
           user_id: userId,
-          name: '기본 저장',
+          name: '기본 보관함',
           is_public: false,
           created_at: new Date(0).toISOString(),
         }

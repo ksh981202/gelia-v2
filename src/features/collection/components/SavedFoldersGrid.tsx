@@ -72,7 +72,7 @@ export default function SavedFoldersGrid({
   const { data: coverMap = {} } = useClientFolderCoverMapQuery(userId, folderIds)
   const { data: defaultCover } = useDefaultSaveCoverQuery(userId)
 
-  const defaultTitle = isEnglish ? 'Default Saves' : '기본 저장'
+  const defaultTitle = isEnglish ? 'Default Archive' : '기본 보관함'
 
   if (isLoading) {
     return (

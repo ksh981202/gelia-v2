@@ -4,13 +4,13 @@ import {
   CalendarHeart,
   ChevronDown,
   ChevronUp,
+  Heart,
   Home,
   Palette,
   Scissors,
   Search,
   Sparkles,
   Trophy,
-  User,
   Wand2,
   type LucideIcon,
 } from 'lucide-react'
@@ -37,12 +37,24 @@ import {
   type PcSidebarCategoryId,
   type SidebarFilterItem,
 } from '@/features/client-home/clientPcSidebarConfig'
+import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
+import { cn } from '@/lib/utils'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
     'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 pt-1 pb-1.5 [-webkit-tap-highlight-color:transparent]',
     isActive ? 'text-[#FF7E67]' : 'text-gray-400',
   ].join(' ')
+
+function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
+  if (location.pathname.startsWith('/collection/')) return true
+  if (location.pathname === '/my/list/saved') return true
+  if (location.pathname === '/my') {
+    return new URLSearchParams(location.search).get('tab') === 'saved'
+  }
+  return false
+}
 
 const SIDEBAR_ITEM_BASE_CLASS =
   'w-full cursor-pointer py-2 text-left text-[15px] font-medium text-stone-700 transition-colors hover:text-black'
@@ -226,6 +238,8 @@ function ClientLayoutContent() {
   const togglePcFilter = useClientPcFilterStore((state) => state.toggleFilter)
   const toggleRankingFilter = useClientPcFilterStore((state) => state.toggleRankingFilter)
   const resetPcFilters = useClientPcFilterStore((state) => state.resetFilters)
+  const currentUserId = useCurrentUserId()
+  const { data: savedCount = 0 } = useUserSavedCountQuery(currentUserId)
 
   const handleLogoClick = () => {
     resetPcFilters()
@@ -325,6 +339,18 @@ function ClientLayoutContent() {
 
             <div className="mt-6 mb-2 h-px w-full bg-stone-100" aria-hidden />
             <div className="flex w-full flex-col">
+              <Link
+                to="/my?tab=saved"
+                className="flex items-center justify-between py-3 transition-opacity hover:opacity-80"
+              >
+                <div className="flex items-center gap-2 text-[16px] font-bold text-stone-900">
+                  <Heart className="h-5 w-5 fill-red-500 text-red-500" strokeWidth={2} aria-hidden />
+                  <span>내 컬렉션 보관함</span>
+                </div>
+                {savedCount > 0 ? (
+                  <span className="text-sm font-semibold tabular-nums text-stone-400">({savedCount})</span>
+                ) : null}
+              </Link>
               <Link
                 to="/test-intro"
                 className="flex items-center gap-2 py-3 text-[16px] font-bold text-stone-900 transition-colors hover:text-orange-600"
@@ -433,16 +459,23 @@ function ClientLayoutContent() {
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
           <NavLink
-            to="/my"
+            to="/my?tab=saved"
             className={bottomNavLinkClass}
-            aria-label={isEnglish ? 'My tab' : '마이 탭'}
+            isActive={isCollectionNavActive}
+            aria-label={isEnglish ? 'Collection tab' : '컬렉션 탭'}
           >
-            <User
-              className="h-6 w-6 shrink-0"
-              strokeWidth={2.5}
-              aria-hidden
-            />
-            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'My' : '마이'}</span>
+            {({ isActive }) => (
+              <>
+                <Heart
+                  className={cn('h-6 w-6 shrink-0', isActive ? 'fill-current' : '')}
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+                <span className="text-[9px] font-medium leading-none sm:text-[10px]">
+                  {isEnglish ? 'Collection' : '컬렉션'}
+                </span>
+              </>
+            )}
           </NavLink>
         </nav>
         )}
