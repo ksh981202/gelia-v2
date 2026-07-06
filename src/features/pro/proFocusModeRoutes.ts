@@ -1,8 +1,7 @@
-export const PRO_FOCUS_MODE_ALLOWED_PATHS = new Set(["/pro", "/pro/collections"]);
+export const PRO_FOCUS_MODE_ALLOWED_PATHS = new Set(["/pro", "/pro/collections", "/pro/proposals"]);
 
 const PRO_FOCUS_MODE_BLOCKED_PREFIXES = [
   "/pro/curation",
-  "/pro/proposals",
   "/pro/growth",
   "/pro/settings",
   "/pro/faq",

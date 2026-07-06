@@ -12,6 +12,7 @@ const PRO_MENU_ITEMS = [
 const PRO_FOCUS_MENU_ITEMS = [
   { id: "designs", labelKo: "💅 프리미엄 디자인", labelEn: "💅 Premium Designs", to: "/pro", end: true },
   { id: "collection", labelKo: "⭐ VIP 룩북", labelEn: "⭐ VIP Lookbook", to: "/pro/collections" },
+  { id: "proposals", labelKo: "📋 상담 제안서", labelEn: "📋 Proposals", to: "/pro/proposals" },
   { id: "test", labelKo: "✨ 퍼스널 네일 찾기", labelEn: "✨ Find Personal Nail", to: "/pro/test-intro" },
 ] as const;
 
