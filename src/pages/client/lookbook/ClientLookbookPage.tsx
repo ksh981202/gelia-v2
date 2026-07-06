@@ -91,14 +91,17 @@ export default function ClientLookbookPage() {
   return (
     <div className="min-h-screen w-full bg-[#FAF7F2] px-5 pb-20 pt-8 md:pt-16">
       <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl">
-        <header className="mx-auto mb-8 max-w-2xl px-4 text-center md:mb-12">
-          <h1 className="text-2xl font-bold tracking-tight text-stone-800 md:text-3xl md:tracking-tighter">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <span className="mb-3 block text-[12px] font-bold tracking-widest text-[#FF7E67]">
+            EDITOR'S PICKS
+          </span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 md:text-4xl">
             {data.title}
           </h1>
-          <p className="mt-3 break-keep text-sm leading-relaxed text-stone-500 md:text-base md:leading-loose">
-            원장님이 엄선해 담아 둔 디자인 컬렉션입니다.
+          <p className="mt-4 text-[14px] text-stone-500 md:text-[15px]">
+            원장님이 추천한 디자인 컬렉션입니다.
           </p>
-        </header>
+        </div>
 
         {data.nails.length > 0 ? (
           <section

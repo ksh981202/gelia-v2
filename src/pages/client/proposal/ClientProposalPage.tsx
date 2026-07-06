@@ -131,27 +131,24 @@ export default function ClientProposalPage() {
     );
   }
 
-  const displayGreeting =
-    data.greetingMessage && data.greetingMessage !== data.customerName
-      ? data.greetingMessage
-      : "✨ 원장님이 고객님을 위해 엄선한 맞춤형 디자인입니다.\n가장 아름답게 완성할 특별한 무드를 만나보세요 🤍";
-
   const galleryItems = data.nails;
 
   return (
     <div className="min-h-screen w-full bg-[#FAF7F2] px-5 pb-20 pt-8 md:pt-16">
       <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl">
-        <header className="mx-auto mb-8 max-w-2xl px-4 text-center md:mb-12">
-          <span className="mb-3 block text-[12px] font-bold tracking-widest text-orange-600">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <span className="mb-3 block text-[12px] font-bold tracking-widest text-[#FF7E67]">
             SPECIAL FOR YOU
           </span>
           <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 md:text-4xl">
             For. {formatCustomerDisplayName(data.customerName)}
           </h1>
-          <p className="mt-4 whitespace-pre-line break-keep text-[14px] leading-relaxed text-stone-500 md:text-[15px]">
-            {displayGreeting}
-          </p>
-        </header>
+          {data.greetingMessage ? (
+            <p className="mt-4 whitespace-pre-line break-keep text-[14px] leading-relaxed text-stone-500 md:text-[15px]">
+              {data.greetingMessage}
+            </p>
+          ) : null}
+        </div>
 
         {galleryItems.length > 0 ? (
           <section
