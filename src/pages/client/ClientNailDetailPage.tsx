@@ -20,6 +20,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
+import { useNailDetailViewTracking } from "@/features/nail-activity/useNailDetailViewTracking";
 import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
@@ -433,7 +434,6 @@ const Detail = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
   const [showFloatingHeart, setShowFloatingHeart] = useState(false);
-  const [optimisticViewNailId, setOptimisticViewNailId] = useState<string | null>(null);
   const [floatingHeartKey, setFloatingHeartKey] = useState(0);
   const floatingHeartHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shareToastHideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -454,6 +454,8 @@ const Detail = () => {
     if (initialNailData?.id === nailId) return initialNailData;
     return null;
   }, [fetchedRow, initialNailData, nailId]);
+
+  useNailDetailViewTracking(displayRow?.id);
 
   const isLoading = queryLoading && !displayRow;
 
@@ -527,10 +529,9 @@ const Detail = () => {
   const isLiked = reactionOverride?.key === reactionKey ? reactionOverride.isLiked : storedIsLiked;
   const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
 
-  const views = (displayRow?.popularity ?? 0) + (displayRow?.id === optimisticViewNailId ? 1 : 0);
+  const views = displayRow?.popularity ?? 0;
   const saveDisplayCount = displayRow?.saves ?? 0;
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
-  const detailViewTrackedForIdRef = useRef<string | null>(null);
 
   const similarExcludeId = displayRow?.id ?? nailId;
   const similarTags = useMemo(() => {
@@ -613,44 +614,6 @@ const Detail = () => {
       cancelled = true;
     };
   }, [displayRow?.id, currentUserId, reactionKey]);
-
-  useEffect(() => {
-    detailViewTrackedForIdRef.current = null;
-  }, [nailId]);
-
-  useEffect(() => {
-    const nailDesignId = displayRow?.id;
-    if (!nailDesignId) return;
-    if (!currentUserId) return;
-    if (detailViewTrackedForIdRef.current === nailDesignId) return;
-    detailViewTrackedForIdRef.current = nailDesignId;
-    setOptimisticViewNailId(nailDesignId);
-
-    void (async () => {
-      try {
-        await trackNailActivity(nailDesignId, "detail_view", currentUserId);
-        const { error: recentViewError } = await supabase.from("user_recent_views").upsert({
-          user_id: currentUserId,
-          nail_id: nailDesignId,
-          viewed_at: new Date().toISOString(),
-        });
-        if (recentViewError) throw recentViewError;
-        queryClient.invalidateQueries({ queryKey: ['my-page-count', 'recent', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'recent', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'recent', currentUserId] });
-        const { error } = await supabase.rpc("increment_popularity", {
-          nail_id: nailDesignId,
-          increment_value: 1,
-        });
-        if (error) throw error;
-      } catch (error) {
-        setOptimisticViewNailId((current) => (current === nailDesignId ? null : current));
-        if (import.meta.env.DEV) {
-          console.warn("[Detail] popularity increment failed", error);
-        }
-      }
-    })();
-  }, [displayRow?.id, currentUserId, queryClient]);
 
   useEffect(() => {
     return () => {
