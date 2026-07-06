@@ -356,9 +356,6 @@ export function useDeleteFolderMutation() {
       void queryClient.invalidateQueries({
         queryKey: [CLIENT_FOLDERS_QUERY_KEY, variables.userId],
       })
-      void queryClient.invalidateQueries({
-        queryKey: [CLIENT_FOLDER_DETAIL_QUERY_KEY, variables.folderId.trim()],
-      })
       void queryClient.invalidateQueries({ queryKey: [CLIENT_FOLDER_COVERS_QUERY_KEY] })
       invalidateUserSavedCountQuery(queryClient, variables.userId)
     },

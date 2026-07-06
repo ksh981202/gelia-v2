@@ -4,7 +4,6 @@ import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
 import { ChevronLeft, Share2 } from 'lucide-react'
-import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 type MagazineDetailPost = {
@@ -16,8 +15,6 @@ type MagazineDetailPost = {
   thumbnail_url: string | null
   created_at: string | null
 }
-
-const DEFAULT_OG_IMAGE = 'https://gelia.app/ogimage/og-image.webp'
 
 async function fetchMagazinePost(id: string): Promise<MagazineDetailPost | null> {
   const { data, error } = await supabase
@@ -41,49 +38,6 @@ function formatCreatedAt(raw: string | null, isEnglish: boolean): string {
     month: 'long',
     day: 'numeric',
   }).format(date)
-}
-
-function getPlainTextSummary(html: string | null): string {
-  if (!html) return ''
-
-  const container = document.createElement('div')
-  container.innerHTML = DOMPurify.sanitize(html)
-  return (container.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 150)
-}
-
-function upsertMetaTag(
-  selector: string,
-  attrName: 'property' | 'name',
-  attrValue: string,
-  content: string,
-): HTMLMetaElement | null {
-  const head = document.head
-  if (!head) return null
-  let el = document.querySelector(selector) as HTMLMetaElement | null
-  if (!el) {
-    el = document.createElement('meta')
-    el.setAttribute(attrName, attrValue)
-    head.appendChild(el)
-  }
-  el.setAttribute('content', content)
-  return el
-}
-
-function getMetaContent(selector: string): string | null {
-  return document.querySelector(selector)?.getAttribute('content') ?? null
-}
-
-function restoreMetaTag(
-  selector: string,
-  attrName: 'property' | 'name',
-  attrValue: string,
-  content: string | null,
-) {
-  if (content == null) {
-    document.querySelector(selector)?.remove()
-    return
-  }
-  upsertMetaTag(selector, attrName, attrValue, content)
 }
 
 async function copyCurrentUrl() {
@@ -166,51 +120,6 @@ export default function ClientMagazineDetailPage() {
   const content = isEnglish && post?.content_en ? post.content_en : post?.content
   const sanitizedContent = DOMPurify.sanitize(content ?? '')
   const createdAt = formatCreatedAt(post?.created_at ?? null, isEnglish)
-
-  useEffect(() => {
-    if (!post) return
-
-    const originalTitle = document.title
-    const originalDescription = getMetaContent('meta[name="description"]')
-    const originalOgType = getMetaContent('meta[property="og:type"]')
-    const originalOgTitle = getMetaContent('meta[property="og:title"]')
-    const originalOgDescription = getMetaContent('meta[property="og:description"]')
-    const originalOgImage = getMetaContent('meta[property="og:image"]')
-    const originalOgUrl = getMetaContent('meta[property="og:url"]')
-    const localizedTitle = isEnglish && post.title_en ? post.title_en : post.title
-    const localizedContent = isEnglish && post.content_en ? post.content_en : post.content
-    const seoTitle = `${localizedTitle?.trim() || (isEnglish ? 'Untitled' : '제목 없음')} | GELIA Magazine`
-    const description =
-      getPlainTextSummary(localizedContent) ||
-      (isEnglish
-        ? 'Read the latest nail trend article from GELIA Magazine.'
-        : '젤리아 매거진에서 최신 네일 트렌드 콘텐츠를 확인해 보세요.')
-    const ogImage = post.thumbnail_url?.trim() || DEFAULT_OG_IMAGE
-    const ogUrl = window.location.href
-
-    document.title = seoTitle
-    upsertMetaTag('meta[name="description"]', 'name', 'description', description)
-    upsertMetaTag('meta[property="og:type"]', 'property', 'og:type', 'article')
-    upsertMetaTag('meta[property="og:title"]', 'property', 'og:title', seoTitle)
-    upsertMetaTag('meta[property="og:description"]', 'property', 'og:description', description)
-    upsertMetaTag('meta[property="og:image"]', 'property', 'og:image', ogImage)
-    upsertMetaTag('meta[property="og:url"]', 'property', 'og:url', ogUrl)
-
-    return () => {
-      document.title = originalTitle
-      restoreMetaTag('meta[name="description"]', 'name', 'description', originalDescription)
-      restoreMetaTag('meta[property="og:type"]', 'property', 'og:type', originalOgType)
-      restoreMetaTag('meta[property="og:title"]', 'property', 'og:title', originalOgTitle)
-      restoreMetaTag(
-        'meta[property="og:description"]',
-        'property',
-        'og:description',
-        originalOgDescription,
-      )
-      restoreMetaTag('meta[property="og:image"]', 'property', 'og:image', originalOgImage)
-      restoreMetaTag('meta[property="og:url"]', 'property', 'og:url', originalOgUrl)
-    }
-  }, [post, isEnglish])
 
   return (
     <div className="min-h-screen bg-background">

@@ -395,24 +395,6 @@ function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "e
   }
 }
 
-function upsertMetaTag(
-  selector: string,
-  attrName: "property" | "name",
-  attrValue: string,
-  content: string,
-): HTMLMetaElement | null {
-  const head = document.head;
-  if (!head) return null;
-  let el = document.querySelector(selector) as HTMLMetaElement | null;
-  if (!el) {
-    el = document.createElement("meta");
-    el.setAttribute(attrName, attrValue);
-    head.appendChild(el);
-  }
-  el.setAttribute("content", content);
-  return el;
-}
-
 const Detail = () => {
   const { language, setLanguage } = useLanguageContext();
   const isEnglish = language === "en";
@@ -676,68 +658,6 @@ const Detail = () => {
       if (shareToastHideRef.current) clearTimeout(shareToastHideRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    if (!displayRow?.id) return;
-    const originalTitle = document.title;
-    const originalDescription =
-      document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "";
-    const title = displayTitle;
-    const fallbackDescription =
-      isEnglish
-        ? "Found a nail style you love? Explore it in detail on GELIA. 💅"
-        : "마음에 쏙 드는 네일 디자인! 젤리아에서 자세히 확인해 보세요. 💅";
-    const description =
-      pickLocalized(displayRow.description, displayRow.description_en) || fallbackDescription;
-    const image = (displayRow.image_url ?? "").trim() || "https://gelia.app/ogimage/og-image.webp";
-    const url = window.location.href;
-
-    document.title = `${title} | 젤리아 (GELIA)`;
-
-    upsertMetaTag('meta[name="description"]', "name", "description", description);
-    upsertMetaTag('meta[property="og:type"]', "property", "og:type", "website");
-    upsertMetaTag('meta[property="og:url"]', "property", "og:url", url);
-    upsertMetaTag('meta[property="og:title"]', "property", "og:title", title);
-    upsertMetaTag(
-      'meta[property="og:description"]',
-      "property",
-      "og:description",
-      description,
-    );
-    upsertMetaTag('meta[property="og:image"]', "property", "og:image", image);
-
-    return () => {
-      document.title = originalTitle;
-      upsertMetaTag('meta[name="description"]', "name", "description", originalDescription);
-      upsertMetaTag('meta[property="og:url"]', "property", "og:url", "https://gelia.app");
-      upsertMetaTag(
-        'meta[property="og:title"]',
-        "property",
-        "og:title",
-        "젤리아 (GELIA) | 프리미엄 네일 큐레이션",
-      );
-      upsertMetaTag(
-        'meta[property="og:description"]',
-        "property",
-        "og:description",
-        "어떤 네일 할지 고민되나요? 핫한 트렌드부터 내 취향 맞춤 디자인까지, 젤리아에서 인생 네일을 쉽게 찾아보세요.",
-      );
-      upsertMetaTag(
-        'meta[property="og:image"]',
-        "property",
-        "og:image",
-        "https://gelia.app/ogimage/og-image.webp",
-      );
-    };
-  }, [
-    displayRow?.id,
-    displayRow?.image_url,
-    displayRow?.description,
-    displayRow?.description_en,
-    displayTitle,
-    isEnglish,
-    pickLocalized,
-  ]);
 
   const showCopiedToast = useCallback(() => {
     setShowShareToast(true);

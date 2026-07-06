@@ -195,6 +195,9 @@ function PcSidebarFilters({
     if (location.pathname !== '/') {
       navigate('/')
     }
+
+    // 필터 메뉴 클릭 시 화면 맨 위로 강제 이동 (SPA 스크롤 버그 해결)
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
   }
 
   return (

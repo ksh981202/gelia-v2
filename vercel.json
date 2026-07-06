@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/collection/:id",
+      "destination": "/api/og-handler?route=collection&id=:id"
+    },
+    {
+      "source": "/proposal/:id",
+      "destination": "/api/og-handler?route=proposal&id=:id"
+    },
+    {
+      "source": "/lookbook/:id",
+      "destination": "/api/og-handler?route=lookbook&id=:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

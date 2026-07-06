@@ -201,13 +201,21 @@ export default function ClientCollectionPage() {
     [isEditing, openDetail],
   )
 
+  const isFolderDeletePending = deleteFolderMutation.isPending
+
   const handleDeleteFolder = useCallback(async () => {
+    if (isFolderDeletePending) return
+
     if (!folderId || isDefaultFolder) return
 
+    // 2중 안전장치: 사용자에게 반드시 삭제 의사를 묻는다.
     const confirmed = window.confirm(
-      isEnglish ? 'Are you sure you want to delete this folder?' : '정말 이 폴더를 삭제하시겠습니까?',
+      isEnglish
+        ? 'Are you sure you want to delete this collection? This action cannot be undone.'
+        : '정말 이 컬렉션을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
     )
-    if (!confirmed) return
+
+    if (!confirmed) return // '취소'를 누르면 즉시 함수 종료 (삭제 안 됨)
 
     if (!currentUserId) {
       window.alert(isEnglish ? 'Please sign in to delete this folder.' : '폴더를 삭제하려면 로그인이 필요합니다.')
@@ -217,12 +225,20 @@ export default function ClientCollectionPage() {
     try {
       await deleteFolderMutation.mutateAsync({ folderId, userId: currentUserId })
       toast.success(isEnglish ? 'Folder deleted.' : '폴더가 삭제되었습니다.')
-      navigate('/my', { replace: true })
+      navigate('/my?tab=saved', { replace: true })
     } catch (error) {
       const message = error instanceof Error ? error.message : '폴더 삭제에 실패했습니다.'
       window.alert(message)
     }
-  }, [currentUserId, deleteFolderMutation, folderId, isDefaultFolder, isEnglish, navigate])
+  }, [
+    currentUserId,
+    deleteFolderMutation,
+    folderId,
+    isDefaultFolder,
+    isEnglish,
+    isFolderDeletePending,
+    navigate,
+  ])
 
   const handleRemoveSelected = useCallback(async () => {
     if (!currentUserId || selectedIds.length === 0) return
@@ -273,7 +289,6 @@ export default function ClientCollectionPage() {
 
   const isRemovePending =
     removeFolderItemsMutation.isPending || deleteDefaultSavesMutation.isPending
-  const isFolderDeletePending = deleteFolderMutation.isPending
 
   return (
     <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">

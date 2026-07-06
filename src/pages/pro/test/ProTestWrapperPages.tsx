@@ -50,9 +50,7 @@ export function ProTestStep3Page() {
 export function ProTestResultPage() {
   // PRO 환경에서는 B2C 상세(/detail/:id)로 튕기지 않도록 클릭 액션을 격리한다.
   // TODO: 추후 PRO 전용 룩북 담기/퀵뷰 모달 로직 연동
-  const handleNailClick = (item: NailDesignRow) => {
-    console.log("PRO 룩북 담기 예정:", item.id);
-  };
+  const handleNailClick = (_item: NailDesignRow) => {};
 
   return (
     <ProTestShell>
