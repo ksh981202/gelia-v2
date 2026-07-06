@@ -6,7 +6,7 @@ const DEFAULT_OG = {
 }
 
 const BOT_UA_PATTERN =
-  /bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakao|kakaotalk|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless/i
+  /bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless/i
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -74,8 +74,37 @@ function parseRouteFromRequest(req) {
   return { route: match[1].toLowerCase(), id: decodeURIComponent(match[2]) }
 }
 
-function isCrawler(userAgent) {
-  return BOT_UA_PATTERN.test(String(userAgent || ''))
+function isOgFallbackRequest(req) {
+  const query = req.query ?? {}
+  if (query.og_fallback === 'true') return true
+  const url = new URL(req.url || '/', 'https://gelia.app')
+  return url.searchParams.get('og_fallback') === 'true'
+}
+
+function appendQueryParam(url, key, value) {
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+}
+
+function getDeploymentOrigin(req) {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  const proto = req.headers['x-forwarded-proto'] || 'https'
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'gelia.app'
+  return `${proto}://${host}`
+}
+
+function buildSpaBootstrapRedirectHtml(fallbackUrl) {
+  return `<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content="0;url=${escapeHtml(fallbackUrl)}" />
+    <script>window.location.replace(${JSON.stringify(fallbackUrl)})</script>
+  </head>
+  <body></body>
+</html>`
 }
 
 async function supabaseRequest(path, options = {}) {
@@ -235,31 +264,12 @@ function buildBotHtml({ title, description, image, url }) {
 </html>`
 }
 
-function upsertMetaTag(html, selectorKind, key, value) {
-  const attr = selectorKind === 'property' ? 'property' : 'name'
-  const pattern = new RegExp(`<meta[^>]*${attr}=["']${key}["'][^>]*>`, 'i')
-  const tag = `<meta ${attr}="${key}" content="${escapeHtml(value)}" />`
-  if (pattern.test(html)) {
-    return html.replace(pattern, tag)
-  }
-  return html.replace('</head>', `    ${tag}\n  </head>`)
-}
-
-function injectOgIntoIndexHtml(html, meta, url) {
-  let next = html
-  next = next.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(meta.title)}</title>`)
-  next = upsertMetaTag(next, 'name', 'description', meta.description)
-  next = upsertMetaTag(next, 'property', 'og:type', 'website')
-  next = upsertMetaTag(next, 'property', 'og:title', meta.title)
-  next = upsertMetaTag(next, 'property', 'og:description', meta.description)
-  next = upsertMetaTag(next, 'property', 'og:image', meta.image)
-  next = upsertMetaTag(next, 'property', 'og:url', url)
-  return next
+function isCrawler(userAgent) {
+  return BOT_UA_PATTERN.test(String(userAgent || ''))
 }
 
 async function fetchIndexHtml(req) {
-  const requestUrl = getRequestUrl(req)
-  const origin = new URL(requestUrl).origin
+  const origin = getDeploymentOrigin(req)
   const response = await fetch(`${origin}/index.html`, {
     headers: { Accept: 'text/html' },
   })
@@ -269,7 +279,27 @@ async function fetchIndexHtml(req) {
   return response.text()
 }
 
+async function serveSpaIndexHtml(req, res) {
+  const indexHtml = await fetchIndexHtml(req)
+  res.statusCode = 200
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.setHeader('Cache-Control', 'private, no-cache')
+  res.end(indexHtml)
+}
+
 export default async function handler(req, res) {
+  // og_fallback=true: rewrite 우회 후 순수 SPA index.html만 반환 (무한 루프 방지)
+  if (isOgFallbackRequest(req)) {
+    try {
+      await serveSpaIndexHtml(req, res)
+    } catch {
+      res.statusCode = 502
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+      res.end('SPA bootstrap failed')
+    }
+    return
+  }
+
   const { route, id } = parseRouteFromRequest(req)
   const pageUrl = getRequestUrl(req)
 
@@ -300,20 +330,13 @@ export default async function handler(req, res) {
     return
   }
 
-  // 일반 유저: Vercel 빌드 산출물 index.html을 fetch 후 <head> OG 태그 치환 → SPA 정상 부팅
+  // 일반 유저: 빌드된 index.html을 그대로 반환 (OG 치환 없이 SPA 부팅 우선)
   try {
-    const indexHtml = await fetchIndexHtml(req)
-    const html = injectOgIntoIndexHtml(indexHtml, meta, pageUrl)
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.setHeader('Cache-Control', 'private, no-cache')
-    res.end(html)
+    await serveSpaIndexHtml(req, res)
   } catch {
-    // index.html fetch 실패 시 클라이언트 리다이렉트 폴백
+    const fallbackUrl = appendQueryParam(pageUrl, 'og_fallback', 'true')
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.end(
-      `<!doctype html><html lang="ko"><head><meta charset="UTF-8" /><title>${escapeHtml(meta.title)}</title><meta property="og:title" content="${escapeHtml(meta.title)}" /><meta property="og:image" content="${escapeHtml(meta.image)}" /><meta property="og:description" content="${escapeHtml(meta.description)}" /><meta property="og:url" content="${escapeHtml(pageUrl)}" /><script>window.location.replace(${JSON.stringify(pageUrl)})</script></head><body></body></html>`,
-    )
+    res.end(buildSpaBootstrapRedirectHtml(fallbackUrl))
   }
 }
