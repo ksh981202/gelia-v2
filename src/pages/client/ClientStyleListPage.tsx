@@ -142,7 +142,6 @@ export default function ClientStyleListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   useEffect(() => {
     const el = activeTabButtonRef.current

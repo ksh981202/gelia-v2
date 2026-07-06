@@ -98,7 +98,6 @@ export default function TextureListPage() {
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
 
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
 
   const setActiveTab = useCallback(
     (tab: (typeof TEXTURE_LIST_TABS)[number]) => {

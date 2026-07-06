@@ -108,8 +108,6 @@ export default function SyrupBestListPage() {
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
 
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
-
   const setActiveTab = useCallback(
     (tab: (typeof SYRUP_BEST_TABS)[number]) => {
       const next = new URLSearchParams(searchParams);

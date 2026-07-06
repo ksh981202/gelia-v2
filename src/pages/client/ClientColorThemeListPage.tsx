@@ -167,7 +167,6 @@ export default function ClientColorThemeListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType, { baseTab: themeBaseKeyword })
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword, { baseTab: themeBaseKeyword })
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const saveListScrollPosition = useCallback(() => {
     try {

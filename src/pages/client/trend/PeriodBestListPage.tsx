@@ -4,7 +4,7 @@ import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 

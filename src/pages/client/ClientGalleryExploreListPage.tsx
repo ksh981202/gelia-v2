@@ -109,7 +109,6 @@ export default function ClientGalleryExploreListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const sortLabel = (value: SortValue) => {
     if (value === '인기순') return isEnglish ? 'Popular' : '인기순'

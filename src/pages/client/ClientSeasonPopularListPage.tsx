@@ -209,7 +209,6 @@ export default function ClientSeasonPopularListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(finalQueryKeyword, sortType)
   const { data: totalCount } = useGalleryCountQuery(finalQueryKeyword)
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const saveListScrollPosition = useCallback(() => {
     try {

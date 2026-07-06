@@ -8,7 +8,7 @@ import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSea
 import { NAIL_KEYWORD_EN_DICTIONARY } from "@/shared/constants/nailKeywords";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
-import { ChevronDown, ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
@@ -60,7 +60,6 @@ export default function SearchTrendListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeKeyword, DEFAULT_GALLERY_SORT, { enabled: isGalleryEnabled });
   const { data: totalCount } = useGalleryCountQuery(activeKeyword, { enabled: isGalleryEnabled });
-  const totalCountLabel = totalCount == null ? "-" : totalCount.toLocaleString();
 
   const setActiveKeyword = useCallback(
     (keyword: string) => {

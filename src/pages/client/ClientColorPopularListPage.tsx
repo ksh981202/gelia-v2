@@ -158,7 +158,6 @@ export default function ClientColorPopularListPage() {
   )
 
   const { data: popularItems = [], isLoading, isError } = useColorPopularNailsQuery(activeTabLabel)
-  const totalCountLabel = popularItems.length.toLocaleString()
 
   const setColorPopularTab = useCallback(
     (label: ColorPopularTabLabel) => {

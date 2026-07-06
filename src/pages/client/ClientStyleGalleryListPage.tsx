@@ -120,7 +120,6 @@ export default function ClientStyleGalleryListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   // PUSH/REPLACE로 새 메뉴 진입 시에만 위로 올리고, POP(뒤로가기) 시에는 앱이 스크롤을 건드리지 않는다.
   useEffect(() => {

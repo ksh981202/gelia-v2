@@ -236,7 +236,9 @@ export default function ClientLayout() {
 function ClientLayoutContent() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
+  const collectionNavActive = isCollectionNavActive(null, location)
   const navigationType = useNavigationType()
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter)
   const colorFilter = useClientPcFilterStore((state) => state.colorFilter)
@@ -484,14 +486,20 @@ function ClientLayoutContent() {
           </NavLink>
           <NavLink
             to="/my?tab=saved"
-            className={bottomNavLinkClass}
-            isActive={isCollectionNavActive}
+            className={({ isActive }) =>
+              cn(
+                'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 pt-1 pb-1.5 [-webkit-tap-highlight-color:transparent]',
+                isActive || collectionNavActive ? 'text-[#FF7E67]' : 'text-gray-400',
+              )
+            }
             aria-label={isEnglish ? 'Collection tab' : '컬렉션 탭'}
           >
-            {({ isActive }) => (
+            {({ isActive }) => {
+              const active = isActive || collectionNavActive
+              return (
               <>
                 <Heart
-                  className={cn('h-6 w-6 shrink-0', isActive ? 'fill-current' : '')}
+                  className={cn('h-6 w-6 shrink-0', active ? 'fill-current' : '')}
                   strokeWidth={2.5}
                   aria-hidden
                 />
@@ -499,7 +507,8 @@ function ClientLayoutContent() {
                   {isEnglish ? 'Collection' : '컬렉션'}
                 </span>
               </>
-            )}
+              )
+            }}
           </NavLink>
         </nav>
         )}

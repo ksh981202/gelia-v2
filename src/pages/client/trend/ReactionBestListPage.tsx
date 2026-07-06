@@ -4,7 +4,7 @@ import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
+import { useLocation, Link, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 
 const TAB_ITEMS = [

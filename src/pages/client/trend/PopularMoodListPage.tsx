@@ -118,7 +118,6 @@ export default function PopularMoodListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType);
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword);
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString();
 
   const setActiveTab = useCallback(
     (tab: (typeof POPULAR_MOOD_TABS)[number]) => {

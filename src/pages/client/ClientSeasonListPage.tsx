@@ -150,7 +150,6 @@ export default function ClientSeasonListPage() {
     isFetchingNextPage,
   } = useGalleryInfiniteQuery(activeTabKeyword, sortType)
   const { data: totalCount } = useGalleryCountQuery(activeTabKeyword)
-  const totalCountLabel = totalCount == null ? '-' : totalCount.toLocaleString()
 
   const saveListScrollPosition = useCallback(() => {
     try {
