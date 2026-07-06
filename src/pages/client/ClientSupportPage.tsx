@@ -1,4 +1,5 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { ADMIN_EMAILS } from '@/shared/constants/auth'
 import { ChevronLeft, ChevronRight, Mail } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -40,7 +41,7 @@ export default function ClientSupportPage() {
 
   const handleEmailCopy = async () => {
     try {
-      await navigator.clipboard.writeText("k981202@naver.com")
+      await navigator.clipboard.writeText(ADMIN_EMAILS[0])
       setShowToast(true)
       setTimeout(() => {
         setShowToast(false)
@@ -51,42 +52,42 @@ export default function ClientSupportPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-50"
-          aria-label="뒤로 가기"
-        >
-          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
-        </button>
-        <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
-          {isEnglish ? 'Customer Service' : '고객센터'}
-        </h1>
-      </header>
+    <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
+      <div className="mx-auto w-full max-w-3xl px-4 py-8">
+        <div className="mb-8 flex w-full items-center gap-2 border-b border-stone-200 pb-5">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="-ml-2 cursor-pointer rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+            aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+          >
+            <ChevronLeft size={26} strokeWidth={2.5} />
+          </button>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-stone-900">
+            {isEnglish ? 'Customer Service' : '고객센터'}
+          </h1>
+        </div>
 
-      <main className="w-full pb-10 pt-14">
-        <section className="px-5 pb-8 pt-6">
-          <h2 className="text-[20px] font-bold text-gray-900">
+        <section className="pb-8">
+          <h2 className="text-[20px] font-bold text-stone-900">
             {isEnglish ? 'How can we help you?' : '무엇을 도와드릴까요?'}
           </h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-gray-500">
+          <p className="mt-2 text-[14px] leading-relaxed text-stone-500">
             {isEnglish
               ? 'Please email us your inquiries and we will respond quickly.'
               : '문의 사항은 이메일로 보내주시면 빠르게 답변드릴게요.'}
           </p>
           <button
             type="button"
-            onClick={handleEmailCopy}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-[15px] font-semibold text-gray-800 shadow-sm transition-colors active:bg-gray-50"
+            onClick={() => void handleEmailCopy()}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-[15px] font-semibold text-stone-800 shadow-sm transition-colors hover:bg-stone-50"
           >
             <Mail className="h-5 w-5 text-[#FF7D66]" strokeWidth={2} aria-hidden />
             <span>{isEnglish ? 'Contact via Email' : '이메일로 문의하기'}</span>
           </button>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white mx-5">
+        <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
           <ActionRow label={isEnglish ? 'Notice' : '공지사항'} onClick={() => navigate('/notice')} />
           <ActionRow label={isEnglish ? 'FAQ' : '자주 묻는 질문 (FAQ)'} onClick={() => navigate('/faq')} />
           <ActionRow label={isEnglish ? 'Terms of Service' : '서비스 이용약관'} onClick={() => navigate('/terms')} />
@@ -100,7 +101,7 @@ export default function ClientSupportPage() {
             }
           />
         </section>
-      </main>
+      </div>
 
       {showToast && (
         <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 whitespace-nowrap rounded-xl bg-gray-800/95 px-5 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm">

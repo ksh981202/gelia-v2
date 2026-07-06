@@ -7,6 +7,7 @@ import { useLanguageContext } from "@/contexts/LanguageContext";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
 import { NAIL_KEYWORD_EN_DICTIONARY } from "@/shared/constants/nailKeywords";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
@@ -156,9 +157,6 @@ export default function SearchTrendListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
-          <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            {isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}
-          </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>
@@ -195,23 +193,13 @@ export default function SearchTrendListPage() {
           <div className="w-4 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>
-                Total <strong className="font-bold text-[#FF7E67]">{totalCountLabel}</strong> designs
-              </>
-            ) : (
-              <>
-                총 <strong className="font-bold text-[#FF7E67]">{totalCountLabel}</strong>개의 디자인
-              </>
-            )}
-          </span>
-          <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700">
-            <span>{isEnglish ? "Popular" : "인기순"}</span>
-            <ChevronDown size={14} className="text-gray-500" />
-          </span>
-        </div>
+        <GalleryListTypographyHeader
+          breadcrumb={isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}
+          mainTitle={isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[activeKeyword] || activeKeyword) : activeKeyword}
+          totalCount={totalCount}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0 px-4 pb-3 pt-2"
+        />
       </div>
 
       <main className="grid w-full min-w-0 grid-cols-2 gap-4 px-5 pt-4 pb-8">

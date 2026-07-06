@@ -1,6 +1,7 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
+import { GalleryListTypographyHeader } from '@/widgets/gallery-list/GalleryListTypographyHeader'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -223,10 +224,6 @@ export default function ClientColorPopularListPage() {
               <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
             </button>
 
-            <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,16rem)] -translate-x-1/2 truncate text-center text-[17px] font-bold text-gray-900">
-              {isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
-            </h1>
-
             <Link
               to="/gallery"
               className="-mr-2 shrink-0 rounded-full p-2 text-gray-900 transition-colors hover:bg-gray-100"
@@ -263,19 +260,13 @@ export default function ClientColorPopularListPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex w-full min-w-0 items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>
-                Total <strong className="font-bold text-pink-500">{totalCountLabel}</strong> designs
-              </>
-            ) : (
-              <>
-                총 <strong className="font-bold text-pink-500">{totalCountLabel}</strong>개의 디자인
-              </>
-            )}
-          </span>
-        </div>
+        <GalleryListTypographyHeader
+          breadcrumb={isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
+          mainTitle={displayColorPopularTabLabel(activeTabLabel, isEnglish)}
+          totalCount={popularItems.length}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0 px-4 pb-3 pt-2"
+        />
       </div>
 
       <div className="min-h-0 flex-1">

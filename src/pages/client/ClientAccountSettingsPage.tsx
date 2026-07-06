@@ -166,25 +166,27 @@ export default function ClientAccountSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-50"
-          aria-label="뒤로 가기"
-        >
-          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
-        </button>
-        <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
-          {isEnglish ? 'Account Management' : '계정 관리'}
-        </h1>
-      </header>
+    <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
+      <div className="mx-auto w-full max-w-3xl px-4 py-8">
+        <div className="mb-8 flex w-full items-center gap-2 border-b border-stone-200 pb-5">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="-ml-2 cursor-pointer rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+            aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+          >
+            <ChevronLeft size={26} strokeWidth={2.5} />
+          </button>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-stone-900">
+            {isEnglish ? 'Account Management' : '계정 관리'}
+          </h1>
+        </div>
 
-      <main className="w-full px-5 pb-10 pt-14">
         <section className="mb-6">
-          <h2 className="mb-2 text-[12px] font-medium text-gray-500">{isEnglish ? 'Login Information' : '로그인 정보'}</h2>
-          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
+          <h2 className="mb-2 text-[12px] font-medium text-stone-500">
+            {isEnglish ? 'Login Information' : '로그인 정보'}
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
             <InfoRow label={isEnglish ? 'Connected Account' : '연결된 계정'} value={isEnglish ? 'Email' : '이메일'} />
             <InfoRow
               label={isEnglish ? 'Email' : '이메일'}
@@ -195,8 +197,10 @@ export default function ClientAccountSettingsPage() {
         </section>
 
         <section className="mb-6">
-          <h2 className="mb-2 text-[12px] font-medium text-gray-500">{isEnglish ? 'Account Information' : '계정 정보'}</h2>
-          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
+          <h2 className="mb-2 text-[12px] font-medium text-stone-500">
+            {isEnglish ? 'Account Information' : '계정 정보'}
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
             <ActionRow label={isEnglish ? 'Logout' : '로그아웃'} onClick={() => void handleLogout()} />
             <ActionRow
               label={isEnglish ? 'Delete Account' : '회원탈퇴'}
@@ -207,8 +211,8 @@ export default function ClientAccountSettingsPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 text-[12px] font-medium text-gray-500">{isEnglish ? 'Security' : '보안'}</h2>
-          <div className="rounded-2xl border border-gray-100 bg-white p-4">
+          <h2 className="mb-2 text-[12px] font-medium text-stone-500">{isEnglish ? 'Security' : '보안'}</h2>
+          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
             <button
               type="button"
               onClick={() => setIsPasswordModalOpen(true)}
@@ -219,7 +223,7 @@ export default function ClientAccountSettingsPage() {
             </button>
           </div>
         </section>
-      </main>
+      </div>
       {isPasswordModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">

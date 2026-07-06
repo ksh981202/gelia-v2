@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import BrandPickTab from './components/BrandPickTab'
 import EditorPickTab from './components/EditorPickTab'
 import ShoppingTab from './components/ShoppingTab'
@@ -34,12 +35,15 @@ export default function ClientMagazinePage() {
   const [activeTab, setActiveTab] = useState<MagazineTab>('editor')
 
   return (
-    <div className="min-h-screen bg-background px-5 py-8">
-      <h1 className="text-center font-serif text-2xl font-bold tracking-wide text-gray-900">
+    <>
+    <ClientGlobalHeader showBackButton={true} />
+
+    <div className="mx-auto min-h-screen w-full max-w-6xl bg-background px-5 py-8 md:px-8">
+      <h1 className="mb-8 text-center font-['Playfair_Display',_serif] text-[32px] font-extrabold tracking-wide text-stone-900 md:text-[36px]">
         GELIA Magazine
       </h1>
 
-      <div className="mt-6 grid grid-cols-3 rounded-full bg-gray-100 p-1">
+      <div className="mx-auto mt-6 grid max-w-md grid-cols-3 rounded-full bg-gray-100 p-1">
         {MAGAZINE_TABS.map((tab) => {
           const isActive = tab.id === activeTab
 
@@ -65,5 +69,6 @@ export default function ClientMagazinePage() {
       {activeTab === 'brand' ? <BrandPickTab /> : null}
       {activeTab === 'shopping' ? <ShoppingTab /> : null}
     </div>
+    </>
   )
 }

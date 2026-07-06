@@ -6,6 +6,7 @@ import {
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
+import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -197,9 +198,6 @@ export default function SyrupBestListPage() {
           >
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
-          <h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-gray-900 whitespace-nowrap">
-            {isEnglish ? 'Hottest Syrup BEST' : '지금 가장 핫한 시럽 BEST'}
-          </h1>
           <button
             type="button"
             onClick={() => navigate('/search')}
@@ -233,15 +231,13 @@ export default function SyrupBestListPage() {
         </section>
 
         {/* 갯수 및 정렬 바 */}
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>Total <span className="font-bold text-[#ff765e]">{totalCountLabel}</span> designs</>
-            ) : (
-              <>총 <span className="font-bold text-[#ff765e]">{totalCountLabel}</span>개의 디자인</>
-            )}
-          </span>
-          <div ref={sortMenuRef} className="relative">
+        <GalleryListHeaderWithSort
+          breadcrumb={isEnglish ? 'Hottest Syrup BEST' : '지금 가장 핫한 시럽 BEST'}
+          mainTitle={displaySyrupBestTabLabel(activeTab, isEnglish)}
+          totalCount={totalCount}
+          isEnglish={isEnglish}
+          sortControl={
+            <div ref={sortMenuRef} className="relative">
             <button
               type="button"
               onClick={() => setIsSortOpen((prev) => !prev)}
@@ -275,7 +271,8 @@ export default function SyrupBestListPage() {
               </div>
             )}
           </div>
-        </div>
+          }
+        />
       </div>
 
       {/* 메인 2열 그리드 */}

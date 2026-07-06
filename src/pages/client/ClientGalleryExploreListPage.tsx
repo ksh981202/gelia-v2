@@ -6,6 +6,7 @@ import {
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import type { NailDesignRow } from '@/shared/types/database.types'
+import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
 import { ChevronDown, ChevronLeft, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -185,10 +186,6 @@ export default function ClientGalleryExploreListPage() {
             <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
 
-          <h1 className="pointer-events-none absolute left-1/2 max-w-[min(100%-5rem,16rem)] -translate-x-1/2 truncate text-center text-lg font-bold tracking-tight text-gray-900">
-            {isEnglish ? 'Explore Gallery' : '갤러리 탐색'}
-          </h1>
-
           <div className="-mr-2 flex shrink-0 items-center gap-1">
             <button
               type="button"
@@ -238,13 +235,13 @@ export default function ClientGalleryExploreListPage() {
           <div className="w-10 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex items-center justify-between px-4 pt-2 pb-3">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? 'Total ' : '총 '}
-            <span className="font-bold text-pink-500">{totalCountLabel}</span>{' '}
-            {isEnglish ? 'designs' : '개의 디자인'}
-          </span>
-          <div ref={sortMenuRef} className="relative">
+        <GalleryListHeaderWithSort
+          breadcrumb={isEnglish ? 'Explore Gallery' : '갤러리 탐색'}
+          mainTitle={activeTabLabel}
+          totalCount={totalCount}
+          isEnglish={isEnglish}
+          sortControl={
+            <div ref={sortMenuRef} className="relative">
             <button
               type="button"
               onClick={() => setIsSortOpen((prev) => !prev)}
@@ -278,7 +275,8 @@ export default function ClientGalleryExploreListPage() {
               </div>
             )}
           </div>
-        </div>
+          }
+        />
         </div>
       </div>
 

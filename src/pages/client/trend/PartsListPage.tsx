@@ -7,6 +7,7 @@ import {
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
+import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
@@ -228,10 +229,6 @@ export default function PartsListPage() {
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
           
-          <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            {isEnglish ? 'View by Parts' : customTitle || '파츠별 모아보기'}
-          </h1>
-          
           <button
             type="button"
             className="z-10 p-2 -mr-2"
@@ -266,15 +263,13 @@ export default function PartsListPage() {
         </section>
 
         {/* 총 디자인 개수 및 정렬 필터 */}
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>Total <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> designs</>
-            ) : (
-              <>총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span>개의 디자인</>
-            )}
-          </span>
-          <div ref={sortMenuRef} className="relative">
+        <GalleryListHeaderWithSort
+          breadcrumb={isEnglish ? 'View by Parts' : (customTitle || '파츠별 모아보기')}
+          mainTitle={displayPartsTabLabel(activeTab, isEnglish)}
+          totalCount={totalCount}
+          isEnglish={isEnglish}
+          sortControl={
+            <div ref={sortMenuRef} className="relative">
             <button
               type="button"
               onClick={() => setIsSortOpen((prev) => !prev)}
@@ -308,7 +303,8 @@ export default function PartsListPage() {
               </div>
             )}
           </div>
-        </div>
+          }
+        />
       </div>
 
       {/* 2열 그리드 네일 카드 리스트 */}

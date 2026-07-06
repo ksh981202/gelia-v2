@@ -5,13 +5,16 @@ import { useMemo } from 'react'
 
 export const GALLERY_PAGE_SIZE = 20
 export const DEFAULT_GALLERY_TAB = '전체'
-export const DEFAULT_GALLERY_SORT = '인기순'
+export const DEFAULT_GALLERY_SORT = '최신순'
 
 export const GALLERY_COLUMNS =
-  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length,color,mood,design_elements'
+  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,views,situations,styles,nail_length,color,mood,design_elements'
+
+export const RANKING_WEEKLY_LIMIT = 100
 /** 탭 필터 ilike 대상 스칼라 컬럼 */
 const TAB_FILTER_ILIKE_COLUMNS = [
   'title',
+  'category',
   'color',
   'mood',
   'nail_length',
@@ -19,7 +22,7 @@ const TAB_FILTER_ILIKE_COLUMNS = [
   'design_elements',
 ] as const
 /** 탭 필터 배열 포함(cs) 대상 — text[] 전용 */
-const TAB_FILTER_ARRAY_CS_COLUMNS = ['situations'] as const
+const TAB_FILTER_ARRAY_CS_COLUMNS = ['situations', 'styles'] as const
 const MAX_TAB_FILTER_TOKENS = 20
 const NAIL_SYNONYMS: Record<string, string[]> = {
   형광: ['네온', '비비드', '팝', '원색', 'neon', 'vivid', 'fluorescent', '형광'],
@@ -42,7 +45,7 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   데이트: ['러블리', '소개팅', '기념일', '여리여리', '사랑스러운'],
   오피스: ['단정', '깔끔', '심플', '데일리', '면접', '직장인'],
   웨딩: ['결혼', '신부', '본식', '웨딩촬영', '촬영', '청순', '화이트', '드레스'],
-  하객: ['하객룩', '단정', '격식', '우아한'],
+  하객: ['하객룩', '단정', '격식', '우아한', '오피스', '심플', '웨딩'],
   바캉스: ['휴가', '여름휴가', '여행', '해변', '물놀이', '리조트', '호캉스', '바다'],
   파티: ['연말', '페스티벌', '클럽', '화려한', '블링블링', '이벤트'],
   누드: ['스킨톤', '베이지', '살구', '여리여리'],
@@ -63,8 +66,9 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   발레코어: ['발레코어', '발레리나', '토슈즈'],
   트위드: ['트위드', 'tweed', '체크'],
   진주: ['진주', 'pearl'],
-  숏네일: ['짧은', '귀여운', '조약돌', '동글'],
-  연장: ['롱네일', '팁', '아크릴', '화려한'],
+  숏네일: ['짧은', '숏네일', '귀여운 숏네일'],
+  연장: ['롱네일', '연장', '긴손톱'],
+  롱네일: ['롱네일', '연장', '긴손톱'],
   '올드머니/시크': [
     '고급스러운',
     '클래식',
@@ -92,11 +96,92 @@ const NAIL_SYNONYMS: Record<string, string[]> = {
   '웨딩/하객': ['웨딩', '결혼', '신부', '본식', '하객', '하객룩', '단정', '격식', '우아한'],
   '여행/바캉스': ['여행', '바캉스', '휴가', '여름휴가', '해변', '물놀이', '리조트', '호캉스', '바다'],
   '파티/페스티벌': ['파티', '페스티벌', '연말', '클럽', '화려한', '블링블링', '이벤트'],
+
+  // ── B2C 고객 언어 역방향 매핑 (일상어 입력 → DB 표준 태그로 치환) ──
+  // 쉐입/길이
+  짧은: ['숏네일', '짧은손톱'],
+  숏: ['숏네일', '짧은손톱'],
+  짧은손톱: ['숏네일', '짧은', '귀여운 숏네일'],
+  짧은네일: ['숏네일', '짧은', '귀여운 숏네일'],
+  몽툭한손톱: ['숏네일', '짧은', '귀여운 숏네일'],
+  작은손톱: ['숏네일', '짧은', '귀여운 숏네일'],
+  긴손톱: ['롱네일', '연장', '긴손톱'],
+  긴네일: ['롱네일', '연장', '긴손톱'],
+  손톱연장: ['롱네일', '연장', '긴손톱'],
+  연장네일: ['롱네일', '연장', '긴손톱'],
+  네모난손톱: ['스퀘어', '각진'],
+  각진손톱: ['스퀘어', '각진'],
+  뾰족한손톱: ['아몬드', '오발', '뾰족'],
+  뾰족네일: ['아몬드', '오발', '뾰족'],
+
+  // 무드/스타일
+  깔끔한: ['심플', '데일리', '단정'],
+  무난한: ['심플', '데일리', '베이직'],
+  얌전한: ['심플', '데일리', '단정'],
+  단정한: ['심플', '단정', '오피스'],
+  티안나는: ['심플', '누드', '데일리'],
+  튀는: ['화려한', '파티', '블링블링'],
+  블링블링: ['화려한', '글리터', '파티', '블링블링'],
+  쎈언니: ['화려한', '블랙', '시크', '파티'],
+  귀여운: ['러블리', '데이트', '숏네일'],
+  깜찍한: ['러블리', '데이트', '귀여운'],
+  뽀짝한: ['러블리', '데이트', '귀여운'],
+  여리여리한: ['청순', '누드', '여리여리'],
+  여성스러운: ['러블리', '청순', '핑크'],
+  투명한: ['시럽', '맑은', '투명', '클리어'],
+  상견례: ['웨딩', '하객', '단정', '청순'],
+  면접: ['오피스', '단정', '심플'],
+
+  // 포인트/기법/상황
+  반짝이는: ['글리터', '반짝이', '펄'],
+  반짝이네일: ['글리터', '반짝이'],
+  보석네일: ['스톤', '큐빅', '보석'],
+  광없는: ['무광', '매트', '벨벳'],
+  안반짝이는: ['무광', '매트'],
+  매트한: ['무광', '매트', '벨벳'],
+  투톤네일: ['그라데이션', '투톤', '그라'],
+  투톤: ['그라데이션', '그라'],
+  물드는: ['그라데이션', '옴브레', '시럽그라'],
+  촬영용: ['웨딩', '본식', '촬영', '화보'],
+  본식용: ['웨딩', '본식', '신부'],
+  결혼식: ['웨딩', '하객', '본식'],
+  휴가용: ['바캉스', '휴가', '여행', '바다'],
+  바다갈때: ['바캉스', '해변', '바다', '물놀이'],
+  놀러갈때: ['바캉스', '여행', '휴가'],
+  휴가: ['바캉스', '여행', '리조트', '호캉스'],
+
+  // ── B2C 현장 은어/비유 표현 대규모 병합 ──
+  // 색상 및 질감 비유
+  딸기우유: ['파스텔', '핑크', '연핑크', '시럽'],
+  메추리알: ['테라조', '도트', '점박이'],
+  조약돌: ['숏네일', '귀여운 숏네일', '짧은'],
+  얼음: ['유리알', '투명', '맑은', '클리어', '미러파우더', '여름'],
+  유리알: ['시럽', '맑은', '투명', '얼음'],
+  형광펜: ['네온', '비비드', '팝', '원색'],
+
+  // 스타일 및 무드 비유
+  인어공주: ['진주', '글리터', '펄', '여름', '바다'],
+  꾸안꾸: ['심플', '데일리', '누드', '스킨톤', '단정'],
+  키치: ['키치한', 'Y2K', '귀여운', '팝', '화려한'],
+  키치한: ['키치', 'Y2K', '귀여운'],
+  'Y2K': ['키치', '힙한', '화려한'],
+
+  // 기법 및 재료 줄임말/은어
+  파츠: ['스톤', '큐빅', '스와로브스키', '보석'],
+  그라: ['그라데이션', '옴브레', '시럽그라'],
+  시럽그라: ['그라데이션', '시럽', '옴브레'],
+  체크: ['트위드', '아가일', '체크무늬'],
+  호피: ['레오파드', '동물', '애니멀'],
+
+  // ── 쉐입/기법 특수 키워드 (괄호 등 특수문자 포함 메뉴 대응) ──
+  스틸레토: ['스틸레토', '뾰족', '아몬드', '롱', '연장'],
+  '애니멀(호피/지브라)': ['호피', '레오파드', '지브라', '얼룩말', '동물', '애니멀'],
 }
 
 function escapePostgrestIlikePattern(raw: string): string {
   if (!raw) return '';
-  return raw.replace(/[%_\\"/]/g, '\\$&').trim();
+  // 괄호 () 는 PostgREST .or() 논리 그룹 구분자이므로 반드시 백슬래시 이스케이프한다.
+  return raw.replace(/[%_\\"/()]/g, '\\$&').trim();
 }
 
 function buildIlikeOrCondition(column: string, escaped: string): string {
@@ -109,7 +194,8 @@ function buildIlikeOrCondition(column: string, escaped: string): string {
 function escapePostgrestCsArrayToken(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed) return ''
-  if (/[",{}\\\s]/.test(trimmed)) {
+  // 괄호 () · 슬래시 / 도 PostgREST 예약문자이므로 큰따옴표로 감싸 파서 붕괴를 막는다.
+  if (/[",{}()/\\\s]/.test(trimmed)) {
     return `"${trimmed.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
   }
   return trimmed
@@ -147,18 +233,41 @@ function collectTabFilterTokens(tab: string): string[] {
   return expandSynonymTokens(normalizedSpace, baseTokens)
 }
 
+// '휴가네일', '짧은손톱네일'처럼 접미사가 붙은 복합 명사를 순수 키워드로 정제한다.
+// 사전에 정확한 키가 이미 존재하면 원형을 유지하고(예: '숏네일', '반짝이네일'),
+// 없을 때만 접미사('네일'/'아트'/'디자인'/'손톱')를 제거해 재조회용 키를 만든다.
+const NAIL_KEYWORD_SUFFIX_REGEX = /(네일|아트|디자인|손톱)$/
+
+function stripNailKeywordSuffix(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed || NAIL_SYNONYMS[trimmed]) return trimmed
+
+  const stripped = trimmed.replace(NAIL_KEYWORD_SUFFIX_REGEX, '').trim()
+  return stripped.length > 0 ? stripped : trimmed
+}
+
 function expandSynonymTokens(normalizedTab: string, tokens: string[]): string[] {
   const expanded = new Set<string>(tokens)
 
-  for (const synonym of NAIL_SYNONYMS[normalizedTab] ?? []) {
-    const normalizedSynonym = synonym.trim()
-    if (normalizedSynonym) expanded.add(normalizedSynonym)
+  const tabKeys = new Set<string>([normalizedTab, stripNailKeywordSuffix(normalizedTab)])
+  for (const tabKey of tabKeys) {
+    if (!tabKey) continue
+    if (tabKey !== normalizedTab) expanded.add(tabKey)
+    for (const synonym of NAIL_SYNONYMS[tabKey] ?? []) {
+      const normalizedSynonym = synonym.trim()
+      if (normalizedSynonym) expanded.add(normalizedSynonym)
+    }
   }
 
   for (const token of tokens) {
-    for (const synonym of NAIL_SYNONYMS[token] ?? []) {
-      const normalizedSynonym = synonym.trim()
-      if (normalizedSynonym) expanded.add(normalizedSynonym)
+    const tokenKeys = new Set<string>([token, stripNailKeywordSuffix(token)])
+    for (const tokenKey of tokenKeys) {
+      if (!tokenKey) continue
+      if (tokenKey !== token) expanded.add(tokenKey)
+      for (const synonym of NAIL_SYNONYMS[tokenKey] ?? []) {
+        const normalizedSynonym = synonym.trim()
+        if (normalizedSynonym) expanded.add(normalizedSynonym)
+      }
     }
   }
 
@@ -220,24 +329,66 @@ export function buildTabOrFilter(tab: string): string | null {
   return conditions.length > 0 ? conditions.join(',') : null
 }
 
-export function applyGallerySort<T extends { order: (column: string, options: { ascending: boolean }) => T }>(
+export type ApplyGallerySortOptions = {
+  /** TOP 100 랭킹 모드 — 인기순 시 popularity 0점 깡통 차단 */
+  enforcePopularityThreshold?: boolean
+}
+
+export function applyGallerySort<
+  T extends {
+    order: (column: string, options: { ascending: boolean }) => T
+    gt: (column: string, value: number) => T
+  },
+>(
   query: T,
   sort: string,
+  options?: ApplyGallerySortOptions,
 ): T {
   if (sort === '최신순') {
     return query.order('created_at', { ascending: false }).order('id', { ascending: false })
   }
   if (sort === '저장 많은 순') {
-    return query.order('saves', { ascending: false }).order('id', { ascending: false })
+    return query.gt('saves', 0).order('saves', { ascending: false }).order('id', { ascending: false })
   }
-  return query.order('popularity', { ascending: false }).order('id', { ascending: false })
+  if (sort === '조회 많은 순') {
+    return query.gt('popularity', 0).order('popularity', { ascending: false }).order('id', { ascending: false })
+  }
+  let next = query
+  if (options?.enforcePopularityThreshold) {
+    next = next.gt('popularity', 0)
+  }
+  return next.order('popularity', { ascending: false }).order('id', { ascending: false })
+}
+
+/** RPC 랭킹 응답에서 ranking_score 0점 깡통 데이터 제거 */
+export function filterNonZeroRankingRpcRows<T extends { ranking_score?: number | null }>(rows: T[]): T[] {
+  return rows.filter((row) => (row.ranking_score ?? 0) > 0)
+}
+
+async function fetchWeeklyRankingGalleryPage(
+  page: number,
+  signal: AbortSignal,
+): Promise<GalleryInfinitePage> {
+  const { data, error } = await supabase
+    .rpc('get_ranking_nails', { p_period: 'weekly', p_limit: RANKING_WEEKLY_LIMIT })
+    .abortSignal(signal)
+
+  if (error) throw error
+
+  const allItems = filterNonZeroRankingRpcRows((data ?? []) as (NailDesignRow & { ranking_score?: number })[])
+  const from = (page - 1) * GALLERY_PAGE_SIZE
+
+  return {
+    items: allItems.slice(from, from + GALLERY_PAGE_SIZE),
+    totalCount: allItems.length,
+  }
 }
 
 export function normalizeGallerySort(raw: string | null): string {
   if (raw === 'realtime' || raw === 'weekly' || raw === 'monthly' || raw === 'alltime') {
     return raw
   }
-  if (raw === '최신순' || raw === '저장 많은 순' || raw === '인기순') return raw
+  if (raw === '최신순' || raw === '저장 많은 순' || raw === '조회 많은 순' || raw === '인기순') return raw
   return DEFAULT_GALLERY_SORT
 }
 
@@ -262,6 +413,7 @@ type GalleryQueryOptions = {
   enabled?: boolean
   baseTab?: string
   extraTabs?: readonly string[]
+  maxItems?: number
 }
 
 function applyGalleryFilterTabs<T extends { or: (filters: string) => T }>(
@@ -299,6 +451,9 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
   const normalizedSort = normalizeGallerySort(sort)
   const normalizedBaseTab = options?.baseTab?.trim() ?? ''
   const normalizedExtraTabs = options?.extraTabs ?? []
+  const maxItems = options?.maxItems
+  const extraTabsKey =
+    normalizedExtraTabs.length > 0 ? [...normalizedExtraTabs].sort().join('\u0001') : ''
   const filterTabs = collectGalleryFilterTabs(normalizedTab, normalizedBaseTab, normalizedExtraTabs)
 
   const query = useInfiniteQuery({
@@ -306,7 +461,7 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
       'nail-designs',
       'gallery',
       'infinite',
-      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabs: normalizedExtraTabs },
+      { tab: normalizedTab, sort: normalizedSort, baseTab: normalizedBaseTab, extraTabsKey, maxItems },
     ],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -314,22 +469,52 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
       const page = pageParam as number
+
+      if (normalizedSort === 'weekly') {
+        return fetchWeeklyRankingGalleryPage(page, signal)
+      }
+
       const from = (page - 1) * GALLERY_PAGE_SIZE
       const to = page * GALLERY_PAGE_SIZE - 1
+
+      if (maxItems != null && from >= maxItems) {
+        return { items: [], totalCount: maxItems } satisfies GalleryInfinitePage
+      }
+
+      const cappedTo =
+        maxItems != null ? Math.min(to, maxItems - 1) : to
 
       let query = supabase.from('nail_designs').select(GALLERY_COLUMNS, { count: 'estimated' })
       query = applyGalleryFilterTabs(query, filterTabs)
 
-      query = applyGallerySort(query, normalizedSort)
+      query = applyGallerySort(query, normalizedSort, {
+        enforcePopularityThreshold: maxItems != null && normalizedSort === '인기순',
+      })
 
-      const { data, error, count } = await query.range(from, to).abortSignal(signal)
+      const { data, error, count } = await query.range(from, cappedTo).abortSignal(signal)
       if (error) throw error
+      const items = (data ?? []) as NailDesignRow[]
+      const totalCount =
+        maxItems != null
+          ? maxItems
+          : page === 1
+            ? (count ?? null)
+            : null
       return {
-        items: (data ?? []) as NailDesignRow[],
-        totalCount: page === 1 ? (count ?? null) : null,
+        items,
+        totalCount,
       } satisfies GalleryInfinitePage
     },
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+    getNextPageParam: (lastPage, allPages, lastPageParam) => {
+      if (normalizedSort === 'weekly') {
+        const totalLoaded = allPages.reduce((sum, galleryPage) => sum + galleryPage.items.length, 0)
+        const totalCount = allPages[0]?.totalCount ?? 0
+        if (totalLoaded >= totalCount || lastPage.items.length < GALLERY_PAGE_SIZE) return undefined
+        return (lastPageParam as number) + 1
+      }
+
+      const totalLoaded = allPages.reduce((sum, galleryPage) => sum + galleryPage.items.length, 0)
+      if (maxItems != null && totalLoaded >= maxItems) return undefined
       if (lastPage.items.length < GALLERY_PAGE_SIZE) return undefined
       return (lastPageParam as number) + 1
     },

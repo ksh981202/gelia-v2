@@ -1,6 +1,8 @@
+import { filterNonZeroRankingRpcRows } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -55,7 +57,7 @@ function useStyleBestRankingQuery(period: string, maxLimit: number) {
         .rpc("get_ranking_nails", { p_period: period, p_limit: maxLimit })
         .abortSignal(signal);
       if (error) throw error;
-      return (data ?? []) as RankingNailRow[];
+      return filterNonZeroRankingRpcRows((data ?? []) as RankingNailRow[]);
     },
   });
 }
@@ -123,9 +125,6 @@ export default function PeriodBestListPage() {
           <button type="button" onClick={() => navigate(-1)} className="p-1 -ml-1">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
-          <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-lg font-bold tracking-tight text-gray-900 whitespace-nowrap">
-            {isEnglish ? "Period BEST Nails" : "기간별 BEST 네일"}
-          </h1>
           <button type="button" className="p-1 -mr-1" onClick={() => navigate("/search")}>
             <Search className="w-5 h-5 text-gray-900" />
           </button>
@@ -153,19 +152,13 @@ export default function PeriodBestListPage() {
           <div className="w-4 shrink-0" aria-hidden="true" />
         </div>
 
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>Total <strong className="text-gray-900">{maxLimit}</strong> designs</>
-            ) : (
-              <>총 <strong className="text-gray-900">{maxLimit}</strong>개의 디자인</>
-            )}
-          </span>
-          <span className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-700">
-            <span>{isEnglish ? "Popular" : "인기순"}</span>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
-          </span>
-        </div>
+        <GalleryListTypographyHeader
+          breadcrumb={isEnglish ? "Period BEST Nails" : "기간별 BEST 네일"}
+          mainTitle={displayPeriodTabLabel(activeTab, isEnglish)}
+          totalCount={maxLimit}
+          isEnglish={isEnglish}
+          className="mb-0 md:mb-0 px-4 pb-3 pt-2"
+        />
       </header>
 
       <main className="grid grid-cols-2 gap-4 px-5 pt-4 pb-8">

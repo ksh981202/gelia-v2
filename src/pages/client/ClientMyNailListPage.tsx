@@ -1,10 +1,15 @@
+import {
+  useDeleteLikesMutation,
+  useDeleteRecentViewsMutation,
+} from '@/features/nail-activity/api/useClientActivityApi'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { ChevronLeft } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { CheckCircle2, ChevronLeft } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 type ListType = 'recent' | 'liked' | 'saved'
@@ -13,11 +18,12 @@ type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
 const LIST_TITLES: Record<ListType, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '내가 저장한 네일', en: 'Saved Nails' },
+  saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
 }
 
 const LIST_PAGE_SIZE = 10
 const MY_LIST_NAIL_COLUMNS = 'id,title,title_en,image_url'
+const GALLERY_GRID_CLASS = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-4'
 
 const ACTIVITY_TABLE_BY_TYPE: Record<ListType, { table: UserActivityTable; orderColumn: string }> = {
   recent: { table: 'user_recent_views', orderColumn: 'viewed_at' },
@@ -95,6 +101,11 @@ export default function ClientMyNailListPage() {
   const { type: typeParam } = useParams<{ type: string }>()
   const currentUserId = useCurrentUserId()
   const observerRef = useRef<HTMLDivElement | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  const deleteRecentViewsMutation = useDeleteRecentViewsMutation()
+  const deleteLikesMutation = useDeleteLikesMutation()
 
   const listType = isListType(typeParam) ? typeParam : null
   const pageTitle = listType ? LIST_TITLES[listType][isEnglish ? 'en' : 'ko'] : ''
@@ -117,6 +128,11 @@ export default function ClientMyNailListPage() {
     }
   }, [typeParam, navigate])
 
+  useEffect(() => {
+    setIsEditing(false)
+    setSelectedIds([])
+  }, [listType])
+
   const {
     data,
     isLoading,
@@ -127,10 +143,10 @@ export default function ClientMyNailListPage() {
   } = useInfiniteQuery({
     queryKey: ['my-nail-list', listType, currentUserId],
     queryFn: ({ pageParam }) =>
-      listType
+      listType && listType !== 'saved'
         ? fetchMyNailListPage(listType, currentUserId, pageParam as number)
         : Promise.resolve({ items: [], totalCount: 0 }),
-    enabled: Boolean(listType) && Boolean(currentUserId),
+    enabled: Boolean(listType) && listType !== 'saved' && Boolean(currentUserId),
     initialPageParam: 1,
     staleTime: 30_000,
     getNextPageParam: (lastPage, allPages, lastPageParam) => {
@@ -148,7 +164,7 @@ export default function ClientMyNailListPage() {
 
   useEffect(() => {
     const target = observerRef.current
-    if (!target || !hasNextPage) return
+    if (!target || !hasNextPage || listType === 'saved') return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -176,102 +192,231 @@ export default function ClientMyNailListPage() {
     })
   }
 
-  const handleEdit = () => {}
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false)
+    setSelectedIds([])
+  }, [])
+
+  const handleCardClick = useCallback(
+    (nailId: string, title: string, imageUrl: string) => {
+      if (isEditing) {
+        setSelectedIds((prev) =>
+          prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
+        )
+        return
+      }
+      openDetail(nailId, title, imageUrl)
+    },
+    [isEditing, navigate],
+  )
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!currentUserId || selectedIds.length === 0 || !listType || listType === 'saved') return
+
+    const confirmed = window.confirm(
+      isEnglish
+        ? `Are you sure you want to delete ${selectedIds.length} selected items?`
+        : `선택한 ${selectedIds.length}개의 네일 디자인을 정말 삭제하시겠습니까?`,
+    )
+    if (!confirmed) return
+
+    const isDeleting =
+      deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
+    if (isDeleting) return
+
+    try {
+      if (listType === 'recent') {
+        await deleteRecentViewsMutation.mutateAsync({
+          userId: currentUserId,
+          nailIds: selectedIds,
+        })
+      } else if (listType === 'liked') {
+        await deleteLikesMutation.mutateAsync({
+          userId: currentUserId,
+          nailIds: selectedIds,
+        })
+      }
+      setIsEditing(false)
+      setSelectedIds([])
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '삭제에 실패했습니다.'
+      window.alert(message)
+    }
+  }, [
+    currentUserId,
+    deleteLikesMutation,
+    deleteRecentViewsMutation,
+    isEnglish,
+    listType,
+    selectedIds,
+  ])
+
+  const isDeletePending =
+    deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
+  const showEditControls = listType === 'recent' || listType === 'liked'
 
   if (!listType) {
     return null
   }
 
   return (
-    <div className="min-h-screen w-full bg-white">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-50"
-          aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
-        >
-          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate text-center text-[17px] font-bold text-gray-900">
-          {pageTitle}
-        </h1>
-        <button
-          type="button"
-          onClick={handleEdit}
-          className="flex h-10 shrink-0 items-center justify-center px-1 text-[15px] font-semibold text-gray-800"
-        >
-          {isEnglish ? 'Edit' : '편집'}
-        </button>
-      </header>
-
-      <main className="w-full pb-10 pt-14">
-        <p className="px-5 pb-4 pt-5 text-[14px] text-gray-600">
-          {isEnglish ? 'Total ' : '총 '}
-          <span className="font-bold text-[#FF7D66]">{totalCount}</span>
-          {isEnglish ? ' designs' : '개의 디자인'}
-        </p>
-
-        <div className="grid grid-cols-2 gap-4 px-5">
-          {isLoading ? (
-            Array.from({ length: 6 }, (_, index) => (
-              <article key={`my-nail-list-skel-${index}`} className="flex flex-col" aria-hidden>
-                <div className="aspect-[3/4] w-full animate-pulse overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm" />
-                <div className="mx-auto mt-2.5 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
-              </article>
-            ))
-          ) : isError ? (
-            <p className="col-span-2 py-12 text-center text-sm text-gray-500">
-              {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했어요.'}
-            </p>
-          ) : nails.length === 0 ? (
-            <p className="col-span-2 py-12 text-center text-sm text-gray-500">
-              {isEnglish ? 'No designs saved yet.' : '아직 등록된 디자인이 없어요.'}
-            </p>
-          ) : nails.map((item) => {
-            const title = nailDisplayTitle(item, isEnglish)
-            const imageUrl = String(item.image_url ?? '').trim()
-            return (
-              <article
-                key={item.id}
-                className="flex cursor-pointer flex-col"
-                role="button"
-                tabIndex={0}
-                onClick={() => openDetail(item.id, title, imageUrl)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    openDetail(item.id, title, imageUrl)
-                  }
-                }}
-              >
-                <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={title}
-                      className="h-full w-full object-cover transition-transform hover:scale-105"
-                    />
-                  ) : null}
-                </div>
-                <div className="mt-2.5 flex w-full flex-col items-center justify-center">
-                  <span className="line-clamp-1 w-full text-center text-sm font-medium tracking-tight text-gray-800">
-                    {title}
-                  </span>
-                </div>
-              </article>
-            )
-          })}
-          {isFetchingNextPage
-            ? [0, 1].map((index) => (
-              <article key={`my-nail-list-next-skel-${index}`} className="flex flex-col" aria-hidden>
-                <div className="aspect-[3/4] w-full animate-pulse overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm" />
-                <div className="mx-auto mt-2.5 h-4 w-3/4 animate-pulse rounded bg-gray-100" />
-              </article>
-            ))
-            : null}
+    <div className="min-h-screen w-full bg-[#fdfaf7] md:bg-white">
+      <main className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-6 md:px-8 md:pt-10">
+        <div className="mb-6 flex w-full flex-row items-center gap-1 border-b border-stone-100 pb-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="-ml-2 flex shrink-0 cursor-pointer items-center justify-center rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+            aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+          >
+            <ChevronLeft size={26} strokeWidth={2.5} />
+          </button>
+          <div className="mt-1 flex min-w-0 flex-1 items-baseline gap-2">
+            <h1 className="truncate text-[24px] font-extrabold tracking-tight text-stone-900">
+              {pageTitle}
+            </h1>
+            {listType !== 'saved' ? (
+              <span className="shrink-0 text-[16px] font-medium text-stone-500">
+                {isEnglish ? (
+                  <>
+                    (Total{' '}
+                    <span className="font-semibold text-orange-500">{totalCount || 0}</span> designs)
+                  </>
+                ) : (
+                  <>
+                    (총 <span className="font-semibold text-orange-500">{totalCount || 0}</span>개)
+                  </>
+                )}
+              </span>
+            ) : null}
+          </div>
+          {showEditControls ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isLoading || nails.length === 0}
+                  className="rounded-full border border-stone-200 bg-white px-4 py-1.5 text-[13px] font-medium text-stone-600 transition-all hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isEnglish ? 'Edit' : '편집'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleBulkDelete()}
+                    disabled={selectedIds.length === 0 || isDeletePending}
+                    className={[
+                      'rounded-full px-4 py-1.5 text-[13px] font-medium transition-all',
+                      selectedIds.length > 0
+                        ? 'bg-red-500 text-white shadow-sm hover:bg-red-600'
+                        : 'cursor-not-allowed bg-stone-200 text-stone-400 shadow-none',
+                    ].join(' ')}
+                  >
+                    {isEnglish
+                      ? `Delete (${selectedIds.length})`
+                      : `삭제 (${selectedIds.length})`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={isDeletePending}
+                    className="rounded-full bg-stone-100 px-4 py-1.5 text-[13px] font-medium text-stone-600 transition-all hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isEnglish ? 'Cancel' : '취소'}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : null}
         </div>
-        <div ref={observerRef} className="h-10 px-5 pb-4" aria-hidden />
+        {listType === 'saved' ? (
+          <SavedFoldersGrid
+            userId={currentUserId}
+            isEnglish={isEnglish}
+            gridClassName={GALLERY_GRID_CLASS}
+          />
+        ) : (
+          <>
+            <div className={GALLERY_GRID_CLASS}>
+              {isLoading ? (
+                Array.from({ length: 10 }, (_, index) => (
+                  <article key={`my-nail-list-skel-${index}`} className="flex flex-col" aria-hidden>
+                    <div className="aspect-[4/5] w-full animate-pulse overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl" />
+                    <div className="mx-auto mt-2 h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
+                  </article>
+                ))
+              ) : isError ? (
+                <p className="col-span-full py-12 text-center text-sm text-stone-500">
+                  {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했어요.'}
+                </p>
+              ) : nails.length === 0 ? (
+                <p className="col-span-full py-12 text-center text-sm text-stone-500">
+                  {isEnglish ? 'No designs yet.' : '아직 등록된 디자인이 없어요.'}
+                </p>
+              ) : (
+                nails.map((item) => {
+                  const title = nailDisplayTitle(item, isEnglish)
+                  const imageUrl = String(item.image_url ?? '').trim()
+                  const isSelected = selectedIds.includes(item.id)
+                  return (
+                    <article
+                      key={item.id}
+                      className={`flex cursor-pointer flex-col ${isEditing && isSelected ? 'rounded-xl ring-2 ring-stone-800 ring-offset-2 md:rounded-2xl' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleCardClick(item.id, title, imageUrl)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleCardClick(item.id, title, imageUrl)
+                        }
+                      }}
+                    >
+                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={title}
+                            className={`h-full w-full object-cover transition-transform ${isEditing ? '' : 'hover:scale-105'}`}
+                          />
+                        ) : null}
+                        {isEditing ? (
+                          <span
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center"
+                            aria-hidden
+                          >
+                            {isSelected ? (
+                              <CheckCircle2
+                                className="h-7 w-7 fill-stone-800 text-white drop-shadow-md"
+                                strokeWidth={2}
+                              />
+                            ) : (
+                              <span className="h-6 w-6 rounded-full border-2 border-white bg-black/25 shadow-sm" />
+                            )}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">
+                        {title}
+                      </div>
+                    </article>
+                  )
+                })
+              )}
+              {isFetchingNextPage
+                ? [0, 1, 2, 3, 4].map((index) => (
+                    <article key={`my-nail-list-next-skel-${index}`} className="flex flex-col" aria-hidden>
+                      <div className="aspect-[4/5] w-full animate-pulse overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl" />
+                      <div className="mx-auto mt-2 h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
+                    </article>
+                  ))
+                : null}
+            </div>
+            <div ref={observerRef} className="h-10 pb-4" aria-hidden />
+          </>
+        )}
       </main>
     </div>
   )

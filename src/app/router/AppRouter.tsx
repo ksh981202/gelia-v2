@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import AdminGuard from '../../widgets/layout/AdminGuard'
+import AdminGuard from './guards/AdminGuard'
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
 import {
@@ -52,6 +52,7 @@ const ClientTermsPage = lazy(() => import('../../pages/client/ClientTermsPage'))
 const ClientPrivacyPage = lazy(() => import('../../pages/client/ClientPrivacyPage'))
 const ClientMyPage = lazy(() => import('../../pages/client/ClientMyPage'))
 const ClientMyNailListPage = lazy(() => import('../../pages/client/ClientMyNailListPage'))
+const ClientCollectionPage = lazy(() => import('../../pages/client/ClientCollectionPage'))
 const ClientHomePage = lazy(() => import('../../pages/client/ClientHomePage'))
 const ClientRecommendPage = lazy(() => import('../../pages/client/ClientRecommendPage'))
 const ClientPage = lazy(() => import('../../pages/client/ClientPage'))
@@ -87,6 +88,21 @@ const ProCurationPage = lazy(() => import('../../pages/pro/ProCurationPage'))
 const ProGrowthPage = lazy(() => import('../../pages/pro/ProGrowthPage'))
 const ProSettingsPage = lazy(() => import('../../pages/pro/ProSettingsPage'))
 const ProFaqPage = lazy(() => import('../../pages/pro/ProFaqPage'))
+const ProTestIntroPage = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestIntroPage })),
+)
+const ProTestStep1Page = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestStep1Page })),
+)
+const ProTestStep2Page = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestStep2Page })),
+)
+const ProTestStep3Page = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestStep3Page })),
+)
+const ProTestResultPage = lazy(() =>
+  import('../../pages/pro/test/ProTestWrapperPages').then((m) => ({ default: m.ProTestResultPage })),
+)
 
 const router = createBrowserRouter([
   {
@@ -134,6 +150,7 @@ const router = createBrowserRouter([
       { path: 'account', element: <ClientAccountSettingsPage /> },
       { path: 'my', element: <ClientMyPage /> },
       { path: 'my/list/:type', element: <ClientMyNailListPage /> },
+      { path: 'collection/:id', element: <ClientCollectionPage /> },
       { path: 'ranking', element: <Navigate to="/trend" replace /> },
       { path: 'popular-design', element: <PopularDesignPage /> },
       { path: 'period-best-list', element: <PeriodBestListPage /> },
@@ -186,6 +203,11 @@ const router = createBrowserRouter([
           { path: 'growth', element: <ProGrowthPage /> },
           { path: 'settings', element: <ProSettingsPage /> },
           { path: 'faq', element: <ProFaqPage /> },
+          { path: 'test-intro', element: <ProTestIntroPage /> },
+          { path: 'test-step1', element: <ProTestStep1Page /> },
+          { path: 'test-step2', element: <ProTestStep2Page /> },
+          { path: 'test-step3', element: <ProTestStep3Page /> },
+          { path: 'test-result', element: <ProTestResultPage /> },
         ],
       },
     ],

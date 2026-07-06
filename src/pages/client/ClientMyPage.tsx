@@ -1,21 +1,23 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
-import { Bell, Bookmark, Camera, Heart, X } from 'lucide-react'
+import { Bell, Camera, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 type ActiveTab = 'recent' | 'liked' | 'saved'
 type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
 
-const GALLERY_PREVIEW_LIMIT = 4
+const GALLERY_PREVIEW_LIMIT = 10
 
 const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '저장한 네일', en: 'Saved Nails' },
+  saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
 }
 
 const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; orderColumn: string }> = {
@@ -25,6 +27,10 @@ const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; order
 }
 
 const MY_PAGE_NAIL_COLUMNS = 'id,title,title_en,image_url'
+
+function isActiveTab(value: string | null): value is ActiveTab {
+  return value === 'recent' || value === 'liked' || value === 'saved'
+}
 
 async function fetchActivityCount(table: UserActivityTable, userId: string | null): Promise<number> {
   if (!userId) return 0
@@ -80,8 +86,10 @@ export default function ClientMyPage() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const currentUserId = useCurrentUserId()
-  const [activeTab, setActiveTab] = useState<ActiveTab>('recent')
+  const currentTab = searchParams.get('tab')
+  const activeTab: ActiveTab = isActiveTab(currentTab) ? currentTab : 'recent'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [profileImg, setProfileImg] = useState('/avatar/default_profile_heart.png')
   const [tempImg, setTempImg] = useState('/avatar/default_profile_heart.png')
@@ -90,8 +98,20 @@ export default function ClientMyPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  const statBoxClass =
-    'flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl px-1 sm:px-1.5 transition-[box-shadow,background-color]'
+  const settingsTileClass =
+    'flex w-full items-center gap-3 rounded-xl bg-stone-50 p-5 text-[15px] font-medium text-stone-700 transition-all hover:bg-stone-100'
+  const previewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
+  const folderPreviewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
+
+  const statButtonClass = (isActive: boolean) =>
+    `flex cursor-pointer flex-col items-center gap-0.5 px-3 py-2 transition-colors md:items-end md:px-4 ${
+      isActive ? 'rounded-xl bg-stone-100' : ''
+    }`
+
+  const statNumberClass = (isActive: boolean) =>
+    `text-[24px] font-black tabular-nums leading-none ${
+      isActive ? 'text-orange-600' : 'text-stone-900'
+    }`
   const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
   const { data: recentCount = 0, isLoading: isRecentCountLoading } = useQuery({
     queryKey: ['my-page-count', 'recent', currentUserId],
@@ -105,12 +125,7 @@ export default function ClientMyPage() {
     enabled: Boolean(currentUserId),
     staleTime: 30_000,
   })
-  const { data: savedCount = 0, isLoading: isSavedCountLoading } = useQuery({
-    queryKey: ['my-page-count', 'saved', currentUserId],
-    queryFn: () => fetchActivityCount('user_saves', currentUserId),
-    enabled: Boolean(currentUserId),
-    staleTime: 30_000,
-  })
+  const { data: savedCount = 0, isLoading: isSavedCountLoading } = useUserSavedCountQuery(currentUserId)
 
   useEffect(() => {
     let cancelled = false
@@ -165,9 +180,20 @@ export default function ClientMyPage() {
   const { data: galleryNails = [] } = useQuery({
     queryKey: ['my-page-gallery', activeTab, currentUserId],
     queryFn: () => fetchActivityPreview(activeTab, currentUserId),
-    enabled: Boolean(currentUserId),
+    enabled: Boolean(currentUserId) && activeTab !== 'saved',
     staleTime: 30_000,
   })
+
+  const handleTabChange = (tab: ActiveTab) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('tab', tab)
+        return next
+      },
+      { replace: true },
+    )
+  }
 
   const openDetail = (nailId: string, title: string, imageUrl: string) => {
     navigate(`/detail/${nailId}`, {
@@ -233,162 +259,169 @@ export default function ClientMyPage() {
         </button>
       </header>
 
-      <main>
-        <section className="flex flex-col items-center py-10 border-b border-gray-50">
-          <div
-            className="relative h-[100px] w-[100px] shrink-0 cursor-pointer overflow-hidden rounded-full bg-white shadow-sm ring-[3px] ring-rose-100/80 ring-offset-2 ring-offset-white"
-            onClick={() => {
-              setTempImg(profileImg)
-              setTempNickname(nickname || '네일리버')
-              setIsModalOpen(true)
-            }}
-          >
-            <img
-              src={profileImg}
-              alt="프로필"
-              className="h-full w-full overflow-hidden rounded-full bg-white object-cover"
-            />
+      <main className="mx-auto w-full max-w-6xl px-5 pb-12 pt-6 md:px-8 lg:px-10">
+        <div className="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm md:flex md:items-center md:justify-between md:p-8">
+          <div className="flex items-center gap-5">
+            <div
+              className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-full border border-stone-200 bg-white md:h-20 md:w-20"
+              onClick={() => {
+                setTempImg(profileImg)
+                setTempNickname(nickname || '네일리버')
+                setIsModalOpen(true)
+              }}
+            >
+              <img src={profileImg} alt="프로필" className="h-full w-full object-cover" />
+            </div>
+            <div className="min-w-0 text-left">
+              <div className="truncate text-xl font-bold text-stone-900 md:text-2xl">
+                {nickname || '네일리버'}
+              </div>
+              <p className="mt-1 text-[13px] text-stone-600">
+                {isEnglish ? 'Have a great day 🌷' : '좋은 하루 보내세요 🌷'}
+              </p>
+            </div>
           </div>
-          <div className="mt-4 text-xl font-bold text-gray-900">{nickname || "네일리버"}</div>
-          <span className="mt-1.5 inline-flex items-center justify-center rounded-full bg-rose-50 px-3.5 py-1 text-center text-[13px] font-semibold text-rose-400">
-            {isEnglish ? "Have a great day 🌷" : "좋은 하루 보내세요 🌷"}
-          </span>
-        </section>
 
-        <section className="grid grid-cols-3 gap-3 px-5 mt-8 mb-10">
-          <button
-            type="button"
-            className={`${statBoxClass} ${activeTab === "recent" ? "ring-2 ring-gray-400 ring-offset-2 bg-gray-100" : "bg-gray-50 border border-gray-100"}`}
-            onClick={() => setActiveTab("recent")}
-          >
-            <span className="flex h-8 w-8 items-center justify-center text-[22px]" aria-hidden>⏱️</span>
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-gray-800">{isRecentCountLoading ? '...' : recentCount}</span>
-            <span className="text-[13px] font-semibold text-gray-600">{isEnglish ? 'Recently Viewed' : '최근 본 디자인'}</span>
-          </button>
-          
-          <button
-            type="button"
-            className={`${statBoxClass} ${activeTab === "liked" ? "ring-2 ring-rose-400 ring-offset-2 bg-rose-100" : "bg-rose-50 border border-rose-100"}`}
-            onClick={() => setActiveTab("liked")}
-          >
-            <Heart className="h-7 w-7 fill-rose-500 text-rose-500" strokeWidth={1.5} aria-hidden />
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-rose-500">{isLikedCountLoading ? '...' : likedCount}</span>
-            <span className="text-[13px] font-semibold text-rose-500">{isEnglish ? 'Liked Nails' : '좋아요 한 네일'}</span>
-          </button>
-
-          <button
-            type="button"
-            className={`${statBoxClass} ${activeTab === "saved" ? "ring-2 ring-indigo-400 ring-offset-2 bg-indigo-100" : "bg-indigo-50 border border-indigo-100"}`}
-            onClick={() => setActiveTab("saved")}
-          >
-            <Bookmark className="h-[26px] w-[26px] text-indigo-500" strokeWidth={2.5} aria-hidden />
-            <span className="text-[22px] font-extrabold tabular-nums leading-none text-indigo-500">{isSavedCountLoading ? '...' : savedCount}</span>
-            <span className="text-[13px] font-semibold text-indigo-500">{isEnglish ? 'Saved Nails' : '저장한 네일'}</span>
-          </button>
-        </section>
-
-        <section className="mb-12">
-          <div className="mb-5 flex items-center justify-between px-5">
-            <h2 className="text-lg font-bold text-gray-900">
-              {activeTabLabel}
-            </h2>
+          <div className="mt-8 flex w-full justify-between border-t border-stone-100 pt-6 md:mt-0 md:w-auto md:justify-end md:gap-2 md:border-t-0 md:pt-0">
             <button
               type="button"
-              className="text-sm font-medium text-gray-500"
+              className={statButtonClass(activeTab === 'recent')}
+              onClick={() => handleTabChange('recent')}
+            >
+              <span className={statNumberClass(activeTab === 'recent')}>
+                {isRecentCountLoading ? '...' : recentCount}
+              </span>
+              <span className="text-[14px] font-semibold text-stone-700">
+                {isEnglish ? 'Recently Viewed' : '최근 본 디자인'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={statButtonClass(activeTab === 'liked')}
+              onClick={() => handleTabChange('liked')}
+            >
+              <span className={statNumberClass(activeTab === 'liked')}>
+                {isLikedCountLoading ? '...' : likedCount}
+              </span>
+              <span className="text-[14px] font-semibold text-stone-700">
+                {isEnglish ? 'Liked Nails' : '좋아요 한 네일'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={statButtonClass(activeTab === 'saved')}
+              onClick={() => handleTabChange('saved')}
+            >
+              <span className={statNumberClass(activeTab === 'saved')}>
+                {isSavedCountLoading ? '...' : savedCount}
+              </span>
+              <span className="text-[14px] font-semibold text-stone-700">
+                {isEnglish ? tabLabels.saved.en : tabLabels.saved.ko}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <section className="mb-12 md:mb-16">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-stone-900">{activeTabLabel}</h2>
+            <button
+              type="button"
+              className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
               onClick={() => navigate(`/my/list/${activeTab}`)}
             >
               {isEnglish ? 'View All >' : '전체보기 >'}
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4 px-5">
-            {galleryNails.map((item) => {
-              const titleKo = String(item.title ?? '').trim()
-              const titleEn = String(item.title_en ?? '').trim()
-              const title = (isEnglish && titleEn ? titleEn : titleKo) || titleEn || (isEnglish ? 'Nail Design' : '네일 디자인')
-              const imageUrl = String(item.image_url ?? '').trim()
-              return (
-                <article
-                  key={item.id}
-                  className="flex flex-col cursor-pointer"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openDetail(item.id, title, imageUrl)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      openDetail(item.id, title, imageUrl)
-                    }
-                  }}
-                >
-                  <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 border border-black/5 shadow-sm">
-                    {imageUrl ? (
-                      <img src={imageUrl} alt={title} className="h-full w-full object-cover transition-transform hover:scale-105" />
-                    ) : null}
-                  </div>
-                  <div className="mt-2.5 flex w-full flex-col items-center justify-center">
-                    <span className="w-full text-center text-sm font-medium tracking-tight text-gray-800 line-clamp-1">
+
+          {activeTab === 'saved' ? (
+            <SavedFoldersGrid
+              userId={currentUserId}
+              isEnglish={isEnglish}
+              gridClassName={folderPreviewGridClass}
+            />
+          ) : (
+            <div className={previewGridClass}>
+              {galleryNails.map((item) => {
+                const titleKo = String(item.title ?? '').trim()
+                const titleEn = String(item.title_en ?? '').trim()
+                const title =
+                  (isEnglish && titleEn ? titleEn : titleKo) ||
+                  titleEn ||
+                  (isEnglish ? 'Nail Design' : '네일 디자인')
+                const imageUrl = String(item.image_url ?? '').trim()
+                return (
+                  <article
+                    key={item.id}
+                    className="flex cursor-pointer flex-col"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openDetail(item.id, title, imageUrl)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        openDetail(item.id, title, imageUrl)
+                      }
+                    }}
+                  >
+                    <div className="aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={title}
+                          className="h-full w-full object-cover transition-transform hover:scale-105"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">
                       {title}
-                    </span>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </section>
 
-        <section className="pt-4">
-          <div className="mb-8">
-            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">{isEnglish ? 'Preferences' : '맞춤 설정'}</div>
+        <section className="border-t border-stone-100 pb-12 pt-8">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
             <button
               type="button"
-              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+              className={settingsTileClass}
               onClick={() => navigate('/notifications')}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🔔</span>
-                <span className="text-[15px] font-semibold text-gray-800">{isEnglish ? 'Notification Settings' : '알림 설정'}</span>
-              </div>
-              <span className="text-gray-300 font-bold">{">"}</span>
+              <span className="text-xl" aria-hidden>
+                🔔
+              </span>
+              {isEnglish ? 'Notification Settings' : '알림 설정'}
             </button>
-          </div>
-          
-          <div className="mb-8">
-            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">{isEnglish ? 'Account' : '계정'}</div>
             <button
               type="button"
-              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+              className={settingsTileClass}
               onClick={() => navigate('/account')}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">⚙️</span>
-                <span className="text-[15px] font-semibold text-gray-800">{isEnglish ? 'Account Management' : '계정 관리'}</span>
-              </div>
-              <span className="text-gray-300 font-bold">{">"}</span>
+              <span className="text-xl" aria-hidden>
+                ⚙️
+              </span>
+              {isEnglish ? 'Account Management' : '계정 관리'}
             </button>
             <button
               type="button"
-              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
+              className={settingsTileClass}
               onClick={() => navigate('/support')}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🎧</span>
-                <span className="text-[15px] font-semibold text-gray-800">{isEnglish ? 'Customer Service / Notice' : '고객센터 / 공지사항'}</span>
-              </div>
-              <span className="text-gray-300 font-bold">{">"}</span>
+              <span className="text-xl" aria-hidden>
+                🎧
+              </span>
+              {isEnglish ? 'Customer Service / Notice' : '고객센터 / 공지사항'}
             </button>
-          </div>
-
-          <div className="mb-8">
-            <div className="text-[13px] font-bold text-gray-400 mb-2 px-5">비즈니스</div>
-            <Link
-              to="/pro"
-              className="w-full flex items-center justify-between py-4 px-5 bg-white border-b border-gray-50 active:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">👑</span>
-                <span className="text-[15px] font-semibold text-gray-800">GELIA PRO (원장님 전용)</span>
-              </div>
-              <span className="text-gray-300 font-bold">{">"}</span>
+            <Link to="/pro" className={settingsTileClass}>
+              <span className="text-xl" aria-hidden>
+                👑
+              </span>
+              GELIA PRO (원장님 전용)
             </Link>
           </div>
         </section>

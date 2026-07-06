@@ -1,6 +1,22 @@
-import { BarChart2, BookOpen, Home, Search, Settings, User } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import {
+  BarChart2,
+  BookOpen,
+  CalendarHeart,
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  Home,
+  Palette,
+  Scissors,
+  Search,
+  Sparkles,
+  Trophy,
+  Wand2,
+  type LucideIcon,
+} from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import {
+  Link,
   NavLink,
   Outlet,
   useLocation,
@@ -8,14 +24,206 @@ import {
   useNavigationType,
 } from 'react-router-dom'
 import { LanguageProvider, useLanguageContext } from '@/contexts/LanguageContext'
-import LanguageToggle from '@/components/LanguageToggle'
-import { supabase } from '@/shared/api/supabaseClient'
+import ClientHeaderUtilityIcons from '@/components/client/ClientHeaderUtilityIcons'
+import GeliaWordmark from '@/components/client/GeliaWordmark'
+import {
+  useClientPcFilterStore,
+  type ClientPcFilterKey,
+} from '@/features/client-home/useClientPcFilterStore'
+import {
+  PC_SIDEBAR_CATEGORIES,
+  PC_SIDEBAR_DEFAULT_OPEN_IDS,
+  resolveSidebarLabel,
+  type PcSidebarCategoryFilterKey,
+  type PcSidebarCategoryId,
+  type SidebarFilterItem,
+} from '@/features/client-home/clientPcSidebarConfig'
+import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
+import { cn } from '@/lib/utils'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
     'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 pt-1 pb-1.5 [-webkit-tap-highlight-color:transparent]',
     isActive ? 'text-[#FF7E67]' : 'text-gray-400',
   ].join(' ')
+
+function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
+  if (location.pathname.startsWith('/collection/')) return true
+  if (location.pathname === '/my/list/saved') return true
+  if (location.pathname === '/my') {
+    return new URLSearchParams(location.search).get('tab') === 'saved'
+  }
+  return false
+}
+
+const SIDEBAR_ITEM_BASE_CLASS =
+  'w-full cursor-pointer py-2 text-left text-[15px] font-medium text-stone-700 transition-colors hover:text-black'
+
+const SIDEBAR_ITEM_ACTIVE_CLASS = 'font-bold text-black'
+
+const SIDEBAR_CATEGORY_TEXT_CLASS = 'text-[16px] font-bold text-stone-900'
+
+const SIDEBAR_CATEGORY_BUTTON_CLASS =
+  'flex w-full cursor-pointer items-center justify-between'
+
+const SIDEBAR_CATEGORY_ICONS = {
+  ranking: Trophy,
+  season: CalendarHeart,
+  color: Palette,
+  mood: Sparkles,
+  shape: Scissors,
+  technique: Wand2,
+} as const satisfies Record<PcSidebarCategoryId, LucideIcon>
+
+const DEFAULT_OPEN_CATEGORIES: Record<string, boolean> = Object.fromEntries(
+  PC_SIDEBAR_CATEGORIES.map((category) => [
+    category.id,
+    PC_SIDEBAR_DEFAULT_OPEN_IDS.includes(category.id),
+  ]),
+)
+
+function SidebarAccordionSection({
+  label,
+  englishTitle,
+  icon: Icon,
+  isOpen,
+  onToggleOpen,
+  children,
+  showDivider = true,
+  isFirst = false,
+}: {
+  label: string
+  englishTitle: string
+  icon: LucideIcon
+  isOpen: boolean
+  onToggleOpen: () => void
+  children: ReactNode
+  showDivider?: boolean
+  isFirst?: boolean
+}) {
+  const ChevronIcon = isOpen ? ChevronUp : ChevronDown
+
+  return (
+    <>
+      <section>
+        <button
+          type="button"
+          onClick={onToggleOpen}
+          aria-expanded={isOpen}
+          aria-label={`${englishTitle} ${label}`}
+          className={[isFirst ? 'mt-4' : 'mt-6', 'mb-4', SIDEBAR_CATEGORY_BUTTON_CLASS].join(' ')}
+        >
+          <span className="flex items-center gap-2.5">
+            <Icon size={20} strokeWidth={2} className="shrink-0 text-stone-400" aria-hidden />
+            <span className={SIDEBAR_CATEGORY_TEXT_CLASS}>{label}</span>
+          </span>
+          <ChevronIcon size={18} strokeWidth={1.5} className="shrink-0 text-stone-400" aria-hidden />
+        </button>
+        {isOpen ? <div className="mb-2 flex flex-col gap-0.5 pl-8">{children}</div> : null}
+      </section>
+      {showDivider ? <div className="my-4 border-t border-stone-100" aria-hidden /> : null}
+    </>
+  )
+}
+
+function SidebarFilterItems({
+  items,
+  selected,
+  onSelect,
+  isEnglish,
+}: {
+  items: readonly SidebarFilterItem[]
+  selected: string
+  onSelect: (value: string) => void
+  isEnglish: boolean
+}) {
+  return (
+    <>
+      {items.map((item) => {
+        const isSelected = selected === item.value
+        return (
+          <span
+            key={item.value}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect(item.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return
+              event.preventDefault()
+              onSelect(item.value)
+            }}
+            className={[
+              SIDEBAR_ITEM_BASE_CLASS,
+              isSelected ? SIDEBAR_ITEM_ACTIVE_CLASS : '',
+            ].join(' ')}
+          >
+            {resolveSidebarLabel(item.label, isEnglish)}
+          </span>
+        )
+      })}
+    </>
+  )
+}
+
+function PcSidebarFilters({
+  filterValues,
+  toggleRankingFilter,
+  togglePcFilter,
+  isEnglish,
+}: {
+  filterValues: Record<PcSidebarCategoryFilterKey, string>
+  toggleRankingFilter: (option: string) => void
+  togglePcFilter: (key: ClientPcFilterKey, option: string) => void
+  isEnglish: boolean
+}) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(DEFAULT_OPEN_CATEGORIES)
+
+  const toggleCategory = (categoryId: string) => {
+    setOpenCategories((prev) => ({ ...prev, [categoryId]: !prev[categoryId] }))
+  }
+
+  const handleSelect = (filterKey: PcSidebarCategoryFilterKey, value: string) => {
+    if (filterKey === 'rankingFilter') {
+      toggleRankingFilter(value)
+    } else {
+      togglePcFilter(filterKey, value)
+    }
+
+    if (location.pathname !== '/') {
+      navigate('/')
+    }
+
+    // 필터 메뉴 클릭 시 화면 맨 위로 강제 이동 (SPA 스크롤 버그 해결)
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+  }
+
+  return (
+    <>
+      {PC_SIDEBAR_CATEGORIES.map((category, index) => (
+        <SidebarAccordionSection
+          key={category.id}
+          label={resolveSidebarLabel(category.label, isEnglish)}
+          englishTitle={category.title}
+          icon={SIDEBAR_CATEGORY_ICONS[category.id]}
+          isOpen={Boolean(openCategories[category.id])}
+          onToggleOpen={() => toggleCategory(category.id)}
+          isFirst={index === 0}
+          showDivider={index < PC_SIDEBAR_CATEGORIES.length - 1}
+        >
+          <SidebarFilterItems
+            items={category.items}
+            selected={filterValues[category.filterKey]}
+            onSelect={(value) => handleSelect(category.filterKey, value)}
+            isEnglish={isEnglish}
+          />
+        </SidebarAccordionSection>
+      ))}
+    </>
+  )
+}
 
 export default function ClientLayout() {
   return (
@@ -28,38 +236,28 @@ export default function ClientLayout() {
 function ClientLayoutContent() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const navigationType = useNavigationType()
-  const [isAdminUser, setIsAdminUser] = useState(false)
+  const themeFilter = useClientPcFilterStore((state) => state.themeFilter)
+  const colorFilter = useClientPcFilterStore((state) => state.colorFilter)
+  const moodFilter = useClientPcFilterStore((state) => state.moodFilter)
+  const shapeFilter = useClientPcFilterStore((state) => state.shapeFilter)
+  const pointFilter = useClientPcFilterStore((state) => state.pointFilter)
+  const rankingFilter = useClientPcFilterStore((state) => state.rankingFilter)
+  const togglePcFilter = useClientPcFilterStore((state) => state.toggleFilter)
+  const toggleRankingFilter = useClientPcFilterStore((state) => state.toggleRankingFilter)
+  const resetPcFilters = useClientPcFilterStore((state) => state.resetFilters)
+  const currentUserId = useCurrentUserId()
+  const { data: savedCount = 0 } = useUserSavedCountQuery(currentUserId)
+
+  const handleLogoClick = () => {
+    resetPcFilters()
+  }
 
   useEffect(() => {
     if (navigationType === 'POP') return
     window.scrollTo(0, 0)
   }, [pathname, navigationType])
-
-  useEffect(() => {
-    let cancelled = false
-
-    const applyAdminEmail = (email: string | undefined) => {
-      if (!cancelled) setIsAdminUser(email?.trim().toLowerCase() === 'k981202@naver.com')
-    }
-
-    void supabase.auth.getUser().then(({ data }) => {
-      applyAdminEmail(data.user?.email)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      applyAdminEmail(session?.user?.email)
-    })
-
-    return () => {
-      cancelled = true
-      subscription.unsubscribe()
-    }
-  }, [])
 
   const hideTopHeader =
     pathname.startsWith('/test') ||
@@ -123,59 +321,116 @@ function ClientLayoutContent() {
 
   const mainPbClass = hideBottomNav
     ? 'pb-[env(safe-area-inset-bottom,0px)]'
-    : 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))]'
+    : 'pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0'
 
   return (
-    <div className="min-h-[100dvh] overflow-clip bg-background">
-      <div className="relative mx-auto min-h-[100dvh] w-full max-w-md">
-        {!hideTopHeader && (
-        <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl">
-          <h1
-            className="shrink-0 cursor-pointer whitespace-nowrap text-[28px] font-bold tracking-wide text-gray-900 sm:text-[30px]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-            onClick={() => navigate('/')}
-          >
-            GELIA
-          </h1>
-          <div className="flex shrink-0 items-center gap-2">
-            <LanguageToggle compact />
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
-              onClick={() => navigate('/search')}
-              aria-label="검색"
-            >
-              <Search size={18} className="text-foreground" />
-            </button>
-            {isAdminUser && import.meta.env.DEV ? (
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90 sm:h-10 sm:w-10"
-                onClick={() => navigate('/admin')}
-                aria-label="관리자 페이지"
-              >
-                <Settings size={18} className="text-foreground" strokeWidth={2} />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
-              onClick={() => navigate('/my')}
-              aria-label="마이페이지"
-            >
-              <User size={18} className="text-foreground" />
-            </button>
+    <div className="min-h-[100dvh] bg-background font-sans antialiased text-stone-900">
+      <div className="relative mx-auto min-h-[100dvh] w-full max-w-md md:flex md:max-w-[1600px] md:flex-row md:items-start">
+        {/* PC 전용 좌측 사이드바 (모바일은 숨김) */}
+        <aside className="hidden md:z-50 md:sticky md:top-0 md:flex md:h-screen md:w-[260px] md:shrink-0 md:flex-col md:border-r md:border-stone-200 md:bg-[#FCFAF8] md:shadow-[2px_0_15px_-3px_rgba(0,0,0,0.03)]">
+          <div className="p-6 pb-2">
+            <GeliaWordmark className="mb-8" onClick={handleLogoClick} />
           </div>
+
+          <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-6 pb-8 pt-1">
+            <PcSidebarFilters
+              filterValues={{
+                rankingFilter,
+                themeFilter,
+                colorFilter,
+                moodFilter,
+                shapeFilter,
+                pointFilter,
+              }}
+              toggleRankingFilter={toggleRankingFilter}
+              togglePcFilter={togglePcFilter}
+              isEnglish={isEnglish}
+            />
+
+            <div className="mt-6 mb-2 h-px w-full bg-stone-100" aria-hidden />
+            <div className="flex w-full flex-col">
+              <Link
+                to="/my?tab=saved"
+                className="flex items-center justify-between py-3 transition-opacity hover:opacity-80"
+              >
+                <div className="flex items-center gap-2 text-[16px] font-bold text-stone-900">
+                  <Heart className="h-5 w-5 fill-red-500 text-red-500" strokeWidth={2} aria-hidden />
+                  <span>{isEnglish ? 'My Collections' : '내 컬렉션 보관함'}</span>
+                </div>
+                {savedCount > 0 ? (
+                  <span className="text-sm font-semibold tabular-nums text-stone-400">({savedCount})</span>
+                ) : null}
+              </Link>
+              <Link
+                to="/test-intro"
+                className="flex items-center gap-2 py-3 text-[16px] font-bold text-stone-900 transition-colors hover:text-orange-600"
+              >
+                <span aria-hidden>✨</span>
+                <span>{isEnglish ? 'Find Personal Nail' : '퍼스널 네일 찾기'}</span>
+              </Link>
+              <Link
+                to="/magazine"
+                className="flex items-center gap-2 py-3 font-['Playfair_Display',_serif] text-[17px] font-bold tracking-widest text-stone-900 transition-colors hover:text-orange-600"
+              >
+                <span className="font-sans text-[15px]" aria-hidden>📖</span>
+                <span>GELIA Magazine</span>
+              </Link>
+            </div>
+
+            <div className="mt-12 mb-10 w-full">
+              <div className="mb-6 w-full break-keep rounded-xl border border-stone-200 bg-stone-50 p-4 text-[13px] leading-relaxed text-stone-500">
+                {isEnglish ? (
+                  <>
+                    All GELIA images are AI designs 😉
+                    <br />
+                    Use them to find your own style!
+                  </>
+                ) : (
+                  <>
+                    GELIA의 모든 이미지는 AI로 만든 디자인이에요 😉
+                    <br />
+                    나만의 네일 스타일 찾는 데 참고해 보세요!
+                  </>
+                )}
+              </div>
+              <div className="mb-3 flex items-center gap-2 text-[13px] text-stone-500">
+                <Link to="/terms" className="transition-colors hover:text-stone-800">
+                  {isEnglish ? 'Terms of Service' : '이용약관'}
+                </Link>
+                <span className="text-[10px] text-stone-300">|</span>
+                <Link
+                  to="/privacy"
+                  className="font-bold text-stone-700 transition-colors hover:text-stone-900"
+                >
+                  {isEnglish ? 'Privacy Policy' : '개인정보처리방침'}
+                </Link>
+              </div>
+              <div className="flex flex-col gap-0.5 break-keep text-[12px] text-stone-400">
+                <p className="mb-0.5 font-semibold text-stone-500">
+                  {isEnglish ? 'GELIA Studio' : '젤리아 스튜디오 (GELIA Studio)'}
+                </p>
+                <p>© 2026 GELIA Studio. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col w-full">
+        {!hideTopHeader && (
+        <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl md:hidden">
+          <GeliaWordmark className="md:hidden" onClick={handleLogoClick} />
+          <ClientHeaderUtilityIcons className="gap-2" />
         </header>
         )}
 
         <main className={`flex min-h-0 flex-1 flex-col ${mainPbClass}`}>
           <Outlet />
         </main>
+        </div>
 
         {!hideBottomNav && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe"
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe md:hidden"
           aria-label="하단 탭"
         >
           <NavLink
@@ -228,16 +483,23 @@ function ClientLayoutContent() {
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
           <NavLink
-            to="/my"
+            to="/my?tab=saved"
             className={bottomNavLinkClass}
-            aria-label={isEnglish ? 'My tab' : '마이 탭'}
+            isActive={isCollectionNavActive}
+            aria-label={isEnglish ? 'Collection tab' : '컬렉션 탭'}
           >
-            <User
-              className="h-6 w-6 shrink-0"
-              strokeWidth={2.5}
-              aria-hidden
-            />
-            <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'My' : '마이'}</span>
+            {({ isActive }) => (
+              <>
+                <Heart
+                  className={cn('h-6 w-6 shrink-0', isActive ? 'fill-current' : '')}
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+                <span className="text-[9px] font-medium leading-none sm:text-[10px]">
+                  {isEnglish ? 'Collection' : '컬렉션'}
+                </span>
+              </>
+            )}
           </NavLink>
         </nav>
         )}

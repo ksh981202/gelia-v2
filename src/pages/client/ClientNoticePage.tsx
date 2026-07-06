@@ -54,7 +54,7 @@ export default function ClientNoticePage() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4">
+      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4 md:static md:mb-6 md:max-w-full md:border-b-0 md:bg-transparent md:px-0">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -68,8 +68,8 @@ export default function ClientNoticePage() {
         </h1>
       </header>
 
-      <main className="w-full px-5 pb-10 pt-14">
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white">
+      <main className="w-full px-5 pt-14 pb-10 md:mx-auto md:max-w-3xl md:px-0 md:pt-10 md:pb-20">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white md:border-stone-200 md:p-10 md:shadow-sm">
           {isLoading ? (
             <div className="px-5 py-8 text-center text-[14px] text-gray-500">
               {isEnglish ? 'Loading posts...' : '글을 불러오는 중입니다.'}
@@ -108,7 +108,7 @@ export default function ClientNoticePage() {
                 {isOpen ? (
                   <div className="border-t border-gray-50 bg-gray-50/80 px-5 py-4">
                     <div
-                      className="whitespace-pre-wrap break-words break-all overflow-hidden text-[14px] leading-relaxed text-gray-600 [&_a]:text-[#FF7D66] [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
+                      className="overflow-hidden whitespace-pre-wrap break-keep text-[14px] leading-loose text-stone-600 md:text-[15px] [&_a]:text-[#FF7D66] [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
                       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     />
                   </div>

@@ -139,9 +139,9 @@ export default function SearchMainPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
-      <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white">
-        {showResultHeader ? (
-          <div className="flex h-14 w-full items-center gap-2 px-3">
+      {!showResultHeader && (
+        <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white">
+          <div className="flex h-12 w-full items-center px-2">
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -150,87 +150,85 @@ export default function SearchMainPage() {
             >
               <ChevronLeft className="h-6 w-6" strokeWidth={2} />
             </button>
-            <h1 className="min-w-0 flex-1 truncate px-1 text-center text-[16px] font-bold text-gray-900">
-              {isEnglish ? `"${displaySearchTerm(q)}" Search Results` : `'${q}' 검색 결과`}
+            <h1 className="min-w-0 flex-1 pr-10 text-center text-[17px] font-bold text-gray-900">
+              {isEnglish ? 'Search' : '검색'}
             </h1>
-            <button
-              type="button"
-              onClick={() => {
-                setDraft(q)
-                setIsEditing(true)
-              }}
-              aria-label={isEnglish ? 'Search' : '검색'}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 active:bg-gray-100"
-            >
-              <Search className="h-5 w-5" strokeWidth={2} />
-            </button>
           </div>
-        ) : (
-          <>
-            <div className="flex h-12 w-full items-center px-2">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-900"
-              >
-                <ChevronLeft className="h-6 w-6" strokeWidth={2} />
-              </button>
-              <h1 className="min-w-0 flex-1 pr-10 text-center text-[17px] font-bold text-gray-900">
-                {isEnglish ? 'Search' : '검색'}
-              </h1>
+          <div className="border-t border-gray-50 px-4 py-3">
+            <div className="flex w-full items-center gap-2.5 rounded-full bg-gray-100 px-4 py-2.5">
+              <Search className="h-5 w-5 shrink-0 text-gray-400" strokeWidth={2} aria-hidden />
+              <input
+                type="search"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSearch()
+                }}
+                className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none"
+                placeholder={isEnglish ? 'Enter a search term' : '검색어를 입력하세요'}
+                aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
+              />
             </div>
-            <div className="border-t border-gray-50 px-4 py-3">
-              <div className="flex w-full items-center gap-2.5 rounded-full bg-gray-100 px-4 py-2.5">
-                <Search className="h-5 w-5 shrink-0 text-gray-400" strokeWidth={2} aria-hidden />
-                <input
-                  type="search"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') submitSearch()
-                  }}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none"
-                  placeholder={isEnglish ? 'Enter a search term' : '검색어를 입력하세요'}
-                  aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </header>
+          </div>
+        </header>
+      )}
 
       <main
-        className={`w-full min-w-0 flex-1 ${showResultHeader ? 'pt-14' : 'pt-[6.75rem]'}`}
+        className={`w-full min-w-0 flex-1 ${showResultHeader ? 'pt-4' : 'pt-[6.75rem]'}`}
       >
         {hasQuery ? (
-          <>
-            {!isLoading && !isError && results.length > 0 ? (
-              <p className="px-5 pt-4 pb-2 text-[13px] font-medium text-gray-500">
-                {isEnglish ? (
-                  <>
-                    Total <strong className="font-bold text-[#FF7D66]">{results.length}</strong>{' '}
-                    designs
-                  </>
-                ) : (
-                  <>
-                    총 <strong className="font-bold text-[#FF7D66]">{results.length}</strong>개의
-                    디자인
-                  </>
-                )}
-              </p>
+          <div className="mx-auto w-full min-w-0 max-w-6xl px-5 pb-8 md:px-8">
+            {showResultHeader ? (
+              <div className="mb-6 flex w-full items-center justify-between border-b border-stone-100 pb-4">
+                <div className="flex min-w-0 flex-1 items-baseline gap-2 pr-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+                    className="-ml-2 shrink-0 self-center rounded-full p-1.5 text-stone-800 transition-colors hover:bg-stone-100"
+                  >
+                    <ChevronLeft size={26} strokeWidth={2.5} />
+                  </button>
+                  <h1 className="truncate text-[24px] font-extrabold tracking-tight text-stone-900">
+                    {isEnglish ? `"${displaySearchTerm(q)}"` : `'${q}'`}{' '}
+                    {isEnglish ? 'Results' : '검색 결과'}
+                  </h1>
+                  <span className="shrink-0 text-[16px] font-medium text-stone-500">
+                    {isEnglish ? (
+                      <>
+                        (Total <span className="font-semibold text-orange-500">{results.length}</span>)
+                      </>
+                    ) : (
+                      <>
+                        (총 <span className="font-semibold text-orange-500">{results.length}</span>개)
+                      </>
+                    )}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraft(q)
+                    setIsEditing(true)
+                  }}
+                  aria-label={isEnglish ? 'Search again' : '다시 검색'}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100"
+                >
+                  <Search className="h-5 w-5" strokeWidth={2} />
+                </button>
+              </div>
             ) : null}
-            <div className="grid w-full min-w-0 grid-cols-2 gap-4 px-5 pt-4 pb-8">
+            <div className="grid w-full min-w-0 grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {isLoading ? (
               <SearchResultSkeleton />
             ) : isError ? (
-              <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+              <p className="col-span-full py-12 text-center text-sm text-gray-500">
                 {isEnglish
                   ? 'An error occurred while searching...'
                   : '검색 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.'}
               </p>
             ) : results.length === 0 ? (
-              <p className="col-span-2 py-12 text-center text-sm text-gray-500">
+              <p className="col-span-full py-12 text-center text-sm text-gray-500">
                 {isEnglish
                   ? `No designs found for "${displaySearchTerm(q)}".`
                   : `'${q}'에 맞는 디자인을 찾지 못했어요.`}
@@ -277,7 +275,7 @@ export default function SearchMainPage() {
               })
             )}
             </div>
-          </>
+          </div>
         ) : (
           <div className="w-full min-w-0 px-5 pt-4">
           <section className="mb-10">

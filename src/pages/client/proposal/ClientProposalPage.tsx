@@ -76,10 +76,10 @@ function ProposalGalleryNailCard({
       <button
         type="button"
         onClick={() => onOpen(nail)}
-        className="relative block w-full overflow-hidden rounded-2xl bg-white text-left shadow-sm transition-transform active:scale-[0.98]"
+        className="relative block w-full overflow-hidden rounded-2xl bg-white text-left shadow-sm transition-transform hover:shadow-md active:scale-[0.98] md:rounded-3xl"
         aria-label={`${badgeLabel} ${title} 상세 보기`}
       >
-        <span className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/50 bg-white/80 text-[11px] font-bold text-stone-800 shadow-sm backdrop-blur-md">
+        <span className="absolute left-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-[10px] font-bold text-white shadow-sm backdrop-blur-md">
           {badgeLabel}
         </span>
         {imageUrl ? (
@@ -94,7 +94,9 @@ function ProposalGalleryNailCard({
           <div className="aspect-[3/4] w-full bg-stone-200" aria-hidden />
         )}
       </button>
-      <p className="mt-2 truncate px-1 text-center text-sm font-semibold text-stone-700">{title}</p>
+      <p className="mt-3 truncate px-1 text-center text-[14px] font-semibold text-stone-800 md:mt-4 md:text-[15px]">
+        {title}
+      </p>
     </article>
   );
 }
@@ -134,52 +136,45 @@ export default function ClientProposalPage() {
       ? data.greetingMessage
       : "✨ 원장님이 고객님을 위해 엄선한 맞춤형 디자인입니다.\n가장 아름답게 완성할 특별한 무드를 만나보세요 🤍";
 
-  const galleryItems = data.nails.map((nail, index) => ({ nail, originalIndex: index }));
-  const leftColumnItems = galleryItems.filter(({ originalIndex }) => originalIndex % 2 === 0);
-  const rightColumnItems = galleryItems.filter(({ originalIndex }) => originalIndex % 2 === 1);
+  const galleryItems = data.nails;
 
   return (
-    <div className="bg-[#FAF7F2] px-5 pb-12 pt-8">
-      <div className="mx-auto max-w-md">
-        <header className="mb-8 px-4 text-center">
-          <h1 className="mb-3 text-2xl font-bold tracking-tight text-stone-800">
+    <div className="min-h-screen w-full bg-[#FAF7F2] px-5 pb-20 pt-8 md:pt-16">
+      <div className="mx-auto w-full max-w-md md:max-w-5xl lg:max-w-6xl">
+        <header className="mx-auto mb-8 max-w-2xl px-4 text-center md:mb-12">
+          <span className="mb-3 block text-[12px] font-bold tracking-widest text-orange-600">
+            SPECIAL FOR YOU
+          </span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-stone-900 md:text-4xl">
             For. {formatCustomerDisplayName(data.customerName)}
           </h1>
-          <p className="whitespace-pre-line break-keep text-base leading-relaxed text-stone-600">
+          <p className="mt-4 whitespace-pre-line break-keep text-[14px] leading-relaxed text-stone-500 md:text-[15px]">
             {displayGreeting}
           </p>
         </header>
 
-        {data.nails.length > 0 ? (
-          <section className="grid grid-cols-2 items-start gap-4" aria-label="추천 네일 디자인">
-            <div className="flex flex-col gap-4">
-              {leftColumnItems.map(({ nail, originalIndex }) => (
-                <ProposalGalleryNailCard
-                  key={nail.id}
-                  nail={nail}
-                  originalIndex={originalIndex}
-                  onOpen={(item) => openNailDetail(navigate, item)}
-                />
-              ))}
-            </div>
-            <div className="flex flex-col gap-4">
-              {rightColumnItems.map(({ nail, originalIndex }) => (
-                <ProposalGalleryNailCard
-                  key={nail.id}
-                  nail={nail}
-                  originalIndex={originalIndex}
-                  onOpen={(item) => openNailDetail(navigate, item)}
-                />
-              ))}
-            </div>
+        {galleryItems.length > 0 ? (
+          <section
+            className="grid w-full grid-cols-2 gap-4 md:grid-cols-4 md:gap-6"
+            aria-label="추천 네일 디자인"
+          >
+            {galleryItems.map((nail, index) => (
+              <ProposalGalleryNailCard
+                key={nail.id}
+                nail={nail}
+                originalIndex={index}
+                onOpen={(item) => openNailDetail(navigate, item)}
+              />
+            ))}
           </section>
         ) : (
           <p className="py-12 text-center text-sm text-stone-400">담긴 디자인이 없습니다.</p>
         )}
 
-        <footer className="mt-12">
+        <footer className="mt-12 md:mt-16">
+          <div className="mx-auto max-w-2xl">
           <section
-            className="rounded-2xl bg-white p-8 shadow-md"
+            className="rounded-2xl bg-white p-8 shadow-md md:rounded-3xl md:p-10"
             aria-label="살롱 프로필"
           >
             <div className="flex flex-col items-center text-center">
@@ -212,6 +207,7 @@ export default function ClientProposalPage() {
               </div>
             </div>
           </section>
+          </div>
         </footer>
       </div>
     </div>

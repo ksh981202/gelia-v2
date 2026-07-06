@@ -10,17 +10,20 @@ import {
   Search,
   Share2,
   Sparkles,
+  User,
   X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
+import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 
 type NailPhotoDetail = {
   id: string;
@@ -392,24 +395,6 @@ function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "e
   }
 }
 
-function upsertMetaTag(
-  selector: string,
-  attrName: "property" | "name",
-  attrValue: string,
-  content: string,
-): HTMLMetaElement | null {
-  const head = document.head;
-  if (!head) return null;
-  let el = document.querySelector(selector) as HTMLMetaElement | null;
-  if (!el) {
-    el = document.createElement("meta");
-    el.setAttribute(attrName, attrValue);
-    head.appendChild(el);
-  }
-  el.setAttribute("content", content);
-  return el;
-}
-
 const Detail = () => {
   const { language, setLanguage } = useLanguageContext();
   const isEnglish = language === "en";
@@ -433,6 +418,7 @@ const Detail = () => {
   );
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const currentUserId = useCurrentUserId();
   const [reactionOverride, setReactionOverride] = useState<{
     key: string;
@@ -542,13 +528,41 @@ const Detail = () => {
   const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
 
   const views = (displayRow?.popularity ?? 0) + (displayRow?.id === optimisticViewNailId ? 1 : 0);
-  const saveDisplayCount = (displayRow?.saves ?? 0) + (isSaved ? 1 : 0);
+  const saveDisplayCount = displayRow?.saves ?? 0;
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
   const detailViewTrackedForIdRef = useRef<string | null>(null);
 
   const similarExcludeId = displayRow?.id ?? nailId;
-  const { data: similarNails = [] } = useSimilarNailsQuery(similarExcludeId || undefined);
+  const similarTags = useMemo(() => {
+    if (!displayRow) return [];
+    const candidates = [
+      displayRow.styles?.[0],
+      displayRow.color,
+      displayRow.mood,
+      displayRow.design_technique,
+      displayRow.nail_length,
+      displayRow.situations?.[0],
+    ];
+    const seen = new Set<string>();
+    for (const raw of candidates) {
+      const trimmed = String(raw ?? "").trim();
+      if (trimmed) seen.add(trimmed);
+    }
+    return [...seen];
+  }, [displayRow]);
+  const { data: similarNails = [] } = useSimilarNailsQuery(similarExcludeId || undefined, {
+    tags: similarTags,
+  });
   const similarDisplay = useMemo(() => similarNails, [similarNails]);
+
+  const similarMainTag = similarTags[0] ?? "";
+  const handleSeeAllSimilar = useCallback(() => {
+    if (similarMainTag) {
+      navigate(`/search?q=${encodeURIComponent(similarMainTag)}`);
+    } else {
+      navigate("/gallery");
+    }
+  }, [navigate, similarMainTag]);
 
 
   useEffect(() => {
@@ -645,68 +659,6 @@ const Detail = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!displayRow?.id) return;
-    const originalTitle = document.title;
-    const originalDescription =
-      document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "";
-    const title = displayTitle;
-    const fallbackDescription =
-      isEnglish
-        ? "Found a nail style you love? Explore it in detail on GELIA. 💅"
-        : "마음에 쏙 드는 네일 디자인! 젤리아에서 자세히 확인해 보세요. 💅";
-    const description =
-      pickLocalized(displayRow.description, displayRow.description_en) || fallbackDescription;
-    const image = (displayRow.image_url ?? "").trim() || "https://gelia.app/ogimage/og-image.webp";
-    const url = window.location.href;
-
-    document.title = `${title} | 젤리아 (GELIA)`;
-
-    upsertMetaTag('meta[name="description"]', "name", "description", description);
-    upsertMetaTag('meta[property="og:type"]', "property", "og:type", "website");
-    upsertMetaTag('meta[property="og:url"]', "property", "og:url", url);
-    upsertMetaTag('meta[property="og:title"]', "property", "og:title", title);
-    upsertMetaTag(
-      'meta[property="og:description"]',
-      "property",
-      "og:description",
-      description,
-    );
-    upsertMetaTag('meta[property="og:image"]', "property", "og:image", image);
-
-    return () => {
-      document.title = originalTitle;
-      upsertMetaTag('meta[name="description"]', "name", "description", originalDescription);
-      upsertMetaTag('meta[property="og:url"]', "property", "og:url", "https://gelia.app");
-      upsertMetaTag(
-        'meta[property="og:title"]',
-        "property",
-        "og:title",
-        "젤리아 (GELIA) | 프리미엄 네일 큐레이션",
-      );
-      upsertMetaTag(
-        'meta[property="og:description"]',
-        "property",
-        "og:description",
-        "어떤 네일 할지 고민되나요? 핫한 트렌드부터 내 취향 맞춤 디자인까지, 젤리아에서 인생 네일을 쉽게 찾아보세요.",
-      );
-      upsertMetaTag(
-        'meta[property="og:image"]',
-        "property",
-        "og:image",
-        "https://gelia.app/ogimage/og-image.webp",
-      );
-    };
-  }, [
-    displayRow?.id,
-    displayRow?.image_url,
-    displayRow?.description,
-    displayRow?.description_en,
-    displayTitle,
-    isEnglish,
-    pickLocalized,
-  ]);
-
   const showCopiedToast = useCallback(() => {
     setShowShareToast(true);
     if (shareToastHideRef.current) clearTimeout(shareToastHideRef.current);
@@ -786,46 +738,38 @@ const Detail = () => {
     })();
   }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
 
-  const toggleSave = useCallback(() => {
-    if (!displayRow?.id) return;
-    if (!currentUserId) {
-      alert("로그인이 필요한 기능입니다.");
-      navigate("/login");
-      return;
-    }
-    const nailDesignId = displayRow.id;
-    const next = !isSaved;
-    const previousState = { key: reactionKey, isLiked, isSaved };
-
-    setReactionOverride({ key: reactionKey, isLiked, isSaved: next });
-    setDbReactionState({ key: reactionKey, isLiked, isSaved: next });
-
-    void (async () => {
-      try {
-        const query = supabase.from("user_saves");
-        const { error } = next
-          ? await query.insert({ user_id: currentUserId, nail_id: nailDesignId })
-          : await query.delete().match({ user_id: currentUserId, nail_id: nailDesignId });
-        if (error) throw error;
-        const { error: saveCountError } = await supabase.rpc("increment_saves", {
-          nail_id: nailDesignId,
-          increment_value: next ? 1 : -1,
-        });
-        if (saveCountError) throw saveCountError;
-        queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] });
-        queryClient.invalidateQueries({ queryKey: ['my-page-count', 'saved', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'saved', currentUserId] });
-        queryClient.invalidateQueries({ queryKey: ['my-nail-list', 'saved', currentUserId] });
-        void trackNailActivity(nailDesignId, next ? "save" : "unsave", currentUserId);
-      } catch (error) {
-        setReactionOverride(previousState);
-        setDbReactionState(previousState);
-        if (import.meta.env.DEV) {
-          console.warn("[Detail] save update failed", error);
-        }
+  const handleOpenFolderModal = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!displayRow?.id) return;
+      if (!currentUserId) {
+        alert("로그인이 필요한 기능입니다.");
+        navigate("/login");
+        return;
       }
-    })();
-  }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
+      setIsFolderModalOpen(true);
+    },
+    [currentUserId, displayRow?.id, navigate],
+  );
+
+  const handleSaveSuccess = useCallback(() => {
+    const nailDesignId = displayRow?.id ?? nailId;
+    if (!nailDesignId || !currentUserId) return;
+
+    const key = `${nailDesignId}:${currentUserId}`;
+    setReactionOverride({ key, isLiked, isSaved: true });
+    setDbReactionState({ key, isLiked, isSaved: true });
+
+    queryClient.setQueryData(
+      ['nail-design', 'detail', 'supabase', nailDesignId],
+      (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        const row = old as { saves?: number | null };
+        return { ...row, saves: (Number(row.saves) || 0) + 1 };
+      },
+    );
+  }, [currentUserId, displayRow?.id, isLiked, nailId, queryClient]);
 
   const playFloatingHeart = useCallback(() => {
     setFloatingHeartKey((k) => k + 1);
@@ -879,8 +823,10 @@ const Detail = () => {
 
   const pageShell = (main: ReactNode) => (
     <div className="min-h-screen w-full bg-[#fdfaf7]">
-      <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900">
-        <nav className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 backdrop-blur-md">
+      <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900 md:max-w-[1200px]">
+        <ClientGlobalHeader showBackButton />
+
+        <nav className="sticky top-0 z-50 flex w-full items-center justify-between border-b border-primary/10 bg-[#fdfaf7]/80 px-5 py-4 backdrop-blur-md md:hidden">
           <div className="flex items-center gap-2.5">
             <button
               type="button"
@@ -893,13 +839,14 @@ const Detail = () => {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="text-[22px] sm:text-[24px] font-semibold text-gray-900 tracking-widest cursor-pointer leading-none"
+              className="text-[22px] sm:text-[24px] font-semibold text-gray-900 tracking-widest cursor-pointer leading-none md:hidden"
               style={{ fontFamily: "'Playfair Display', serif" }}
-              aria-label="이미지 확대"
+              aria-label="GELIA 홈"
             >
               GELIA
             </button>
           </div>
+
           <div className="flex items-center gap-1">
             <button
             type="button"
@@ -931,34 +878,41 @@ const Detail = () => {
             >
               <Share2 className="h-5 w-5 text-slate-800" />
             </button>
+            <Link
+              to="/my"
+              className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full transition-colors hover:bg-primary/10"
+              aria-label={isEnglish ? "My Page" : "마이페이지"}
+            >
+              <User className="h-5 w-5 text-slate-800" strokeWidth={2} />
+            </Link>
           </div>
         </nav>
 
-        <main className="px-4 pb-32 pt-4">{main}</main>
+        <main className="px-4 pb-32 pt-4 lg:pb-10">{main}</main>
 
-        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100/80 bg-white/95 px-4 py-3 backdrop-blur-sm">
-          <div className="grid grid-cols-[7fr_13fr] gap-2.5">
+        <div className="fixed bottom-16 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-gray-100 bg-white lg:hidden">
+          <div className="flex w-full gap-3 px-5 py-3">
             <button
               type="button"
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-xl border border-orange-200/90 bg-white px-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-orange-50/40 active:scale-[0.97]"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
               aria-pressed={isSaved}
-              onClick={toggleSave}
+              onClick={handleOpenFolderModal}
             >
               <Bookmark
                 className={`h-4 w-4 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
                 strokeWidth={2}
               />
               <span className="truncate">
-                {isSaved ? (isEnglish ? "Saved" : "저장됨") : isEnglish ? "Save" : "저장하기"}
+                {isSaved ? (isEnglish ? "Added" : "컬렉션에 담김") : isEnglish ? "Add to Collection" : "컬렉션에 담기"}
               </span>
             </button>
             <button
               type="button"
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-xl bg-orange-500 px-2.5 text-sm font-bold text-white shadow-md shadow-orange-900/25 transition hover:bg-orange-600 active:scale-95"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
               onClick={() => void handleShareDesign()}
             >
               <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
-              <span className="min-w-0 text-center leading-tight">
+              <span className="min-w-0 truncate text-center leading-tight">
                 {isEnglish ? "Share Design" : "네일 디자인 공유"}
               </span>
             </button>
@@ -1003,16 +957,28 @@ const Detail = () => {
               : "링크가 복사되었어요! 친구에게 공유해 보세요 ✨"}
           </div>
         ) : null}
+        <FolderSelectModal
+          isOpen={isFolderModalOpen}
+          onClose={() => setIsFolderModalOpen(false)}
+          nailId={displayRow?.id ?? nailId}
+          onSaveSuccess={handleSaveSuccess}
+        />
       </div>
     </div>
   );
 
   if (isLoading && !displayRow) {
     return pageShell(
-      <div aria-busy="true" aria-label={isEnglish ? "Loading nail details" : "네일 상세 로딩 중"}>
-        <div className="aspect-[4/5] w-full animate-pulse rounded-3xl bg-gray-100 shadow-xl shadow-primary/5" />
+      <div
+        className="flex w-full flex-col items-start gap-8 lg:max-w-[1200px] lg:flex-row lg:gap-12 lg:mx-auto lg:px-8"
+        aria-busy="true"
+        aria-label={isEnglish ? "Loading nail details" : "네일 상세 로딩 중"}
+      >
+        <div className="relative h-fit w-full shrink-0 self-start lg:sticky lg:top-24 lg:w-[500px] xl:w-[600px]">
+          <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100 shadow-sm" />
+        </div>
 
-        <div className="mt-5 flex flex-col gap-3">
+        <div className="flex min-w-0 w-full flex-1 flex-col gap-3 lg:mt-3">
           <div className="h-8 w-4/5 animate-pulse rounded bg-gray-100" />
           <div className="flex flex-wrap items-center gap-4">
             <div className="h-5 w-20 animate-pulse rounded bg-gray-100" />
@@ -1027,7 +993,6 @@ const Detail = () => {
               <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
             </div>
           </div>
-        </div>
 
         <div className="mt-6 flex flex-wrap gap-2.5">
           {Array.from({ length: 4 }, (_, index) => (
@@ -1057,20 +1022,20 @@ const Detail = () => {
           </div>
         </div>
 
-        <section className="mt-10 overflow-hidden">
+        <section className="mt-10">
           <div className="mb-4 flex items-center justify-between">
             <div className="h-6 w-40 animate-pulse rounded bg-gray-100" />
             <div className="h-5 w-14 animate-pulse rounded bg-gray-100" />
           </div>
-          <div className="min-w-0 -mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-full gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:snap-none lg:[&>*:nth-child(n+4)]:hidden">
             {Array.from({ length: 5 }, (_, index) => (
-              <div key={`similar-nail-skel-${index}`} className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2">
-                <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100" />
-                <div className="h-4 w-4/5 animate-pulse rounded bg-gray-100" />
+              <div key={`similar-nail-skel-${index}`} className="w-[130px] shrink-0 snap-start lg:w-auto">
+                <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" />
               </div>
             ))}
           </div>
         </section>
+        </div>
       </div>,
     );
   }
@@ -1095,45 +1060,6 @@ const Detail = () => {
 
   return pageShell(
     <>
-      <div
-        className="relative aspect-[4/5] w-full select-none overflow-hidden rounded-3xl bg-primary/5 shadow-xl shadow-primary/5 touch-manipulation"
-        onTouchEnd={handleMainImageTouchEnd}
-        role="presentation"
-      >
-        {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt={displayTitle}
-            className="mx-auto block h-full w-full object-cover object-center"
-            draggable={false}
-            onDoubleClick={handleMainImageDoubleClick}
-            decoding="async"
-          />
-        ) : (
-          <div className="mx-auto block aspect-[4/5] w-full animate-pulse bg-gray-100" aria-hidden />
-        )}
-        {showFloatingHeart ? (
-          <div
-            key={floatingHeartKey}
-            className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
-            aria-hidden
-          >
-            <Heart
-              className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
-              strokeWidth={1.5}
-              aria-hidden
-            />
-          </div>
-        ) : null}
-        <button
-          type="button"
-          className="absolute bottom-3 right-3 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
-          onClick={() => setIsZoomOpen(true)}
-          aria-label="이미지 확대"
-        >
-          <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
-        </button>
-      </div>
       {isZoomOpen ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
@@ -1166,61 +1092,128 @@ const Detail = () => {
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-col gap-3">
-        <h1 className="text-left text-2xl font-bold tracking-tight text-gray-900 break-keep font-sans antialiased">
-          {displayTitle}
-        </h1>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-          <button
-            type="button"
-            onClick={toggleLike}
-            className="inline-flex items-center gap-1.5 rounded-lg py-0.5 pr-1 transition-colors hover:bg-gray-100/80"
-            aria-pressed={isLiked}
-            aria-label={isEnglish ? "Like" : "좋아요"}
+      <div className="flex w-full flex-col items-start gap-8 lg:max-w-[1200px] lg:flex-row lg:gap-12 lg:mx-auto lg:px-8">
+        <div className="w-full shrink-0 self-start lg:sticky lg:top-24 lg:w-[500px] xl:w-[600px]">
+          <div
+            className="relative h-fit w-full"
+            onTouchEnd={handleMainImageTouchEnd}
+            role="presentation"
           >
-            <Heart
-              className={`h-4 w-4 shrink-0 transition-colors ${
-                isLiked ? "fill-rose-500 text-rose-500" : "text-gray-500"
-              }`}
-              strokeWidth={1.5}
-            />
-            <span>
-              <span className="font-medium tabular-nums text-gray-500">{formatCount(likeDisplayCount)}</span>{" "}
-              {isEnglish ? "Likes" : "좋아요"}
-            </span>
-          </button>
-          <span className="inline-flex items-center gap-1.5">
-            <Eye className="h-4 w-4 shrink-0 text-indigo-400" strokeWidth={1.5} />
-            <span>
-              <span className="font-medium tabular-nums text-gray-500">{formatCount(views)}</span>{" "}
-              {isEnglish ? "Views" : "조회"}
-            </span>
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Bookmark className="h-4 w-4 shrink-0 text-orange-500" strokeWidth={1.5} />
-            <span>
-              <span className="font-medium tabular-nums text-gray-500">{formatCount(saveDisplayCount)}</span>{" "}
-              {isEnglish ? "Saves" : "저장"}
-            </span>
-          </span>
-        </div>
-        <div className="relative overflow-hidden rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Editor&apos;s Note</p>
-          <div className="relative mt-3">
-            <span
-              className="pointer-events-none absolute -left-0.5 top-0 font-serif text-5xl leading-none text-gray-100"
-              aria-hidden
+            {imageSrc ? (
+              <img
+                src={imageSrc}
+                alt={displayTitle}
+                className="block h-auto w-full rounded-2xl object-cover object-top shadow-sm"
+                draggable={false}
+                onDoubleClick={handleMainImageDoubleClick}
+                decoding="async"
+              />
+            ) : (
+              <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+            )}
+            {showFloatingHeart ? (
+              <div
+                key={floatingHeartKey}
+                className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+                aria-hidden
+              >
+                <Heart
+                  className="h-28 w-28 animate-detail-double-tap-heart fill-rose-500 text-rose-500 drop-shadow-2xl"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="absolute bottom-4 right-4 z-10 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+              onClick={() => setIsZoomOpen(true)}
+              aria-label="이미지 확대"
             >
-              &ldquo;
-            </span>
-            <p className="relative z-[1] break-keep whitespace-pre-line pl-5 pt-1 text-[15px] font-medium leading-loose tracking-wide text-gray-800">
-              {formattedDescription}
-            </p>
+              <Search className="h-4 w-4" strokeWidth={2.2} aria-hidden />
+            </button>
+          </div>
+
+          <div className="mt-6 hidden w-full gap-3 lg:flex">
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
+              aria-pressed={isSaved}
+              onClick={handleOpenFolderModal}
+            >
+              <Bookmark
+                className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
+                strokeWidth={2}
+              />
+              <span>{isSaved ? (isEnglish ? "Added" : "컬렉션에 담김") : isEnglish ? "Add to Collection" : "컬렉션에 담기"}</span>
+            </button>
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-orange-500 py-3.5 font-bold text-white transition-colors hover:bg-orange-600 active:scale-[0.98]"
+              onClick={() => void handleShareDesign()}
+            >
+              <Share2 className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
+              <span>{isEnglish ? "Share Design" : "네일 디자인 공유"}</span>
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="mt-6 flex flex-wrap gap-2.5">
+        <div className="min-w-0 w-full flex-1 lg:mt-3">
+          <div className="flex flex-col gap-3">
+            <h1 className="text-left text-2xl font-bold leading-none tracking-tight text-gray-900 break-keep font-sans antialiased">
+              {displayTitle}
+            </h1>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+              <button
+                type="button"
+                onClick={toggleLike}
+                className="inline-flex items-center gap-1.5 rounded-lg py-0.5 pr-1 transition-colors hover:bg-gray-100/80"
+                aria-pressed={isLiked}
+                aria-label={isEnglish ? "Like" : "좋아요"}
+              >
+                <Heart
+                  className={`h-4 w-4 shrink-0 transition-colors ${
+                    isLiked ? "fill-rose-500 text-rose-500" : "text-gray-500"
+                  }`}
+                  strokeWidth={1.5}
+                />
+                <span>
+                  <span className="font-medium tabular-nums text-gray-500">{formatCount(likeDisplayCount)}</span>{" "}
+                  {isEnglish ? "Likes" : "좋아요"}
+                </span>
+              </button>
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-4 w-4 shrink-0 text-indigo-400" strokeWidth={1.5} />
+                <span>
+                  <span className="font-medium tabular-nums text-gray-500">{formatCount(views)}</span>{" "}
+                  {isEnglish ? "Views" : "조회"}
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Bookmark className="h-4 w-4 shrink-0 text-orange-500" strokeWidth={1.5} />
+                <span>
+                  <span className="font-medium tabular-nums text-gray-500">{formatCount(saveDisplayCount)}</span>{" "}
+                  {isEnglish ? "Saves" : "저장"}
+                </span>
+              </span>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Editor&apos;s Note</p>
+              <div className="relative mt-3">
+                <span
+                  className="pointer-events-none absolute -left-0.5 top-0 font-serif text-5xl leading-none text-gray-100"
+                  aria-hidden
+                >
+                  &ldquo;
+                </span>
+                <p className="relative z-[1] break-keep whitespace-pre-line pl-5 pt-1 text-[15px] font-medium leading-loose tracking-wide text-gray-800">
+                  {formattedDescription}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2.5">
         {displayTags.length > 0 ? (
           displayTags.map((token, chipIdx) => {
             const bare = token.replace(/^#/, "").trim();
@@ -1340,7 +1333,7 @@ const Detail = () => {
         )}
       </div>
 
-      <section className="mt-10 overflow-hidden">
+      <section className="mt-10">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">
             {isEnglish ? "Similar Nail Designs" : "이 디자인과 비슷한 네일"}
@@ -1348,42 +1341,42 @@ const Detail = () => {
           <button
             type="button"
             className="cursor-pointer text-sm font-medium text-gray-500"
-            onClick={() => navigate("/gallery")}
+            onClick={handleSeeAllSimilar}
           >
             {isEnglish ? "See All" : "전체보기"} {">"}
           </button>
         </div>
-        <div className="min-w-0 -mx-4 flex gap-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-full gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:snap-none lg:[&>*:nth-child(n+4)]:hidden">
           {similarDisplay.map((item) => {
             const simSrc = item.image_url?.trim() || "";
+            const simTitle = pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail Design" : "네일 디자인");
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => navigate(`/detail/${item.id}`)}
-                className="flex min-w-[140px] max-w-[140px] flex-col items-center gap-2"
+                className="block w-[130px] shrink-0 snap-start lg:w-auto"
+                aria-label={simTitle}
               >
                 {simSrc ? (
                   <img
                     src={simSrc}
-                    alt={pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail" : "네일")}
-                    className="aspect-[3/4] h-full w-full rounded-2xl object-cover object-center"
+                    alt={simTitle}
+                    className="aspect-[3/4] w-full rounded-xl object-cover object-center"
                     loading="lazy"
                     decoding="async"
                   />
                 ) : (
-                  <div className="aspect-[3/4] w-full animate-pulse rounded-2xl bg-gray-100" aria-hidden />
+                  <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" aria-hidden />
                 )}
-                <div className="flex w-full min-w-0 max-w-full shrink-0 justify-center">
-                  <p className="w-full min-w-0 max-w-full truncate text-center text-sm font-medium tracking-tight text-gray-800 font-sans">
-                    {pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail Design" : "네일 디자인")}
-                  </p>
-                </div>
+                <p className="mt-2 truncate text-center text-[13px] font-semibold text-stone-800">{simTitle}</p>
               </button>
             );
           })}
         </div>
       </section>
+        </div>
+      </div>
     </>,
   );
 };

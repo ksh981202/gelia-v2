@@ -7,6 +7,7 @@ import {
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
+import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
@@ -229,9 +230,6 @@ export default function PatternListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
-          <h1 className="absolute left-1/2 top-1/2 max-w-[62%] -translate-x-1/2 -translate-y-1/2 truncate text-center text-lg font-bold text-gray-900 whitespace-nowrap">
-            {isEnglish ? 'View by Art' : '아트별 모아보기'}
-          </h1>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/search')}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>
@@ -259,15 +257,13 @@ export default function PatternListPage() {
           <div className="w-4 shrink-0" aria-hidden="true" />
         </section>
 
-        <div className="relative flex items-center justify-between px-4 pb-3 pt-2">
-          <span className="text-sm text-gray-500">
-            {isEnglish ? (
-              <>Total <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span> designs</>
-            ) : (
-              <>총 <span className="font-bold text-[#FF7E67]">{totalCountLabel}</span>개의 디자인</>
-            )}
-          </span>
-          <div ref={sortMenuRef} className="relative">
+        <GalleryListHeaderWithSort
+          breadcrumb={isEnglish ? 'View by Art' : '아트별 모아보기'}
+          mainTitle={displayPatternTabLabel(activeTab, isEnglish)}
+          totalCount={totalCount}
+          isEnglish={isEnglish}
+          sortControl={
+            <div ref={sortMenuRef} className="relative">
             <button
               type="button"
               onClick={() => setIsSortOpen((prev) => !prev)}
@@ -301,7 +297,8 @@ export default function PatternListPage() {
               </div>
             )}
           </div>
-        </div>
+          }
+        />
       </div>
 
       <main className="grid grid-cols-2 gap-4 px-5 pb-8 pt-4">

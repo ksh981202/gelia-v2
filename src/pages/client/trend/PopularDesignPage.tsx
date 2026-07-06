@@ -1,6 +1,7 @@
 import { useRecommendHubQuery } from "@/entities/nail-design/api/useRecommendHubQuery";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { filterNonZeroRankingRpcRows } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { supabase } from "@/shared/api/supabaseClient";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
@@ -89,7 +90,7 @@ function usePopularPeriodBestQuery(period: string, maxLimit: number) {
         .abortSignal(signal);
 
       if (error) throw error;
-      return (data ?? []) as RankingNailRow[];
+      return filterNonZeroRankingRpcRows((data ?? []) as RankingNailRow[]);
     },
   });
 }
@@ -105,6 +106,7 @@ function usePopularShapeBestQuery(shapeKeyword: string, maxLimit: number) {
       if (shapeFilter) query = query.or(shapeFilter);
 
       const { data, error } = await query
+        .gt("saves", 0)
         .order("popularity", { ascending: false })
         .order("saves", { ascending: false })
         .order("id", { ascending: false })
