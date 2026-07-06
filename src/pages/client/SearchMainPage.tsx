@@ -140,7 +140,7 @@ export default function SearchMainPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
       {!showResultHeader && (
-        <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white">
+        <header className="fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-md border-b border-gray-100 bg-white md:hidden">
           <div className="flex h-12 w-full items-center px-2">
             <button
               type="button"
@@ -174,12 +174,12 @@ export default function SearchMainPage() {
       )}
 
       <main
-        className={`w-full min-w-0 flex-1 ${showResultHeader ? 'pt-4' : 'pt-[6.75rem]'}`}
+        className={`w-full min-w-0 flex-1 ${showResultHeader ? 'pt-4' : 'pt-[6.75rem] md:pt-0'}`}
       >
         {hasQuery ? (
           <div className="mx-auto w-full min-w-0 max-w-6xl px-5 pb-8 md:px-8">
             {showResultHeader ? (
-              <div className="mb-6 flex w-full items-center justify-between border-b border-stone-100 pb-4">
+              <div className="mb-6 flex w-full items-center justify-between border-b border-stone-100 pb-4 md:hidden">
                 <div className="flex min-w-0 flex-1 items-baseline gap-2 pr-4">
                   <button
                     type="button"
@@ -277,7 +277,27 @@ export default function SearchMainPage() {
             </div>
           </div>
         ) : (
-          <div className="w-full min-w-0 px-5 pt-4">
+          <div className="mx-auto w-full max-w-2xl px-5 pt-4 md:pt-10">
+            <div className="relative mb-10 mt-8 hidden w-full md:block">
+              <Search
+                className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-stone-400"
+                strokeWidth={2}
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitSearch()
+                }}
+                className="h-14 w-full rounded-2xl border border-transparent bg-stone-100/80 pl-12 pr-4 text-lg text-gray-900 outline-none transition-all placeholder:text-stone-400 focus:border-[#FF7E67] focus:bg-white"
+                placeholder={
+                  isEnglish ? 'What nail design are you looking for?' : '어떤 네일을 찾고 계신가요?'
+                }
+                aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
+              />
+            </div>
           <section className="mb-10">
             <div className="relative mx-auto mb-6 flex h-[200px] w-full max-w-[220px] items-center justify-center">
               <div

@@ -1,19 +1,18 @@
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import { Link, NavLink } from "react-router-dom";
 
 const PRO_MENU_ITEMS = [
-  { id: "curation", label: "🏆 젤리아 큐레이션", to: "/pro/curation" },
-  { id: "designs", label: "💅 전체 디자인", to: "/pro", end: true },
-  { id: "collection", label: "⭐ 내 컬렉션", to: "/pro/collections" },
-  { id: "proposals", label: "📋 상담 제안서", to: "/pro/proposals" },
-  // 런칭 초기 UX 집중: 임시 숨김 — 복구 시 아래 주석 해제
-  // { id: "growth", label: "📈 샵 성장 팁", to: "/pro/growth" },
+  { id: "curation", labelKo: "🏆 젤리아 큐레이션", labelEn: "🏆 GELIA Curation", to: "/pro/curation" },
+  { id: "designs", labelKo: "💅 전체 디자인", labelEn: "💅 All Designs", to: "/pro", end: true },
+  { id: "collection", labelKo: "⭐ 내 컬렉션", labelEn: "⭐ My Collection", to: "/pro/collections" },
+  { id: "proposals", labelKo: "📋 상담 제안서", labelEn: "📋 Proposals", to: "/pro/proposals" },
 ] as const;
 
 const PRO_FOCUS_MENU_ITEMS = [
-  { id: "designs", label: "💅 프리미엄 디자인", to: "/pro", end: true },
-  { id: "collection", label: "⭐ VIP 룩북", to: "/pro/collections" },
-  { id: "test", label: "✨ 퍼스널 네일 찾기", to: "/pro/test-intro" },
+  { id: "designs", labelKo: "💅 프리미엄 디자인", labelEn: "💅 Premium Designs", to: "/pro", end: true },
+  { id: "collection", labelKo: "⭐ VIP 룩북", labelEn: "⭐ VIP Lookbook", to: "/pro/collections" },
+  { id: "test", labelKo: "✨ 퍼스널 네일 찾기", labelEn: "✨ Find Personal Nail", to: "/pro/test-intro" },
 ] as const;
 
 const proNavLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -25,6 +24,7 @@ const proNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(" ");
 
 export default function ProSidebar() {
+  const { isEnglish } = useLanguageContext();
   const isFocusMode = useProUIStore((state) => state.isFocusMode);
   const menuItems = isFocusMode ? PRO_FOCUS_MENU_ITEMS : PRO_MENU_ITEMS;
 
@@ -39,7 +39,7 @@ export default function ProSidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-5" aria-label="PRO 메인 메뉴">
+      <nav className="flex-1 space-y-1 px-3 py-5" aria-label={isEnglish ? "PRO main menu" : "PRO 메인 메뉴"}>
         {menuItems.map((item) => (
           <NavLink
             key={item.id}
@@ -47,7 +47,7 @@ export default function ProSidebar() {
             end={"end" in item ? item.end : false}
             className={proNavLinkClass}
           >
-            {item.label}
+            {isEnglish ? item.labelEn : item.labelKo}
           </NavLink>
         ))}
       </nav>
@@ -58,7 +58,7 @@ export default function ProSidebar() {
             to="/"
             className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900"
           >
-            🏠 일반 젤리아 홈으로
+            {isEnglish ? "🏠 Go to GELIA Home" : "🏠 일반 젤리아 홈으로"}
           </Link>
           <a
             href="https://pf.kakao.com/"
@@ -66,13 +66,13 @@ export default function ProSidebar() {
             rel="noopener noreferrer"
             className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900"
           >
-            💡 기능 제안 / 문의하기
+            {isEnglish ? "💡 Suggestions / Inquiries" : "💡 기능 제안 / 문의하기"}
           </a>
           <NavLink to="/pro/faq" className={proNavLinkClass}>
-            ❓ 자주 묻는 질문 (FAQ)
+            {isEnglish ? "❓ FAQ" : "❓ 자주 묻는 질문 (FAQ)"}
           </NavLink>
           <NavLink to="/pro/settings" className={proNavLinkClass}>
-            ⚙️ 샵 프로필 설정
+            {isEnglish ? "⚙️ Shop Profile Settings" : "⚙️ 샵 프로필 설정"}
           </NavLink>
         </div>
       ) : null}

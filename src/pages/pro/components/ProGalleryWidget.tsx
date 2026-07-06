@@ -2,6 +2,7 @@ import {
   DEFAULT_GALLERY_TAB,
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import {
   PC_SIDEBAR_CATEGORIES,
   mapRankingFilterToGallerySort,
@@ -138,9 +139,11 @@ export default function ProGalleryWidget({
   onToggleSelect,
   onOpenDetail,
   debouncedSearchKeyword = "",
-  ariaLabel = "PRO 디자인 탐색 갤러리",
+  ariaLabel,
   onGalleryStatsChange,
 }: ProGalleryWidgetProps) {
+  const { isEnglish } = useLanguageContext();
+  const resolvedAriaLabel = ariaLabel ?? (isEnglish ? "PRO design gallery" : "PRO 디자인 탐색 갤러리");
   const isCompact = variant === "compact";
   const gridClass = GRID_CLASS_BY_VARIANT[variant];
 
@@ -281,7 +284,9 @@ export default function ProGalleryWidget({
       }
     >
       {isCompact ? (
-        <p className="text-lg font-semibold text-stone-700">디자인 갤러리</p>
+        <p className="text-lg font-semibold text-stone-700">
+          {isEnglish ? "Design Gallery" : "디자인 갤러리"}
+        </p>
       ) : null}
 
       <div className="mb-4 flex items-center justify-between">
@@ -290,14 +295,20 @@ export default function ProGalleryWidget({
           onClick={handleResetFilters}
           className="rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-700"
         >
-          ✨ 모든 디자인 전체보기
+          {isEnglish ? "✨ View All Designs" : "✨ 모든 디자인 전체보기"}
         </button>
         <button
           type="button"
           onClick={() => setIsFilterOpen((prev) => !prev)}
           className="flex items-center gap-1 text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
         >
-          {isFilterOpen ? "🔼 필터 접기" : "🔽 필터 열기"}
+          {isFilterOpen
+            ? isEnglish
+              ? "🔼 Collapse Filters"
+              : "🔼 필터 접기"
+            : isEnglish
+              ? "🔽 Open Filters"
+              : "🔽 필터 열기"}
         </button>
       </div>
 
@@ -310,12 +321,14 @@ export default function ProGalleryWidget({
                 key={`pro-gallery-row-${category.id}`}
                 className={`${FILTER_ROW_WRAPPER_CLASS} ${filterRowGapClass}`}
               >
-                <span className={FILTER_LABEL_CLASS}>{resolveSidebarLabel(category.label, false)}</span>
+                <span className={FILTER_LABEL_CLASS}>
+                  {resolveSidebarLabel(category.label, isEnglish)}
+                </span>
                 <div className={FILTER_SCROLL_ROW_CLASS}>
                   {category.items.map((item) => (
                     <FilterPill
                       key={`pro-gallery-${category.id}-${item.value}`}
-                      label={resolveSidebarLabel(item.label, false)}
+                      label={resolveSidebarLabel(item.label, isEnglish)}
                       selected={currentValue === item.value}
                       onClick={() =>
                         handleDimensionSelect(category.id, currentValue, item.value)
@@ -348,21 +361,23 @@ export default function ProGalleryWidget({
         </div>
       ) : isError ? (
         <div className="relative z-50 m-4 flex flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 p-8 text-red-600">
-          <p className="mb-2 text-lg font-bold">🚨 디자인 조회 실패 (에러 발생)</p>
+          <p className="mb-2 text-lg font-bold">
+            {isEnglish ? "🚨 Failed to load designs" : "🚨 디자인 조회 실패 (에러 발생)"}
+          </p>
           <code className="w-full overflow-x-auto whitespace-pre-wrap break-all rounded border border-red-100 bg-white p-4 text-xs shadow-inner">
             {error instanceof Error ? error.message : JSON.stringify(error)}
           </code>
         </div>
       ) : galleryItems.length === 0 ? (
         <p className={`text-center text-sm text-stone-500 ${isCompact ? "py-12" : "py-16"}`}>
-          선택한 필터에 맞는 디자인이 없습니다.
+          {isEnglish ? "No designs match the selected filters." : "선택한 필터에 맞는 디자인이 없습니다."}
         </p>
       ) : (
-        <section className={gridClass} aria-label={ariaLabel}>
+        <section className={gridClass} aria-label={resolvedAriaLabel}>
           {galleryItems.map((item) => {
             const isSelected = selectedIds.has(String(item.id ?? "").trim());
             const imageUrl = String(item.image_url ?? "").trim();
-            const title = String(item.title ?? "").trim() || "네일 디자인";
+            const title = String(item.title ?? "").trim() || (isEnglish ? "Nail design" : "네일 디자인");
 
             return (
               <article key={item.id} className="min-w-0">
@@ -377,7 +392,7 @@ export default function ProGalleryWidget({
                       type="button"
                       onClick={() => onOpenDetail(item)}
                       className="block w-full cursor-pointer text-left"
-                      aria-label={`${title} 상세 보기`}
+                      aria-label={isEnglish ? `View ${title} details` : `${title} 상세 보기`}
                     >
                       {imageUrl ? (
                         <img
@@ -402,7 +417,15 @@ export default function ProGalleryWidget({
                       event.stopPropagation();
                       onToggleSelect(item);
                     }}
-                    aria-label={isSelected ? "디자인 선택 해제" : "디자인 선택"}
+                    aria-label={
+                      isSelected
+                        ? isEnglish
+                          ? "Deselect design"
+                          : "디자인 선택 해제"
+                        : isEnglish
+                          ? "Select design"
+                          : "디자인 선택"
+                    }
                     aria-pressed={isSelected}
                     className={[
                       "absolute flex items-center justify-center rounded-full backdrop-blur-sm transition-all",
@@ -437,7 +460,7 @@ export default function ProGalleryWidget({
 
       {isFetchingNextPage ? (
         <p className={`text-center text-xs text-stone-400 ${isCompact ? "py-3" : "py-4"}`}>
-          더 불러오는 중...
+          {isEnglish ? "Loading more..." : "더 불러오는 중..."}
         </p>
       ) : null}
     </>
