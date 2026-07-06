@@ -10,6 +10,7 @@ import {
   getRecentSearches,
 } from '@/shared/lib/recentSearchStorage'
 import { useQuery } from '@tanstack/react-query'
+import ClientHeaderUtilityIcons from '@/components/client/ClientHeaderUtilityIcons'
 import { ChevronLeft, Search, TrendingDown, TrendingUp } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -81,6 +82,10 @@ export default function SearchMainPage() {
   useEffect(() => {
     if (!q) return
     addRecentSearch(q)
+  }, [q])
+
+  useEffect(() => {
+    setDraft(q)
   }, [q])
 
   const submitSearch = useCallback(
@@ -178,6 +183,67 @@ export default function SearchMainPage() {
       >
         {hasQuery ? (
           <div className="mx-auto w-full min-w-0 max-w-6xl px-5 pb-8 md:px-8">
+            <div className="mb-8 hidden w-full flex-col pt-6 md:flex">
+              <div className="flex w-full items-center gap-4">
+                <div className="flex w-full max-w-3xl flex-1 items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="-ml-2 rounded-full p-2 transition-colors hover:bg-stone-100"
+                    aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+                  >
+                    <ChevronLeft className="h-6 w-6 text-stone-600" strokeWidth={2} />
+                  </button>
+                  <div className="relative w-full">
+                    <Search
+                      className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                    <input
+                      type="search"
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitSearch()
+                      }}
+                      className="h-12 w-full rounded-full border border-stone-200 bg-stone-50 pl-12 pr-4 text-gray-900 outline-none transition-all placeholder:text-stone-400 focus:border-[#FF7E67] focus:bg-white"
+                      placeholder={
+                        isEnglish ? 'What nail design are you looking for?' : '어떤 네일을 찾고 계신가요?'
+                      }
+                      aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
+                    />
+                  </div>
+                </div>
+                <ClientHeaderUtilityIcons className="shrink-0" />
+              </div>
+
+              {showResultHeader ? (
+                <div className="mt-8 flex items-baseline gap-3">
+                  <h1 className="text-2xl font-extrabold tracking-tight text-stone-900">
+                    {isEnglish ? `"${displaySearchTerm(q)}"` : `'${q}'`}
+                    <span className="ml-1 text-lg font-medium text-stone-500">
+                      {isEnglish ? 'Search Results' : '검색 결과'}
+                    </span>
+                  </h1>
+                  {!isLoading ? (
+                    <span className="shrink-0 text-base font-medium text-stone-500">
+                      {isEnglish ? (
+                        <>
+                          (Total{' '}
+                          <span className="font-semibold text-orange-500">{results.length}</span>)
+                        </>
+                      ) : (
+                        <>
+                          (총 <span className="font-semibold text-orange-500">{results.length}</span>개)
+                        </>
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
             {showResultHeader ? (
               <div className="mb-6 flex w-full items-center justify-between border-b border-stone-100 pb-4 md:hidden">
                 <div className="flex min-w-0 flex-1 items-baseline gap-2 pr-4">
@@ -278,25 +344,36 @@ export default function SearchMainPage() {
           </div>
         ) : (
           <div className="mx-auto w-full max-w-2xl px-5 pt-4 md:pt-10">
-            <div className="relative mb-10 mt-8 hidden w-full md:block">
-              <Search
-                className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-stone-400"
-                strokeWidth={2}
-                aria-hidden
-              />
-              <input
-                type="search"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') submitSearch()
-                }}
-                className="h-14 w-full rounded-2xl border border-transparent bg-stone-100/80 pl-12 pr-4 text-lg text-gray-900 outline-none transition-all placeholder:text-stone-400 focus:border-[#FF7E67] focus:bg-white"
-                placeholder={
-                  isEnglish ? 'What nail design are you looking for?' : '어떤 네일을 찾고 계신가요?'
-                }
-                aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
-              />
+            <div className="mb-10 hidden w-full items-center justify-between gap-4 pt-4 md:flex">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="-ml-2 shrink-0 rounded-full p-2 transition-colors hover:bg-stone-100"
+                aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+              >
+                <ChevronLeft className="h-6 w-6 text-stone-600" strokeWidth={2} />
+              </button>
+              <div className="relative w-full max-w-xl">
+                <Search
+                  className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') submitSearch()
+                  }}
+                  className="h-12 w-full rounded-full border border-stone-200 bg-stone-50 pl-12 pr-4 text-base text-gray-900 outline-none transition-all placeholder:text-stone-400 focus:border-[#FF7E67] focus:bg-white"
+                  placeholder={
+                    isEnglish ? 'What nail design are you looking for?' : '어떤 네일을 찾고 계신가요?'
+                  }
+                  aria-label={isEnglish ? 'Search nail designs' : '네일 디자인 검색'}
+                />
+              </div>
+              <ClientHeaderUtilityIcons className="shrink-0" />
             </div>
           <section className="mb-10">
             <div className="relative mx-auto mb-6 flex h-[200px] w-full max-w-[220px] items-center justify-center">

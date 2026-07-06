@@ -265,7 +265,6 @@ function ClientLayoutContent() {
     pathname.startsWith('/test') ||
     pathname.includes('/detail/') ||
     pathname === '/category' ||
-    pathname === '/search' ||
     pathname.startsWith('/gallery') ||
     pathname === '/my' ||
     pathname.startsWith('/my/list') ||
@@ -418,7 +417,7 @@ function ClientLayoutContent() {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col w-full">
-        {!hideTopHeader && (
+        {!hideTopHeader && pathname !== '/search' && (
         <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-background/80 px-5 backdrop-blur-xl md:hidden">
           <GeliaWordmark className="md:hidden" onClick={handleLogoClick} />
           <ClientHeaderUtilityIcons className="gap-2" />

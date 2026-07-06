@@ -11,7 +11,7 @@ export default function TestIntroPage() {
       </div>
       {/* PC 뷰: 헤더+배경 껍데기는 B2C 전용으로 여기서 주입 */}
       <div className="hidden md:flex md:min-h-screen md:w-full md:flex-col md:bg-stone-50">
-        <ClientGlobalHeader showBackButton={false} isMainHome={false} />
+        <ClientGlobalHeader showBackButton={true} isMainHome={false} />
         <div className="w-full px-6 py-12">
           <TestIntroPC />
         </div>
