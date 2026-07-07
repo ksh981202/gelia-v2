@@ -364,8 +364,9 @@ function ClientLayoutContent() {
   useEffect(() => {
     if (!isMdUp) return
     if (!isMobileOnlyRoute(pathname)) return
+    resetPcFilters()
     navigate('/', { replace: true })
-  }, [isMdUp, pathname, navigate])
+  }, [isMdUp, pathname, navigate, resetPcFilters])
 
   const hideTopHeader =
     pathname.startsWith('/test') ||

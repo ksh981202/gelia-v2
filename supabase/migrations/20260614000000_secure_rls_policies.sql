@@ -8,6 +8,9 @@ DROP POLICY IF EXISTS "nail_designs_insert_anon_authenticated" ON public.nail_de
 DROP POLICY IF EXISTS "nail_designs_delete_anon_authenticated" ON public.nail_designs;
 DROP POLICY IF EXISTS "Admin full access nail_designs" ON public.nail_designs;
 
+-- TODO(SSOT): 아래 'k981202@naver.com'은 프론트 auth.ts ADMIN_EMAILS와 동기화됨.
+-- 추후 app.settings, admin_roles 테이블, 또는 Supabase Vault/env로 교체 권장 (마이그레이션 신규 작성 필요).
+
 -- 2. nail_designs: public read stays, only the admin email can insert/update/delete.
 ALTER TABLE public.nail_designs ENABLE ROW LEVEL SECURITY;
 

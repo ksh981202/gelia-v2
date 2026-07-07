@@ -11,14 +11,23 @@ export default function AdminGuard() {
   useEffect(() => {
     let cancelled = false
 
+    const kickOut = (showAlert = false) => {
+      if (cancelled) return
+      if (showAlert) {
+        alert('최고 관리자만 접근할 수 있습니다.')
+      }
+      setIsAllowed(false)
+      setIsChecking(false)
+      navigate('/', { replace: true })
+    }
+
     const checkAdminSession = async () => {
       const { data } = await supabase.auth.getSession()
 
       if (cancelled) return
 
       if (!isAdminEmail(data.session?.user?.email)) {
-        alert('최고 관리자만 접근할 수 있습니다.')
-        navigate('/', { replace: true })
+        kickOut(true)
         return
       }
 
@@ -28,8 +37,23 @@ export default function AdminGuard() {
 
     void checkAdminSession()
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return
+
+      if (event === 'SIGNED_OUT' || !isAdminEmail(session?.user?.email)) {
+        kickOut()
+        return
+      }
+
+      setIsAllowed(true)
+      setIsChecking(false)
+    })
+
     return () => {
       cancelled = true
+      subscription.unsubscribe()
     }
   }, [navigate])
 

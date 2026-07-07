@@ -2,6 +2,8 @@ import { DeleteObjectCommand, PutObjectCommand, S3Client } from 'npm:@aws-sdk/cl
 import { getSignedUrl } from 'npm:@aws-sdk/s3-request-presigner'
 import { createClient } from 'npm:@supabase/supabase-js'
 
+// TODO(SSOT): 프론트 `src/shared/constants/auth.ts` ADMIN_EMAILS와 동기화 필요.
+// 추후 Deno.env 또는 DB admin_roles 조회로 교체 권장 — 즉시 변경 시 RLS·마이그레이션과 함께 맞출 것.
 const ADMIN_EMAIL = 'k981202@naver.com'
 
 const corsHeaders = {

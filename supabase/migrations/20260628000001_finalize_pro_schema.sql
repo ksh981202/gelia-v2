@@ -14,6 +14,9 @@ DROP POLICY IF EXISTS "pro_proposals dev all access" ON public.pro_proposals;
 ALTER TABLE public.pro_lookbooks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pro_proposals ENABLE ROW LEVEL SECURITY;
 
+-- TODO(SSOT): 'k981202@naver.com' 큐레이션 권한 — 프론트 auth.ts ADMIN_EMAILS와 동기화.
+-- 추후 env/DB 조회로 교체 시 신규 마이그레이션으로 RLS 정책 일괄 갱신 필요.
+
 -- [내 컬렉션] 안전 정책
 CREATE POLICY "컬렉션 조회 (본인 것 + 큐레이션)" ON public.pro_lookbooks FOR SELECT USING (auth.uid() = user_id OR is_curation = true);
 CREATE POLICY "컬렉션 생성 (본인)" ON public.pro_lookbooks FOR INSERT WITH CHECK (auth.uid() = user_id AND (is_curation = false OR auth.jwt() ->> 'email' = 'k981202@naver.com'));

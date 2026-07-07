@@ -10,6 +10,7 @@ import {
   type PcSidebarCategoryId,
 } from "@/features/client-home/clientPcSidebarConfig";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { NailImage } from "@/shared/ui/NailImage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
@@ -374,7 +375,7 @@ export default function ProGalleryWidget({
         </p>
       ) : (
         <section className={gridClass} aria-label={resolvedAriaLabel}>
-          {galleryItems.map((item) => {
+          {galleryItems.map((item, index) => {
             const isSelected = selectedIds.has(String(item.id ?? "").trim());
             const imageUrl = String(item.image_url ?? "").trim();
             const title = String(item.title ?? "").trim() || (isEnglish ? "Nail design" : "네일 디자인");
@@ -395,10 +396,10 @@ export default function ProGalleryWidget({
                       aria-label={isEnglish ? `View ${title} details` : `${title} 상세 보기`}
                     >
                       {imageUrl ? (
-                        <img
+                        <NailImage
                           src={imageUrl}
                           alt={title}
-                          loading="lazy"
+                          priority={index < 4}
                           className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                         />
                       ) : (
@@ -406,7 +407,12 @@ export default function ProGalleryWidget({
                       )}
                     </button>
                   ) : imageUrl ? (
-                    <img src={imageUrl} alt={title} loading="lazy" className="w-full object-cover" />
+                    <NailImage
+                      src={imageUrl}
+                      alt={title}
+                      priority={index < 4}
+                      className="w-full object-cover"
+                    />
                   ) : (
                     <div className="aspect-[3/4] w-full bg-stone-200" />
                   )}

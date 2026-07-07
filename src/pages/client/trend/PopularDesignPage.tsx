@@ -4,6 +4,7 @@ import { useLanguageContext } from "@/contexts/LanguageContext";
 import { filterNonZeroRankingRpcRows } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { supabase } from "@/shared/api/supabaseClient";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { NailImage } from "@/shared/ui/NailImage";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -233,13 +234,11 @@ export default function PopularDesignPage() {
                   onClick={() => goDetail(item)}
                 >
                   <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                    <img
+                    <NailImage
                       src={item.image_url}
                       alt={displayItemTitle(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
-                      loading={index === 0 ? "eager" : "lazy"}
-                      decoding="async"
-                      fetchPriority={index === 0 ? "high" : undefined}
+                      priority={index < 4}
                     />
                   </div>
                   <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
@@ -264,19 +263,18 @@ export default function PopularDesignPage() {
             </button>
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {reactionBest.map((item) => (
+            {reactionBest.map((item, index) => (
               <article
                 key={item.id}
                 className="flex w-44 shrink-0 cursor-pointer flex-col"
                 onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                  <img
+                  <NailImage
                     src={item.image_url}
                     alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
-                    loading="lazy"
-                    decoding="async"
+                    priority={index < 4}
                   />
                 </div>
                 <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
@@ -300,19 +298,18 @@ export default function PopularDesignPage() {
             </button>
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {shapeBest.map((item) => (
+            {shapeBest.map((item, index) => (
               <article
                 key={item.id}
                 className="flex w-32 flex-none cursor-pointer flex-col"
                 onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                  <img
+                  <NailImage
                     src={item.image_url}
                     alt={displayItemTitle(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
-                    loading="lazy"
-                    decoding="async"
+                    priority={index < 4}
                   />
                 </div>
                 <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
