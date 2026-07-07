@@ -8,6 +8,7 @@ import {
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -318,6 +319,11 @@ export default function ClientSeasonPopularListPage() {
                 >
                   <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
                 </button>
+
+                {/* 모바일 전용 앱 헤더 타이틀 */}
+                <GalleryListMobileHeaderTitle>
+                  {displaySeasonPopularTitle(season, isEnglish)}
+                </GalleryListMobileHeaderTitle>
 
                 <Link
                   to="/gallery"

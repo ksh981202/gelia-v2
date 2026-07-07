@@ -2,6 +2,7 @@ import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { GalleryListTypographyHeader } from '@/widgets/gallery-list/GalleryListTypographyHeader'
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -222,6 +223,11 @@ export default function ClientColorPopularListPage() {
             >
               <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
             </button>
+
+            {/* 모바일 전용 앱 헤더 타이틀 */}
+            <GalleryListMobileHeaderTitle>
+              {isEnglish ? 'Real-time Popular Color Nails' : '실시간 인기 컬러 네일'}
+            </GalleryListMobileHeaderTitle>
 
             <Link
               to="/gallery"

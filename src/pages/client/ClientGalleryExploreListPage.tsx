@@ -7,6 +7,7 @@ import {
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
 import { ChevronDown, ChevronLeft, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -184,6 +185,11 @@ export default function ClientGalleryExploreListPage() {
           >
             <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
+
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'Explore Gallery' : '갤러리 탐색'}
+          </GalleryListMobileHeaderTitle>
 
           <div className="-mr-2 flex shrink-0 items-center gap-1">
             <button

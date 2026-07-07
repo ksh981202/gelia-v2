@@ -6,6 +6,8 @@ export type GalleryListTypographyHeaderProps = {
   totalCount?: number | null
   isEnglish?: boolean
   className?: string
+  /** GalleryListHeaderWithSort PC 래퍼 내부에서 사용 시 반응형 hidden 토글 생략 */
+  embedded?: boolean
 }
 
 export function GalleryListTypographyHeader({
@@ -14,6 +16,7 @@ export function GalleryListTypographyHeader({
   totalCount,
   isEnglish = false,
   className,
+  embedded = false,
 }: GalleryListTypographyHeaderProps) {
   const count = totalCount ?? 0
   const badgeText = isEnglish
@@ -21,7 +24,14 @@ export function GalleryListTypographyHeader({
     : `${count.toLocaleString()}개의 디자인`
 
   return (
-    <div className={cn('mb-8 flex flex-col gap-1.5 md:mb-10 md:gap-2', className)}>
+    <div
+      className={cn(
+        embedded
+          ? 'flex w-full flex-col gap-1.5 md:gap-2'
+          : 'hidden w-full flex-col gap-1.5 md:flex md:mb-10 md:gap-2',
+        className,
+      )}
+    >
       <span className="text-[13px] font-medium tracking-wide text-stone-500">{breadcrumb}</span>
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight text-stone-800 md:text-[28px]">

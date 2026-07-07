@@ -19,12 +19,33 @@ export function GalleryListHeaderWithSort({
   return (
     <div
       className={cn(
-        'relative flex w-full min-w-0 flex-col gap-3 px-4 pb-3 pt-2 sm:flex-row sm:items-end sm:justify-between',
+        'relative flex w-full min-w-0 items-center justify-between px-4 pb-2 pt-2 md:items-end md:pb-3',
         rowClassName,
       )}
     >
-      <GalleryListTypographyHeader {...headerProps} className={cn('mb-0 md:mb-0', className)} />
-      <div className="shrink-0 self-end sm:self-auto">{sortControl}</div>
+      {/* PC 전용: 창이 커지면 무조건 나타남 */}
+      <div className="hidden w-full min-w-0 flex-1 md:flex">
+        <GalleryListTypographyHeader
+          {...headerProps}
+          embedded
+          className={cn('mb-0', className)}
+        />
+      </div>
+
+      {/* 모바일 전용 카운터: 창이 커지면 무조건 사라짐 */}
+      {headerProps.totalCount ? (
+        <div className="flex min-w-0 flex-1 items-center text-[13px] text-stone-500 md:hidden">
+          총{' '}
+          <span className="mx-1 font-bold text-stone-700">
+            {headerProps.totalCount.toLocaleString()}
+          </span>
+          개의 디자인
+        </div>
+      ) : (
+        <div className="min-w-0 flex-1 md:hidden" />
+      )}
+
+      <div className="shrink-0">{sortControl}</div>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 
 export default function TextureGalleryListPage() {
@@ -15,6 +16,8 @@ export default function TextureGalleryListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2 transition-colors hover:bg-gray-100 rounded-full">
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>추천 갤러리</GalleryListMobileHeaderTitle>
           <button type="button" className="z-10 p-2 -mr-2 transition-colors hover:bg-gray-100 rounded-full">
             <Search className="h-6 w-6 text-gray-900" />
           </button>

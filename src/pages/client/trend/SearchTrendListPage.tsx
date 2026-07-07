@@ -8,6 +8,7 @@ import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSea
 import { NAIL_KEYWORD_EN_DICTIONARY } from "@/shared/constants/nailKeywords";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
@@ -156,6 +157,10 @@ export default function SearchTrendListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'Popular Search Trends' : '인기 검색어 트렌드'}
+          </GalleryListMobileHeaderTitle>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>

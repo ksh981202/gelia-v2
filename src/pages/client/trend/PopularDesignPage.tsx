@@ -90,7 +90,9 @@ function usePopularPeriodBestQuery(period: string, maxLimit: number) {
         .abortSignal(signal);
 
       if (error) throw error;
-      return filterNonZeroRankingRpcRows((data ?? []) as RankingNailRow[]);
+      const rawData = (data ?? []) as RankingNailRow[];
+      const filtered = filterNonZeroRankingRpcRows(rawData);
+      return filtered.length > 0 ? filtered : rawData;
     },
   });
 }
@@ -214,28 +216,37 @@ export default function PopularDesignPage() {
               {isEnglish ? "View All >" : "전체보기 >"}
             </button>
           </div>
-          {/* 스크롤바 완벽 숨김 처리 */}
-          <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {periodBest.map((item, index) => (
-              <article
-                key={item.id}
-                className="flex w-32 flex-none cursor-pointer flex-col"
-                onClick={() => goDetail(item)}
-              >
-                <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
-                  <img
-                    src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
-                    className="h-full w-full object-cover object-center"
-                    loading={index === 0 ? "eager" : "lazy"}
-                    decoding="async"
-                    fetchPriority={index === 0 ? "high" : undefined}
-                  />
-                </div>
-                <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
-              </article>
-            ))}
-          </div>
+          {periodBest.length === 0 ? (
+            <div className="flex h-40 items-center justify-center rounded-2xl border border-stone-100 bg-stone-50">
+              <p className="text-[13px] text-stone-500">
+                {isEnglish
+                  ? "We're tallying this week's best designs ✨"
+                  : "이번 주 베스트 디자인을 집계 중이에요 ✨"}
+              </p>
+            </div>
+          ) : (
+            <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {periodBest.map((item, index) => (
+                <article
+                  key={item.id}
+                  className="flex w-32 flex-none cursor-pointer flex-col"
+                  onClick={() => goDetail(item)}
+                >
+                  <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
+                    <img
+                      src={item.image_url}
+                      alt={displayItemTitle(item, isEnglish)}
+                      className="h-full w-full object-cover object-center"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                      fetchPriority={index === 0 ? "high" : undefined}
+                    />
+                  </div>
+                  <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* 2. 유저 반응 BEST */}

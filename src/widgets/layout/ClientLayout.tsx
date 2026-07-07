@@ -48,6 +48,104 @@ const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'text-[#FF7E67]' : 'text-gray-400',
   ].join(' ')
 
+const MD_BREAKPOINT_PX = 768
+
+/** md(768px) 이상 여부 — 리사이즈 시 실시간 동기화 */
+function useIsMdUp(): boolean {
+  const [isMdUp, setIsMdUp] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia(`(min-width: ${MD_BREAKPOINT_PX}px)`).matches
+  })
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(`(min-width: ${MD_BREAKPOINT_PX}px)`)
+    const handleChange = (event: MediaQueryListEvent) => setIsMdUp(event.matches)
+
+    setIsMdUp(mediaQuery.matches)
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
+
+  return isMdUp
+}
+
+/** PC 리사이즈 시에도 유지할 경로 (PC 사이드바·전용 뷰 보유) */
+function isPcResizeSafeRoute(pathname: string): boolean {
+  if (pathname === '/') return true
+  if (pathname === '/search') return true
+  if (pathname === '/magazine' || pathname.startsWith('/magazine/')) return true
+  if (pathname === '/my' || pathname.startsWith('/my/')) return true
+  if (pathname.startsWith('/collection/')) return true
+  if (pathname.startsWith('/detail/')) return true
+  if (pathname.startsWith('/test-')) return true
+  if (
+    pathname === '/login' ||
+    pathname === '/account' ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname === '/support' ||
+    pathname === '/faq' ||
+    pathname === '/notice' ||
+    pathname === '/notifications' ||
+    pathname === '/notification-list' ||
+    pathname === '/update-password'
+  ) {
+    return true
+  }
+  return false
+}
+
+/** PC 사이드바에 없는 모바일 전용·하단 탭 랜딩 경로 */
+function isMobileOnlyRoute(pathname: string): boolean {
+  if (isPcResizeSafeRoute(pathname)) return false
+
+  const mobileOnlyExact = new Set([
+    '/trend',
+    '/popular-design',
+    '/period-best-list',
+    '/reaction-best-list',
+    '/shape-best-list',
+    '/search-trend-list',
+    '/texture',
+    '/parts',
+    '/pattern',
+    '/mood',
+    '/art',
+    '/ranking',
+    '/gallery',
+    '/recommend',
+    '/category',
+    '/today-special',
+    '/color-curation',
+    '/style-curation',
+    '/season-curation',
+    '/theme',
+  ])
+
+  if (mobileOnlyExact.has(pathname)) return true
+
+  const mobileOnlyPrefixes = [
+    '/color-',
+    '/style-',
+    '/theme-list',
+    '/season-',
+    '/situation-',
+    '/vacation-',
+    '/texture-',
+    '/parts-',
+    '/pattern-',
+    '/mood-',
+    '/popular-',
+    '/stone-',
+    '/marble-',
+    '/chic-',
+    '/full-parts',
+    '/syrup-',
+  ]
+
+  return mobileOnlyPrefixes.some((prefix) => pathname.startsWith(prefix))
+}
+
 function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
   if (location.pathname.startsWith('/collection/')) return true
   if (location.pathname === '/my/list/saved') return true
@@ -237,7 +335,9 @@ function ClientLayoutContent() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
   const location = useLocation()
+  const navigate = useNavigate()
   const { pathname } = location
+  const isMdUp = useIsMdUp()
   const collectionNavActive = isCollectionNavActive(null, location)
   const navigationType = useNavigationType()
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter)
@@ -260,6 +360,12 @@ function ClientLayoutContent() {
     if (navigationType === 'POP') return
     window.scrollTo(0, 0)
   }, [pathname, navigationType])
+
+  useEffect(() => {
+    if (!isMdUp) return
+    if (!isMobileOnlyRoute(pathname)) return
+    navigate('/', { replace: true })
+  }, [isMdUp, pathname, navigate])
 
   const hideTopHeader =
     pathname.startsWith('/test') ||

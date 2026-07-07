@@ -6,6 +6,7 @@ import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, Link, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 
 const TAB_ITEMS = [
   { id: "save", name: "📌 압도적 저장", period: "압도적 저장" },
@@ -132,6 +133,10 @@ export default function ReactionBestListPage() {
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'User Reaction BEST' : '유저 반응 BEST'}
+          </GalleryListMobileHeaderTitle>
           <button type="button" className="z-10 p-1 text-gray-800" onClick={() => navigate("/search")}>
             <Search className="w-5 h-5" />
           </button>

@@ -9,6 +9,7 @@ import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { PageContainer } from '@/shared/ui/PageContainer'
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -208,7 +209,7 @@ export default function ClientStyleGalleryListPage() {
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
       <div className="sticky top-0 z-50 w-full bg-white shadow-sm">
-        <header className="flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
+        <header className="relative flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -217,6 +218,11 @@ export default function ClientStyleGalleryListPage() {
           >
             <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
           </button>
+
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'Style Nail Gallery' : '스타일별 네일 갤러리'}
+          </GalleryListMobileHeaderTitle>
 
           <Link
             to="/gallery"

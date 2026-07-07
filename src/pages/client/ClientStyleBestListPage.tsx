@@ -4,6 +4,7 @@ import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { PageContainer } from '@/shared/ui/PageContainer'
 import { GalleryListTypographyHeader } from '@/widgets/gallery-list/GalleryListTypographyHeader'
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -180,6 +181,11 @@ export default function ClientStyleBestListPage() {
             >
               <ChevronLeft className="h-6 w-6 text-gray-900" strokeWidth={2} />
             </button>
+
+            {/* 모바일 전용 앱 헤더 타이틀 */}
+            <GalleryListMobileHeaderTitle>
+              {isEnglish ? 'Style BEST' : '스타일 BEST'}
+            </GalleryListMobileHeaderTitle>
 
             <Link
               to="/gallery"

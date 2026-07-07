@@ -2,6 +2,7 @@ import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -196,6 +197,10 @@ export default function ChicBestListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'Hottest Minimal Chic BEST' : '세련된 미니멀 시크 BEST'}
+          </GalleryListMobileHeaderTitle>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>

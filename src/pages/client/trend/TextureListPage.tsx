@@ -7,6 +7,7 @@ import {
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
@@ -223,6 +224,16 @@ export default function TextureListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="h-6 w-6 text-gray-900" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {customTitle
+              ? isEnglish && customTitle === '추천 갤러리'
+                ? 'Recommended Gallery'
+                : customTitle
+              : isEnglish
+                ? 'View by Texture'
+                : '텍스처별 모아보기'}
+          </GalleryListMobileHeaderTitle>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate('/search')}>
             <Search className="h-6 w-6 text-gray-900" />
           </button>

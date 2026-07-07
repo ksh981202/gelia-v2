@@ -2,6 +2,7 @@ import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
@@ -106,6 +107,10 @@ export default function MarbleBestListPage() {
           <button type="button" onClick={() => navigate(-1)} className="z-10 p-2 -ml-2">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'Hottest Marble BEST' : '지금 가장 핫한 마블 BEST'}
+          </GalleryListMobileHeaderTitle>
           <button type="button" className="z-10 p-2 -mr-2" onClick={() => navigate("/search")}>
             <Search className="w-6 h-6 text-gray-900" />
           </button>

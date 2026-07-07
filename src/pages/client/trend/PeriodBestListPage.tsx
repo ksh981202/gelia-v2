@@ -3,6 +3,7 @@ import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
+import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -57,7 +58,9 @@ function useStyleBestRankingQuery(period: string, maxLimit: number) {
         .rpc("get_ranking_nails", { p_period: period, p_limit: maxLimit })
         .abortSignal(signal);
       if (error) throw error;
-      return filterNonZeroRankingRpcRows((data ?? []) as RankingNailRow[]);
+      const rawData = (data ?? []) as RankingNailRow[];
+      const filtered = filterNonZeroRankingRpcRows(rawData);
+      return filtered.length > 0 ? filtered : rawData;
     },
   });
 }
@@ -125,6 +128,10 @@ export default function PeriodBestListPage() {
           <button type="button" onClick={() => navigate(-1)} className="p-1 -ml-1">
             <ChevronLeft className="w-6 h-6 text-gray-900" />
           </button>
+          {/* 모바일 전용 앱 헤더 타이틀 */}
+          <GalleryListMobileHeaderTitle>
+            {isEnglish ? 'Period BEST Nails' : '기간별 BEST 네일'}
+          </GalleryListMobileHeaderTitle>
           <button type="button" className="p-1 -mr-1" onClick={() => navigate("/search")}>
             <Search className="w-5 h-5 text-gray-900" />
           </button>
