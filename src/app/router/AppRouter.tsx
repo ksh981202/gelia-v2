@@ -15,6 +15,7 @@ const ClientNailDetailPage = lazy(() => import('../../pages/client/ClientNailDet
 const ClientGalleryPage = lazy(() => import('../../pages/client/ClientGalleryPage'))
 const ClientMagazinePage = lazy(() => import('../../pages/client/magazine/ClientMagazinePage'))
 const ClientMagazineDetailPage = lazy(() => import('../../pages/client/magazine/ClientMagazineDetailPage'))
+const GlobalMagazinePage = lazy(() => import('../../pages/global/GlobalMagazinePage'))
 const TrendPage = lazy(() => import('../../pages/client/trend/TrendPage'))
 const TexturePage = lazy(() => import('../../pages/client/trend/TexturePage'))
 const TextureListPage = lazy(() => import('../../pages/client/trend/TextureListPage'))
@@ -227,6 +228,7 @@ const router = createBrowserRouter([
       },
     ],
   },
+  { path: '/en/magazine', element: <GlobalMagazinePage /> },
   { path: '/client/*', element: <Navigate to="/" replace /> },
   { path: '*', element: <NotFoundPage /> },
 ])
