@@ -33,6 +33,12 @@ export default function AdminLayout() {
               <FileText className="h-4 w-4 shrink-0" aria-hidden />
               고객센터
             </NavLink>
+            <NavLink to="/admin/gce" className={sidebarLink}>
+              <span className="h-4 w-4 shrink-0 text-center leading-4" aria-hidden>
+                🚀
+              </span>
+              GCE 마케팅 엔진
+            </NavLink>
           </nav>
         </div>
       </aside>

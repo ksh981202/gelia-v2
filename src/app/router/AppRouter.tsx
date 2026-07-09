@@ -11,11 +11,13 @@ import {
 const AdminUploadPage = lazy(() => import('../../pages/admin/AdminUploadPage'))
 const AdminBoard = lazy(() => import('../../pages/admin/AdminBoard'))
 const AdminManagePage = lazy(() => import('../../pages/admin/AdminManagePage'))
+const AdminGceDashboardPage = lazy(() => import('../../pages/admin/gce/AdminGceDashboardPage'))
 const ClientNailDetailPage = lazy(() => import('../../pages/client/ClientNailDetailPage'))
 const ClientGalleryPage = lazy(() => import('../../pages/client/ClientGalleryPage'))
 const ClientMagazinePage = lazy(() => import('../../pages/client/magazine/ClientMagazinePage'))
 const ClientMagazineDetailPage = lazy(() => import('../../pages/client/magazine/ClientMagazineDetailPage'))
 const GlobalMagazinePage = lazy(() => import('../../pages/global/GlobalMagazinePage'))
+const GlobalMagazineDetailPage = lazy(() => import('../../pages/global/GlobalMagazineDetailPage'))
 const TrendPage = lazy(() => import('../../pages/client/trend/TrendPage'))
 const TexturePage = lazy(() => import('../../pages/client/trend/TexturePage'))
 const TextureListPage = lazy(() => import('../../pages/client/trend/TextureListPage'))
@@ -224,11 +226,13 @@ const router = createBrowserRouter([
           { path: 'upload', element: <AdminUploadPage /> },
           { path: 'board', element: <AdminBoard /> },
           { path: 'manage', element: <AdminManagePage /> },
+          { path: 'gce', element: <AdminGceDashboardPage /> },
         ],
       },
     ],
   },
   { path: '/en/magazine', element: <GlobalMagazinePage /> },
+  { path: '/en/magazine/:id', element: <GlobalMagazineDetailPage /> },
   { path: '/client/*', element: <Navigate to="/" replace /> },
   { path: '*', element: <NotFoundPage /> },
 ])
