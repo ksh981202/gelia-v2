@@ -1,3 +1,4 @@
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import {
   copyLookbookShareLink,
   copyProposalShareLink,
@@ -18,10 +19,10 @@ import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "reac
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-function formatCreatedAt(value: string): string {
+function formatCreatedAt(value: string, isEnglish: boolean): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("ko-KR", {
+  return date.toLocaleDateString(isEnglish ? "en-US" : "ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -48,6 +49,7 @@ const PROPOSAL_FIELD_CLASS =
   "w-full rounded-xl border border-orange-100 bg-orange-50/30 px-4 py-3 text-sm text-stone-800 outline-none transition-colors placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500 disabled:opacity-60";
 
 export default function ProCollectionsPage() {
+  const { isEnglish } = useLanguageContext();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { id: collectionId } = useParams<{ id?: string }>();
@@ -114,9 +116,9 @@ export default function ProCollectionsPage() {
     try {
       await duplicateProLookbook(lookbook);
       await refetch();
-      window.alert("컬렉션이 복제되었습니다.");
+      window.alert(isEnglish ? "Collection duplicated." : "컬렉션이 복제되었습니다.");
     } catch {
-      window.alert("복제에 실패했습니다.");
+      window.alert(isEnglish ? "Failed to duplicate." : "복제에 실패했습니다.");
     }
   };
 
@@ -124,15 +126,23 @@ export default function ProCollectionsPage() {
     event.stopPropagation();
     try {
       await copyLookbookShareLink(lookbookId);
-      toast.success("기본 공유 링크가 복사되었습니다.");
+      toast.success(
+        isEnglish ? "Default share link copied." : "기본 공유 링크가 복사되었습니다.",
+      );
     } catch {
-      toast.error("링크 복사에 실패했습니다.");
+      toast.error(isEnglish ? "Failed to copy link." : "링크 복사에 실패했습니다.");
     }
   };
 
   const handleDeleteClick = async (event: MouseEvent, lookbook: ProLookbookListItem) => {
     event.stopPropagation();
-    if (!window.confirm("이 컬렉션을 정말 삭제하시겠습니까?")) {
+    if (
+      !window.confirm(
+        isEnglish
+          ? "Are you sure you want to delete this collection?"
+          : "이 컬렉션을 정말 삭제하시겠습니까?",
+      )
+    ) {
       return;
     }
     try {
@@ -141,9 +151,9 @@ export default function ProCollectionsPage() {
         closeEditModal();
       }
       await refetch();
-      window.alert("컬렉션이 삭제되었습니다.");
+      window.alert(isEnglish ? "Collection deleted." : "컬렉션이 삭제되었습니다.");
     } catch {
-      window.alert("컬렉션 삭제에 실패했습니다.");
+      window.alert(isEnglish ? "Failed to delete collection." : "컬렉션 삭제에 실패했습니다.");
     }
   };
 
@@ -182,13 +192,22 @@ export default function ProCollectionsPage() {
       setSelectedCollection(null);
       setCustomerName("");
       setGreeting("");
-      toast.success("상담 제안서 링크가 복사되었습니다!", {
-        description:
-          "생성된 내역은 좌측 [상담 제안서] 메뉴에서 언제든 확인하고 관리할 수 있습니다.",
-      });
+      toast.success(
+        isEnglish ? "Proposal link copied!" : "상담 제안서 링크가 복사되었습니다!",
+        {
+          description: isEnglish
+            ? "You can view and manage created proposals anytime in [Proposals] on the left."
+            : "생성된 내역은 좌측 [상담 제안서] 메뉴에서 언제든 확인하고 관리할 수 있습니다.",
+        },
+      );
       void queryClient.invalidateQueries({ queryKey: ["pro-proposals", "list"] });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "제안서 생성에 실패했습니다.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : isEnglish
+            ? "Failed to create proposal."
+            : "제안서 생성에 실패했습니다.";
       toast.error(message);
     } finally {
       setIsCreatingProposal(false);
@@ -207,7 +226,7 @@ export default function ProCollectionsPage() {
             }}
             className="font-medium text-stone-500 transition-colors hover:text-stone-800"
           >
-            ← 뒤로 가기
+            {isEnglish ? "← Back" : "← 뒤로 가기"}
           </button>
           <h2 className="text-3xl font-bold text-stone-800">✨ {viewingLookbook.title}</h2>
         </div>
@@ -253,25 +272,31 @@ export default function ProCollectionsPage() {
           <div className="mb-4 rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-end gap-3">
               <h1 className="text-2xl font-bold tracking-tight text-stone-800 md:text-3xl">
-                ✨ VIP 디자인 룩북
+                {isEnglish ? "✨ VIP Design Lookbook" : "✨ VIP 디자인 룩북"}
               </h1>
             </div>
             <div className="border-l-4 border-stone-200 py-1 pl-4">
               <p className="text-base font-medium text-stone-600">
-                👑 원장님이 테마별로 직접 엄선해 둔 맞춤형 룩북입니다.
+                {isEnglish
+                  ? "👑 A custom lookbook curated by theme by the director."
+                  : "👑 원장님이 테마별로 직접 엄선해 둔 맞춤형 룩북입니다."}
               </p>
               <p className="mt-1 text-base text-stone-600">
-                💎 마음에 드는 룩북을 선택해 편안하게 감상해 보세요.
+                {isEnglish
+                  ? "💎 Choose a lookbook you like and browse comfortably."
+                  : "💎 마음에 드는 룩북을 선택해 편안하게 감상해 보세요."}
               </p>
             </div>
           </div>
         ) : (
           <div className="mb-8 rounded-2xl border border-stone-200/60 bg-white p-6 shadow-sm">
             <h1 className="mb-2 flex items-center gap-2 text-xl font-bold text-stone-800">
-              ⭐ 내 컬렉션
+              {isEnglish ? "⭐ My Collection" : "⭐ 내 컬렉션"}
             </h1>
             <p className="text-sm font-medium text-stone-500">
-              자주 쓰는 디자인을 폴더로 묶어 관리하고, 상담 제안서로 고객에게 맞춤 룩북을 전달하세요.
+              {isEnglish
+                ? "Organize frequently used designs into folders and deliver tailored proposals to clients."
+                : "자주 쓰는 디자인을 폴더로 묶어 관리하고, 상담 제안서로 고객에게 맞춤 룩북을 전달하세요."}
             </p>
           </div>
         )}
@@ -285,13 +310,15 @@ export default function ProCollectionsPage() {
 
       {isError ? (
         <div className="rounded-2xl border border-stone-200 bg-white px-6 py-12 text-center">
-          <p className="text-sm text-stone-500">컬렉션 목록을 불러오지 못했습니다.</p>
+          <p className="text-sm text-stone-500">
+            {isEnglish ? "Failed to load collections." : "컬렉션 목록을 불러오지 못했습니다."}
+          </p>
           <button
             type="button"
             onClick={() => void refetch()}
             className="mt-4 rounded-xl bg-[#EDE4D8] px-4 py-2 text-sm font-medium text-[#5C4A3A] hover:bg-[#E5D8C8]"
           >
-            다시 시도
+            {isEnglish ? "Retry" : "다시 시도"}
           </button>
         </div>
       ) : null}
@@ -299,11 +326,19 @@ export default function ProCollectionsPage() {
       {!isLoading && !isError && lookbooks.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center">
           <p className="text-sm text-stone-500">
-            {isFocusMode ? "아직 준비된 룩북이 없습니다." : "아직 저장된 컬렉션이 없습니다."}
+            {isFocusMode
+              ? isEnglish
+                ? "No lookbooks available yet."
+                : "아직 준비된 룩북이 없습니다."
+              : isEnglish
+                ? "No saved collections yet."
+                : "아직 저장된 컬렉션이 없습니다."}
           </p>
           {!isFocusMode ? (
             <p className="mt-2 text-xs text-stone-400">
-              우측 패널에서 디자인을 선택하고 컬렉션으로 저장해 보세요.
+              {isEnglish
+                ? "Select designs from the right panel and save them to a collection."
+                : "우측 패널에서 디자인을 선택하고 컬렉션으로 저장해 보세요."}
             </p>
           ) : null}
         </div>
@@ -316,6 +351,7 @@ export default function ProCollectionsPage() {
               key={lookbook.id}
               lookbook={lookbook}
               isFocusMode={isFocusMode}
+              isEnglish={isEnglish}
               onImageClick={() =>
                 isFocusMode ? setViewingLookbook(lookbook) : openEditModal(lookbook)
               }
@@ -353,7 +389,7 @@ export default function ProCollectionsPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <h2 id="collection-proposal-modal-title" className="text-xl font-semibold text-stone-800">
-              상담 제안서 링크 생성
+              {isEnglish ? "Create Proposal Link" : "상담 제안서 링크 생성"}
             </h2>
 
             <div className="mt-5 space-y-4">
@@ -362,14 +398,18 @@ export default function ProCollectionsPage() {
                   htmlFor="collection-proposal-customer-name"
                   className="mb-2 block text-sm font-semibold text-stone-800"
                 >
-                  고객명
+                  {isEnglish ? "Customer Name" : "고객명"}
                 </label>
                 <input
                   id="collection-proposal-customer-name"
                   type="text"
                   value={customerName}
                   onChange={(event) => setCustomerName(event.target.value)}
-                  placeholder="고객 이름 (예: 김지영 고객님)"
+                  placeholder={
+                    isEnglish
+                      ? "Customer name (e.g., Jane Doe)"
+                      : "고객 이름 (예: 김지영 고객님)"
+                  }
                   disabled={isCreatingProposal}
                   className={PROPOSAL_FIELD_CLASS}
                   autoFocus
@@ -381,14 +421,18 @@ export default function ProCollectionsPage() {
                   htmlFor="collection-proposal-greeting"
                   className="mb-2 block text-sm font-semibold text-stone-800"
                 >
-                  인사말
+                  {isEnglish ? "Greeting" : "인사말"}
                 </label>
                 <textarea
                   id="collection-proposal-greeting"
                   value={greeting}
                   onChange={(event) => setGreeting(event.target.value)}
                   rows={3}
-                  placeholder="고객에게 전달할 짧은 환영 메시지를 적어주세요. (예: 웨딩 촬영에 어울릴 추천 디자인입니다.)"
+                  placeholder={
+                    isEnglish
+                      ? "Write a short welcome message for your client. (e.g., Recommended designs for your wedding shoot.)"
+                      : "고객에게 전달할 짧은 환영 메시지를 적어주세요. (예: 웨딩 촬영에 어울릴 추천 디자인입니다.)"
+                  }
                   disabled={isCreatingProposal}
                   className={`${PROPOSAL_FIELD_CLASS} resize-none leading-relaxed`}
                 />
@@ -402,7 +446,7 @@ export default function ProCollectionsPage() {
                 disabled={isCreatingProposal}
                 className="flex-1 rounded-xl border border-orange-100 bg-white px-4 py-3 text-sm font-medium text-stone-600 transition-colors hover:bg-orange-50/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                [ 취소 ]
+                {isEnglish ? "[ Cancel ]" : "[ 취소 ]"}
               </button>
               <button
                 type="button"
@@ -410,7 +454,13 @@ export default function ProCollectionsPage() {
                 disabled={isCreatingProposal || !customerName.trim()}
                 className="flex-1 rounded-xl bg-stone-700 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isCreatingProposal ? "생성 중..." : "[ 링크 생성 및 복사 ]"}
+                {isCreatingProposal
+                  ? isEnglish
+                    ? "Creating..."
+                    : "생성 중..."
+                  : isEnglish
+                    ? "[ Create & Copy Link ]"
+                    : "[ 링크 생성 및 복사 ]"}
               </button>
             </div>
           </div>
@@ -481,6 +531,7 @@ function LookbookCoverImage({ nails }: { nails: ProCartNail[] }) {
 function LookbookCard({
   lookbook,
   isFocusMode,
+  isEnglish,
   onImageClick,
   onSendProposal,
   onDuplicate,
@@ -489,6 +540,7 @@ function LookbookCard({
 }: {
   lookbook: ProLookbookListItem;
   isFocusMode: boolean;
+  isEnglish: boolean;
   onImageClick: () => void;
   onSendProposal: (event: MouseEvent) => void;
   onDuplicate: (event: MouseEvent) => void;
@@ -496,6 +548,7 @@ function LookbookCard({
   onDelete: (event: MouseEvent) => void;
 }) {
   const nailCount = lookbook.nails.length || lookbook.nail_ids.length;
+  const createdLabel = formatCreatedAt(lookbook.created_at, isEnglish);
 
   return (
     <article className={CARD_CONTAINER_CLASS}>
@@ -503,7 +556,7 @@ function LookbookCard({
         type="button"
         onClick={onImageClick}
         className="w-full cursor-pointer text-left transition-opacity hover:opacity-95"
-        aria-label={`${lookbook.title} 열기`}
+        aria-label={isEnglish ? `Open ${lookbook.title}` : `${lookbook.title} 열기`}
       >
         <div className="mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
           <LookbookCoverImage nails={lookbook.nails} />
@@ -511,7 +564,9 @@ function LookbookCard({
       </button>
       <h3 className="truncate text-lg font-bold text-stone-800">{lookbook.title}</h3>
       <p className="mb-4 text-xs text-stone-500">
-        생성 {formatCreatedAt(lookbook.created_at)} · 디자인 {nailCount}개
+        {isEnglish
+          ? `Created ${createdLabel} · ${nailCount} Designs`
+          : `생성 ${createdLabel} · 디자인 ${nailCount}개`}
       </p>
       {!isFocusMode ? (
         <div className="border-t border-stone-100 pt-3">
@@ -521,17 +576,17 @@ function LookbookCard({
             className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-stone-400 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-500"
           >
             <span aria-hidden>📝</span>
-            상담 제안서로 만들기
+            {isEnglish ? "Create Proposal" : "상담 제안서로 만들기"}
           </button>
           <div className="flex w-full items-center gap-1.5">
             <button type="button" onClick={onDuplicate} className={CARD_ACTION_BTN_CLASS}>
-              📑 복제
+              {isEnglish ? "📑 Duplicate" : "📑 복제"}
             </button>
             <button type="button" onClick={onCopyLink} className={CARD_ACTION_BTN_CLASS}>
-              🔗 기본 링크
+              {isEnglish ? "🔗 Copy Link" : "🔗 기본 링크"}
             </button>
             <button type="button" onClick={onDelete} className={CARD_DELETE_BTN_CLASS}>
-              🗑️ 삭제
+              {isEnglish ? "🗑️ Delete" : "🗑️ 삭제"}
             </button>
           </div>
         </div>
