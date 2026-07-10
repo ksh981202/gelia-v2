@@ -113,6 +113,7 @@ export default function ClientMyPage() {
       isActive ? 'text-orange-600' : 'text-stone-900'
     }`
   const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
+  const defaultNickname = isEnglish ? 'Nailiever' : '네일리버'
   const { data: recentCount = 0, isLoading: isRecentCountLoading } = useQuery({
     queryKey: ['my-page-count', 'recent', currentUserId],
     queryFn: () => fetchActivityCount('user_recent_views', currentUserId),
@@ -166,7 +167,7 @@ export default function ClientMyPage() {
 
       if (cancelled) return
 
-      setNickname(displayName || '네일리버')
+      setNickname(displayName || defaultNickname)
       if (avatarUrl) setProfileImg(avatarUrl)
     }
 
@@ -175,7 +176,7 @@ export default function ClientMyPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [defaultNickname])
 
   const { data: galleryNails = [] } = useQuery({
     queryKey: ['my-page-gallery', activeTab, currentUserId],
@@ -215,11 +216,11 @@ export default function ClientMyPage() {
 
     if (!file) return
     if (!currentUserId) {
-      alert('로그인 후 이용해 주세요.')
+      alert(isEnglish ? 'Please sign in to continue.' : '로그인 후 이용해 주세요.')
       return
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert('5MB 이하의 이미지만 업로드할 수 있습니다.')
+      alert(isEnglish ? 'Only images up to 5MB can be uploaded.' : '5MB 이하의 이미지만 업로드할 수 있습니다.')
       return
     }
 
@@ -234,7 +235,12 @@ export default function ClientMyPage() {
       const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(data.path)
       setTempImg(publicUrlData.publicUrl)
     } catch (error) {
-      const message = error instanceof Error ? error.message : '이미지 업로드 중 오류가 발생했습니다.'
+      const message =
+        error instanceof Error
+          ? error.message
+          : isEnglish
+            ? 'An error occurred while uploading the image.'
+            : '이미지 업로드 중 오류가 발생했습니다.'
       alert(message)
     } finally {
       setIsUploading(false)
@@ -250,7 +256,7 @@ export default function ClientMyPage() {
         </h1>
         <button
           type="button"
-          aria-label="알림"
+          aria-label={isEnglish ? 'Notifications' : '알림'}
           className="relative p-2 text-gray-600"
           onClick={() => navigate('/notification-list')}
         >
@@ -266,15 +272,15 @@ export default function ClientMyPage() {
               className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-full border border-stone-200 bg-white md:h-20 md:w-20"
               onClick={() => {
                 setTempImg(profileImg)
-                setTempNickname(nickname || '네일리버')
+                setTempNickname(nickname || defaultNickname)
                 setIsModalOpen(true)
               }}
             >
-              <img src={profileImg} alt="프로필" className="h-full w-full object-cover" />
+              <img src={profileImg} alt={isEnglish ? 'Profile' : '프로필'} className="h-full w-full object-cover" />
             </div>
             <div className="min-w-0 text-left">
               <div className="truncate text-xl font-bold text-stone-900 md:text-2xl">
-                {nickname || '네일리버'}
+                {nickname || defaultNickname}
               </div>
               <p className="mt-1 text-[13px] text-stone-600">
                 {isEnglish ? 'Have a great day 🌷' : '좋은 하루 보내세요 🌷'}
@@ -421,7 +427,7 @@ export default function ClientMyPage() {
               <span className="text-xl" aria-hidden>
                 👑
               </span>
-              GELIA PRO (원장님 전용)
+              {isEnglish ? 'GELIA PRO (For Owners)' : 'GELIA PRO (원장님 전용)'}
             </Link>
           </div>
         </section>
@@ -431,12 +437,16 @@ export default function ClientMyPage() {
         <div className="fixed inset-0 z-[100] flex justify-center items-end bg-black/60">
           <div className="w-full max-w-md bg-white rounded-t-[32px] p-6 pb-10 animate-in slide-in-from-bottom-4 duration-300">
             <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-[17px] font-bold text-gray-900">프로필 사진 변경</h3>
+              <h3 className="text-[17px] font-bold text-gray-900">
+                {isEnglish ? 'Change Profile Photo' : '프로필 사진 변경'}
+              </h3>
               <button type="button" onClick={() => setIsModalOpen(false)} className="p-1 text-gray-500"><X size={22} /></button>
             </div>
 
             <div className="mb-6">
-              <p className="mb-3 text-[13px] font-medium text-gray-500">기본 프로필 선택</p>
+              <p className="mb-3 text-[13px] font-medium text-gray-500">
+                {isEnglish ? 'Choose a default profile' : '기본 프로필 선택'}
+              </p>
               <div className="flex items-center justify-between px-1">
                 {['tulip', 'pearl', 'heart', 'drop'].map((type) => {
                   const isSelected = tempImg.includes(type);
@@ -467,7 +477,14 @@ export default function ClientMyPage() {
               disabled={isUploading}
               className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3.5 text-[14px] font-bold text-rose-500 transition-colors active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Camera size={18} /> {isUploading ? '업로드 중...' : '내 앨범에서 사진 선택'}
+              <Camera size={18} />{' '}
+              {isUploading
+                ? isEnglish
+                  ? 'Uploading...'
+                  : '업로드 중...'
+                : isEnglish
+                  ? 'Choose from my album'
+                  : '내 앨범에서 사진 선택'}
             </button>
             <input
               type="file"
@@ -478,7 +495,9 @@ export default function ClientMyPage() {
             />
 
             <div className="mb-8">
-              <p className="mb-2 text-[13px] font-medium text-gray-500">닉네임 변경</p>
+              <p className="mb-2 text-[13px] font-medium text-gray-500">
+                {isEnglish ? 'Change Nickname' : '닉네임 변경'}
+              </p>
               <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3.5 text-[15px] outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" />
             </div>
 
@@ -492,7 +511,7 @@ export default function ClientMyPage() {
               }}
               className="w-full rounded-2xl bg-gray-900 py-4 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
             >
-              닉네임 저장
+              {isEnglish ? 'Save Nickname' : '닉네임 저장'}
             </button>
           </div>
         </div>
