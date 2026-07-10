@@ -62,7 +62,7 @@ export default function ProRightPanel() {
           {selectedNails.length === 0 ? (
             <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-stone-300/80 bg-[#FFFCF8] px-4 py-10 text-center">
               <p className="text-sm leading-relaxed text-stone-400">
-                {isEnglish ? "No designs selected." : "선택된 디자인이 없습니다"}
+                {isEnglish ? "No designs selected" : "선택된 디자인이 없습니다"}
               </p>
             </div>
           ) : (

@@ -1,3 +1,4 @@
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { useNailDetailViewTracking } from "@/features/nail-activity/useNailDetailViewTracking";
 import { useNailLikeToggle } from "@/features/nail-activity/useNailLikeToggle";
@@ -60,14 +61,16 @@ function splitDesignElements(raw: string | null | undefined): string[] {
     .slice(0, 4);
 }
 
-function splitProcedureSteps(raw: string | null | undefined): ProcedureSection[] {
+function splitProcedureSteps(raw: string | null | undefined, isEnglish: boolean): ProcedureSection[] {
   const text = safeTrimText(raw);
   if (!text) return [];
 
   const normalized = text.replace(/\r\n/g, "\n").trim();
   const markerPattern = /\[\s*(베이스|base|아트|art|마무리|finishing|finish|final)\s*\]/gi;
   const matches = Array.from(normalized.matchAll(markerPattern));
-  const stepTitles = ["베이스", "아트", "마무리"];
+  const stepTitles = isEnglish
+    ? ["Base", "Art", "Finishing"]
+    : ["베이스", "아트", "마무리"];
   const stepContents = ["", "", ""];
 
   const markerToStepIndex = (markerRaw: string): 0 | 1 | 2 | null => {
@@ -114,8 +117,10 @@ function splitProcedureSteps(raw: string | null | undefined): ProcedureSection[]
     .filter((step) => step.content.trim().length > 0);
 }
 
-function formatEditorNote(raw: string): string {
-  if (!raw.trim()) return "등록된 상세 설명이 없어요.";
+function formatEditorNote(raw: string, isEnglish: boolean): string {
+  if (!raw.trim()) {
+    return isEnglish ? "No detailed description available." : "등록된 상세 설명이 없어요.";
+  }
   return raw.replace(/\. +/g, ".\n\n");
 }
 
@@ -135,6 +140,7 @@ export default function ProQuickViewModal({
   onClose,
   onToggleSelect,
 }: ProQuickViewModalProps) {
+  const { isEnglish } = useLanguageContext();
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const { data: detail, isLoading: isDetailLoading } = useNailDetailQuery(nail?.id);
@@ -172,10 +178,14 @@ export default function ProQuickViewModal({
 
   const resolvedDetail = detail ?? nail;
 
-  const title = useMemo(
-    () => safeTrimText(resolvedDetail?.title) || "네일 디자인",
-    [resolvedDetail?.title],
-  );
+  const title = useMemo(() => {
+    const titleKo = safeTrimText(resolvedDetail?.title);
+    const titleEn = safeTrimText(resolvedDetail?.title_en);
+    return (
+      (isEnglish ? titleEn || titleKo : titleKo || titleEn) ||
+      (isEnglish ? "Nail design" : "네일 디자인")
+    );
+  }, [isEnglish, resolvedDetail?.title, resolvedDetail?.title_en]);
   const imageUrl = safeTrimText(resolvedDetail?.image_url);
   const tagChips = useMemo(
     () => (resolvedDetail ? collectShapeColorMoodTags(nail!, detail) : []),
@@ -183,12 +193,22 @@ export default function ProQuickViewModal({
   );
   const editorNote = useMemo(() => {
     const raw =
+      (isEnglish
+        ? safeTrimText(detail?.description_en) || safeTrimText(nail?.description_en)
+        : "") ||
       safeTrimText(detail?.description) ||
       safeTrimText(nail?.description) ||
       safeTrimText(detail?.design_elements) ||
       safeTrimText(nail?.design_elements);
-    return formatEditorNote(isDetailLoading ? "에디터 노트를 불러오는 중..." : raw);
-  }, [detail, isDetailLoading, nail]);
+    return formatEditorNote(
+      isDetailLoading
+        ? isEnglish
+          ? "Loading editor's note..."
+          : "에디터 노트를 불러오는 중..."
+        : raw,
+      isEnglish,
+    );
+  }, [detail, isDetailLoading, isEnglish, nail]);
   const designPoints = useMemo(
     () =>
       splitDesignElements(
@@ -200,8 +220,9 @@ export default function ProQuickViewModal({
     () =>
       splitProcedureSteps(
         apiLongTextField(detail?.procedure_guide) || apiLongTextField(nail?.procedure_guide),
+        isEnglish,
       ),
-    [detail?.procedure_guide, nail?.procedure_guide],
+    [detail?.procedure_guide, isEnglish, nail?.procedure_guide],
   );
   const procedureGuideFallback = useMemo(() => {
     const raw =
@@ -236,13 +257,13 @@ export default function ProQuickViewModal({
               type="button"
               onClick={() => setIsZoomOpen(true)}
               className="group/image block h-full w-full"
-              aria-label={`${title} 이미지 확대`}
+              aria-label={isEnglish ? `Zoom ${title}` : `${title} 이미지 확대`}
             >
               {imageUrl ? (
                 <img src={imageUrl} alt={title} className="h-full w-full object-contain" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-stone-200 text-sm text-stone-400">
-                  이미지 없음
+                  {isEnglish ? "No image" : "이미지 없음"}
                 </div>
               )}
             </button>
@@ -254,7 +275,7 @@ export default function ProQuickViewModal({
                 setIsZoomOpen(true);
               }}
               className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-base text-white backdrop-blur-sm transition-colors hover:bg-black/60"
-              aria-label="이미지 확대"
+              aria-label={isEnglish ? "Zoom image" : "이미지 확대"}
             >
               🔍
             </button>
@@ -267,9 +288,15 @@ export default function ProQuickViewModal({
               </h2>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-500">
-                <span>❤️ {likeCount} 좋아요</span>
-                <span>👁️ {viewCount} 조회</span>
-                <span>🔖 {saveCount} 저장</span>
+                <span>
+                  ❤️ {likeCount} {isEnglish ? "Likes" : "좋아요"}
+                </span>
+                <span>
+                  👁️ {viewCount} {isEnglish ? "Views" : "조회"}
+                </span>
+                <span>
+                  🔖 {saveCount} {isEnglish ? "Saves" : "저장"}
+                </span>
               </div>
 
               <section className="mt-5">
@@ -304,12 +331,16 @@ export default function ProQuickViewModal({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400">표시할 태그가 없어요.</p>
+                  <p className="text-sm text-gray-400">
+                    {isEnglish ? "No tags to display." : "표시할 태그가 없어요."}
+                  </p>
                 )}
               </section>
 
               <section className="mt-6">
-                <p className="mb-3 text-lg font-bold text-slate-900">디자인 포인트</p>
+                <p className="mb-3 text-lg font-bold text-slate-900">
+                  {isEnglish ? "Design Points" : "디자인 포인트"}
+                </p>
                 {designPoints.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3">
                     {designPoints.map((point, index) => {
@@ -331,7 +362,7 @@ export default function ProQuickViewModal({
                   </div>
                 ) : (
                   <p className="rounded-2xl border border-dashed border-orange-100 bg-[#FFF9F5] p-4 text-center text-sm text-gray-500">
-                    등록된 디자인 포인트가 없어요.
+                    {isEnglish ? "No design points registered." : "등록된 디자인 포인트가 없어요."}
                   </p>
                 )}
               </section>
@@ -344,7 +375,11 @@ export default function ProQuickViewModal({
                   aria-expanded={isGuideOpen}
                 >
                   <div className="flex items-center gap-2">
-                    <p className="text-lg font-bold text-gray-900">네일 원장님을 위한 시술 가이드</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {isEnglish
+                        ? "Procedure Guide for Nail Pros"
+                        : "네일 원장님을 위한 시술 가이드"}
+                    </p>
                     <span className="rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold text-white">PRO</span>
                   </div>
                   <span className="shrink-0 text-sm text-gray-400" aria-hidden>
@@ -355,7 +390,9 @@ export default function ProQuickViewModal({
                 {isGuideOpen ? (
                   <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
                     {isDetailLoading ? (
-                      <p className="text-sm text-gray-500">시술 가이드를 불러오는 중...</p>
+                      <p className="text-sm text-gray-500">
+                        {isEnglish ? "Loading procedure guide..." : "시술 가이드를 불러오는 중..."}
+                      </p>
                     ) : procedureSteps.length > 0 ? (
                       <>
                         <div className="space-y-5">
@@ -381,7 +418,11 @@ export default function ProQuickViewModal({
                             <span className="shrink-0" aria-hidden>
                               💡
                             </span>
-                            <span>본 가이드는 참고용 디자인 레퍼런스로, 실제 시술 방식과 다를 수 있습니다.</span>
+                            <span>
+                              {isEnglish
+                                ? "This guide is a design reference only and may differ from actual procedures."
+                                : "본 가이드는 참고용 디자인 레퍼런스로, 실제 시술 방식과 다를 수 있습니다."}
+                            </span>
                           </div>
                         </div>
                       </>
@@ -390,7 +431,11 @@ export default function ProQuickViewModal({
                         {procedureGuideFallback}
                       </p>
                     ) : (
-                      <p className="text-center text-sm text-gray-500">등록된 시술 가이드가 없어요.</p>
+                      <p className="text-center text-sm text-gray-500">
+                        {isEnglish
+                          ? "No procedure guide registered."
+                          : "등록된 시술 가이드가 없어요."}
+                      </p>
                     )}
                   </div>
                 ) : null}
@@ -408,7 +453,15 @@ export default function ProQuickViewModal({
                     : "border-orange-100 bg-white text-stone-600 hover:bg-orange-50/40",
                 ].join(" ")}
                 aria-pressed={isLiked}
-                aria-label={isLiked ? "좋아요 취소" : "좋아요"}
+                aria-label={
+                  isLiked
+                    ? isEnglish
+                      ? "Unlike"
+                      : "좋아요 취소"
+                    : isEnglish
+                      ? "Like"
+                      : "좋아요"
+                }
               >
                 {isLiked ? "[ ❤️ ]" : "[ 🤍 ]"}
               </button>
@@ -417,7 +470,7 @@ export default function ProQuickViewModal({
                 onClick={onClose}
                 className="flex-1 rounded-xl border border-orange-100 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-orange-50/40"
               >
-                [ 닫기 ]
+                {isEnglish ? "[ Close ]" : "[ 닫기 ]"}
               </button>
               <button
                 type="button"
@@ -429,7 +482,13 @@ export default function ProQuickViewModal({
                     : "bg-[#5C4A3A] text-[#FAF7F2] hover:bg-[#4A3B2E]",
                 ].join(" ")}
               >
-                {isSelected ? "[ ☑️ 담김 ]" : "[ ☑️ 이 디자인 담기 ]"}
+                {isSelected
+                  ? isEnglish
+                    ? "[ ☑️ Selected ]"
+                    : "[ ☑️ 담김 ]"
+                  : isEnglish
+                    ? "[ ☑️ Add This Design ]"
+                    : "[ ☑️ 이 디자인 담기 ]"}
               </button>
             </div>
           </div>
@@ -441,14 +500,14 @@ export default function ProQuickViewModal({
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="이미지 확대 보기"
+          aria-label={isEnglish ? "Zoomed image view" : "이미지 확대 보기"}
           onClick={() => setIsZoomOpen(false)}
         >
           <button
             type="button"
             onClick={() => setIsZoomOpen(false)}
             className="absolute right-4 top-4 z-[70] flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-            aria-label="확대 이미지 닫기"
+            aria-label={isEnglish ? "Close zoomed image" : "확대 이미지 닫기"}
           >
             <X className="h-6 w-6" strokeWidth={2.5} aria-hidden />
           </button>

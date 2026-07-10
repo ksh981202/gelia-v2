@@ -378,7 +378,11 @@ export default function ProGalleryWidget({
           {galleryItems.map((item, index) => {
             const isSelected = selectedIds.has(String(item.id ?? "").trim());
             const imageUrl = String(item.image_url ?? "").trim();
-            const title = String(item.title ?? "").trim() || (isEnglish ? "Nail design" : "네일 디자인");
+            const titleKo = String(item.title ?? "").trim();
+            const titleEn = String(item.title_en ?? "").trim();
+            const title =
+              (isEnglish ? titleEn || titleKo : titleKo || titleEn) ||
+              (isEnglish ? "Nail design" : "네일 디자인");
 
             return (
               <article key={item.id} className="min-w-0">
