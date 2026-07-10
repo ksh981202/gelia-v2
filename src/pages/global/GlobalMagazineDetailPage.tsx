@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, Clock, Share2, BookmarkPlus, ChevronRight, Scale, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

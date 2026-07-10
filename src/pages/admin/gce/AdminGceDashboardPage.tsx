@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   BarChart2, Flame, Settings, TrendingUp, Search, Sparkles, Loader2, 
   Globe, Smartphone, Calendar, Filter, CheckSquare, Clock, ArrowRight, 
-  BookOpen, Plus, Camera, CalendarCheck, CheckCircle2, Languages, Share2, 
+  Plus, CalendarCheck, CheckCircle2, 
   Image as ImageIcon, FileText, Play 
 } from 'lucide-react';
 

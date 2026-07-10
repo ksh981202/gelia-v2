@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Clock, ChevronRight, BookOpen, Sparkles, Heart, Check } from 'lucide-react';
+import { Search, Clock, ChevronRight, BookOpen, Heart, Check } from 'lucide-react';
 
 // --- 구글 SEO 맞춤 대카테고리 ---
 const CATEGORIES = [
