@@ -6,6 +6,7 @@ export type ProCartNail = {
   id: string;
   imageUrl: string;
   title: string;
+  titleEn?: string;
 };
 
 type ProCartState = {
@@ -17,10 +18,13 @@ type ProCartState = {
 };
 
 export function toProCartNail(item: NailDesignRow): ProCartNail {
+  const titleKo = String(item.title ?? "").trim();
+  const titleEn = String(item.title_en ?? "").trim();
   return {
     id: String(item.id ?? "").trim(),
     imageUrl: String(item.image_url ?? "").trim(),
-    title: String(item.title ?? "").trim() || "네일 디자인",
+    title: titleKo || titleEn || "네일 디자인",
+    titleEn: titleEn || undefined,
   };
 }
 

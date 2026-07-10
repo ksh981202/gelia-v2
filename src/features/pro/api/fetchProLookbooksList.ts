@@ -6,6 +6,7 @@ import { supabase } from "@/shared/api/supabaseClient";
 export type ProLookbookListItem = {
   id: string;
   title: string;
+  title_en?: string | null;
   created_at: string;
   nail_ids: string[];
   nails: ProCartNail[];

@@ -44,6 +44,7 @@ function proCartNailToDetailRow(nail: ProCartNail): NailDesignRow {
   return {
     id: nail.id,
     title: nail.title,
+    title_en: nail.titleEn ?? "",
     image_url: nail.imageUrl,
   } as NailDesignRow;
 }
@@ -227,11 +228,20 @@ export default function ProCurationPage() {
           >
             {isEnglish ? "← Back" : "← 뒤로 가기"}
           </button>
-          <h2 className="text-3xl font-bold text-stone-800">👀 {previewTarget.title}</h2>
+          <h2 className="text-3xl font-bold text-stone-800">
+            👀{" "}
+            {isEnglish
+              ? previewTarget.title_en || previewTarget.title
+              : previewTarget.title}
+          </h2>
         </div>
 
         <div className="columns-2 gap-6 md:columns-3 lg:columns-4">
-          {previewTarget.nails.map((nail) => (
+          {previewTarget.nails.map((nail) => {
+            const nailTitle = isEnglish
+              ? nail.titleEn || nail.title
+              : nail.title;
+            return (
             <div key={nail.id} className="mb-6 break-inside-avoid">
               <button
                 type="button"
@@ -241,7 +251,7 @@ export default function ProCurationPage() {
                 {nail.imageUrl ? (
                   <img
                     src={nail.imageUrl}
-                    alt={nail.title}
+                    alt={nailTitle}
                     className="w-full rounded-xl object-cover shadow-sm"
                     draggable={false}
                   />
@@ -249,9 +259,10 @@ export default function ProCurationPage() {
                   <div className="aspect-[3/4] w-full rounded-xl bg-stone-200 shadow-sm" aria-hidden />
                 )}
               </button>
-              <p className="mt-2 truncate text-center text-sm font-medium text-stone-700">{nail.title}</p>
+              <p className="mt-2 truncate text-center text-sm font-medium text-stone-700">{nailTitle}</p>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <ProQuickViewModal
