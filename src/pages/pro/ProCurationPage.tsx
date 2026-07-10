@@ -1,3 +1,4 @@
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import {
   copyProposalShareLink,
   createProProposal,
@@ -6,8 +7,8 @@ import {
 } from "@/features/pro/api/proMutations";
 import type { ProLookbookListItem } from "@/features/pro/api/fetchProLookbooksList";
 import { useProCurationsListQuery } from "@/features/pro/api/useProCurationsListQuery";
+import { resolveLookbookDisplayTitle } from "@/features/pro/lib/lookbookTitleI18n";
 import { toProCartNail, useProCartStore, type ProCartNail } from "@/features/pro/store/useProCartStore";
-import { useLanguageContext } from "@/contexts/LanguageContext";
 import ProCreateCurationModal from "@/pages/pro/components/ProCreateCurationModal";
 import ProEditLookbookModal from "@/pages/pro/components/ProEditLookbookModal";
 import ProQuickViewModal from "@/pages/pro/components/ProQuickViewModal";
@@ -215,6 +216,11 @@ export default function ProCurationPage() {
   };
 
   if (previewTarget) {
+    const previewTitle = resolveLookbookDisplayTitle(
+      previewTarget.title,
+      previewTarget.title_en,
+      isEnglish,
+    );
     return (
       <div className={PAGE_ROOT_CLASS}>
         <div className="mb-8 flex items-center gap-4">
@@ -228,12 +234,7 @@ export default function ProCurationPage() {
           >
             {isEnglish ? "← Back" : "← 뒤로 가기"}
           </button>
-          <h2 className="text-3xl font-bold text-stone-800">
-            👀{" "}
-            {isEnglish
-              ? previewTarget.title_en || previewTarget.title
-              : previewTarget.title}
-          </h2>
+          <h2 className="text-3xl font-bold text-stone-800">👀 {previewTitle}</h2>
         </div>
 
         <div className="columns-2 gap-6 md:columns-3 lg:columns-4">
@@ -550,6 +551,11 @@ function CurationCard({
 }) {
   const nailCount = curation.nails.length || curation.nail_ids.length;
   const createdLabel = formatCreatedAt(curation.created_at, isEnglish);
+  const displayTitle = resolveLookbookDisplayTitle(
+    curation.title,
+    curation.title_en,
+    isEnglish,
+  );
 
   return (
     <article className={CARD_CONTAINER_CLASS}>
@@ -558,14 +564,14 @@ function CurationCard({
         onClick={onThumbnailClick}
         className="w-full cursor-pointer text-left transition-opacity hover:opacity-95"
         aria-label={
-          isEnglish ? `Preview ${curation.title}` : `${curation.title} 미리보기`
+          isEnglish ? `Preview ${displayTitle}` : `${displayTitle} 미리보기`
         }
       >
         <div className="mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
           <LookbookCoverImage nails={curation.nails} />
         </div>
       </button>
-      <h3 className="truncate text-lg font-bold text-stone-800">{curation.title}</h3>
+      <h3 className="truncate text-lg font-bold text-stone-800">{displayTitle}</h3>
       <p className="mb-4 text-xs text-stone-500">
         {isEnglish
           ? `Registered ${createdLabel} · ${nailCount} Designs`

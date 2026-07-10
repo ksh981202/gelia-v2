@@ -8,6 +8,7 @@ import {
 } from "@/features/pro/api/proMutations";
 import type { ProLookbookListItem } from "@/features/pro/api/fetchProLookbooksList";
 import { useProLookbooksListQuery } from "@/features/pro/api/useProLookbooksListQuery";
+import { resolveLookbookDisplayTitle } from "@/features/pro/lib/lookbookTitleI18n";
 import { toProCartNail, useProCartStore, type ProCartNail } from "@/features/pro/store/useProCartStore";
 import { useProUIStore } from "@/features/pro/store/useProUIStore";
 import ProEditLookbookModal from "@/pages/pro/components/ProEditLookbookModal";
@@ -216,6 +217,11 @@ export default function ProCollectionsPage() {
   };
 
   if (isFocusMode && viewingLookbook) {
+    const previewTitle = resolveLookbookDisplayTitle(
+      viewingLookbook.title,
+      viewingLookbook.title_en,
+      isEnglish,
+    );
     return (
       <div className={PAGE_ROOT_CLASS}>
         <div className="mb-8 flex items-center gap-4">
@@ -229,12 +235,7 @@ export default function ProCollectionsPage() {
           >
             {isEnglish ? "← Back" : "← 뒤로 가기"}
           </button>
-          <h2 className="text-3xl font-bold text-stone-800">
-            ✨{" "}
-            {isEnglish
-              ? viewingLookbook.title_en || viewingLookbook.title
-              : viewingLookbook.title}
-          </h2>
+          <h2 className="text-3xl font-bold text-stone-800">✨ {previewTitle}</h2>
         </div>
 
         <div className="columns-2 gap-6 md:columns-3 lg:columns-4">
@@ -560,6 +561,11 @@ function LookbookCard({
 }) {
   const nailCount = lookbook.nails.length || lookbook.nail_ids.length;
   const createdLabel = formatCreatedAt(lookbook.created_at, isEnglish);
+  const displayTitle = resolveLookbookDisplayTitle(
+    lookbook.title,
+    lookbook.title_en,
+    isEnglish,
+  );
 
   return (
     <article className={CARD_CONTAINER_CLASS}>
@@ -567,13 +573,13 @@ function LookbookCard({
         type="button"
         onClick={onImageClick}
         className="w-full cursor-pointer text-left transition-opacity hover:opacity-95"
-        aria-label={isEnglish ? `Open ${lookbook.title}` : `${lookbook.title} 열기`}
+        aria-label={isEnglish ? `Open ${displayTitle}` : `${displayTitle} 열기`}
       >
         <div className="mb-4 aspect-square overflow-hidden rounded-xl bg-stone-100">
           <LookbookCoverImage nails={lookbook.nails} />
         </div>
       </button>
-      <h3 className="truncate text-lg font-bold text-stone-800">{lookbook.title}</h3>
+      <h3 className="truncate text-lg font-bold text-stone-800">{displayTitle}</h3>
       <p className="mb-4 text-xs text-stone-500">
         {isEnglish
           ? `Created ${createdLabel} · ${nailCount} Designs`
