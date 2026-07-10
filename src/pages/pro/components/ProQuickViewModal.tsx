@@ -39,12 +39,24 @@ function apiLongTextField(value: unknown): string {
   return "";
 }
 
-function collectShapeColorMoodTags(nail: NailDesignRow, detail: NailDesignRow | null | undefined): string[] {
+/** EN 우선 폴백: 영문 모드에서 en이 비면 ko로 복귀 */
+function pickLocalized(ko: unknown, en: unknown, isEnglish: boolean): string {
+  const koText = safeTrimText(ko);
+  const enText = safeTrimText(en);
+  if (!isEnglish) return koText || enText;
+  return enText || koText;
+}
+
+function collectShapeColorMoodTags(
+  nail: NailDesignRow,
+  detail: NailDesignRow | null | undefined,
+  isEnglish: boolean,
+): string[] {
   const source = detail ?? nail;
   const chips = [
-    safeTrimText(source.nail_length),
-    safeTrimText(source.color),
-    safeTrimText(source.mood),
+    pickLocalized(source.nail_length, source.length_en, isEnglish),
+    pickLocalized(source.color, source.color_en, isEnglish),
+    pickLocalized(source.mood, source.mood_en, isEnglish),
   ].filter(Boolean);
 
   return [...new Set(chips)];
@@ -179,27 +191,26 @@ export default function ProQuickViewModal({
   const resolvedDetail = detail ?? nail;
 
   const title = useMemo(() => {
-    const titleKo = safeTrimText(resolvedDetail?.title);
-    const titleEn = safeTrimText(resolvedDetail?.title_en);
-    return (
-      (isEnglish ? titleEn || titleKo : titleKo || titleEn) ||
-      (isEnglish ? "Nail design" : "네일 디자인")
-    );
+    const localized = pickLocalized(resolvedDetail?.title, resolvedDetail?.title_en, isEnglish);
+    return localized || (isEnglish ? "Nail design" : "네일 디자인");
   }, [isEnglish, resolvedDetail?.title, resolvedDetail?.title_en]);
   const imageUrl = safeTrimText(resolvedDetail?.image_url);
   const tagChips = useMemo(
-    () => (resolvedDetail ? collectShapeColorMoodTags(nail!, detail) : []),
-    [nail, detail, resolvedDetail],
+    () => (resolvedDetail ? collectShapeColorMoodTags(nail!, detail, isEnglish) : []),
+    [nail, detail, isEnglish, resolvedDetail],
   );
   const editorNote = useMemo(() => {
-    const raw =
-      (isEnglish
-        ? safeTrimText(detail?.description_en) || safeTrimText(nail?.description_en)
-        : "") ||
-      safeTrimText(detail?.description) ||
-      safeTrimText(nail?.description) ||
-      safeTrimText(detail?.design_elements) ||
-      safeTrimText(nail?.design_elements);
+    const description = pickLocalized(
+      detail?.description ?? nail?.description,
+      detail?.description_en ?? nail?.description_en,
+      isEnglish,
+    );
+    const designFallback = pickLocalized(
+      detail?.design_elements ?? nail?.design_elements,
+      detail?.design_point_en ?? nail?.design_point_en,
+      isEnglish,
+    );
+    const raw = description || designFallback;
     return formatEditorNote(
       isDetailLoading
         ? isEnglish
@@ -212,23 +223,34 @@ export default function ProQuickViewModal({
   const designPoints = useMemo(
     () =>
       splitDesignElements(
-        apiLongTextField(detail?.design_elements) || apiLongTextField(nail?.design_elements),
+        pickLocalized(
+          apiLongTextField(detail?.design_elements) || apiLongTextField(nail?.design_elements),
+          apiLongTextField(detail?.design_point_en) || apiLongTextField(nail?.design_point_en),
+          isEnglish,
+        ),
       ),
-    [detail?.design_elements, nail?.design_elements],
+    [
+      detail?.design_elements,
+      detail?.design_point_en,
+      isEnglish,
+      nail?.design_elements,
+      nail?.design_point_en,
+    ],
   );
-  const procedureSteps = useMemo(
+  const procedureGuideSource = useMemo(
     () =>
-      splitProcedureSteps(
+      pickLocalized(
         apiLongTextField(detail?.procedure_guide) || apiLongTextField(nail?.procedure_guide),
+        apiLongTextField(detail?.guide_en) || apiLongTextField(nail?.guide_en),
         isEnglish,
       ),
-    [detail?.procedure_guide, isEnglish, nail?.procedure_guide],
+    [detail?.guide_en, detail?.procedure_guide, isEnglish, nail?.guide_en, nail?.procedure_guide],
   );
-  const procedureGuideFallback = useMemo(() => {
-    const raw =
-      apiLongTextField(detail?.procedure_guide) || apiLongTextField(nail?.procedure_guide);
-    return raw.trim();
-  }, [detail?.procedure_guide, nail?.procedure_guide]);
+  const procedureSteps = useMemo(
+    () => splitProcedureSteps(procedureGuideSource, isEnglish),
+    [isEnglish, procedureGuideSource],
+  );
+  const procedureGuideFallback = procedureGuideSource.trim();
   const { isLiked, toggleLike } = useNailLikeToggle(nail?.id);
   const likeCount = formatStatCount(detail?.likes ?? nail?.likes);
   const viewCount = formatStatCount(
