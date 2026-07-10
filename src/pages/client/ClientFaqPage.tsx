@@ -41,7 +41,7 @@ export default function ClientFaqPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
+    <div className="min-h-screen min-w-0 w-full max-w-full overflow-x-hidden bg-gray-50">
       <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4 md:static md:mb-6 md:max-w-full md:border-b-0 md:bg-transparent md:px-0">
         <button
           type="button"
@@ -56,7 +56,7 @@ export default function ClientFaqPage() {
         </h1>
       </header>
 
-      <main className="w-full px-5 pt-14 pb-10 md:mx-auto md:max-w-3xl md:px-0 md:pt-10 md:pb-20">
+      <main className="min-w-0 w-full max-w-full overflow-x-hidden px-5 pt-14 pb-10 md:mx-auto md:max-w-3xl md:px-0 md:pt-10 md:pb-20">
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white md:border-stone-200 md:p-10 md:shadow-sm">
           {isLoading ? (
             <div className="px-5 py-8 text-center text-[14px] text-gray-500">
@@ -92,9 +92,9 @@ export default function ClientFaqPage() {
                   />
                 </button>
                 {isOpen ? (
-                  <div className="border-t border-gray-50 bg-gray-50/80 px-5 py-4">
+                  <div className="min-w-0 w-full max-w-full overflow-x-hidden border-t border-gray-50 bg-gray-50/80 px-5 py-4">
                     <div
-                      className="overflow-hidden whitespace-pre-wrap break-keep text-[14px] leading-loose text-stone-600 md:text-[15px] [&_a]:text-[#FF7D66] [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_ul]:list-disc"
+                      className="min-w-0 w-full max-w-full overflow-x-hidden whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[14px] leading-loose text-stone-600 md:text-[15px] [&_a]:text-[#FF7D66] [&_a]:break-all [&_h1]:mb-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-bold [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-2 [&_p]:min-w-0 [&_p]:break-words [&_span]:break-words [&_img]:max-w-full [&_img]:h-auto [&_ul]:list-disc"
                       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                     />
                   </div>
