@@ -396,23 +396,27 @@ export default function ProGalleryWidget({
                       aria-label={isEnglish ? `View ${title} details` : `${title} 상세 보기`}
                     >
                       {imageUrl ? (
-                        <NailImage
-                          src={imageUrl}
-                          alt={title}
-                          priority={index < 4}
-                          className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                        />
+                        <div className="aspect-[3/4] w-full overflow-hidden">
+                          <NailImage
+                            src={imageUrl}
+                            alt={title}
+                            priority={index < 4}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                          />
+                        </div>
                       ) : (
                         <div className="aspect-[3/4] w-full bg-stone-200" />
                       )}
                     </button>
                   ) : imageUrl ? (
-                    <NailImage
-                      src={imageUrl}
-                      alt={title}
-                      priority={index < 4}
-                      className="w-full object-cover"
-                    />
+                    <div className="aspect-[3/4] w-full overflow-hidden">
+                      <NailImage
+                        src={imageUrl}
+                        alt={title}
+                        priority={index < 4}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="aspect-[3/4] w-full bg-stone-200" />
                   )}

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { getOptimizedNailImageUrl } from '@/shared/lib/nailImageUrl'
+import { useEffect, useMemo, useState } from 'react'
 import type { ImgHTMLAttributes } from 'react'
 
 export type NailImageProps = {
@@ -18,20 +19,39 @@ export function NailImage({
   className,
   priority = false,
   thumbWidth,
+  onError,
   ...rest
 }: NailImageProps) {
-  const optimizedSrc = getOptimizedNailImageUrl(src, { width: thumbWidth })
+  const originalSrc = useMemo(() => String(src ?? '').trim(), [src])
+  const optimizedSrc = useMemo(
+    () => (originalSrc ? getOptimizedNailImageUrl(originalSrc, { width: thumbWidth }) : ''),
+    [originalSrc, thumbWidth],
+  )
 
-  if (!optimizedSrc) return null
+  const [resolvedSrc, setResolvedSrc] = useState(optimizedSrc)
+
+  useEffect(() => {
+    setResolvedSrc(optimizedSrc)
+  }, [optimizedSrc])
+
+  if (!originalSrc) return null
+
+  const displaySrc = resolvedSrc || originalSrc
 
   return (
     <img
-      src={optimizedSrc}
+      src={displaySrc}
       alt={alt}
       className={cn(className)}
       loading={priority ? 'eager' : 'lazy'}
       decoding={priority ? undefined : 'async'}
       fetchPriority={priority ? 'high' : undefined}
+      onError={(event) => {
+        if (originalSrc && displaySrc !== originalSrc) {
+          setResolvedSrc(originalSrc)
+        }
+        onError?.(event)
+      }}
       {...rest}
     />
   )
