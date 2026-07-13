@@ -274,3 +274,93 @@ export async function generateGceArticle(
     throw new Error(message);
   }
 }
+
+export type GcePublishInput = {
+  id: number;
+  title: string;
+  category?: string | null;
+  content_ko?: string | null;
+  content_en?: string | null;
+  content_jp?: string | null;
+  content_vn?: string | null;
+  content_th?: string | null;
+  image_urls?: string[] | null;
+};
+
+const extractFirstImgSrc = (html: string | null | undefined): string | null => {
+  const m = String(html ?? '').match(/<img[^>]+src=["']([^"']+)["']/i);
+  const src = m?.[1]?.trim();
+  return src || null;
+};
+
+/**
+ * 검수 완료 매거진을 라이브 board_posts(magazine_editor)로 발행하고
+ * gce_title_db status를 published로 전환합니다.
+ * board_posts는 KR/EN 컬럼만 지원하므로 JP/VN/TH는 gce_title_db에 유지합니다.
+ */
+export async function publishGceMagazineToLive(review: GcePublishInput): Promise<{ boardPostId: string }> {
+  const id = Number(review.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error('발행할 검수 항목 ID가 올바르지 않습니다.');
+  }
+
+  const title = String(review.title ?? '').trim();
+  const contentKo = String(review.content_ko ?? '').trim();
+  if (!title || !contentKo) {
+    throw new Error('제목과 KR 본문이 있어야 발행할 수 있습니다.');
+  }
+
+  const contentEn = String(review.content_en ?? '').trim();
+  const thumbnailFromHtml = extractFirstImgSrc(contentKo);
+  const thumbnailFromList =
+    Array.isArray(review.image_urls) && review.image_urls.length > 0
+      ? String(review.image_urls[0] ?? '').trim()
+      : '';
+  const thumbnail_url = thumbnailFromHtml || thumbnailFromList || null;
+
+  const { data: boardRow, error: boardError } = await supabase
+    .from('board_posts')
+    .insert({
+      post_type: 'magazine_editor',
+      is_active: true,
+      title,
+      content: contentKo,
+      title_en: title,
+      content_en: contentEn || null,
+      thumbnail_url,
+      sub_category: String(review.category ?? '').trim() || null,
+    })
+    .select('id')
+    .single();
+
+  if (boardError) {
+    throw new Error(`매거진 라이브 발행 실패: ${boardError.message}`);
+  }
+  if (!boardRow?.id) {
+    throw new Error('발행된 매거진 ID를 확인할 수 없습니다.');
+  }
+
+  const { error: gceError } = await supabase
+    .from('gce_title_db')
+    .update({
+      status: 'published',
+      published_at: new Date().toISOString(),
+      title,
+      content_ko: contentKo,
+      content_en: contentEn || null,
+      content_jp: String(review.content_jp ?? '').trim() || null,
+      content_vn: String(review.content_vn ?? '').trim() || null,
+      content_th: String(review.content_th ?? '').trim() || null,
+      image_urls:
+        thumbnail_url && (!review.image_urls || review.image_urls.length === 0)
+          ? [thumbnail_url]
+          : review.image_urls ?? null,
+    })
+    .eq('id', id);
+
+  if (gceError) {
+    throw new Error(`gce_title_db 발행 상태 갱신 실패: ${gceError.message}`);
+  }
+
+  return { boardPostId: String(boardRow.id) };
+}

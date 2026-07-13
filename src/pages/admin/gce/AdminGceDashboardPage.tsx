@@ -1,19 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   BarChart2, Sparkles, Loader2, 
   Globe, Calendar, CheckSquare, Clock, 
   CheckCircle2, 
   Link, Copy, ExternalLink,
-  CalendarDays, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Eye, Globe2,
+  CalendarDays, ChevronDown, ChevronUp, Eye, Globe2,
   Target, Zap, Trophy, ArrowUpRight, Activity,
   PenTool, FileEdit,
-  Trash2, Save, X, Star,
-  Wand2, CheckCircle, Wrench, Plus, Pencil,
-  Image as ImageIcon, Rocket, CalendarClock, EyeOff,
+  Trash2, X, Star,
+  Wrench, Pencil,
+  Rocket, CalendarClock, EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
-import { generateGceArticle } from '@/services/gceAiService';
+import { publishGceMagazineToLive } from '@/services/gceAiService';
 
 type DraftUiStatus = 'draft' | 'pending' | 'generating' | 'completed' | 'review' | 'published';
 
@@ -51,6 +51,10 @@ const mapGceTitleRow = (row: any) => {
     title: String(row.title ?? ''),
     status: normalizeDraftStatus(row.status),
     content_ko: String(row.content_ko ?? ''),
+    content_en: String(row.content_en ?? ''),
+    content_jp: String(row.content_jp ?? ''),
+    content_vn: String(row.content_vn ?? ''),
+    content_th: String(row.content_th ?? ''),
     template_type: String(row.template_type ?? '1').replace(/[^\d]/g, '') || '1',
     created_at: row.created_at ?? null,
     ai_score: row.ai_score == null || row.ai_score === '' ? null : Number(row.ai_score),
@@ -384,42 +388,6 @@ function GceTemplateRenderer({
   );
 }
 
-const DraftStatusBadge = ({ status }: { status: DraftUiStatus }) => {
-  if (status === 'draft') {
-    return (
-      <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1.5 text-[12px] font-bold text-stone-600">
-        작성중 (Draft)
-      </span>
-    );
-  }
-  if (status === 'generating') {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-[12px] font-bold text-blue-600 animate-pulse">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> 생성중
-      </span>
-    );
-  }
-  if (status === 'review' || status === 'completed') {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1.5 text-[12px] font-bold text-[#9333EA]">
-        🔍 검수 대기
-      </span>
-    );
-  }
-  if (status === 'published') {
-    return (
-      <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-[12px] font-bold text-emerald-700">
-        발행 완료
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1.5 text-[12px] font-bold text-violet-700">
-      생성 대기 (Pending)
-    </span>
-  );
-};
-
 const LANG_BADGE: Record<string, string> = {
   KR: '🇰🇷 KR',
   EN: '🇺🇸 EN',
@@ -517,9 +485,7 @@ const MOCK_BEST_ARTICLES = [
   { id: 3, title: '여름휴가 네일 무조건 이거 박제! 쿨톤 인생 네일 찾음 🌊✨', image: 'https://picsum.photos/seed/occ3/200/200', views: 7500, growth: '+22%', channel: 'sns' },
 ];
 
-const ITEMS_PER_PAGE = 10;
-
-type GceIdeaImage = { id: string; concept: string; tags: string };
+type GceIdeaImage = { id: string; concept: string; design_name: string; tags: string };
 type GceGeneratedIdea = {
   id: number;
   category: string;
@@ -527,149 +493,506 @@ type GceGeneratedIdea = {
   images: GceIdeaImage[];
 };
 
-const MOCK_IDEA_POOL: Omit<GceGeneratedIdea, 'id'>[] = [
-  {
-    category: '썸머/바캉스',
-    title: '2026 바캉스 네일! 수영장에서 시선 강탈하는 형광 시럽 룩북',
-    images: [
-      { id: 'GL-001', concept: '블루 시럽 물방울', tags: '미디엄 아몬드, 쿨톤 블루, 물방울 텍스처, 바캉스' },
-      { id: 'GL-023', concept: '네온 오렌지 프렌치', tags: '스퀘어, 워밍 네온, 프렌치 팁, 선셋' },
-      { id: 'GL-045', concept: '화이트 조개 파츠 엠보', tags: '숏 라운드, 화이트, 3D 파츠, 비치' },
-      { id: 'GL-088', concept: '투명 얼음 자석 젤', tags: '롱 아몬드, 투명 베이스, 자석 라인, 쿨톤' },
-      { id: 'GL-102', concept: '그린 민트 그라데이션', tags: '미디엄 오벌, 민트, 그라데이션, 프레시' },
-    ],
-  },
-  {
-    category: '웨딩/하객',
-    title: '하객룩의 정석, 우아한 화이트 펄 & 쉬머 프렌치 가이드',
-    images: [
-      { id: 'GL-110', concept: '아이보리 펄 풀컬러', tags: '미디엄 아몬드, 아이보리, 펄 쉬머, 하객' },
-      { id: 'GL-118', concept: '샴페인 골드 프렌치', tags: '오벌, 샴페인 골드, 프렌치, 웨딩' },
-      { id: 'GL-126', concept: '미니 리본 파츠', tags: '숏 스퀘어, 화이트, 리본 파츠, 로맨틱' },
-      { id: 'GL-134', concept: '소프트 쉬머 그라데이션', tags: '미디엄 라운드, 누드핑크, 그라데이션, 우아함' },
-      { id: 'GL-142', concept: '투명 크리스탈 스톤', tags: '롱 아몬드, 투명, 크리스탈, 포토존' },
-    ],
-  },
-  {
-    category: '오피스/데일리',
-    title: '출근룩 완성! 단정하면서도 세련된 미니멀 뉴트럴 네일',
-    images: [
-      { id: 'GL-201', concept: '베이지 누드 풀컬러', tags: '숏 스퀘어, 베이지, 풀컬러, 오피스' },
-      { id: 'GL-209', concept: '딥 브라운 프렌치', tags: '미디엄 오벌, 딥브라운, 프렌치, 데일리' },
-      { id: 'GL-217', concept: '매트 블랙 포인트', tags: '숏 라운드, 매트 블랙, 포인트 네일, 시크' },
-      { id: 'GL-225', concept: '실버 라인 아트', tags: '미디엄 스퀘어, 실버 라인, 미니멀, 출근' },
-      { id: 'GL-233', concept: '소프트 그레이 시럽', tags: '숏 오벌, 그레이, 시럽, 뉴트럴' },
-    ],
-  },
-  {
-    category: '계절/톤',
-    title: '쿨톤 피부를 밝혀주는 라벤더 글라스 네일 완벽 매칭',
-    images: [
-      { id: 'GL-301', concept: '라벤더 글라스 시럽', tags: '미디엄 아몬드, 쿨톤 라벤더, 글라스, 투명감' },
-      { id: 'GL-309', concept: '스모키 퍼플 그라데이션', tags: '롱 오벌, 스모키 퍼플, 그라데이션, 쿨톤' },
-      { id: 'GL-317', concept: '실버 미러 파우더', tags: '미디엄 스퀘어, 실버 미러, 파우더, 화려함' },
-      { id: 'GL-325', concept: '쿨핑크 프렌치', tags: '숏 라운드, 쿨핑크, 프렌치, 생기' },
-      { id: 'GL-333', concept: '투명 홀로그램 파츠', tags: '미디엄 아몬드, 홀로그램, 파츠, 포인트' },
-    ],
-  },
-  {
-    category: '썸머/바캉스',
-    title: '바다보다 예쁜 손끝, 트로피컬 프루트 네일 BEST 룩',
-    images: [
-      { id: 'GL-050', concept: '망고 옐로우 시럽', tags: '미디엄 오벌, 망고 옐로우, 시럽, 트로피컬' },
-      { id: 'GL-058', concept: '코코넛 화이트 도트', tags: '숏 스퀘어, 화이트, 도트 아트, 비치' },
-      { id: 'GL-066', concept: '워터멜론 핑크 그라데이션', tags: '미디엄 아몬드, 워터멜론 핑크, 그라데이션, 상큼' },
-      { id: 'GL-074', concept: '라임 네온 라인', tags: '숏 라운드, 라임 네온, 라인 아트, 바캉스' },
-      { id: 'GL-082', concept: '트로피컬 플라워 파츠', tags: '롱 아몬드, 플라워 파츠, 컬러풀, 휴가' },
-    ],
-  },
-  {
-    category: '웨딩/하객',
-    title: '신부 손끝의 하이라이트, 로즈골드 웨딩 네일 화보',
-    images: [
-      { id: 'GL-150', concept: '로즈골드 미러', tags: '롱 아몬드, 로즈골드, 미러, 웨딩' },
-      { id: 'GL-158', concept: '블러시 핑크 시럽', tags: '미디엄 오벌, 블러시 핑크, 시럽, 신부' },
-      { id: 'GL-166', concept: '미세 스톤 테두리', tags: '미디엄 스퀘어, 스톤 테두리, 디테일, 화보' },
-      { id: 'GL-174', concept: '실크 화이트 그라데이션', tags: '롱 오벌, 실크 화이트, 그라데이션, 우아함' },
-      { id: 'GL-182', concept: '진주 파츠 포인트', tags: '숏 라운드, 진주 파츠, 포인트, 로맨틱' },
-    ],
-  },
-  {
-    category: '오피스/데일리',
-    title: '짧은 손톱도 OK! 데일리 숏네일 실속 디자인 모음',
-    images: [
-      { id: 'GL-240', concept: '숏 누드 베이스', tags: '숏 스퀘어, 누드, 베이스, 데일리' },
-      { id: 'GL-248', concept: '하프문 프렌치', tags: '숏 라운드, 하프문, 프렌치, 실용' },
-      { id: 'GL-256', concept: '미니 하트 포인트', tags: '숏 오벌, 미니 하트, 포인트, 귀여움' },
-      { id: 'GL-264', concept: '세로 그라데이션', tags: '숏 스퀘어, 세로 그라데이션, 길이감, 실속' },
-      { id: 'GL-272', concept: '투명 글로시 탑', tags: '숏 라운드, 투명 글로시, 탑코트, 청결감' },
-    ],
-  },
-  {
-    category: '계절/톤',
-    title: '웜톤 맞춤, 코랄 피치 시럽으로 만드는 생기 손끝',
-    images: [
-      { id: 'GL-340', concept: '코랄 피치 시럽', tags: '미디엄 아몬드, 웜톤 코랄, 시럽, 생기' },
-      { id: 'GL-348', concept: '웜베이지 프렌치', tags: '미디엄 오벌, 웜베이지, 프렌치, 톤업' },
-      { id: 'GL-356', concept: '골드 포일 조각', tags: '숏 스퀘어, 골드 포일, 파츠, 화려함' },
-      { id: 'GL-364', concept: '테라코타 그라데이션', tags: '롱 아몬드, 테라코타, 그라데이션, 가을감성' },
-      { id: 'GL-372', concept: '앰버 스톤 포인트', tags: '미디엄 라운드, 앰버 스톤, 포인트, 웜톤' },
-    ],
-  },
-  {
-    category: '썸머/바캉스',
-    title: '한여름 밤의 파티 네일, 글리터 & 홀로그램 시그니처',
-    images: [
-      { id: 'GL-090', concept: '홀로그램 풀파우더', tags: '롱 아몬드, 홀로그램, 풀파우더, 파티' },
-      { id: 'GL-098', concept: '실버 글리터 프렌치', tags: '미디엄 스퀘어, 실버 글리터, 프렌치, 나이트' },
-      { id: 'GL-106', concept: '오로라 자석젤', tags: '미디엄 아몬드, 쿨톤 퍼플, 화려함, 파티' },
-      { id: 'GL-114', concept: '네온 핑크 베이스', tags: '숏 오벌, 네온 핑크, 베이스, 시선강탈' },
-      { id: 'GL-122', concept: '스타 파츠 클러스터', tags: '롱 스퀘어, 스타 파츠, 클러스터, 무대' },
-    ],
-  },
-  {
-    category: '오피스/데일리',
-    title: '미팅부터 퇴근 후까지, 올데이 클린 네일 스타일링',
-    images: [
-      { id: 'GL-280', concept: '클린 화이트 시럽', tags: '숏 스퀘어, 클린 화이트, 시럽, 미팅' },
-      { id: 'GL-288', concept: '소프트 모브 풀컬러', tags: '미디엄 오벌, 소프트 모브, 풀컬러, 데일리' },
-      { id: 'GL-296', concept: '씬 블랙 라인', tags: '숏 라운드, 씬 블랙 라인, 미니멀, 세련' },
-      { id: 'GL-304', concept: '펄 베이지 그라데이션', tags: '미디엄 아몬드, 펄 베이지, 그라데이션, 올데이' },
-      { id: 'GL-312', concept: '미니멀 스퀘어 파츠', tags: '숏 스퀘어, 미니멀 파츠, 포인트, 퇴근룩' },
-    ],
-  },
+/** 카테고리별 하이엔드 매거진 제목 템플릿 */
+const IDEA_TITLE_TEMPLATES: Record<string, string[]> = {
+  '썸머/바캉스': [
+    '2026 바캉스 네일! 수영장에서 시선 강탈하는 {keyword} 룩북',
+    '여름휴가 준비 끝! 청량감 100% {keyword} 네일 5선',
+    '뜨거운 태양 아래 더 빛나는 {keyword} 바캉스 큐레이션',
+  ],
+  '웨딩/하객': [
+    '하객룩의 정석! 단정하고 우아한 {keyword} 네일 가이드',
+    '가장 눈부신 신부를 위한 {keyword} 웨딩 네일 룩북',
+    '식장에서 은은하게 빛나는 고급스러운 {keyword} 스타일링',
+  ],
+  '오피스/데일리': [
+    '출근룩 완성! 단정하면서도 세련된 {keyword} 데일리 네일',
+    '키보드 칠 때마다 기분 좋아지는 {keyword} 오피스 룩북',
+    '꾸안꾸의 정석! 은은하고 세련된 {keyword} 무드 5선',
+  ],
+  '계절/톤': [
+    '이번 시즌 가장 핫한 트렌드! {keyword} 맞춤 큐레이션',
+    '내 피부톤에 찰떡같이 어울리는 {keyword} 퍼스널 네일',
+    '분위기 여신으로 만들어줄 {keyword} 감성 네일 룩북',
+  ],
+};
+
+const IDEA_TITLE_FALLBACK_TEMPLATES = [
+  '에디터 픽! 지금 가장 주목받는 {keyword} 네일 룩북',
+  '손끝부터 완성되는 분위기, {keyword} 매거진 큐레이션',
+  '오늘의 추천! 세련미 가득한 {keyword} 스타일 5선',
 ];
+
+const pickMagazineIdeaTitle = (category: string, keyword: string) => {
+  const pool = IDEA_TITLE_TEMPLATES[category] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
+  const template = pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? '{keyword} 네일 룩북';
+  const safeKeyword = String(keyword ?? '').trim() || '네일';
+  return template.replace(/\{keyword\}/g, safeKeyword);
+};
+
+/** DB source_filename 규칙: GL- + 숫자 7자리 (예: GL-0005520) */
+const GL_ID_DIGIT_LEN = 7;
+
+/** 화면·프롬프트용 GL-XXXXXXX (7자리) 포맷 */
+const formatGlAssetId = (rawId: string | number | null | undefined, sourceFilename?: string | null) => {
+  const fromFile = String(sourceFilename ?? '').match(/GL-(\d+)/i);
+  if (fromFile?.[1]) {
+    return `GL-${fromFile[1].padStart(GL_ID_DIGIT_LEN, '0')}`;
+  }
+
+  const idStr = String(rawId ?? '').trim();
+  if (/^\d+$/.test(idStr)) {
+    return `GL-${idStr.padStart(GL_ID_DIGIT_LEN, '0')}`;
+  }
+
+  const digits = idStr.match(/(\d+)/)?.[1];
+  if (digits) {
+    return `GL-${digits.padStart(GL_ID_DIGIT_LEN, '0')}`;
+  }
+
+  return `GL-${'0'.repeat(GL_ID_DIGIT_LEN)}`;
+};
+
+const joinIdeaTagParts = (...parts: Array<string | string[] | null | undefined>) => {
+  const flat: string[] = [];
+  for (const part of parts) {
+    if (!part) continue;
+    if (Array.isArray(part)) {
+      for (const item of part) {
+        const t = String(item ?? '').trim();
+        if (t) flat.push(t);
+      }
+      continue;
+    }
+    const t = String(part).trim();
+    if (t) flat.push(t);
+  }
+  return [...new Set(flat)].slice(0, 6).join(', ') || '젤리아 네일 디자인';
+};
+
+const buildIdeasFromNailDesigns = (
+  rows: Array<{
+    id?: string | number | null;
+    title?: string | null;
+    tags?: string[] | string | null;
+    source_filename?: string | null;
+    situations?: string[] | null;
+    styles?: string[] | null;
+    category?: string | null;
+    color?: string | null;
+    mood?: string | null;
+    nail_length?: string | null;
+  }>,
+): GceGeneratedIdea[] => {
+  const usable = rows
+    .map((row) => {
+      const glId = formatGlAssetId(row.id, row.source_filename);
+      if (!glId || glId === `GL-${'0'.repeat(GL_ID_DIGIT_LEN)}`) return null;
+      const concept = String(row.title ?? '').trim() || '네일 디자인';
+      const tags = joinIdeaTagParts(
+        row.nail_length,
+        row.color,
+        row.mood,
+        row.tags,
+        row.styles,
+        row.situations,
+        row.category,
+      );
+      return { glId, concept, tags };
+    })
+    .filter(Boolean) as Array<{ glId: string; concept: string; tags: string }>;
+
+  // 동일 GL 중복 제거
+  const unique: typeof usable = [];
+  const seen = new Set<string>();
+  for (const item of usable) {
+    if (seen.has(item.glId)) continue;
+    seen.add(item.glId);
+    unique.push(item);
+  }
+
+  const ideas: GceGeneratedIdea[] = [];
+  const maxIdeas = 10;
+  for (let i = 0; i < maxIdeas; i += 1) {
+    const chunk = unique.slice(i * 5, i * 5 + 5);
+    if (chunk.length < 5) break;
+    const category = FACTORY_CATEGORIES[i % FACTORY_CATEGORIES.length];
+    const images: GceIdeaImage[] = chunk.map((item) => ({
+      id: item.glId,
+      concept: item.concept,
+      design_name: item.concept,
+      tags: item.tags,
+    }));
+    const keyword = images[0]?.design_name || images[0]?.concept || '네일';
+    ideas.push({
+      id: i + 1,
+      category,
+      title: pickMagazineIdeaTitle(category, keyword),
+      images,
+    });
+  }
+
+  return ideas;
+};
 
 const buildChatGptIdeaPrompt = (idea: GceGeneratedIdea) => {
   const lines = idea.images.map(
-    (img, i) => `${i + 1}. [${img.id}] ${img.concept} (디테일: ${img.tags})`
+    (img, i) => `${i + 1}. [IMAGE_${img.id}] ${img.concept} (디테일: ${img.tags})`,
   );
   return [
     `카테고리: ${idea.category}`,
     `제목: ${idea.title}`,
     '사용할 네일 사진 리스트:',
     ...lines,
+    '',
+    '원고 작성 시 사진 태그는 반드시 [IMAGE_GL-XXXXXXX] 7자리 포맷을 그대로 사용하세요.',
   ].join('\n');
+};
+
+const escapeGceHtmlText = (value: string) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+type NormalizedGlId = {
+  raw: string;
+  padded: string;
+  numeric: string;
+};
+
+const normalizeGlId = (rawId: string): NormalizedGlId => {
+  const raw = String(rawId ?? '').toUpperCase().trim();
+  const numericRaw = (raw.match(/(\d+)/)?.[1] ?? '0').replace(/^0+/, '') || '0';
+  const padded = `GL-${numericRaw.padStart(GL_ID_DIGIT_LEN, '0')}`;
+  return {
+    raw: raw.startsWith('GL-') ? raw : `GL-${raw}`,
+    padded,
+    numeric: numericRaw,
+  };
+};
+
+/** GL-XXXX → nail_designs.image_url 맵 (실 R2 경로, UUID 포함) */
+const resolveGceNailImageUrls = async (
+  glIds: string[],
+): Promise<{ urlByKey: Record<string, string>; fallbackUrls: string[] }> => {
+  const urlByKey: Record<string, string> = {};
+  const normalized = glIds.map(normalizeGlId);
+  const paddedIds = Array.from(new Set(normalized.map((n) => n.padded)));
+
+  if (paddedIds.length > 0) {
+    const filenames = paddedIds.flatMap((id) => [
+      `${id}.webp`,
+      `${id}.jpg`,
+      `${id}.jpeg`,
+      `${id}.png`,
+    ]);
+
+    const { data, error } = await supabase
+      .from('nail_designs')
+      .select('source_filename, image_url, image_r2_key')
+      .in('source_filename', filenames);
+
+    if (error) {
+      console.warn('[resolveGceNailImageUrls] source_filename 조회 실패:', error.message);
+    }
+
+    for (const row of data ?? []) {
+      const url = String(row.image_url ?? '').trim();
+      if (!url) continue;
+      const filename = String(row.source_filename ?? '').trim();
+      const stem = filename.replace(/\.[^.]+$/, '').toUpperCase();
+      if (stem) {
+        urlByKey[stem] = url;
+        // 짧은 키도 함께 등록 (GL-201 ↔ GL-0000201)
+        const shortKey = `GL-${(stem.match(/(\d+)/)?.[1] ?? '').replace(/^0+/, '') || '0'}`;
+        urlByKey[shortKey] = url;
+      }
+    }
+
+    // 파일명 미매칭 → image_r2_key에 패딩 ID 포함 여부로 보조 조회
+    const missingPadded = paddedIds.filter((id) => !urlByKey[id]);
+    for (const padded of missingPadded) {
+      const { data: rows, error: keyErr } = await supabase
+        .from('nail_designs')
+        .select('image_url, source_filename, image_r2_key')
+        .ilike('image_r2_key', `%${padded}%`)
+        .limit(1);
+      if (keyErr) {
+        console.warn('[resolveGceNailImageUrls] image_r2_key 조회 실패:', keyErr.message);
+        continue;
+      }
+      const url = String(rows?.[0]?.image_url ?? '').trim();
+      if (!url) continue;
+      urlByKey[padded] = url;
+      const shortKey = `GL-${(padded.match(/(\d+)/)?.[1] ?? '').replace(/^0+/, '') || '0'}`;
+      urlByKey[shortKey] = url;
+    }
+  }
+
+  // 엑박 방지용: DB에 실존하는 image_url 풀 (UUID 없는 /uploads/{id}.webp 폴백 금지)
+  const { data: fallbackRows } = await supabase
+    .from('nail_designs')
+    .select('image_url')
+    .not('image_url', 'is', null)
+    .neq('image_url', '')
+    .limit(30);
+
+  const fallbackUrls = (fallbackRows ?? [])
+    .map((row) => String(row.image_url ?? '').trim())
+    .filter(Boolean);
+
+  return { urlByKey, fallbackUrls };
+};
+
+const pickFallbackImageUrl = (glId: string, fallbackUrls: string[]): string => {
+  if (fallbackUrls.length === 0) return '';
+  const digits = Number((glId.match(/(\d+)/)?.[1] ?? '0').replace(/^0+/, '') || '0');
+  return fallbackUrls[digits % fallbackUrls.length] ?? fallbackUrls[0] ?? '';
+};
+
+/** 최상위 <div>...</div> 블록을 플레이스홀더로 보호 (중첩 div 안전) */
+const protectTopLevelDivBlocks = (input: string) => {
+  const islands: string[] = [];
+  let out = '';
+  let i = 0;
+  const src = String(input ?? '');
+
+  while (i < src.length) {
+    if (src.startsWith('<div', i)) {
+      let depth = 0;
+      let j = i;
+      let closed = false;
+      while (j < src.length) {
+        if (src.startsWith('<div', j)) {
+          depth += 1;
+          const gt = src.indexOf('>', j);
+          j = gt === -1 ? src.length : gt + 1;
+          continue;
+        }
+        if (src.startsWith('</div>', j)) {
+          depth -= 1;
+          j += 6;
+          if (depth === 0) {
+            islands.push(src.slice(i, j));
+            out += `\n\n@@GELIA_HTML_${islands.length - 1}@@\n\n`;
+            i = j;
+            closed = true;
+            break;
+          }
+          continue;
+        }
+        j += 1;
+      }
+      if (!closed) {
+        out += src[i];
+        i += 1;
+      }
+      continue;
+    }
+    out += src[i];
+    i += 1;
+  }
+
+  return { text: out, islands };
+};
+
+const formatGceInlineText = (value: string) => {
+  const withMarkers = String(value ?? '').replace(/\*\*([^*\n]+)\*\*/g, '§§BOLD§§$1§§/BOLD§§');
+  return escapeGceHtmlText(withMarkers)
+    .replace(/§§BOLD§§/g, '<strong class="font-semibold text-gray-900">')
+    .replace(/§§\/BOLD§§/g, '</strong>');
+};
+
+const restoreHtmlIslands = (input: string, islands: string[]) =>
+  String(input ?? '').replace(/@@GELIA_HTML_(\d+)@@/g, (_m, idx: string) => {
+    return islands[Number(idx)] ?? '';
+  });
+
+/** 📝 총평 + ✅ 체크리스트 → 올드머니(화이트/그레이 + 보라 포인트) 요약 박스 */
+const buildSummaryBoxHtml = (heading: string, body: string) => {
+  const safeHeading = escapeGceHtmlText(String(heading ?? '').trim() || '한눈에 보는 총평');
+  const rawBody = String(body ?? '').trim();
+
+  // 1) ✅ 블록 단위로 분리
+  const checkBlocks = rawBody.split(/(?=✅)/).map((s) => s.trim()).filter(Boolean);
+  const cardHtmlParts: string[] = [];
+
+  for (const block of checkBlocks) {
+    if (!block.startsWith('✅')) {
+      const intro = escapeGceHtmlText(block).replace(/\n/g, '<br/>');
+      cardHtmlParts.push(
+        `<p class="text-gray-600 text-[15px] leading-relaxed break-keep mb-5">${intro}</p>`,
+      );
+      continue;
+    }
+
+    // 2) ✅ 제목 줄 + 이하 설명 줄들 (이모지 미렌더)
+    const withoutMark = block.replace(/^✅\s*/, '');
+    const lines = withoutMark
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length === 0) continue;
+
+    const titleLine = lines[0];
+    const titled = titleLine.match(/^(.+?)\s*[:：]\s*(.*)$/);
+    const titleText = formatGceInlineText((titled?.[1] ?? titleLine).trim());
+    const sameLineRest = (titled?.[2] ?? '').trim();
+
+    // 3) 설명 줄 → <li> 강제 ( - / • 유무 무관 )
+    const itemLines: string[] = [];
+    if (sameLineRest) itemLines.push(sameLineRest.replace(/^[-•*·]\s*/, '').trim());
+    for (let i = 1; i < lines.length; i += 1) {
+      const item = lines[i].replace(/^[-•*·]\s*/, '').trim();
+      if (item) itemLines.push(item);
+    }
+
+    const listItems = itemLines
+      .map(
+        (item) =>
+          `<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="text-purple-500 font-bold mt-0.5 shrink-0">✓</span> <span class="break-keep">${formatGceInlineText(item)}</span></li>`,
+      )
+      .join('');
+
+    cardHtmlParts.push(
+      `<div class="bg-gray-50 rounded-2xl p-6 mb-5"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2 m-0"><span class="w-2 h-2 bg-purple-600 rounded-full shrink-0"></span><span class="break-keep">${titleText}</span></h5>${
+        listItems ? `<ul class="space-y-3 m-0 p-0 list-none">${listItems}</ul>` : ''
+      }</div>`,
+    );
+  }
+
+  const inner = cardHtmlParts.length
+    ? cardHtmlParts.join('')
+    : `<p class="text-gray-500 text-[15px] text-center">요약 내용이 없습니다.</p>`;
+
+  // 4) 화이트 베이스 올드머니 뼈대 (📝 이모지 미렌더)
+  return `\n\n<div class="my-16 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 m-0 break-keep">${safeHeading}</h4>${inner}</div>\n\n`;
+};
+
+/** 템플릿 2(큐레이션 리스트형) — 비동기 이미지 해석 + 동기 HTML 조립 */
+const buildMagazineHtml = async (markdown: string): Promise<string> => {
+  console.log('R2 Public URL 환경변수: ', import.meta.env.VITE_R2_PUBLIC_URL);
+  let html = String(markdown ?? '');
+  let index = 1;
+
+  // 0. 엔터 보정 — 💎 / 📌 / 📝 / [IMAGE_…] 줄 단위 격리
+  html = html.replace(/(💎\s*[^\n]+)/g, '\n\n$1\n\n');
+  html = html.replace(/(📌\s*[^\n]+)/g, '\n\n$1\n\n');
+  html = html.replace(/(📝\s*[^\n]+)/g, '\n\n$1\n\n');
+  html = html.replace(/(\[IMAGE_.*?\])/gi, '\n\n$1\n\n');
+
+  // 0-1. 강조 볼드는 팁/문단 치환 시 formatGceInlineText 로 안전 처리
+
+  // 1. 소제목 치환 (💎 → 그라데이션 뱃지)
+  html = html.replace(/💎\s*([^\n]+)/g, (_match, p1: string) => {
+    const title = formatGceInlineText(String(p1).trim());
+    return `\n\n<div class="flex items-center gap-3 mt-14 mb-6"><span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold rounded-full text-sm shadow-md shrink-0">${index++}</span><h3 class="text-2xl font-bold text-gray-900 m-0 break-keep">${title}</h3></div>\n\n`;
+  });
+  console.log('2. 소제목 치환 후 텍스트:', html);
+
+  // 2. 팁 박스 치환 (📌) — 절대 \\n 을 넘지 않음, 콜론 옵션
+  html = html.replace(/📌\s*([^:\n]+)(?::\s*([^\n]+))?/g, (_match, label: string, body?: string) => {
+    const safeLabel = formatGceInlineText(String(label ?? '').trim());
+    const safeBody = body != null && String(body).trim()
+      ? formatGceInlineText(String(body).trim())
+      : '';
+    const bodyHtml = safeBody
+      ? `<span class="text-gray-700 text-[15px] leading-relaxed break-keep">${safeBody}</span>`
+      : '';
+    return `\n\n<div class="my-8 p-5 bg-purple-50/80 rounded-2xl border border-purple-100"><strong class="block text-purple-700 mb-1 text-[15px] break-keep">${safeLabel}</strong>${bodyHtml}</div>\n\n`;
+  });
+
+  // 3. 이미지 태그 수집 → DB 비동기 조회 → 동기 치환 (replace 콜백에서 await 금지)
+  const imageMatches = Array.from(html.matchAll(/\[IMAGE_(GL-\d+)\]/gi));
+  const parsedIds = imageMatches.map((m) => String(m[1] ?? ''));
+  const { urlByKey, fallbackUrls } = await resolveGceNailImageUrls(parsedIds);
+
+  let rebuilt = '';
+  let cursor = 0;
+  const imageRe = /\[IMAGE_(GL-\d+)\]/gi;
+  let match: RegExpExecArray | null;
+  while ((match = imageRe.exec(html)) !== null) {
+    rebuilt += html.slice(cursor, match.index);
+    const id = String(match[1] ?? '');
+    const { raw, padded } = normalizeGlId(id);
+    const dbUrl = urlByKey[padded] || urlByKey[raw] || urlByKey[id] || urlByKey[id.toUpperCase()] || '';
+    const finalUrl = dbUrl || pickFallbackImageUrl(padded, fallbackUrls);
+
+    console.log('1. 파싱된 ID:', id, '(정규화:', padded + ')');
+    console.log('2. DB 조회 결과(image_url):', dbUrl || null);
+    console.log('3. 최종 조립된 <img> src URL:', finalUrl);
+
+    if (finalUrl) {
+      rebuilt += `\n\n<div class="my-12 w-full"><img src="${finalUrl}" alt="nail ${padded}" class="w-full rounded-2xl shadow-xl object-cover" /></div>\n\n`;
+    } else {
+      rebuilt += `\n\n<div class="my-12 w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center text-sm text-stone-500">이미지를 찾을 수 없습니다 (${padded})</div>\n\n`;
+    }
+    cursor = match.index + match[0].length;
+  }
+  rebuilt += html.slice(cursor);
+  html = rebuilt;
+  console.log('3. 이미지 치환 후 텍스트:', html);
+
+  // 4. 📝 요약 박스 (끝부분) → 내부 ✅ / li 는 buildSummaryBoxHtml 에서 체인 처리
+  html = html.replace(/📝\s*([^\n]+)([\s\S]*)/, (_match, heading: string, body: string) => {
+    return buildSummaryBoxHtml(String(heading ?? ''), String(body ?? ''));
+  });
+
+  // 5. HTML 블록 보호 후, 순수 텍스트에만 문장 단위 강제 분리
+  const protectedHtml = protectTopLevelDivBlocks(html);
+  let textForSplit = protectedHtml.text.replace(/([.?!])\s+(?=[가-힣A-Z'"])/g, '$1\n\n');
+
+  // 6. \\n\\n 기준 블록 분리 → 플레이스홀더/HTML은 통과, 텍스트만 <p> 래핑
+  const blocks = textForSplit.split(/\n\s*\n/);
+  textForSplit = blocks
+    .map((block) => {
+      const trimmed = block.trim();
+      if (!trimmed) return '';
+      if (/^@@GELIA_HTML_\d+@@$/.test(trimmed)) return trimmed;
+      if (/^<(div|img|section|article|header|ul|ol|li|h[1-6]|strong)\b/i.test(trimmed)) {
+        return trimmed;
+      }
+      const formatted = formatGceInlineText(trimmed).replace(/\n/g, '<br/>');
+      return `<p class="mb-5 text-gray-700 text-[16px] leading-[2.2] break-keep">${formatted}</p>`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  html = restoreHtmlIslands(textForSplit, protectedHtml.islands);
+
+  console.log('4. 최종 조립된 HTML:', html);
+  return html;
 };
 
 export default function AdminGceDashboardPage() {
   const [activeTab, setActiveTab] = useState<'insight' | 'factory' | 'review' | 'result'>('factory');
 
-  // Factory Smart Editor State
+  // GCE titles (검수 데스크용) + Planning & Editor state
   const [dbTitles, setDbTitles] = useState<any[]>([]);
-  const [isLoadingTitles, setIsLoadingTitles] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [draftContents, setDraftContents] = useState<Record<number, string>>({});
-  const [savingId, setSavingId] = useState<number | null>(null);
-  const [processingId, setProcessingId] = useState<number | null>(null);
   const [generatedIdeas, setGeneratedIdeas] = useState<GceGeneratedIdea[]>([]);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
-  const draftTextareaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
-  const itemsPerPage = ITEMS_PER_PAGE;
+  const [smartEditorTitle, setSmartEditorTitle] = useState('');
+  const [smartEditorCategory, setSmartEditorCategory] = useState<string>(FACTORY_CATEGORIES[0]);
+  const [smartEditorTemplate, setSmartEditorTemplate] = useState('1');
+  const [editorContents, setEditorContents] = useState({
+    KR: '',
+    EN: '',
+    JP: '',
+    VN: '',
+    TH: '',
+  });
+  const [selectedLangs, setSelectedLangs] = useState<Array<'KR' | 'EN' | 'JP' | 'VN' | 'TH'>>([
+    'KR',
+    'EN',
+    'JP',
+    'VN',
+    'TH',
+  ]);
 
   const fetchGceTitles = async () => {
-    setIsLoadingTitles(true);
     const { data, error } = await supabase
       .from('gce_title_db')
       .select('*')
@@ -679,17 +1002,8 @@ export default function AdminGceDashboardPage() {
       console.error('[gce_title_db] fetch failed:', error);
       setDbTitles([]);
     } else {
-      const rows = (data ?? []).map(mapGceTitleRow);
-      setDbTitles(rows);
-      setDraftContents((prev) => {
-        const next = { ...prev };
-        rows.forEach((row: any) => {
-          if (next[row.id] === undefined) next[row.id] = row.content_ko ?? '';
-        });
-        return next;
-      });
+      setDbTitles((data ?? []).map(mapGceTitleRow));
     }
-    setIsLoadingTitles(false);
   };
 
   useEffect(() => {
@@ -703,6 +1017,7 @@ export default function AdminGceDashboardPage() {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleTargetIds, setScheduleTargetIds] = useState<number[]>([]);
   const [scheduleDateTime, setScheduleDateTime] = useState('2026-07-12T18:00');
+  const [isPublishingMagazine, setIsPublishingMagazine] = useState(false);
 
   const reviewData = dbTitles.filter(
     (item) => item.status === 'review' || item.status === 'completed'
@@ -765,6 +1080,40 @@ export default function AdminGceDashboardPage() {
     );
   };
 
+  const handlePublishMagazine = async () => {
+    if (!selectedReview?.id) {
+      toast.error('발행할 검수 항목이 없습니다.');
+      return;
+    }
+    if (isPublishingMagazine) return;
+
+    setIsPublishingMagazine(true);
+    try {
+      await publishGceMagazineToLive({
+        id: Number(selectedReview.id),
+        title: String(selectedReview.title ?? ''),
+        category: selectedReview.category,
+        content_ko: selectedReview.content_ko,
+        content_en: selectedReview.content_en,
+        content_jp: selectedReview.content_jp,
+        content_vn: selectedReview.content_vn,
+        content_th: selectedReview.content_th,
+        image_urls: selectedReview.image_urls,
+      });
+
+      toast.success('🎉 성공적으로 매거진이 발행되었습니다!');
+      setReviewModalOpen(false);
+      setSelectedReview(null);
+      setReviewSelectedIds((prev) => prev.filter((id) => id !== Number(selectedReview.id)));
+      await fetchGceTitles();
+    } catch (err) {
+      console.error('[handlePublishMagazine]', err);
+      toast.error(err instanceof Error ? err.message : '매거진 발행에 실패했습니다.');
+    } finally {
+      setIsPublishingMagazine(false);
+    }
+  };
+
   const handleScheduleReview = (id: number) => {
     openScheduleModal([id]);
   };
@@ -812,127 +1161,95 @@ export default function AdminGceDashboardPage() {
     setReviewSelectedIds((prev) => prev.filter((tId) => tId !== id));
   };
 
-  const totalPages = Math.max(1, Math.ceil(dbTitles.length / itemsPerPage));
-  const safePage = Math.min(currentPage, totalPages);
-  const currentData = dbTitles.slice(
-    (safePage - 1) * itemsPerPage,
-    safePage * itemsPerPage
-  );
+  const handleApplySmartTemplate = async () => {
+    console.log('1. 에디터에서 넘어온 원본 텍스트:', editorContents.KR);
+    const title = smartEditorTitle.trim();
+    const sourceMarkdown = editorContents.KR.trim();
 
-  const toggleExpandRow = (id: number) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  };
+    if (!title) {
+      toast.error('매거진 제목을 입력해주세요.');
+      return;
+    }
+    if (!sourceMarkdown) {
+      toast.error('KR 원고를 입력해주세요.');
+      return;
+    }
 
-  const focusDraftEditor = (id: number) => {
-    window.setTimeout(() => {
-      draftTextareaRefs.current[id]?.focus();
-      draftTextareaRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 80);
-  };
+    toast.success('5개국어 템플릿 동시 조립을 시작합니다!');
 
-  const handleDraftContentChange = (id: number, value: string) => {
-    setDraftContents((prev) => ({ ...prev, [id]: value }));
-  };
+    try {
+      const htmlOutput = await buildMagazineHtml(sourceMarkdown);
+      if (!htmlOutput.trim()) {
+        toast.error('파싱된 HTML이 비어 있습니다. 원고 형식을 확인해주세요.');
+        return;
+      }
 
-  const handleDraftMetaChange = (id: number, patch: { title?: string; category?: string }) => {
-    setDbTitles((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-  };
-
-  const persistDraft = async (item: any) => {
-    const content = draftContents[item.id] ?? item.content_ko ?? '';
-    const title = String(item.title || '').trim() || '제목 없음';
-    const category = item.category || FACTORY_CATEGORIES[0];
-
-    if (item.id < 0 || item.isTemp) {
+      // Drafts 목록이 제거된 구조이므로 신규 insert 후 즉시 review 상태로 등록
       const { data, error } = await supabase
         .from('gce_title_db')
         .insert({
           title,
-          category,
-          content_ko: content,
-          status: 'draft',
+          category: smartEditorCategory,
+          content_ko: htmlOutput,
+          template_type: '2',
+          status: 'review',
         })
-        .select('*')
+        .select('id')
         .single();
+
       if (error) throw error;
-      const saved = mapGceTitleRow(data);
-      setDbTitles((prev) => prev.map((row) => (row.id === item.id ? saved : row)));
-      setDraftContents((prev) => {
-        const next = { ...prev };
-        next[saved.id] = content;
-        delete next[item.id];
-        return next;
-      });
-      setExpandedId(saved.id);
-      return saved;
-    }
+      if (!data?.id) throw new Error('저장된 타이틀 ID를 확인할 수 없습니다.');
 
-    const { error } = await supabase
-      .from('gce_title_db')
-      .update({ title, category, content_ko: content, status: 'draft' })
-      .eq('id', item.id);
-    if (error) throw error;
-    setDbTitles((prev) =>
-      prev.map((row) =>
-        row.id === item.id
-          ? { ...row, title, category, content_ko: content, status: 'draft' as const }
-          : row
-      )
-    );
-    return { ...item, title, category, content_ko: content, status: 'draft' as const };
-  };
-
-  const handleSaveDraft = async (item: any) => {
-    setSavingId(item.id);
-    try {
-      await persistDraft(item);
-      toast.success('임시저장 완료!');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '임시저장에 실패했습니다.');
-    } finally {
-      setSavingId(null);
-    }
-  };
-
-  const handleStartGlobalPipeline = async (item: any) => {
-    setProcessingId(item.id);
-    try {
-      const saved = await persistDraft(item);
-      setDbTitles((prev) =>
-        prev.map((row) => (row.id === saved.id ? { ...row, status: 'generating' as const } : row))
-      );
-      await supabase
+      // 요청 스펙: 해당 타이틀 ID에 content_ko / status 확정 update
+      const { error: updateError } = await supabase
         .from('gce_title_db')
-        .update({ status: 'generating' })
-        .eq('id', saved.id);
-      await generateGceArticle(
-        saved.title,
-        saved.content_ko ?? draftContents[saved.id] ?? '',
-        saved.category,
-        saved.id,
-      );
-      toast.success('글로벌 번역·매칭 파이프라인을 시작했습니다!');
+        .update({
+          content_ko: htmlOutput,
+          template_type: '2',
+          status: 'review',
+        })
+        .eq('id', data.id);
+      if (updateError) throw updateError;
+
+      await fetchGceTitles();
+      toast.success('템플릿 2(큐레이션 리스트형) 조립 완료! 검수 데스크로 이동합니다.');
       setActiveTab('review');
     } catch (err) {
-      console.error('[handleStartGlobalPipeline]', err);
-      toast.error(err instanceof Error ? err.message : '파이프라인 실행에 실패했습니다.');
-    } finally {
-      setProcessingId(null);
-      await fetchGceTitles();
+      console.error('[handleApplySmartTemplate]', err);
+      toast.error(err instanceof Error ? err.message : '템플릿 적용에 실패했습니다.');
     }
   };
 
-  const handleGenerateIdeas = () => {
+  const handleGenerateIdeas = async () => {
+    if (isGeneratingIdeas) return;
     setIsGeneratingIdeas(true);
-    window.setTimeout(() => {
-      const ideas = MOCK_IDEA_POOL.slice(0, 10).map((idea, index) => ({
-        ...idea,
-        id: index + 1,
-      }));
+    try {
+      // design_name 컬럼 없음 → title / source_filename 사용 (실 GL 코드는 source_filename)
+      const { data, error } = await supabase
+        .from('nail_designs')
+        .select(
+          'id, title, tags, source_filename, situations, styles, category, color, mood, nail_length, created_at',
+        )
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      const ideas = buildIdeasFromNailDesigns(data ?? []);
+      if (ideas.length === 0) {
+        toast.error('기획안을 만들 수 있는 네일 데이터가 부족합니다. (최소 5컷 필요)');
+        setGeneratedIdeas([]);
+        return;
+      }
+
       setGeneratedIdeas(ideas);
+      toast.success(`오늘의 추천 기획안 ${ideas.length}개가 실DB에서 추출되었습니다!`);
+    } catch (err) {
+      console.error('[handleGenerateIdeas]', err);
+      toast.error(err instanceof Error ? err.message : '기획안 추출에 실패했습니다.');
+    } finally {
       setIsGeneratingIdeas(false);
-      toast.success('오늘의 추천 기획안 10개가 추출되었습니다!');
-    }, 450);
+    }
   };
 
   const handleCopyIdeaPrompt = async (idea: GceGeneratedIdea) => {
@@ -943,23 +1260,6 @@ export default function AdminGceDashboardPage() {
       console.error('[handleCopyIdeaPrompt]', err);
       toast.error('클립보드 복사에 실패했습니다.');
     }
-  };
-
-  const handleStartNewDraft = () => {
-    const tempId = -Date.now();
-    const blank = {
-      id: tempId,
-      category: FACTORY_CATEGORIES[0],
-      title: '',
-      status: 'draft' as const,
-      content_ko: '',
-      isTemp: true,
-    };
-    setDbTitles((prev) => [blank, ...prev.filter((row) => !row.isTemp)]);
-    setDraftContents((prev) => ({ ...prev, [tempId]: '' }));
-    setCurrentPage(1);
-    setExpandedId(tempId);
-    focusDraftEditor(tempId);
   };
 
   return (
@@ -1107,7 +1407,7 @@ export default function AdminGceDashboardPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={handleGenerateIdeas}
+                  onClick={() => void handleGenerateIdeas()}
                   disabled={isGeneratingIdeas}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-6 py-4 text-[15px] font-black text-white shadow-lg shadow-purple-500/30 hover:scale-[1.02] hover:shadow-purple-500/40 transition-all disabled:opacity-60 disabled:hover:scale-100"
                 >
@@ -1169,185 +1469,127 @@ export default function AdminGceDashboardPage() {
               )}
             </section>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white px-6 py-5 shadow-sm">
-              <h2 className="text-xl font-extrabold text-stone-900 tracking-tight">
-                📝 내 매거진 초안 (Drafts)
-                <span className="ml-2 text-[14px] font-bold text-stone-400">
-                  {dbTitles.length.toLocaleString()}건
-                </span>
+            {/* STEP 2. 스마트 매거진 에디터 */}
+            <section className="bg-white rounded-2xl shadow-sm p-8 mt-8 border border-stone-200">
+              <span className="text-purple-600 font-bold text-sm">STEP 2 . SMART EDITOR</span>
+              <h2 className="mt-2 text-xl md:text-2xl font-extrabold text-stone-900 tracking-tight">
+                챗GPT 원고 입력 및 템플릿 렌더링
               </h2>
-              <button
-                type="button"
-                onClick={handleStartNewDraft}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333EA] to-[#EC4899] px-5 py-3 text-[14px] font-black text-white shadow-md hover:scale-[1.02] hover:shadow-purple-500/30 transition-all"
-              >
-                <Plus className="h-5 w-5" /> + 새 글 작성
-              </button>
-            </div>
+              <p className="mt-2 text-[14px] font-medium text-stone-500 max-w-3xl">
+                챗GPT가 작성한 원고를 붙여넣고 템플릿을 선택하세요. 로컬 엔진이 0.1초 만에 하이엔드 웹진으로 조립합니다.
+              </p>
 
-            <div className="rounded-xl border border-stone-200 bg-white overflow-hidden shadow-sm">
-              <div className="hidden md:flex items-center bg-stone-50 border-b border-stone-200 px-6 py-3 text-[12px] font-bold text-stone-500 uppercase tracking-widest">
-                <div className="w-14">No.</div>
-                <div className="w-32">카테고리</div>
-                <div className="flex-1">제목</div>
-                <div className="w-36">상태</div>
-                <div className="w-28 text-right">액션</div>
-              </div>
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">제목</label>
+                  <input
+                    type="text"
+                    value={smartEditorTitle}
+                    onChange={(e) => setSmartEditorTitle(e.target.value)}
+                    placeholder="매거진 제목을 입력하세요"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-[15px] font-bold text-stone-900 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
+                  />
+                </div>
 
-              <div className="divide-y divide-stone-100">
-                {isLoadingTitles ? (
-                  <div className="flex flex-col items-center justify-center gap-3 py-16 text-stone-500">
-                    <Loader2 className="h-7 w-7 animate-spin text-[#9333EA]" />
-                    <p className="text-[14px] font-bold">데이터를 불러오는 중입니다...</p>
-                  </div>
-                ) : (
-                  currentData.map((item) => {
-                    const isExpanded = expandedId === item.id;
-                    return (
-                      <div key={item.id} className="bg-white">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">카테고리</label>
+                  <select
+                    value={smartEditorCategory}
+                    onChange={(e) => setSmartEditorCategory(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-[14px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
+                  >
+                    {FACTORY_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">디자인 템플릿</label>
+                  <select
+                    value={smartEditorTemplate}
+                    onChange={(e) => setSmartEditorTemplate(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-[14px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
+                  >
+                    <option value="1">1. 심층 화보형</option>
+                    <option value="2">2. 큐레이션 리스트형</option>
+                    <option value="3">3. VS 비교 분석형</option>
+                    <option value="4">4. 상황별 룩북형</option>
+                    <option value="5">5. 퍼스널 맞춤 가이드형</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">본문 (챗GPT 원고 · 다국어 세로 입력)</label>
+                  <div className="space-y-4">
+                    {(
+                      [
+                        { code: 'KR', label: '🇰🇷 KR' },
+                        { code: 'EN', label: '🇺🇸 EN' },
+                        { code: 'JP', label: '🇯🇵 JP' },
+                        { code: 'VN', label: '🇻🇳 VN' },
+                        { code: 'TH', label: '🇹🇭 TH' },
+                      ] as const
+                    ).map((lang) => {
+                      const isSelected = selectedLangs.includes(lang.code);
+                      return (
                         <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => toggleExpandRow(item.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              toggleExpandRow(item.id);
-                            }
-                          }}
-                          className={`w-full flex flex-col md:flex-row md:items-center gap-3 px-6 py-4 text-left cursor-pointer transition-colors ${
-                            isExpanded ? 'bg-violet-50/40' : 'hover:bg-stone-50/80'
-                          }`}
+                          key={lang.code}
+                          className="flex flex-col sm:flex-row gap-3 sm:gap-4 rounded-xl border border-stone-200 bg-white p-3"
                         >
-                          <div className="w-14 shrink-0 font-black text-stone-300 text-[15px]">{item.id < 0 ? 'NEW' : item.id}</div>
-                          <div className="w-32 shrink-0">
-                            <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-black tracking-wider bg-stone-100 text-stone-700">
-                              {item.category || FACTORY_CATEGORIES[0]}
+                          <div className="w-full sm:w-32 shrink-0 flex items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                setSelectedLangs((prev) =>
+                                  prev.includes(lang.code)
+                                    ? prev.filter((code) => code !== lang.code)
+                                    : [...prev, lang.code]
+                                );
+                              }}
+                              className="h-5 w-5 rounded border-stone-300 text-[#9333EA] focus:ring-[#9333EA] cursor-pointer"
+                            />
+                            <span className="inline-flex items-center rounded-lg bg-stone-100 px-2.5 py-1 text-[12px] font-black text-stone-700">
+                              {lang.label}
                             </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-[15px] text-stone-900 line-clamp-2">
-                              {item.title?.trim() ? item.title : '제목 없음 (새 초안)'}
-                            </p>
-                          </div>
-                          <div className="w-36 shrink-0">
-                            <DraftStatusBadge status={item.status} />
-                          </div>
-                          <div className="w-28 shrink-0 flex justify-end text-stone-400">
-                            {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                          </div>
+                          <textarea
+                            value={editorContents[lang.code]}
+                            disabled={!isSelected}
+                            onChange={(e) =>
+                              setEditorContents((prev) => ({
+                                ...prev,
+                                [lang.code]: e.target.value,
+                              }))
+                            }
+                            placeholder={`${lang.label} 원고를 붙여넣으세요. ('💎 소제목', '📌 팁:', '[IMAGE_GL-XXX]' 포함)`}
+                            className={`flex-1 min-h-[150px] whitespace-pre-wrap rounded-xl border border-stone-200 px-3 py-3 text-[13px] font-medium leading-relaxed text-stone-800 outline-none resize-y ${
+                              isSelected
+                                ? 'bg-stone-50 focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20'
+                                : 'bg-gray-100 opacity-50 cursor-not-allowed'
+                            }`}
+                          />
                         </div>
-
-                        {isExpanded && (
-                          <div
-                            className="border-t border-stone-100 bg-gray-50 p-6 space-y-4 animate-in fade-in slide-in-from-top-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-3">
-                              <div>
-                                <label className="mb-1.5 block text-[13px] font-bold text-stone-600">제목</label>
-                                <input
-                                  value={item.title ?? ''}
-                                  onChange={(e) => handleDraftMetaChange(item.id, { title: e.target.value })}
-                                  placeholder="매거진 제목을 입력하세요"
-                                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-[15px] font-bold text-stone-900 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
-                                />
-                              </div>
-                              <div>
-                                <label className="mb-1.5 block text-[13px] font-bold text-stone-600">카테고리</label>
-                                <select
-                                  value={item.category || FACTORY_CATEGORIES[0]}
-                                  onChange={(e) => handleDraftMetaChange(item.id, { category: e.target.value })}
-                                  className="w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-[13px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
-                                >
-                                  {FACTORY_CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="mb-1.5 block text-[13px] font-bold text-stone-600">한국어 본문</label>
-                              <textarea
-                                ref={(el) => {
-                                  draftTextareaRefs.current[item.id] = el;
-                                }}
-                                value={draftContents[item.id] ?? ''}
-                                onChange={(e) => handleDraftContentChange(item.id, e.target.value)}
-                                rows={14}
-                                placeholder="매거진 본문을 자유롭게 작성해주세요. 사진은 AI가 자동으로 매칭합니다."
-                                className="w-full min-h-[300px] rounded-xl border border-stone-200 bg-white px-4 py-3 text-[14px] font-medium text-stone-800 leading-relaxed outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20 resize-y"
-                              />
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 pt-1">
-                              <button
-                                type="button"
-                                onClick={() => void handleSaveDraft(item)}
-                                disabled={savingId === item.id || processingId === item.id}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] font-bold text-stone-700 hover:bg-white/80 shadow-sm transition-colors disabled:opacity-50"
-                              >
-                                {savingId === item.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Save className="h-4 w-4" />
-                                )}
-                                💾 임시저장
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleStartGlobalPipeline(item)}
-                                disabled={processingId === item.id || savingId === item.id}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-5 py-3 text-[13px] font-black text-white shadow-lg shadow-purple-500/30 hover:scale-[1.02] hover:shadow-purple-500/50 transition-all disabled:opacity-60 disabled:hover:scale-100"
-                              >
-                                {processingId === item.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Wand2 className="h-4 w-4" />
-                                )}
-                                ✨ 글로벌 번역 및 사진 매칭 시작
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-
-                {!isLoadingTitles && dbTitles.length === 0 && (
-                  <div className="py-16 text-center">
-                    <p className="text-[16px] font-bold text-stone-900 mb-1">작성된 초안이 없습니다.</p>
-                    <p className="text-[14px] font-medium text-stone-500">[+ 새 글 작성]으로 첫 매거진을 시작해보세요.</p>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
 
-              {!isLoadingTitles && dbTitles.length > 0 && (
-                <div className="flex items-center justify-center gap-3 border-t border-stone-100 bg-stone-50/80 px-6 py-4">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(safePage - 1)}
-                    disabled={safePage <= 1}
-                    className="inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[13px] font-bold text-stone-700 hover:bg-stone-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="h-4 w-4" /> 이전
-                  </button>
-                  <span className="min-w-[7.5rem] text-center text-[13px] font-bold text-stone-600">
-                    Page {safePage} of {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(safePage + 1)}
-                    disabled={safePage >= totalPages}
-                    className="inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[13px] font-bold text-stone-700 hover:bg-stone-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    다음 <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-            </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleApplySmartTemplate}
+                  disabled={selectedLangs.length === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-6 py-3.5 text-[14px] font-black text-white shadow-lg shadow-purple-500/30 hover:scale-[1.02] hover:shadow-purple-500/45 transition-all disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  {`✨ 선택된 ${selectedLangs.length}개 국어 템플릿 적용 및 자동 매칭 (0.1초)`}
+                </button>
+              </div>
+            </section>
+
           </div>
         )}
 
@@ -1682,9 +1924,10 @@ export default function AdminGceDashboardPage() {
                             </p>
                           </header>
 
-                          <GceTemplateRenderer
-                            html={selectedReview.content_ko || ''}
-                            templateType={selectedReview.template_type}
+                          {/* 뷰어 영역 (HTML 렌더링) — whitespace-pre-wrap 금지: <p> 블록이 여백 담당 */}
+                          <div
+                            className="mt-6 magazine-editorial-body text-[15px] text-gray-700 tracking-[-0.01em]"
+                            dangerouslySetInnerHTML={{ __html: selectedReview.content_ko }}
                           />
                         </article>
                       </div>
@@ -1724,27 +1967,30 @@ export default function AdminGceDashboardPage() {
                         ))}
                       </ul>
 
-                      <div className="mt-6 pt-4 border-t border-stone-200 flex flex-col sm:flex-row gap-3 shrink-0">
+                      <div className="mt-6 pt-4 border-t border-stone-200 flex flex-col gap-3 shrink-0">
                         <button
                           type="button"
-                          onClick={() => {
-                            handlePublishReview(selectedReview.id);
-                            setReviewModalOpen(false);
-                          }}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-3 py-3.5 text-[13px] font-black text-white shadow-lg shadow-purple-500/25 hover:scale-[1.01] transition-all"
+                          disabled={isPublishingMagazine}
+                          onClick={() => void handlePublishMagazine()}
+                          className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-4 py-4 text-[15px] md:text-[16px] font-black text-white shadow-xl shadow-purple-500/30 hover:scale-[1.01] transition-all disabled:opacity-60 disabled:hover:scale-100"
                         >
-                          <Rocket className="h-5 w-5" />
-                          🚀 매거진 즉시 발행
+                          {isPublishingMagazine ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Rocket className="h-5 w-5" />
+                          )}
+                          🚀 젤리아 매거진 최종 라이브 발행
                         </button>
                         <button
                           type="button"
+                          disabled={isPublishingMagazine}
                           onClick={() => {
                             setReviewModalOpen(false);
                             handleScheduleReview(selectedReview.id);
                           }}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-3.5 text-[13px] font-black text-stone-700 shadow-sm hover:bg-stone-100 transition-colors"
+                          className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-3 text-[13px] font-bold text-stone-600 shadow-sm hover:bg-stone-100 transition-colors disabled:opacity-50"
                         >
-                          <CalendarClock className="h-5 w-5 text-[#9333EA]" />
+                          <CalendarClock className="h-4 w-4 text-[#9333EA]" />
                           ⏰ 예약 발행
                         </button>
                       </div>
