@@ -798,11 +798,111 @@ const protectTopLevelDivBlocks = (input: string) => {
   return { text: out, islands };
 };
 
-const formatGceInlineText = (value: string) => {
-  const withMarkers = String(value ?? '').replace(/\*\*([^*\n]+)\*\*/g, '§§BOLD§§$1§§/BOLD§§');
-  return escapeGceHtmlText(withMarkers)
+const HIGHLIGHT_STRONG_CLASS = 'text-purple-700 font-bold bg-purple-50 px-1';
+
+type GceThemeType = '1' | '2' | '3' | '4';
+
+type GceThemeSkin = {
+  id: GceThemeType;
+  label: string;
+  badge: string;
+  tipBox: string;
+  tipLabel: string;
+  summaryCard: string;
+  summaryTitle: string;
+  summaryDot: string;
+  summaryCheck: string;
+  highlight: string;
+};
+
+/** Type 1 로맨틱 바이올렛 / 2 시크 모던 블랙 / 3 프레시 아쿠아 / 4 웜 베이지 */
+const GCE_THEME_SKINS: Record<GceThemeType, GceThemeSkin> = {
+  '1': {
+    id: '1',
+    label: '로맨틱 바이올렛',
+    badge: 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md',
+    tipBox: 'bg-purple-50/80 border-purple-100',
+    tipLabel: 'text-purple-700',
+    summaryCard: 'bg-gray-50',
+    summaryTitle: 'text-purple-700',
+    summaryDot: 'bg-purple-600',
+    summaryCheck: 'text-purple-500',
+    highlight: 'text-purple-700 font-bold bg-purple-50 px-1',
+  },
+  '2': {
+    id: '2',
+    label: '시크 모던 블랙',
+    badge: 'bg-gradient-to-br from-stone-900 to-black text-white shadow-md',
+    tipBox: 'bg-stone-100 border-stone-200',
+    tipLabel: 'text-stone-900',
+    summaryCard: 'bg-stone-100',
+    summaryTitle: 'text-stone-900',
+    summaryDot: 'bg-stone-900',
+    summaryCheck: 'text-stone-700',
+    highlight: 'text-stone-900 font-bold bg-stone-100 px-1',
+  },
+  '3': {
+    id: '3',
+    label: '프레시 아쿠아',
+    badge: 'bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-md',
+    tipBox: 'bg-cyan-50/90 border-cyan-100',
+    tipLabel: 'text-cyan-800',
+    summaryCard: 'bg-sky-50',
+    summaryTitle: 'text-cyan-800',
+    summaryDot: 'bg-cyan-600',
+    summaryCheck: 'text-cyan-600',
+    highlight: 'text-cyan-800 font-bold bg-cyan-50 px-1',
+  },
+  '4': {
+    id: '4',
+    label: '웜 베이지',
+    badge: 'bg-gradient-to-br from-amber-600 to-orange-700 text-white shadow-md',
+    tipBox: 'bg-amber-50/90 border-amber-100',
+    tipLabel: 'text-amber-900',
+    summaryCard: 'bg-orange-50/80',
+    summaryTitle: 'text-amber-900',
+    summaryDot: 'bg-amber-700',
+    summaryCheck: 'text-amber-700',
+    highlight: 'text-amber-900 font-bold bg-amber-50 px-1',
+  },
+};
+
+const detectTheme = (text: string): GceThemeType => {
+  const source = String(text ?? '');
+  if (/여름|바캉스|바다|수영장|휴가|아쿠아|청량|시원|블루|해변/.test(source)) return '3';
+  if (/오피스|출근|시크|블랙|모던|정장|미니멀|회사|데일리/.test(source)) return '2';
+  if (/가을|겨울|베이지|브라운|니트|웜톤|차분|트렌치/.test(source)) return '4';
+  return '1';
+};
+
+const resolveThemeSkin = (themeType?: string | number | null): GceThemeSkin => {
+  const key = String(themeType ?? '1').replace(/[^\d]/g, '') || '1';
+  if (key === '2' || key === '3' || key === '4') return GCE_THEME_SKINS[key];
+  return GCE_THEME_SKINS['1'];
+};
+
+const formatGceInlineText = (value: string, highlightClass = GCE_THEME_SKINS['1'].highlight) => {
+  const islands: string[] = [];
+  // 이미 치환된 ✨ 하이라이트 <strong> 보호 (escape 방지)
+  let withProtected = String(value ?? '').replace(
+    new RegExp(
+      `<strong class="${highlightClass.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}">([^<]*)</strong>`,
+      'g',
+    ),
+    (_m, inner: string) => {
+      islands.push(`<strong class="${highlightClass}">${inner}</strong>`);
+      return `§§HL_ISLAND_${islands.length - 1}§§`;
+    },
+  );
+  withProtected = withProtected
+    .replace(/✨([^✨\n]+)✨/g, '§§HL§§$1§§/HL§§')
+    .replace(/\*\*([^*\n]+)\*\*/g, '§§BOLD§§$1§§/BOLD§§');
+  return escapeGceHtmlText(withProtected)
+    .replace(/§§HL§§/g, `<strong class="${highlightClass}">`)
+    .replace(/§§\/HL§§/g, '</strong>')
     .replace(/§§BOLD§§/g, '<strong class="font-semibold text-gray-900">')
-    .replace(/§§\/BOLD§§/g, '</strong>');
+    .replace(/§§\/BOLD§§/g, '</strong>')
+    .replace(/§§HL_ISLAND_(\d+)§§/g, (_m, idx: string) => islands[Number(idx)] ?? '');
 };
 
 const restoreHtmlIslands = (input: string, islands: string[]) =>
@@ -810,8 +910,8 @@ const restoreHtmlIslands = (input: string, islands: string[]) =>
     return islands[Number(idx)] ?? '';
   });
 
-/** 📝 총평 + ✅ 체크리스트 → 올드머니(화이트/그레이 + 보라 포인트) 요약 박스 */
-const buildSummaryBoxHtml = (heading: string, body: string) => {
+/** 📝 총평 + ✅ 체크리스트 → 올드머니 요약 박스 (테마 스킨 적용) */
+const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) => {
   const safeHeading = escapeGceHtmlText(String(heading ?? '').trim() || '한눈에 보는 총평');
   const rawBody = String(body ?? '').trim();
 
@@ -839,7 +939,7 @@ const buildSummaryBoxHtml = (heading: string, body: string) => {
 
     const titleLine = lines[0];
     const titled = titleLine.match(/^(.+?)\s*[:：]\s*(.*)$/);
-    const titleText = formatGceInlineText((titled?.[1] ?? titleLine).trim());
+    const titleText = formatGceInlineText((titled?.[1] ?? titleLine).trim(), skin.highlight);
     const sameLineRest = (titled?.[2] ?? '').trim();
 
     // 3) 설명 줄 → <li> 강제 ( - / • 유무 무관 )
@@ -853,12 +953,12 @@ const buildSummaryBoxHtml = (heading: string, body: string) => {
     const listItems = itemLines
       .map(
         (item) =>
-          `<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="text-purple-500 font-bold mt-0.5 shrink-0">✓</span> <span class="break-keep">${formatGceInlineText(item)}</span></li>`,
+          `<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="${skin.summaryCheck} font-bold mt-0.5 shrink-0">✓</span> <span class="break-keep">${formatGceInlineText(item, skin.highlight)}</span></li>`,
       )
       .join('');
 
     cardHtmlParts.push(
-      `<div class="bg-gray-50 rounded-2xl p-6 mb-5"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2 m-0"><span class="w-2 h-2 bg-purple-600 rounded-full shrink-0"></span><span class="break-keep">${titleText}</span></h5>${
+      `<div class="${skin.summaryCard} rounded-2xl p-6 mb-5"><h5 class="${skin.summaryTitle} font-bold text-lg mb-4 flex items-center gap-2 m-0"><span class="w-2 h-2 ${skin.summaryDot} rounded-full shrink-0"></span><span class="break-keep">${titleText}</span></h5>${
         listItems ? `<ul class="space-y-3 m-0 p-0 list-none">${listItems}</ul>` : ''
       }</div>`,
     );
@@ -873,36 +973,45 @@ const buildSummaryBoxHtml = (heading: string, body: string) => {
 };
 
 /** 템플릿 2(큐레이션 리스트형) — 비동기 이미지 해석 + 동기 HTML 조립 */
-const buildMagazineHtml = async (markdown: string): Promise<string> => {
+const buildMagazineHtml = async (
+  markdown: string,
+  themeType: string | number = '1',
+): Promise<string> => {
   console.log('R2 Public URL 환경변수: ', import.meta.env.VITE_R2_PUBLIC_URL);
+  const skin = resolveThemeSkin(themeType);
+  console.log('[buildMagazineHtml] 자동 테마:', skin.id, skin.label);
   let html = String(markdown ?? '');
   let index = 1;
 
-  // 0. 엔터 보정 — 💎 / 📌 / 📝 / [IMAGE_…] 줄 단위 격리
+  // 0. ✨형광펜 하이라이트 — 소제목/요약/문단 HTML 파싱보다 최우선
+  html = html.replace(
+    /✨([^✨\n]+)✨/g,
+    `<strong class="${skin.highlight}">$1</strong>`,
+  );
+
+  // 0-1. 엔터 보정 — 💎 / 📌 / 📝 / [IMAGE_…] 줄 단위 격리
   html = html.replace(/(💎\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(📌\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(📝\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(\[IMAGE_.*?\])/gi, '\n\n$1\n\n');
 
-  // 0-1. 강조 볼드는 팁/문단 치환 시 formatGceInlineText 로 안전 처리
-
-  // 1. 소제목 치환 (💎 → 그라데이션 뱃지)
+  // 1. 소제목 치환 (💎 → 테마 뱃지)
   html = html.replace(/💎\s*([^\n]+)/g, (_match, p1: string) => {
-    const title = formatGceInlineText(String(p1).trim());
-    return `\n\n<div class="flex items-center gap-3 mt-14 mb-6"><span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold rounded-full text-sm shadow-md shrink-0">${index++}</span><h3 class="text-2xl font-bold text-gray-900 m-0 break-keep">${title}</h3></div>\n\n`;
+    const title = formatGceInlineText(String(p1).trim(), skin.highlight);
+    return `\n\n<div class="flex items-center gap-3 mt-14 mb-6"><span class="flex items-center justify-center min-w-[32px] w-8 h-8 ${skin.badge} font-bold rounded-full text-sm shrink-0">${index++}</span><h3 class="text-2xl font-bold text-gray-900 m-0 break-keep">${title}</h3></div>\n\n`;
   });
   console.log('2. 소제목 치환 후 텍스트:', html);
 
   // 2. 팁 박스 치환 (📌) — 절대 \\n 을 넘지 않음, 콜론 옵션
   html = html.replace(/📌\s*([^:\n]+)(?::\s*([^\n]+))?/g, (_match, label: string, body?: string) => {
-    const safeLabel = formatGceInlineText(String(label ?? '').trim());
+    const safeLabel = formatGceInlineText(String(label ?? '').trim(), skin.highlight);
     const safeBody = body != null && String(body).trim()
-      ? formatGceInlineText(String(body).trim())
+      ? formatGceInlineText(String(body).trim(), skin.highlight)
       : '';
     const bodyHtml = safeBody
       ? `<span class="text-gray-700 text-[15px] leading-relaxed break-keep">${safeBody}</span>`
       : '';
-    return `\n\n<div class="my-8 p-5 bg-purple-50/80 rounded-2xl border border-purple-100"><strong class="block text-purple-700 mb-1 text-[15px] break-keep">${safeLabel}</strong>${bodyHtml}</div>\n\n`;
+    return `\n\n<div class="my-8 p-5 ${skin.tipBox} rounded-2xl border"><strong class="block ${skin.tipLabel} mb-1 text-[15px] break-keep">${safeLabel}</strong>${bodyHtml}</div>\n\n`;
   });
 
   // 3. 이미지 태그 수집 → DB 비동기 조회 → 동기 치환 (replace 콜백에서 await 금지)
@@ -938,7 +1047,7 @@ const buildMagazineHtml = async (markdown: string): Promise<string> => {
 
   // 4. 📝 요약 박스 (끝부분) → 내부 ✅ / li 는 buildSummaryBoxHtml 에서 체인 처리
   html = html.replace(/📝\s*([^\n]+)([\s\S]*)/, (_match, heading: string, body: string) => {
-    return buildSummaryBoxHtml(String(heading ?? ''), String(body ?? ''));
+    return buildSummaryBoxHtml(String(heading ?? ''), String(body ?? ''), skin);
   });
 
   // 5. HTML 블록 보호 후, 순수 텍스트에만 문장 단위 강제 분리
@@ -955,8 +1064,8 @@ const buildMagazineHtml = async (markdown: string): Promise<string> => {
       if (/^<(div|img|section|article|header|ul|ol|li|h[1-6]|strong)\b/i.test(trimmed)) {
         return trimmed;
       }
-      const formatted = formatGceInlineText(trimmed).replace(/\n/g, '<br/>');
-      return `<p class="mb-5 text-gray-700 text-[16px] leading-[2.2] break-keep">${formatted}</p>`;
+      const formatted = formatGceInlineText(trimmed, skin.highlight).replace(/\n/g, '<br/>');
+      return `<p class="mb-5 text-[17px] leading-[1.85] font-light break-keep text-[#2b2b2b]">${formatted}</p>`;
     })
     .filter(Boolean)
     .join('\n');
@@ -974,9 +1083,8 @@ export default function AdminGceDashboardPage() {
   const [dbTitles, setDbTitles] = useState<any[]>([]);
   const [generatedIdeas, setGeneratedIdeas] = useState<GceGeneratedIdea[]>([]);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
+  const [isStep1Expanded, setIsStep1Expanded] = useState(true);
   const [smartEditorTitle, setSmartEditorTitle] = useState('');
-  const [smartEditorCategory, setSmartEditorCategory] = useState<string>(FACTORY_CATEGORIES[0]);
-  const [smartEditorTemplate, setSmartEditorTemplate] = useState('1');
   const [editorContents, setEditorContents] = useState({
     KR: '',
     EN: '',
@@ -996,7 +1104,8 @@ export default function AdminGceDashboardPage() {
     const { data, error } = await supabase
       .from('gce_title_db')
       .select('*')
-      .order('id', { ascending: false });
+      .in('status', ['review', 'completed'])
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[gce_title_db] fetch failed:', error);
@@ -1019,9 +1128,8 @@ export default function AdminGceDashboardPage() {
   const [scheduleDateTime, setScheduleDateTime] = useState('2026-07-12T18:00');
   const [isPublishingMagazine, setIsPublishingMagazine] = useState(false);
 
-  const reviewData = dbTitles.filter(
-    (item) => item.status === 'review' || item.status === 'completed'
-  );
+  // 검수 데스크 리스트는 fetchGceTitles(DB) SSOT — 더미/로컬 폴백 금지
+  const reviewData = dbTitles;
 
   // Result Tab State
   const [resultStartDate, setResultStartDate] = useState('');
@@ -1150,15 +1258,47 @@ export default function AdminGceDashboardPage() {
     setScheduleTargetIds([]);
   };
 
-  const handleBulkDeleteReviews = () => {
-    if (reviewSelectedIds.length === 0) return;
-    setDbTitles((prev) => prev.filter((item) => !reviewSelectedIds.includes(item.id)));
-    setReviewSelectedIds([]);
+  const handleBulkDeleteReviews = async () => {
+    const selectedIds = [...reviewSelectedIds];
+    if (selectedIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('gce_title_db')
+        .delete()
+        .in('id', selectedIds);
+
+      if (error) throw error;
+
+      setReviewSelectedIds([]);
+      await fetchGceTitles();
+      toast.success(`${selectedIds.length}개 항목을 삭제했습니다.`);
+    } catch (err) {
+      console.error('[handleBulkDeleteReviews]', err);
+      toast.error(err instanceof Error ? err.message : '일괄 삭제에 실패했습니다.');
+    }
   };
 
-  const handleDeleteReview = (id: number) => {
-    setDbTitles((prev) => prev.filter((item) => item.id !== id));
-    setReviewSelectedIds((prev) => prev.filter((tId) => tId !== id));
+  const handleDeleteReview = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('gce_title_db')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setReviewSelectedIds((prev) => prev.filter((tId) => tId !== id));
+      if (selectedReview?.id === id) {
+        setReviewModalOpen(false);
+        setSelectedReview(null);
+      }
+      await fetchGceTitles();
+      toast.success('항목을 삭제했습니다.');
+    } catch (err) {
+      console.error('[handleDeleteReview]', err);
+      toast.error(err instanceof Error ? err.message : '삭제에 실패했습니다.');
+    }
   };
 
   const handleApplySmartTemplate = async () => {
@@ -1178,20 +1318,22 @@ export default function AdminGceDashboardPage() {
     toast.success('5개국어 템플릿 동시 조립을 시작합니다!');
 
     try {
-      const htmlOutput = await buildMagazineHtml(sourceMarkdown);
+      const themeType = detectTheme(sourceMarkdown);
+      console.log('[handleApplySmartTemplate] 자동 감지 테마:', themeType);
+      const htmlOutput = await buildMagazineHtml(sourceMarkdown, themeType);
       if (!htmlOutput.trim()) {
         toast.error('파싱된 HTML이 비어 있습니다. 원고 형식을 확인해주세요.');
         return;
       }
 
-      // Drafts 목록이 제거된 구조이므로 신규 insert 후 즉시 review 상태로 등록
+      const templateType = themeType;
       const { data, error } = await supabase
         .from('gce_title_db')
         .insert({
           title,
-          category: smartEditorCategory,
+          category: 'EDITORIAL',
           content_ko: htmlOutput,
-          template_type: '2',
+          template_type: templateType,
           status: 'review',
         })
         .select('id')
@@ -1205,14 +1347,14 @@ export default function AdminGceDashboardPage() {
         .from('gce_title_db')
         .update({
           content_ko: htmlOutput,
-          template_type: '2',
+          template_type: templateType,
           status: 'review',
         })
         .eq('id', data.id);
       if (updateError) throw updateError;
 
       await fetchGceTitles();
-      toast.success('템플릿 2(큐레이션 리스트형) 조립 완료! 검수 데스크로 이동합니다.');
+      toast.success('매거진 템플릿 조립 완료! 검수 데스크로 이동합니다.');
       setActiveTab('review');
     } catch (err) {
       console.error('[handleApplySmartTemplate]', err);
@@ -1243,6 +1385,7 @@ export default function AdminGceDashboardPage() {
       }
 
       setGeneratedIdeas(ideas);
+      setIsStep1Expanded(true);
       toast.success(`오늘의 추천 기획안 ${ideas.length}개가 실DB에서 추출되었습니다!`);
     } catch (err) {
       console.error('[handleGenerateIdeas]', err);
@@ -1394,22 +1537,34 @@ export default function AdminGceDashboardPage() {
             {/* 💡 DB 기반 기획안 자동 추출 */}
             <section className="rounded-3xl border border-violet-200/80 bg-gradient-to-br from-violet-50 via-white to-pink-50 p-6 md:p-8 shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                <div>
+                <button
+                  type="button"
+                  onClick={() => setIsStep1Expanded((prev) => !prev)}
+                  className="min-w-0 flex-1 text-left group"
+                >
                   <p className="text-[12px] font-black tracking-widest uppercase text-[#9333EA] mb-2">
                     Step 1 · Idea Generator
                   </p>
-                  <h2 className="text-xl md:text-2xl font-extrabold text-stone-900 tracking-tight">
+                  <h2 className="text-xl md:text-2xl font-extrabold text-stone-900 tracking-tight inline-flex items-center gap-2">
                     💡 젤리아 DB 기반 기획안 자동 추출
+                    {isStep1Expanded ? (
+                      <ChevronUp className="h-5 w-5 text-stone-400 group-hover:text-[#9333EA] transition-colors shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-stone-400 group-hover:text-[#9333EA] transition-colors shrink-0" />
+                    )}
                   </h2>
                   <p className="mt-2 text-[14px] font-medium text-stone-500 max-w-2xl">
                     에셋(사진) 역방향 기획 1단계 — DB 컨셉을 묶어 오늘의 추천 기획안 10개를 뽑고, 챗GPT 원고 프롬프트로 바로 복사하세요.
                   </p>
-                </div>
+                </button>
                 <button
                   type="button"
-                  onClick={() => void handleGenerateIdeas()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleGenerateIdeas();
+                  }}
                   disabled={isGeneratingIdeas}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-6 py-4 text-[15px] font-black text-white shadow-lg shadow-purple-500/30 hover:scale-[1.02] hover:shadow-purple-500/40 transition-all disabled:opacity-60 disabled:hover:scale-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#EC4899] px-6 py-4 text-[15px] font-black text-white shadow-lg shadow-purple-500/30 hover:scale-[1.02] hover:shadow-purple-500/40 transition-all disabled:opacity-60 disabled:hover:scale-100 shrink-0"
                 >
                   {isGeneratingIdeas ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -1420,67 +1575,73 @@ export default function AdminGceDashboardPage() {
                 </button>
               </div>
 
-              {generatedIdeas.length > 0 && (
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {generatedIdeas.map((idea) => (
-                    <article
-                      key={idea.id}
-                      className="flex flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="mb-3">
-                        <span className="inline-block mb-2 px-2.5 py-1 rounded-md text-[11px] font-black tracking-wider bg-violet-50 text-[#9333EA]">
-                          {idea.category}
-                        </span>
-                        <h3 className="text-[15px] font-extrabold text-stone-900 leading-snug break-keep line-clamp-3">
-                          {idea.title}
-                        </h3>
-                      </div>
-
-                      <div className="flex-1 rounded-xl bg-stone-50 border border-stone-100 px-3.5 py-3 mb-4">
-                        <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-2">
-                          매칭된 사진 5장
-                        </p>
-                        <ul className="space-y-2.5">
-                          {idea.images.map((img) => (
-                            <li key={img.id} className="text-[12px] font-medium text-stone-600">
-                              <div className="flex gap-2">
-                                <span className="shrink-0 font-bold text-stone-800">[{img.id}]</span>
-                                <span className="break-keep">{img.concept}</span>
-                              </div>
-                              <p className="mt-0.5 pl-0.5 text-xs text-gray-400 break-keep">
-                                - 디테일: {img.tags}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleCopyIdeaPrompt(idea)}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-900 px-4 py-3 text-[13px] font-black text-white hover:bg-stone-800 transition-colors"
+              <div
+                className={`transition-all duration-300 overflow-hidden ${
+                  isStep1Expanded ? 'max-h-[5000px] opacity-100 mt-8' : 'max-h-0 opacity-0 mt-0'
+                }`}
+              >
+                {generatedIdeas.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {generatedIdeas.map((idea) => (
+                      <article
+                        key={idea.id}
+                        className="flex flex-col rounded-2xl border border-stone-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
                       >
-                        <Copy className="h-4 w-4" />
-                        📋 챗GPT용 원고 작성 프롬프트 복사
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              )}
+                        <div className="mb-3">
+                          <span className="inline-block mb-2 px-2.5 py-1 rounded-md text-[11px] font-black tracking-wider bg-violet-50 text-[#9333EA]">
+                            {idea.category}
+                          </span>
+                          <h3 className="text-[15px] font-extrabold text-stone-900 leading-snug break-keep line-clamp-3">
+                            {idea.title}
+                          </h3>
+                        </div>
+
+                        <div className="flex-1 rounded-xl bg-stone-50 border border-stone-100 px-3.5 py-3 mb-4">
+                          <p className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-2">
+                            매칭된 사진 5장
+                          </p>
+                          <ul className="space-y-2.5">
+                            {idea.images.map((img) => (
+                              <li key={img.id} className="text-[12px] font-medium text-stone-600">
+                                <div className="flex gap-2">
+                                  <span className="shrink-0 font-bold text-stone-800">[{img.id}]</span>
+                                  <span className="break-keep">{img.concept}</span>
+                                </div>
+                                <p className="mt-0.5 pl-0.5 text-xs text-gray-400 break-keep">
+                                  - 디테일: {img.tags}
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyIdeaPrompt(idea)}
+                          className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-900 px-4 py-3 text-[13px] font-black text-white hover:bg-stone-800 transition-colors"
+                        >
+                          <Copy className="h-4 w-4" />
+                          📋 챗GPT용 원고 작성 프롬프트 복사
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
 
             {/* STEP 2. 스마트 매거진 에디터 */}
             <section className="bg-white rounded-2xl shadow-sm p-8 mt-8 border border-stone-200">
               <span className="text-purple-600 font-bold text-sm">STEP 2 . SMART EDITOR</span>
               <h2 className="mt-2 text-xl md:text-2xl font-extrabold text-stone-900 tracking-tight">
-                챗GPT 원고 입력 및 템플릿 렌더링
+                AI원고 입력 및 템플릿 렌더링
               </h2>
               <p className="mt-2 text-[14px] font-medium text-stone-500 max-w-3xl">
-                챗GPT가 작성한 원고를 붙여넣고 템플릿을 선택하세요. 로컬 엔진이 0.1초 만에 하이엔드 웹진으로 조립합니다.
+                챗GPT가 작성한 원고를 붙여넣으세요. 키워드 자동 감지 엔진이 글맥락에 맞는 테마 스킨을 0.1초 만에 입혀 하이엔드 웹진으로 조립합니다.
               </p>
 
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
+              <div className="mt-8 flex flex-col gap-6">
+                <div className="w-full">
                   <label className="mb-1.5 block text-[13px] font-bold text-stone-600">제목</label>
                   <input
                     type="text"
@@ -1491,35 +1652,8 @@ export default function AdminGceDashboardPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">카테고리</label>
-                  <select
-                    value={smartEditorCategory}
-                    onChange={(e) => setSmartEditorCategory(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-[14px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
-                  >
-                    {FACTORY_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
 
-                <div>
-                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">디자인 템플릿</label>
-                  <select
-                    value={smartEditorTemplate}
-                    onChange={(e) => setSmartEditorTemplate(e.target.value)}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-[14px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
-                  >
-                    <option value="1">1. 심층 화보형</option>
-                    <option value="2">2. 큐레이션 리스트형</option>
-                    <option value="3">3. VS 비교 분석형</option>
-                    <option value="4">4. 상황별 룩북형</option>
-                    <option value="5">5. 퍼스널 맞춤 가이드형</option>
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
+                <div className="w-full">
                   <label className="mb-1.5 block text-[13px] font-bold text-stone-600">본문 (챗GPT 원고 · 다국어 세로 입력)</label>
                   <div className="space-y-4">
                     {(
@@ -1926,7 +2060,7 @@ export default function AdminGceDashboardPage() {
 
                           {/* 뷰어 영역 (HTML 렌더링) — whitespace-pre-wrap 금지: <p> 블록이 여백 담당 */}
                           <div
-                            className="mt-6 magazine-editorial-body text-[15px] text-gray-700 tracking-[-0.01em]"
+                            className="mt-6 magazine-editorial-body font-['Pretendard'] text-[#2b2b2b] tracking-[-0.02em]"
                             dangerouslySetInnerHTML={{ __html: selectedReview.content_ko }}
                           />
                         </article>
