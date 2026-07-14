@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
+import { HelmetProvider } from 'react-helmet-async'
 import { Toaster } from 'sonner'
 
 export function AppProviders({ children }: { children: ReactNode }) {
@@ -17,11 +18,13 @@ export function AppProviders({ children }: { children: ReactNode }) {
   )
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen">
-        {children}
-        <Toaster richColors position="top-center" />
-      </div>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen">
+          {children}
+          <Toaster richColors position="top-center" />
+        </div>
+      </QueryClientProvider>
+    </HelmetProvider>
   )
 }

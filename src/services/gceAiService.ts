@@ -278,6 +278,10 @@ export async function generateGceArticle(
 export type GcePublishInput = {
   id: number;
   title: string;
+  title_en?: string | null;
+  title_jp?: string | null;
+  title_vn?: string | null;
+  title_th?: string | null;
   category?: string | null;
   content_ko?: string | null;
   content_en?: string | null;
@@ -285,6 +289,12 @@ export type GcePublishInput = {
   content_vn?: string | null;
   content_th?: string | null;
   image_urls?: string[] | null;
+  slug?: string | null;
+  meta_ko?: string | null;
+  meta_en?: string | null;
+  meta_jp?: string | null;
+  meta_vn?: string | null;
+  meta_th?: string | null;
 };
 
 const extractFirstImgSrc = (html: string | null | undefined): string | null => {
@@ -296,7 +306,9 @@ const extractFirstImgSrc = (html: string | null | undefined): string | null => {
 /**
  * 검수 완료 매거진을 라이브 board_posts(magazine_editor)로 발행하고
  * gce_title_db status를 published로 전환합니다.
- * board_posts는 KR/EN 컬럼만 지원하므로 JP/VN/TH는 gce_title_db에 유지합니다.
+ * - content / content_ko: KR 본문 호환 기록
+ * - meta_ko~meta_th: SEO 요약 (요청 meta_desc_* 매핑)
+ * - JP/VN/TH 제목·본문 컬럼 포함
  */
 export async function publishGceMagazineToLive(review: GcePublishInput): Promise<{ boardPostId: string }> {
   const id = Number(review.id);
@@ -310,25 +322,54 @@ export async function publishGceMagazineToLive(review: GcePublishInput): Promise
     throw new Error('제목과 KR 본문이 있어야 발행할 수 있습니다.');
   }
 
-  const contentEn = String(review.content_en ?? '').trim();
+  const slug = String(review.slug ?? '').trim();
+  if (!slug) {
+    throw new Error('URL 슬러그를 입력해주세요.');
+  }
+
+  const contentEn = String(review.content_en ?? '').trim() || null;
+  const contentJp = String(review.content_jp ?? '').trim() || null;
+  const contentVn = String(review.content_vn ?? '').trim() || null;
+  const contentTh = String(review.content_th ?? '').trim() || null;
+  const titleEn = String(review.title_en ?? '').trim() || null;
+  const metaKo = String(review.meta_ko ?? '').trim() || null;
+  const metaEn = String(review.meta_en ?? '').trim() || null;
+  const metaJp = String(review.meta_jp ?? '').trim() || null;
+  const metaVn = String(review.meta_vn ?? '').trim() || null;
+  const metaTh = String(review.meta_th ?? '').trim() || null;
   const thumbnailFromHtml = extractFirstImgSrc(contentKo);
   const thumbnailFromList =
     Array.isArray(review.image_urls) && review.image_urls.length > 0
       ? String(review.image_urls[0] ?? '').trim()
       : '';
   const thumbnail_url = thumbnailFromHtml || thumbnailFromList || null;
+  const publishedAt = new Date().toISOString();
 
   const { data: boardRow, error: boardError } = await supabase
     .from('board_posts')
     .insert({
       post_type: 'magazine_editor',
       is_active: true,
-      title,
-      content: contentKo,
-      title_en: title,
-      content_en: contentEn || null,
+      slug,
       thumbnail_url,
+      title,
+      title_en: titleEn,
+      title_jp: String(review.title_jp ?? '').trim() || null,
+      title_vn: String(review.title_vn ?? '').trim() || null,
+      title_th: String(review.title_th ?? '').trim() || null,
+      content: contentKo,
+      content_ko: contentKo,
+      content_en: contentEn,
+      content_jp: contentJp,
+      content_vn: contentVn,
+      content_th: contentTh,
+      meta_ko: metaKo,
+      meta_en: metaEn,
+      meta_jp: metaJp,
+      meta_vn: metaVn,
+      meta_th: metaTh,
       sub_category: String(review.category ?? '').trim() || null,
+      published_at: publishedAt,
     })
     .select('id')
     .single();
@@ -344,13 +385,19 @@ export async function publishGceMagazineToLive(review: GcePublishInput): Promise
     .from('gce_title_db')
     .update({
       status: 'published',
-      published_at: new Date().toISOString(),
+      published_at: publishedAt,
       title,
       content_ko: contentKo,
-      content_en: contentEn || null,
-      content_jp: String(review.content_jp ?? '').trim() || null,
-      content_vn: String(review.content_vn ?? '').trim() || null,
-      content_th: String(review.content_th ?? '').trim() || null,
+      content_en: contentEn,
+      content_jp: contentJp,
+      content_vn: contentVn,
+      content_th: contentTh,
+      slug,
+      meta_ko: metaKo,
+      meta_en: metaEn,
+      meta_jp: metaJp,
+      meta_vn: metaVn,
+      meta_th: metaTh,
       image_urls:
         thumbnail_url && (!review.image_urls || review.image_urls.length === 0)
           ? [thumbnail_url]

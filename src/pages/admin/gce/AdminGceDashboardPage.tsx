@@ -2,18 +2,16 @@ import { useEffect, useState } from 'react';
 import { 
   BarChart2, Sparkles, Loader2, 
   Globe, Calendar, CheckSquare, Clock, 
-  CheckCircle2, 
   Link, Copy, ExternalLink,
   CalendarDays, ChevronDown, ChevronUp, Eye, Globe2,
   Target, Zap, Trophy, ArrowUpRight, Activity,
   PenTool, FileEdit,
   Trash2, X, Star,
   Wrench, Pencil,
-  Rocket, CalendarClock, EyeOff,
+  Rocket, CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
-import { publishGceMagazineToLive } from '@/services/gceAiService';
 
 type DraftUiStatus = 'draft' | 'pending' | 'generating' | 'completed' | 'review' | 'published';
 
@@ -28,6 +26,59 @@ const REVIEW_FALLBACK_THUMB =
   'https://picsum.photos/seed/gelia-review/100/100';
 
 const GLOBAL_LANGUAGES = ['KR', 'EN', 'JP', 'VN', 'TH'] as const;
+
+type GcePreviewLang = (typeof GLOBAL_LANGUAGES)[number];
+
+const PREVIEW_LANG_TABS: Array<{
+  id: GcePreviewLang;
+  label: string;
+  field: 'content_ko' | 'content_en' | 'content_jp' | 'content_vn' | 'content_th';
+  titleField: 'title' | 'title_en' | 'title_jp' | 'title_vn' | 'title_th';
+}> = [
+  { id: 'KR', label: 'KR', field: 'content_ko', titleField: 'title' },
+  { id: 'EN', label: 'EN', field: 'content_en', titleField: 'title_en' },
+  { id: 'JP', label: 'JP', field: 'content_jp', titleField: 'title_jp' },
+  { id: 'VN', label: 'VN', field: 'content_vn', titleField: 'title_vn' },
+  { id: 'TH', label: 'TH', field: 'content_th', titleField: 'title_th' },
+];
+
+const EDITOR_TO_CONTENT_FIELD: Record<
+  (typeof GLOBAL_LANGUAGES)[number],
+  'content_ko' | 'content_en' | 'content_jp' | 'content_vn' | 'content_th'
+> = {
+  KR: 'content_ko',
+  EN: 'content_en',
+  JP: 'content_jp',
+  VN: 'content_vn',
+  TH: 'content_th',
+};
+
+const EDITOR_TO_TITLE_FIELD: Record<
+  (typeof GLOBAL_LANGUAGES)[number],
+  'title' | 'title_en' | 'title_jp' | 'title_vn' | 'title_th'
+> = {
+  KR: 'title',
+  EN: 'title_en',
+  JP: 'title_jp',
+  VN: 'title_vn',
+  TH: 'title_th',
+};
+
+type PublishMetaState = {
+  KR: string;
+  EN: string;
+  JP: string;
+  VN: string;
+  TH: string;
+};
+
+const EMPTY_PUBLISH_META: PublishMetaState = {
+  KR: '',
+  EN: '',
+  JP: '',
+  VN: '',
+  TH: '',
+};
 
 const normalizeDraftStatus = (status: string | null | undefined): DraftUiStatus => {
   const s = String(status ?? '').trim().toLowerCase();
@@ -49,12 +100,22 @@ const mapGceTitleRow = (row: any) => {
     id: Number(row.id),
     category: String(row.category ?? ''),
     title: String(row.title ?? ''),
+    title_en: String(row.title_en ?? ''),
+    title_jp: String(row.title_jp ?? ''),
+    title_vn: String(row.title_vn ?? ''),
+    title_th: String(row.title_th ?? ''),
     status: normalizeDraftStatus(row.status),
     content_ko: String(row.content_ko ?? ''),
     content_en: String(row.content_en ?? ''),
     content_jp: String(row.content_jp ?? ''),
     content_vn: String(row.content_vn ?? ''),
     content_th: String(row.content_th ?? ''),
+    slug: String(row.slug ?? ''),
+    meta_ko: String(row.meta_ko ?? ''),
+    meta_en: String(row.meta_en ?? ''),
+    meta_jp: String(row.meta_jp ?? ''),
+    meta_vn: String(row.meta_vn ?? ''),
+    meta_th: String(row.meta_th ?? ''),
     template_type: String(row.template_type ?? '1').replace(/[^\d]/g, '') || '1',
     created_at: row.created_at ?? null,
     ai_score: row.ai_score == null || row.ai_score === '' ? null : Number(row.ai_score),
@@ -88,6 +149,16 @@ const getReviewLanguages = (item: { languages?: string[] | null }) =>
   item.languages && item.languages.length > 0
     ? item.languages
     : [...GLOBAL_LANGUAGES];
+
+const getLocalizedReviewTitle = (
+  review: Record<string, unknown> | null | undefined,
+  lang: GcePreviewLang,
+) => {
+  const tab = PREVIEW_LANG_TABS.find((t) => t.id === lang) ?? PREVIEW_LANG_TABS[0];
+  const localized = String(review?.[tab.titleField] ?? '').trim();
+  if (localized) return localized;
+  return String(review?.title ?? '').trim();
+};
 
 type GceParsedSection = {
   title: string;
@@ -410,74 +481,16 @@ const toDatetimeLocalValue = (scheduledAt: string | null) => {
 
 const fromDatetimeLocalValue = (value: string) => value.replace('T', ' ');
 
-const MOCK_RESULTS = [
-  {
-    id: 1,
-    title: '여름 쿨톤 피부를 2배 맑게 밝혀주는 핑크 시럽 네일 완벽 가이드',
-    status: 'published',
-    date: '2026-07-10',
-    totalViews: 12450,
-    thumbnail: 'https://picsum.photos/seed/nail-result1/100/100',
-    urls: {
-      KO: '/magazine/1',
-      EN: '/en/magazine/1',
-      JP: '/jp/magazine/1',
-      VN: '/vn/magazine/1',
-      TH: '/th/magazine/1',
-    },
-    traffic: [
-      { code: 'EN', label: 'EN (Global)', color: 'bg-blue-500', views: 5200 },
-      { code: 'KO', label: 'KO (Korea)', color: 'bg-rose-500', views: 3100 },
-      { code: 'JP', label: 'JP (Japan)', color: 'bg-emerald-500', views: 2100 },
-      { code: 'VN', label: 'VN (Vietnam)', color: 'bg-amber-500', views: 1250 },
-      { code: 'TH', label: 'TH (Thailand)', color: 'bg-violet-500', views: 800 },
-    ],
-  },
-  {
-    id: 2,
-    title: '단정함과 세련됨의 끝판왕! 여름 오피스룩에 찰떡인 미니멀 화이트 프렌치',
-    status: 'published',
-    date: '2026-07-08',
-    totalViews: 8200,
-    thumbnail: 'https://picsum.photos/seed/nail-result2/100/100',
-    urls: {
-      KO: '/magazine/2',
-      EN: '/en/magazine/2',
-      JP: '/jp/magazine/2',
-      VN: '/vn/magazine/2',
-      TH: '/th/magazine/2',
-    },
-    traffic: [
-      { code: 'EN', label: 'EN (Global)', color: 'bg-blue-500', views: 3000 },
-      { code: 'KO', label: 'KO (Korea)', color: 'bg-rose-500', views: 2800 },
-      { code: 'JP', label: 'JP (Japan)', color: 'bg-emerald-500', views: 1200 },
-      { code: 'VN', label: 'VN (Vietnam)', color: 'bg-amber-500', views: 700 },
-      { code: 'TH', label: 'TH (Thailand)', color: 'bg-violet-500', views: 500 },
-    ],
-  },
-  {
-    id: 3,
-    title: '2026년 하반기를 휩쓸 크롬 네일 디자인 BEST 5',
-    status: 'scheduled',
-    date: '2026-07-20 (12:00 예약)',
-    totalViews: 0,
-    thumbnail: 'https://picsum.photos/seed/nail-result3/100/100',
-    urls: {
-      KO: '/magazine/3',
-      EN: '/en/magazine/3',
-      JP: '/jp/magazine/3',
-      VN: '/vn/magazine/3',
-      TH: '/th/magazine/3',
-    },
-    traffic: [
-      { code: 'EN', label: 'EN (Global)', color: 'bg-blue-500', views: 0 },
-      { code: 'KO', label: 'KO (Korea)', color: 'bg-rose-500', views: 0 },
-      { code: 'JP', label: 'JP (Japan)', color: 'bg-emerald-500', views: 0 },
-      { code: 'VN', label: 'VN (Vietnam)', color: 'bg-amber-500', views: 0 },
-      { code: 'TH', label: 'TH (Thailand)', color: 'bg-violet-500', views: 0 },
-    ],
-  },
-];
+const buildMagazineLiveUrls = (slug: string | null | undefined) => {
+  const s = String(slug ?? '').trim() || 'untitled';
+  return {
+    KO: `/magazine/${s}`,
+    EN: `/en/magazine/${s}`,
+    JP: `/jp/magazine/${s}`,
+    VN: `/vn/magazine/${s}`,
+    TH: `/th/magazine/${s}`,
+  } as const;
+};
 
 const MOCK_BEST_ARTICLES = [
   { id: 1, title: '여름 쿨톤 피부를 2배 맑게 밝혀주는 핑크 시럽 네일 완벽 가이드', image: 'https://picsum.photos/seed/nailhero2/200/200', views: 12450, growth: '+15%', channel: 'web' },
@@ -910,8 +923,84 @@ const restoreHtmlIslands = (input: string, islands: string[]) =>
     return islands[Number(idx)] ?? '';
   });
 
+/** Tailwind JIT: 클래스 조각을 변수로 합치면 빌드에서 누락되므로, 테마별 태그 전체를 하드코딩 */
+const resolveThemeHighlightClass = (theme: GceThemeType): string => {
+  if (theme === '2') return 'text-stone-900 font-bold bg-stone-100 px-1';
+  if (theme === '3') return 'text-cyan-800 font-bold bg-cyan-50 px-1';
+  if (theme === '4') return 'text-amber-900 font-bold bg-amber-50 px-1';
+  return 'text-purple-700 font-bold bg-purple-50 px-1';
+};
+
+const buildDiamondHeadingHtml = (theme: GceThemeType, badgeIndex: number, title: string): string => {
+  let badgeHtml = '';
+  if (theme === '2') {
+    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-stone-900 to-black text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
+  } else if (theme === '3') {
+    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
+  } else if (theme === '4') {
+    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-amber-600 to-orange-700 text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
+  } else {
+    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
+  }
+  return `\n\n<div class="flex items-center gap-3 mt-14 mb-6">${badgeHtml}<h3 class="text-2xl font-bold text-gray-900 m-0 break-words">${title}</h3></div>\n\n`;
+};
+
+const buildTipBoxHtml = (theme: GceThemeType, label: string, bodyHtml: string): string => {
+  if (theme === '2') {
+    return `\n\n<div class="my-8 p-5 bg-stone-100 border-stone-200 rounded-2xl border"><strong class="block text-stone-900 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+  }
+  if (theme === '3') {
+    return `\n\n<div class="my-8 p-5 bg-cyan-50/90 border-cyan-100 rounded-2xl border"><strong class="block text-cyan-800 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+  }
+  if (theme === '4') {
+    return `\n\n<div class="my-8 p-5 bg-amber-50/90 border-amber-100 rounded-2xl border"><strong class="block text-amber-900 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+  }
+  return `\n\n<div class="my-8 p-5 bg-purple-50/80 border-purple-100 rounded-2xl border"><strong class="block text-purple-700 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+};
+
+const buildCheckCardOpenHtml = (theme: GceThemeType, titleText: string): string => {
+  if (theme === '2') {
+    return `<div class="bg-stone-100 rounded-2xl p-6 mb-5"><h5 class="text-stone-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-stone-900 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+  }
+  if (theme === '3') {
+    return `<div class="bg-sky-50 rounded-2xl p-6 mb-5"><h5 class="text-cyan-800 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-cyan-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+  }
+  if (theme === '4') {
+    return `<div class="bg-orange-50/80 rounded-2xl p-6 mb-5"><h5 class="text-amber-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-amber-700 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+  }
+  return `<div class="bg-gray-50 rounded-2xl p-6 mb-5"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-purple-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+};
+
+const buildCheckListItemHtml = (theme: GceThemeType, itemHtml: string): string => {
+  if (theme === '2') {
+    return `\n<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="text-stone-700 font-bold mt-0.5">✓</span> <span class="break-words">${itemHtml}</span></li>`;
+  }
+  if (theme === '3') {
+    return `\n<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="text-cyan-600 font-bold mt-0.5">✓</span> <span class="break-words">${itemHtml}</span></li>`;
+  }
+  if (theme === '4') {
+    return `\n<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="text-amber-700 font-bold mt-0.5">✓</span> <span class="break-words">${itemHtml}</span></li>`;
+  }
+  return `\n<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="text-purple-500 font-bold mt-0.5">✓</span> <span class="break-words">${itemHtml}</span></li>`;
+};
+
+const buildHighlightStrongHtml = (theme: GceThemeType, inner: string): string => {
+  if (theme === '2') {
+    return `<strong class="text-stone-900 font-bold bg-stone-100 px-1">${inner}</strong>`;
+  }
+  if (theme === '3') {
+    return `<strong class="text-cyan-800 font-bold bg-cyan-50 px-1">${inner}</strong>`;
+  }
+  if (theme === '4') {
+    return `<strong class="text-amber-900 font-bold bg-amber-50 px-1">${inner}</strong>`;
+  }
+  return `<strong class="text-purple-700 font-bold bg-purple-50 px-1">${inner}</strong>`;
+};
+
 /** 📝 총평 + ✅ 체크리스트 → 올드머니 요약 박스 (테마 스킨 적용) */
 const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) => {
+  const theme = skin.id;
+  const highlightClass = resolveThemeHighlightClass(theme);
   const safeHeading = escapeGceHtmlText(String(heading ?? '').trim() || '한눈에 보는 총평');
   const rawBody = String(body ?? '').trim();
 
@@ -923,7 +1012,7 @@ const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) 
     if (!block.startsWith('✅')) {
       const intro = escapeGceHtmlText(block).replace(/\n/g, '<br/>');
       cardHtmlParts.push(
-        `<p class="text-gray-600 text-[15px] leading-relaxed break-keep mb-5">${intro}</p>`,
+        `<p class="text-gray-600 text-[15px] leading-relaxed mb-5 break-words whitespace-pre-wrap">${intro}</p>`,
       );
       continue;
     }
@@ -939,7 +1028,7 @@ const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) 
 
     const titleLine = lines[0];
     const titled = titleLine.match(/^(.+?)\s*[:：]\s*(.*)$/);
-    const titleText = formatGceInlineText((titled?.[1] ?? titleLine).trim(), skin.highlight);
+    const titleText = formatGceInlineText((titled?.[1] ?? titleLine).trim(), highlightClass);
     const sameLineRest = (titled?.[2] ?? '').trim();
 
     // 3) 설명 줄 → <li> 강제 ( - / • 유무 무관 )
@@ -951,70 +1040,76 @@ const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) 
     }
 
     const listItems = itemLines
-      .map(
-        (item) =>
-          `<li class="flex items-start gap-3 text-gray-700 text-[15px] leading-relaxed"><span class="${skin.summaryCheck} font-bold mt-0.5 shrink-0">✓</span> <span class="break-keep">${formatGceInlineText(item, skin.highlight)}</span></li>`,
-      )
+      .map((item) => buildCheckListItemHtml(theme, formatGceInlineText(item, highlightClass)))
       .join('');
 
     cardHtmlParts.push(
-      `<div class="${skin.summaryCard} rounded-2xl p-6 mb-5"><h5 class="${skin.summaryTitle} font-bold text-lg mb-4 flex items-center gap-2 m-0"><span class="w-2 h-2 ${skin.summaryDot} rounded-full shrink-0"></span><span class="break-keep">${titleText}</span></h5>${
-        listItems ? `<ul class="space-y-3 m-0 p-0 list-none">${listItems}</ul>` : ''
-      }</div>`,
+      `${buildCheckCardOpenHtml(theme, titleText)}${
+        listItems ? listItems : ''
+      }</ul></div>`,
     );
   }
 
   const inner = cardHtmlParts.length
     ? cardHtmlParts.join('')
-    : `<p class="text-gray-500 text-[15px] text-center">요약 내용이 없습니다.</p>`;
+    : `<p class="text-gray-500 text-[15px] text-center break-words whitespace-pre-wrap">요약 내용이 없습니다.</p>`;
 
   // 4) 화이트 베이스 올드머니 뼈대 (📝 이모지 미렌더)
-  return `\n\n<div class="my-16 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 m-0 break-keep">${safeHeading}</h4>${inner}</div>\n\n`;
+  return `\n\n<div class="my-16 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 m-0 break-words">${safeHeading}</h4>${inner}</div>\n\n`;
 };
 
-/** 템플릿 2(큐레이션 리스트형) — 비동기 이미지 해석 + 동기 HTML 조립 */
+/** 템플릿 2(큐레이션 리스트형) — 하이엔드 정규식 파이프라인 + 이미지 해석 */
 const buildMagazineHtml = async (
   markdown: string,
   themeType: string | number = '1',
+  lang: string = 'KR',
+  magazineTitle: string = '',
 ): Promise<string> => {
   console.log('R2 Public URL 환경변수: ', import.meta.env.VITE_R2_PUBLIC_URL);
   const skin = resolveThemeSkin(themeType);
-  console.log('[buildMagazineHtml] 자동 테마:', skin.id, skin.label);
+  const theme = skin.id;
+  const highlightClass = resolveThemeHighlightClass(theme);
+  const langKey = String(lang ?? 'KR').toUpperCase() || 'KR';
+  console.log('[buildMagazineHtml] 자동 테마:', skin.id, skin.label, '| lang:', langKey);
   let html = String(markdown ?? '');
   let index = 1;
 
-  // 0. ✨형광펜 하이라이트 — 소제목/요약/문단 HTML 파싱보다 최우선
-  html = html.replace(
-    /✨([^✨\n]+)✨/g,
-    `<strong class="${skin.highlight}">$1</strong>`,
-  );
+  // SEO 마커는 본문에서 제거 (우측 SEO 폼으로만 사용)
+  html = html.replace(/\[SEO_SLUG\]\s*:\s*[^\n]*/gi, '');
+  html = html.replace(/\[SEO_DESC\]\s*:\s*[^\n]*/gi, '');
 
-  // 0-1. 엔터 보정 — 💎 / 📌 / 📝 / [IMAGE_…] 줄 단위 격리
+  const imgAltBase = (magazineTitle || '젤리아 네일 디자인').trim() || '젤리아 네일 디자인';
+  const imgAlt = escapeGceHtmlText(`${imgAltBase} - GELIA 뷰티 매거진`);
+
+  // ── 0. 마커 줄 단위 격리 (💎 / 📌 / 📝 / [IMAGE_…])
   html = html.replace(/(💎\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(📌\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(📝\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(\[IMAGE_.*?\])/gi, '\n\n$1\n\n');
 
-  // 1. 소제목 치환 (💎 → 테마 뱃지)
+  // ── 1. ✨ 형광펜 (테마별 <strong> 태그 전체 하드코딩)
+  html = html.replace(/✨([^✨\n]+)✨/g, (_m, inner: string) => buildHighlightStrongHtml(theme, inner));
+
+  // ── 2. 💎 소제목 (그라데이션 뱃지 — 테마별 span 전체 하드코딩)
   html = html.replace(/💎\s*([^\n]+)/g, (_match, p1: string) => {
-    const title = formatGceInlineText(String(p1).trim(), skin.highlight);
-    return `\n\n<div class="flex items-center gap-3 mt-14 mb-6"><span class="flex items-center justify-center min-w-[32px] w-8 h-8 ${skin.badge} font-bold rounded-full text-sm shrink-0">${index++}</span><h3 class="text-2xl font-bold text-gray-900 m-0 break-keep">${title}</h3></div>\n\n`;
+    const title = formatGceInlineText(String(p1).trim(), highlightClass);
+    return buildDiamondHeadingHtml(theme, index++, title);
   });
-  console.log('2. 소제목 치환 후 텍스트:', html);
 
-  // 2. 팁 박스 치환 (📌) — 절대 \\n 을 넘지 않음, 콜론 옵션
+  // ── 3. 📌 팁 박스 (테마별 박스 태그 전체 하드코딩)
   html = html.replace(/📌\s*([^:\n]+)(?::\s*([^\n]+))?/g, (_match, label: string, body?: string) => {
-    const safeLabel = formatGceInlineText(String(label ?? '').trim(), skin.highlight);
-    const safeBody = body != null && String(body).trim()
-      ? formatGceInlineText(String(body).trim(), skin.highlight)
-      : '';
+    const safeLabel = formatGceInlineText(String(label ?? '').trim(), highlightClass);
+    const safeBody =
+      body != null && String(body).trim()
+        ? formatGceInlineText(String(body).trim(), highlightClass)
+        : '';
     const bodyHtml = safeBody
-      ? `<span class="text-gray-700 text-[15px] leading-relaxed break-keep">${safeBody}</span>`
+      ? `<span class="text-gray-700 text-[15px] leading-relaxed break-words">${safeBody}</span>`
       : '';
-    return `\n\n<div class="my-8 p-5 ${skin.tipBox} rounded-2xl border"><strong class="block ${skin.tipLabel} mb-1 text-[15px] break-keep">${safeLabel}</strong>${bodyHtml}</div>\n\n`;
+    return buildTipBoxHtml(theme, safeLabel, bodyHtml);
   });
 
-  // 3. 이미지 태그 수집 → DB 비동기 조회 → 동기 치환 (replace 콜백에서 await 금지)
+  // ── 4. [IMAGE_GL-…] → R2/DB URL 치환
   const imageMatches = Array.from(html.matchAll(/\[IMAGE_(GL-\d+)\]/gi));
   const parsedIds = imageMatches.map((m) => String(m[1] ?? ''));
   const { urlByKey, fallbackUrls } = await resolveGceNailImageUrls(parsedIds);
@@ -1035,7 +1130,7 @@ const buildMagazineHtml = async (
     console.log('3. 최종 조립된 <img> src URL:', finalUrl);
 
     if (finalUrl) {
-      rebuilt += `\n\n<div class="my-12 w-full"><img src="${finalUrl}" alt="nail ${padded}" class="w-full rounded-2xl shadow-xl object-cover" /></div>\n\n`;
+      rebuilt += `\n\n<div class="my-12 w-full"><img src="${finalUrl}" alt="${imgAlt}" class="w-full rounded-2xl shadow-xl object-cover" /></div>\n\n`;
     } else {
       rebuilt += `\n\n<div class="my-12 w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center text-sm text-stone-500">이미지를 찾을 수 없습니다 (${padded})</div>\n\n`;
     }
@@ -1043,20 +1138,44 @@ const buildMagazineHtml = async (
   }
   rebuilt += html.slice(cursor);
   html = rebuilt;
-  console.log('3. 이미지 치환 후 텍스트:', html);
 
-  // 4. 📝 요약 박스 (끝부분) → 내부 ✅ / li 는 buildSummaryBoxHtml 에서 체인 처리
-  html = html.replace(/📝\s*([^\n]+)([\s\S]*)/, (_match, heading: string, body: string) => {
-    return buildSummaryBoxHtml(String(heading ?? ''), String(body ?? ''), skin);
+  // ── 5. 📝 전체 요약 박스 (외곽)
+  html = html.replace(/📝\s*([^\n]+)([\s\S]*)/g, (_match, heading: string, body: string) => {
+    const safeHeading = formatGceInlineText(String(heading ?? '').trim() || '한눈에 보는 총평', highlightClass);
+    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
   });
 
-  // 5. HTML 블록 보호 후, 순수 텍스트에만 문장 단위 강제 분리
-  const protectedHtml = protectTopLevelDivBlocks(html);
-  let textForSplit = protectedHtml.text.replace(/([.?!])\s+(?=[가-힣A-Z'"])/g, '$1\n\n');
+  // ── 6. ✅ 내부 타겟 박스 (테마별 카드 태그 전체 하드코딩)
+  html = html.replace(/✅\s*([^\n]+)\n([\s\S]*?)(?=(✅|$))/g, (_match, title: string, rest: string) => {
+    const titled = String(title ?? '').trim();
+    const titledParts = titled.match(/^(.+?)\s*[:：]\s*(.*)$/);
+    const titleText = formatGceInlineText((titledParts?.[1] ?? titled).trim(), highlightClass);
+    const sameLineRest = (titledParts?.[2] ?? '').trim();
+    const restBody = sameLineRest ? `${sameLineRest}\n${rest ?? ''}` : String(rest ?? '');
+    return `${buildCheckCardOpenHtml(theme, titleText)}${restBody}</ul></div>`;
+  });
 
-  // 6. \\n\\n 기준 블록 분리 → 플레이스홀더/HTML은 통과, 텍스트만 <p> 래핑
+  // ── 7. `-` / `•` 체크리스트 → li (불릿 있는 줄만 — 본문 문단 보호)
+  html = html.replace(/(?:^|\n)\s*[-•]\s*([^\n]+)/g, (_match, item: string) =>
+    buildCheckListItemHtml(
+      theme,
+      formatGceInlineText(String(item ?? '').trim(), highlightClass),
+    ),
+  );
+
+  // ── 8. 마침표 기준 줄바꿈(TH 제외) → 문단 래핑 (여백 과다 방지: \\n 1회)
+  const protectedHtml = protectTopLevelDivBlocks(html);
+  let textForSplit = protectedHtml.text;
+
+  // TH는 마침표가 없으므로 제외 — 한/영/베트남 + 일본어/중국어 마침표 분리
+  // TH는 AI 원본 줄바꿈만 유지한 채 아래 <p> 래핑
+  if (langKey !== 'TH') {
+    textForSplit = textForSplit.replace(/([.?!])\s+(?=[A-Za-z가-힣À-ỹ0-9'"])/g, '$1\n');
+    textForSplit = textForSplit.replace(/([。！？])\s*(?=[^\n])/g, '$1\n');
+  }
+
   const blocks = textForSplit.split(/\n\s*\n/);
-  textForSplit = blocks
+  const wrapped = blocks
     .map((block) => {
       const trimmed = block.trim();
       if (!trimmed) return '';
@@ -1064,14 +1183,13 @@ const buildMagazineHtml = async (
       if (/^<(div|img|section|article|header|ul|ol|li|h[1-6]|strong)\b/i.test(trimmed)) {
         return trimmed;
       }
-      const formatted = formatGceInlineText(trimmed, skin.highlight).replace(/\n/g, '<br/>');
-      return `<p class="mb-5 text-[17px] leading-[1.85] font-light break-keep text-[#2b2b2b]">${formatted}</p>`;
+      const formatted = formatGceInlineText(trimmed, highlightClass).replace(/\n/g, '<br/>');
+      return `<p class="mb-3 md:mb-5 text-[16px] md:text-[17px] leading-[1.7] md:leading-[1.85] text-[#2b2b2b] break-words whitespace-pre-wrap">${formatted}</p>`;
     })
     .filter(Boolean)
     .join('\n');
 
-  html = restoreHtmlIslands(textForSplit, protectedHtml.islands);
-
+  html = restoreHtmlIslands(wrapped, protectedHtml.islands);
   console.log('4. 최종 조립된 HTML:', html);
   return html;
 };
@@ -1084,7 +1202,13 @@ export default function AdminGceDashboardPage() {
   const [generatedIdeas, setGeneratedIdeas] = useState<GceGeneratedIdea[]>([]);
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isStep1Expanded, setIsStep1Expanded] = useState(true);
-  const [smartEditorTitle, setSmartEditorTitle] = useState('');
+  const [editorTitles, setEditorTitles] = useState({
+    KR: '',
+    EN: '',
+    JP: '',
+    VN: '',
+    TH: '',
+  });
   const [editorContents, setEditorContents] = useState({
     KR: '',
     EN: '',
@@ -1123,10 +1247,13 @@ export default function AdminGceDashboardPage() {
   const [reviewSelectedIds, setReviewSelectedIds] = useState<number[]>([]);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState<any>(null);
+  const [previewLang, setPreviewLang] = useState<GcePreviewLang>('KR');
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleTargetIds, setScheduleTargetIds] = useState<number[]>([]);
   const [scheduleDateTime, setScheduleDateTime] = useState('2026-07-12T18:00');
   const [isPublishingMagazine, setIsPublishingMagazine] = useState(false);
+  const [publishSlug, setPublishSlug] = useState('');
+  const [publishMeta, setPublishMeta] = useState<PublishMetaState>({ ...EMPTY_PUBLISH_META });
 
   // 검수 데스크 리스트는 fetchGceTitles(DB) SSOT — 더미/로컬 폴백 금지
   const reviewData = dbTitles;
@@ -1134,12 +1261,74 @@ export default function AdminGceDashboardPage() {
   // Result Tab State
   const [resultStartDate, setResultStartDate] = useState('');
   const [resultEndDate, setResultEndDate] = useState('');
-  const [expandedResultId, setExpandedResultId] = useState<number | null>(null);
+  const [expandedResultId, setExpandedResultId] = useState<string | null>(null);
+  const [publishedPosts, setPublishedPosts] = useState<any[]>([]);
+  const [isLoadingPublishedPosts, setIsLoadingPublishedPosts] = useState(false);
+
+  const fetchPublishedPosts = async () => {
+    setIsLoadingPublishedPosts(true);
+    try {
+      // 실제 발행은 magazine_editor — 요청 magazine 과 함께 조회해 누락 방지
+      const { data, error } = await supabase
+        .from('board_posts')
+        .select('*')
+        .in('post_type', ['magazine', 'magazine_editor'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const rows = [...(data ?? [])].sort((a, b) => {
+        const ta = new Date(a.published_at || a.created_at || 0).getTime();
+        const tb = new Date(b.published_at || b.created_at || 0).getTime();
+        return tb - ta;
+      });
+      setPublishedPosts(rows);
+    } catch (err) {
+      console.error('[fetchPublishedPosts]', err);
+      setPublishedPosts([]);
+      toast.error('발행 결과 불러오기에 실패했습니다.');
+    } finally {
+      setIsLoadingPublishedPosts(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'result') return;
+    void fetchPublishedPosts();
+  }, [activeTab]);
+
+  const handleDeletePublishedPost = async (postId: string) => {
+    const ok = window.confirm(
+      '정말로 이 매거진을 삭제하시겠습니까? 라이브 웹사이트에서도 즉시 삭제됩니다.',
+    );
+    if (!ok) return;
+
+    try {
+      const { error } = await supabase.from('board_posts').delete().eq('id', postId);
+      if (error) throw error;
+
+      toast.success('매거진이 성공적으로 삭제되었습니다.');
+      if (expandedResultId === postId) setExpandedResultId(null);
+      await fetchPublishedPosts();
+    } catch (err) {
+      console.error('[handleDeletePublishedPost]', err);
+      toast.error(err instanceof Error ? err.message : '매거진 삭제에 실패했습니다.');
+    }
+  };
 
   const handleOpenReview = (item: any) => {
     setSelectedReview({
       ...item,
       image: getReviewThumbnail(item),
+    });
+    setPreviewLang('KR');
+    setPublishSlug(String(item.slug ?? '').trim());
+    setPublishMeta({
+      KR: String(item.meta_ko ?? '').trim(),
+      EN: String(item.meta_en ?? '').trim(),
+      JP: String(item.meta_jp ?? '').trim(),
+      VN: String(item.meta_vn ?? '').trim(),
+      TH: String(item.meta_th ?? '').trim(),
     });
     setReviewModalOpen(true);
   };
@@ -1195,23 +1384,93 @@ export default function AdminGceDashboardPage() {
     }
     if (isPublishingMagazine) return;
 
+    const slug = publishSlug.trim();
+    if (!slug) {
+      toast.error('URL 슬러그를 입력해주세요.');
+      return;
+    }
+
+    const contentKo = String(selectedReview.content_ko ?? '').trim();
+    if (!String(selectedReview.title ?? '').trim() || !contentKo) {
+      toast.error('제목과 KR 본문이 있어야 발행할 수 있습니다.');
+      return;
+    }
+
+    // KR HTML에서 첫 번째 이미지 URL 추출 → 썸네일
+    const imgMatch = contentKo.match(/<img[^>]+src=["']([^"']+)["']/i);
+    const thumbnailFromHtml = imgMatch?.[1]?.trim() || '';
+    const thumbnailFromList =
+      Array.isArray(selectedReview.image_urls) && selectedReview.image_urls.length > 0
+        ? String(selectedReview.image_urls[0] ?? '').trim()
+        : '';
+    const thumbnail_url = thumbnailFromHtml || thumbnailFromList || null;
+
+    const publishedAt = new Date().toISOString();
+    const livePayload = {
+      // 라이브 클라이언트는 magazine_editor 조회 — 스키마 호환 유지
+      post_type: 'magazine_editor',
+      is_active: true,
+      slug,
+      thumbnail_url,
+      title: String(selectedReview.title ?? '').trim(),
+      title_en: String(selectedReview.title_en ?? '').trim() || null,
+      title_jp: String(selectedReview.title_jp ?? '').trim() || null,
+      title_vn: String(selectedReview.title_vn ?? '').trim() || null,
+      title_th: String(selectedReview.title_th ?? '').trim() || null,
+      // 레거시 content + content_ko 동시 기록
+      content: contentKo,
+      content_ko: contentKo,
+      content_en: String(selectedReview.content_en ?? '').trim() || null,
+      content_jp: String(selectedReview.content_jp ?? '').trim() || null,
+      content_vn: String(selectedReview.content_vn ?? '').trim() || null,
+      content_th: String(selectedReview.content_th ?? '').trim() || null,
+      // DB 실컬럼: meta_ko ~ meta_th (요청의 meta_desc_* 매핑)
+      meta_ko: publishMeta.KR.trim() || null,
+      meta_en: publishMeta.EN.trim() || null,
+      meta_jp: publishMeta.JP.trim() || null,
+      meta_vn: publishMeta.VN.trim() || null,
+      meta_th: publishMeta.TH.trim() || null,
+      sub_category: String(selectedReview.category ?? '').trim() || null,
+      published_at: publishedAt,
+    };
+
     setIsPublishingMagazine(true);
     try {
-      await publishGceMagazineToLive({
-        id: Number(selectedReview.id),
-        title: String(selectedReview.title ?? ''),
-        category: selectedReview.category,
-        content_ko: selectedReview.content_ko,
-        content_en: selectedReview.content_en,
-        content_jp: selectedReview.content_jp,
-        content_vn: selectedReview.content_vn,
-        content_th: selectedReview.content_th,
-        image_urls: selectedReview.image_urls,
-      });
+      const { data: boardRow, error: boardError } = await supabase
+        .from('board_posts')
+        .insert(livePayload)
+        .select('id')
+        .single();
 
-      toast.success('🎉 성공적으로 매거진이 발행되었습니다!');
+      if (boardError) throw boardError;
+      if (!boardRow?.id) throw new Error('발행된 매거진 ID를 확인할 수 없습니다.');
+
+      const { error: gceError } = await supabase
+        .from('gce_title_db')
+        .update({
+          status: 'published',
+          published_at: publishedAt,
+          slug,
+          meta_ko: livePayload.meta_ko,
+          meta_en: livePayload.meta_en,
+          meta_jp: livePayload.meta_jp,
+          meta_vn: livePayload.meta_vn,
+          meta_th: livePayload.meta_th,
+          content_ko: contentKo,
+          content_en: livePayload.content_en,
+          content_jp: livePayload.content_jp,
+          content_vn: livePayload.content_vn,
+          content_th: livePayload.content_th,
+        })
+        .eq('id', selectedReview.id);
+
+      if (gceError) throw gceError;
+
+      toast.success('🎉 글로벌 매거진이 라이브 서버에 성공적으로 발행되었습니다!');
       setReviewModalOpen(false);
       setSelectedReview(null);
+      setPublishSlug('');
+      setPublishMeta({ ...EMPTY_PUBLISH_META });
       setReviewSelectedIds((prev) => prev.filter((id) => id !== Number(selectedReview.id)));
       await fetchGceTitles();
     } catch (err) {
@@ -1303,11 +1562,11 @@ export default function AdminGceDashboardPage() {
 
   const handleApplySmartTemplate = async () => {
     console.log('1. 에디터에서 넘어온 원본 텍스트:', editorContents.KR);
-    const title = smartEditorTitle.trim();
+    const title = editorTitles.KR.trim();
     const sourceMarkdown = editorContents.KR.trim();
 
     if (!title) {
-      toast.error('매거진 제목을 입력해주세요.');
+      toast.error('KR 매거진 제목을 입력해주세요.');
       return;
     }
     if (!sourceMarkdown) {
@@ -1320,19 +1579,86 @@ export default function AdminGceDashboardPage() {
     try {
       const themeType = detectTheme(sourceMarkdown);
       console.log('[handleApplySmartTemplate] 자동 감지 테마:', themeType);
-      const htmlOutput = await buildMagazineHtml(sourceMarkdown, themeType);
-      if (!htmlOutput.trim()) {
-        toast.error('파싱된 HTML이 비어 있습니다. 원고 형식을 확인해주세요.');
+
+      // 각 언어 원고에서 SEO_DESC 추출, KR에서 SEO_SLUG 추출
+      const nextMeta: PublishMetaState = { ...EMPTY_PUBLISH_META };
+      for (const lang of GLOBAL_LANGUAGES) {
+        const raw = String(editorContents[lang] ?? '');
+        const descMatch = raw.match(/\[SEO_DESC\]\s*:\s*([^\n]+)/i);
+        if (descMatch?.[1]) nextMeta[lang] = descMatch[1].trim();
+      }
+      const slugMatch = editorContents.KR.match(/\[SEO_SLUG\]\s*:\s*([^\n]+)/i);
+      const cleanedSlug = slugMatch?.[1]
+        ? slugMatch[1]
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-{2,}/g, '-')
+            .replace(/^-|-$/g, '')
+        : '';
+      if (cleanedSlug) setPublishSlug(cleanedSlug);
+      setPublishMeta(nextMeta);
+
+      const seoDbPayload = {
+        slug: cleanedSlug || null,
+        meta_ko: nextMeta.KR || null,
+        meta_en: nextMeta.EN || null,
+        meta_jp: nextMeta.JP || null,
+        meta_vn: nextMeta.VN || null,
+        meta_th: nextMeta.TH || null,
+      };
+
+      const renderedEntries = await Promise.all(
+        GLOBAL_LANGUAGES.map(async (lang) => {
+          const text = String(editorContents[lang] ?? '').trim();
+          if (!text) return [lang, ''] as const;
+          const langTitle = String(editorTitles[lang] ?? '').trim() || title;
+          const html = await buildMagazineHtml(text, themeType, lang, langTitle);
+          return [lang, html] as const;
+        }),
+      );
+
+      const contentPayload = {
+        content_ko: '',
+        content_en: '',
+        content_jp: '',
+        content_vn: '',
+        content_th: '',
+      };
+      for (const [lang, html] of renderedEntries) {
+        contentPayload[EDITOR_TO_CONTENT_FIELD[lang]] = html;
+      }
+
+      if (!contentPayload.content_ko.trim()) {
+        toast.error('파싱된 KR HTML이 비어 있습니다. 원고 형식을 확인해주세요.');
         return;
+      }
+
+      const titlePayload = {
+        title: '',
+        title_en: null as string | null,
+        title_jp: null as string | null,
+        title_vn: null as string | null,
+        title_th: null as string | null,
+      };
+      for (const lang of GLOBAL_LANGUAGES) {
+        const field = EDITOR_TO_TITLE_FIELD[lang];
+        const value = String(editorTitles[lang] ?? '').trim();
+        if (field === 'title') {
+          titlePayload.title = value;
+        } else {
+          titlePayload[field] = value || null;
+        }
       }
 
       const templateType = themeType;
       const { data, error } = await supabase
         .from('gce_title_db')
         .insert({
-          title,
+          ...titlePayload,
           category: 'EDITORIAL',
-          content_ko: htmlOutput,
+          ...contentPayload,
+          ...seoDbPayload,
           template_type: templateType,
           status: 'review',
         })
@@ -1342,19 +1668,21 @@ export default function AdminGceDashboardPage() {
       if (error) throw error;
       if (!data?.id) throw new Error('저장된 타이틀 ID를 확인할 수 없습니다.');
 
-      // 요청 스펙: 해당 타이틀 ID에 content_ko / status 확정 update
       const { error: updateError } = await supabase
         .from('gce_title_db')
         .update({
-          content_ko: htmlOutput,
+          ...titlePayload,
+          ...contentPayload,
+          ...seoDbPayload,
           template_type: templateType,
           status: 'review',
         })
         .eq('id', data.id);
       if (updateError) throw updateError;
 
+      const renderedCount = renderedEntries.filter(([, html]) => html.trim()).length;
       await fetchGceTitles();
-      toast.success('매거진 템플릿 조립 완료! 검수 데스크로 이동합니다.');
+      toast.success(`${renderedCount}개 언어 템플릿 조립 완료! 검수 데스크로 이동합니다.`);
       setActiveTab('review');
     } catch (err) {
       console.error('[handleApplySmartTemplate]', err);
@@ -1642,19 +1970,7 @@ export default function AdminGceDashboardPage() {
 
               <div className="mt-8 flex flex-col gap-6">
                 <div className="w-full">
-                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">제목</label>
-                  <input
-                    type="text"
-                    value={smartEditorTitle}
-                    onChange={(e) => setSmartEditorTitle(e.target.value)}
-                    placeholder="매거진 제목을 입력하세요"
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-[15px] font-bold text-stone-900 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
-                  />
-                </div>
-
-
-                <div className="w-full">
-                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">본문 (챗GPT 원고 · 다국어 세로 입력)</label>
+                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">본문 (AI 원고 · 다국어 세로 입력)</label>
                   <div className="space-y-4">
                     {(
                       [
@@ -1688,22 +2004,41 @@ export default function AdminGceDashboardPage() {
                               {lang.label}
                             </span>
                           </div>
-                          <textarea
-                            value={editorContents[lang.code]}
-                            disabled={!isSelected}
-                            onChange={(e) =>
-                              setEditorContents((prev) => ({
-                                ...prev,
-                                [lang.code]: e.target.value,
-                              }))
-                            }
-                            placeholder={`${lang.label} 원고를 붙여넣으세요. ('💎 소제목', '📌 팁:', '[IMAGE_GL-XXX]' 포함)`}
-                            className={`flex-1 min-h-[150px] whitespace-pre-wrap rounded-xl border border-stone-200 px-3 py-3 text-[13px] font-medium leading-relaxed text-stone-800 outline-none resize-y ${
-                              isSelected
-                                ? 'bg-stone-50 focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20'
-                                : 'bg-gray-100 opacity-50 cursor-not-allowed'
-                            }`}
-                          />
+                          <div className="flex-1 flex flex-col gap-2 min-w-0">
+                            <input
+                              type="text"
+                              value={editorTitles[lang.code]}
+                              disabled={!isSelected}
+                              onChange={(e) =>
+                                setEditorTitles((prev) => ({
+                                  ...prev,
+                                  [lang.code]: e.target.value,
+                                }))
+                              }
+                              placeholder={`${lang.code} 제목을 입력하세요`}
+                              className={`w-full rounded-xl border border-stone-200 px-3 py-2.5 text-[14px] font-bold text-stone-900 outline-none ${
+                                isSelected
+                                  ? 'bg-stone-50 focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20'
+                                  : 'bg-gray-100 opacity-50 cursor-not-allowed'
+                              }`}
+                            />
+                            <textarea
+                              value={editorContents[lang.code]}
+                              disabled={!isSelected}
+                              onChange={(e) =>
+                                setEditorContents((prev) => ({
+                                  ...prev,
+                                  [lang.code]: e.target.value,
+                                }))
+                              }
+                              placeholder={`${lang.label} 원고를 붙여넣으세요. ('💎 소제목', '📌 팁:', '[IMAGE_GL-XXX]' 포함)`}
+                              className={`w-full min-h-[150px] whitespace-pre-wrap rounded-xl border border-stone-200 px-3 py-3 text-[13px] font-medium leading-relaxed text-stone-800 outline-none resize-y ${
+                                isSelected
+                                  ? 'bg-stone-50 focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20'
+                                  : 'bg-gray-100 opacity-50 cursor-not-allowed'
+                              }`}
+                            />
+                          </div>
                         </div>
                       );
                     })}
@@ -1799,8 +2134,20 @@ export default function AdminGceDashboardPage() {
                   const dateLabel = formatReviewDate(item.created_at);
 
                   return (
-                  <div key={item.id} className="flex flex-col md:flex-row md:items-center gap-4 px-6 py-5 hover:bg-stone-50/60 transition-colors">
-                    <div className="w-12 shrink-0">
+                  <div
+                    key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleOpenReview(item)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenReview(item);
+                      }
+                    }}
+                    className="flex flex-col md:flex-row md:items-center gap-4 px-6 py-5 cursor-pointer hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-12 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={reviewSelectedIds.includes(item.id)}
@@ -1857,9 +2204,17 @@ export default function AdminGceDashboardPage() {
 
                     <div className="w-36 shrink-0">
                       {(item.status === 'review' || item.status === 'completed') && (
-                        <span className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1.5 text-[12px] font-bold text-[#9333EA]">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenReview(item);
+                          }}
+                          className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1.5 text-[12px] font-bold text-[#9333EA] cursor-pointer hover:bg-violet-100 transition-colors"
+                          title="검수 상세 보기"
+                        >
                           🔍 검수 대기
-                        </span>
+                        </button>
                       )}
                       {item.status === 'generating' && (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-[12px] font-bold text-blue-600 animate-pulse">
@@ -1880,8 +2235,12 @@ export default function AdminGceDashboardPage() {
                       )}
                     </div>
 
-                    <div className="w-56 shrink-0 flex items-center justify-end gap-1.5">
+                    <div
+                      className="w-56 shrink-0 flex items-center justify-end gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
+                        type="button"
                         onClick={() => handlePublishReview(item.id)}
                         className="p-2 rounded-lg bg-gradient-to-r from-[#9333EA] to-[#EC4899] text-white shadow-sm hover:scale-105 transition-all"
                         title="즉시 발행"
@@ -1889,6 +2248,7 @@ export default function AdminGceDashboardPage() {
                         <Rocket className="h-4 w-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleScheduleReview(item.id)}
                         className="p-2 rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-100 transition-colors"
                         title="예약 발행"
@@ -1896,6 +2256,7 @@ export default function AdminGceDashboardPage() {
                         <CalendarClock className="h-4 w-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleOpenReview(item)}
                         className="p-2 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 transition-colors"
                         title="뷰어/수정"
@@ -1903,7 +2264,8 @@ export default function AdminGceDashboardPage() {
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteReview(item.id)}
+                        type="button"
+                        onClick={() => void handleDeleteReview(item.id)}
                         className="p-2 rounded-lg text-stone-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                         title="삭제"
                       >
@@ -1974,26 +2336,61 @@ export default function AdminGceDashboardPage() {
             )}
 
             {/* 풀스크린 하이엔드 검수 모달 */}
-            {reviewModalOpen && selectedReview && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-6 bg-stone-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+            {selectedReview && reviewModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-stone-900/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white w-11/12 max-w-7xl h-[90vh] rounded-[1.5rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-                  {/* 모달 헤더 */}
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-white shrink-0">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 text-[#9333EA] font-black text-[15px]">
-                        <Eye className="h-5 w-5 shrink-0" /> 검수 상세 뷰어
+                  {/* 모달 헤더 + 다국어 탭 */}
+                  <div className="shrink-0 border-b border-stone-100 bg-white">
+                    <div className="flex items-center justify-between gap-4 px-6 py-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-[#9333EA] font-black text-[15px]">
+                          <Eye className="h-5 w-5 shrink-0" /> 검수 상세 뷰어
+                        </div>
+                        <p className="mt-1 text-[13px] font-bold text-stone-500 truncate">
+                          {getLocalizedReviewTitle(selectedReview, previewLang)}
+                        </p>
                       </div>
-                      <p className="mt-1 text-[13px] font-bold text-stone-500 truncate">
-                        {selectedReview.title}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setReviewModalOpen(false)}
+                        className="p-2 rounded-full hover:bg-stone-200 text-stone-500 transition-colors shrink-0"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setReviewModalOpen(false)}
-                      className="p-2 rounded-full hover:bg-stone-200 text-stone-500 transition-colors"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
+
+                    <div className="px-6 pb-4">
+                      <div className="flex items-center gap-2 overflow-x-auto">
+                        <span className="mr-1 shrink-0 text-[11px] font-black uppercase tracking-widest text-stone-400">
+                          Language
+                        </span>
+                        {PREVIEW_LANG_TABS.map((tab) => {
+                          const hasContent = Boolean(
+                            String(selectedReview[tab.field] ?? '').trim() ||
+                              String(selectedReview[tab.titleField] ?? '').trim(),
+                          );
+                          const isActive = previewLang === tab.id;
+                          return (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              disabled={!hasContent}
+                              onClick={() => setPreviewLang(tab.id)}
+                              className={`min-w-[58px] shrink-0 rounded-xl px-4 py-2.5 text-[13px] font-black tracking-wide transition-all ${
+                                isActive
+                                  ? 'bg-[#9333EA] text-white shadow-md shadow-purple-500/25 scale-[1.02]'
+                                  : hasContent
+                                    ? 'border border-stone-200 bg-stone-50 text-stone-700 hover:border-[#9333EA]/40 hover:bg-violet-50 hover:text-[#9333EA]'
+                                    : 'cursor-not-allowed border border-stone-100 bg-stone-50 text-stone-300'
+                              }`}
+                              title={hasContent ? `${tab.label} 미리보기` : `${tab.label} 데이터 없음`}
+                            >
+                              {tab.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   {/* 좌우 분할 본문 */}
@@ -2004,19 +2401,27 @@ export default function AdminGceDashboardPage() {
                         <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden border border-stone-200 bg-stone-100">
                           <img
                             src={selectedReview.image || getReviewThumbnail(selectedReview)}
-                            alt={selectedReview.title}
+                            alt={getLocalizedReviewTitle(selectedReview, previewLang)}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <label className="mb-1 block text-[12px] font-bold text-stone-500">제목</label>
+                          <label className="mb-1 block text-[12px] font-bold text-stone-500">
+                            제목 ({previewLang})
+                          </label>
                           <input
-                            value={selectedReview.title ?? ''}
-                            onChange={(e) =>
-                              setSelectedReview((prev: any) =>
-                                prev ? { ...prev, title: e.target.value } : prev
-                              )
+                            value={
+                              selectedReview[
+                                PREVIEW_LANG_TABS.find((t) => t.id === previewLang)?.titleField ?? 'title'
+                              ] ?? ''
                             }
+                            onChange={(e) => {
+                              const titleField =
+                                PREVIEW_LANG_TABS.find((t) => t.id === previewLang)?.titleField ?? 'title';
+                              setSelectedReview((prev: any) =>
+                                prev ? { ...prev, [titleField]: e.target.value } : prev
+                              );
+                            }}
                             className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[15px] font-bold text-stone-900 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
                           />
                         </div>
@@ -2024,16 +2429,24 @@ export default function AdminGceDashboardPage() {
 
                       <div className="max-w-2xl mx-auto w-full">
                         <div className="mb-2 flex items-center justify-between">
-                          <label className="text-[12px] font-bold text-stone-500">본문 HTML 편집</label>
+                          <label className="text-[12px] font-bold text-stone-500">
+                            본문 HTML 편집 ({previewLang})
+                          </label>
                           <span className="text-[11px] font-medium text-stone-400">textarea로 수정 · 미리보기는 아래에서 확인</span>
                         </div>
                         <textarea
-                          value={selectedReview.content_ko ?? ''}
-                          onChange={(e) =>
-                            setSelectedReview((prev: any) =>
-                              prev ? { ...prev, content_ko: e.target.value } : prev
-                            )
+                          value={
+                            selectedReview[
+                              PREVIEW_LANG_TABS.find((t) => t.id === previewLang)?.field ?? 'content_ko'
+                            ] ?? ''
                           }
+                          onChange={(e) => {
+                            const field =
+                              PREVIEW_LANG_TABS.find((t) => t.id === previewLang)?.field ?? 'content_ko';
+                            setSelectedReview((prev: any) =>
+                              prev ? { ...prev, [field]: e.target.value } : prev
+                            );
+                          }}
                           rows={12}
                           className="w-full min-h-[220px] rounded-xl border border-stone-200 bg-white px-4 py-3 font-mono text-[13px] leading-relaxed text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20 resize-y"
                           placeholder="AI가 리마스터링한 HTML 본문..."
@@ -2042,7 +2455,9 @@ export default function AdminGceDashboardPage() {
 
                       <div className="max-w-2xl mx-auto w-full">
                         <div className="mb-4 flex items-center gap-2 justify-center">
-                          <span className="text-[11px] font-bold tracking-widest uppercase text-stone-400">Live Editorial Preview</span>
+                          <span className="text-[11px] font-bold tracking-widest uppercase text-stone-400">
+                            Live Editorial Preview · {previewLang}
+                          </span>
                         </div>
                         <article className="bg-white px-2 md:px-4 pb-10">
                           {/* 매거진 헤더 */}
@@ -2050,8 +2465,8 @@ export default function AdminGceDashboardPage() {
                             <p className="text-xs font-bold tracking-widest uppercase text-violet-400/80">
                               [{selectedReview.category || 'EDITORIAL'}] | GELIA EDITORIAL
                             </p>
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-4 break-keep">
-                              {selectedReview.title}
+                            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4 mb-4 break-words whitespace-pre-wrap">
+                              {getLocalizedReviewTitle(selectedReview, previewLang)}
                             </h1>
                             <p className="text-xs text-gray-400 font-medium tracking-wide mb-10">
                               BY GELIA EDITOR • {formatReviewDate(selectedReview.created_at)} • 3 MIN READ
@@ -2061,45 +2476,76 @@ export default function AdminGceDashboardPage() {
                           {/* 뷰어 영역 (HTML 렌더링) — whitespace-pre-wrap 금지: <p> 블록이 여백 담당 */}
                           <div
                             className="mt-6 magazine-editorial-body font-['Pretendard'] text-[#2b2b2b] tracking-[-0.02em]"
-                            dangerouslySetInnerHTML={{ __html: selectedReview.content_ko }}
+                            dangerouslySetInnerHTML={{
+                              __html:
+                                selectedReview[
+                                  PREVIEW_LANG_TABS.find((t) => t.id === previewLang)?.field ?? 'content_ko'
+                                ] || '',
+                            }}
                           />
                         </article>
                       </div>
                     </div>
 
-                    {/* 우측: AI 품질검사 패널 */}
+                    {/* 우측: SEO 및 발행 설정 패널 */}
                     <aside className="min-h-0 overflow-y-auto bg-gray-50 px-5 py-5 md:px-6 md:py-6 flex flex-col">
                       <div className="mb-5">
                         <h3 className="text-[15px] font-extrabold text-stone-900 flex items-center gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                          AI 품질검사 패널
+                          ⚙️ SEO 및 발행 설정
                         </h3>
                         <p className="mt-1 text-[12px] font-medium text-stone-500">
-                          발행 전 자동 검증 결과입니다.
+                          검색엔진 노출과 URL 구조를 발행 전에 확정하세요.
                         </p>
                       </div>
 
-                      <ul className="space-y-3 flex-1">
-                        {[
-                          '사진-글 매칭 일치 (Context Check)',
-                          '제목-내용 연관성 100% (Relevance)',
-                          '중복글 검사: 유사도 0% (완전 창작)',
-                          '맞춤법 및 문맥 교정 완료',
-                          `SEO 최적화 점수 (AI 점수: ${selectedReview.ai_score || 95}점)`,
-                          '필수 이미지 개수 충족 (5/5)',
-                          '내부링크(CTA) 정상 삽입',
-                        ].map((label) => (
-                          <li
-                            key={label}
-                            className="flex items-start gap-2.5 rounded-xl border border-stone-200/80 bg-white px-3.5 py-3 shadow-sm"
-                          >
-                            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500 mt-0.5" />
-                            <span className="text-[13px] font-bold text-stone-700 leading-snug">
-                              ✅ {label}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="flex-1 space-y-5">
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold text-stone-600">
+                            URL 슬러그
+                          </label>
+                          <p className="mb-2 text-[11px] font-medium text-stone-400 leading-relaxed">
+                            영문/숫자/하이픈만 입력 (예: summer-vacation-nail)
+                          </p>
+                          <input
+                            type="text"
+                            value={publishSlug}
+                            onChange={(e) =>
+                              setPublishSlug(
+                                e.target.value
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9-]/g, '')
+                                  .replace(/-{2,}/g, '-'),
+                              )
+                            }
+                            placeholder="summer-vacation-nail"
+                            className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-[13px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold text-stone-600">
+                            검색 요약문 ({previewLang} Meta Description)
+                          </label>
+                          <p className="mb-2 text-[11px] font-medium text-stone-400 leading-relaxed">
+                            구글 검색 시 노출될 1~2줄 요약 · 상단 언어 탭과 동기화
+                          </p>
+                          <textarea
+                            rows={3}
+                            value={publishMeta[previewLang] || ''}
+                            onChange={(e) =>
+                              setPublishMeta((prev) => ({
+                                ...prev,
+                                [previewLang]: e.target.value,
+                              }))
+                            }
+                            placeholder={`${previewLang} 검색 결과에 보여질 매거진 요약을 입력하세요.`}
+                            className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-[13px] font-medium leading-relaxed text-stone-800 outline-none resize-y focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
+                          />
+                          <p className="mt-1.5 text-right text-[11px] font-medium text-stone-400">
+                            {(publishMeta[previewLang] || '').trim().length}자
+                          </p>
+                        </div>
+                      </div>
 
                       <div className="mt-6 pt-4 border-t border-stone-200 flex flex-col gap-3 shrink-0">
                         <button
@@ -2169,108 +2615,174 @@ export default function AdminGceDashboardPage() {
                 <div className="w-24">Status</div>
                 <div className="flex-1">Article Title</div>
                 <div className="w-32 text-right">Total Views</div>
-                <div className="w-12"></div>
+                <div className="w-20"></div>
               </div>
 
               {/* 테이블 본문 */}
               <div className="divide-y divide-stone-100">
-                {MOCK_RESULTS.map((item) => (
-                  <div key={item.id} className="flex flex-col transition-colors hover:bg-stone-50/50">
-                    {/* 요약 행 (클릭 시 아코디언 열림) */}
-                    <div 
-                      onClick={() => setExpandedResultId(expandedResultId === item.id ? null : item.id)}
-                      className="flex flex-col md:flex-row md:items-center px-6 py-5 cursor-pointer gap-4 group"
-                    >
-                      {/* 1. 날짜 (맨 앞) */}
-                      <div className="w-40 shrink-0 text-[13px] font-medium text-stone-500 break-keep">
-                        {item.date}
-                      </div>
-                      
-                      {/* 2. 상태 뱃지 */}
-                      <div className="w-24 shrink-0">
-                        {item.status === 'published' ? (
-                          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[11px] font-black rounded-md tracking-wider">발행완료</span>
-                        ) : (
-                          <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-[11px] font-black rounded-md tracking-wider">예약됨</span>
-                        )}
-                      </div>
-                      
-                      {/* 3. 기사 제목 + 썸네일 */}
-                      <div className="flex-1 flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 shrink-0 rounded-xl overflow-hidden border border-stone-200 bg-stone-100 shadow-sm">
-                          <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="font-bold text-[15px] text-stone-900 line-clamp-1 group-hover:text-[#9333EA] transition-colors">
-                          {item.title}
-                        </div>
-                      </div>
-                      
-                      {/* 4. 총 조회수 */}
-                      <div className="w-32 shrink-0 flex items-center justify-end text-[15px] font-black text-stone-900">
-                        <Eye className="h-4 w-4 text-stone-400 mr-1.5" /> {item.totalViews.toLocaleString()}
-                      </div>
-                      
-                      {/* 5. 아코디언 버튼 */}
-                      <div className="w-8 shrink-0 flex justify-end text-stone-400 group-hover:text-[#9333EA] transition-colors">
-                        {expandedResultId === item.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                      </div>
-                    </div>
+                {isLoadingPublishedPosts && (
+                  <div className="py-16 text-center text-[14px] font-bold text-stone-500">
+                    <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-[#9333EA]" />
+                    발행 결과를 불러오는 중…
+                  </div>
+                )}
 
-                    {/* 아코디언 상세 내용 */}
-                    {expandedResultId === item.id && (
-                      <div className="bg-stone-50 border-t border-stone-100 px-6 py-6 animate-in slide-in-from-top-2 duration-200">
-                        <div className="flex flex-col lg:flex-row gap-8">
-                          
-                          {/* URL 리스트 */}
-                          <div className="flex-1 space-y-3">
-                            <h4 className="text-[12px] font-bold text-stone-500 uppercase tracking-widest mb-4">Live URLs</h4>
-                            {Object.entries(item.urls).map(([lang, url]) => (
-                              <div key={lang} className="flex items-center bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm">
-                                <span className="px-4 py-2.5 bg-stone-100 text-stone-700 text-[13px] font-black uppercase w-16 text-center border-r border-stone-200">{lang}</span>
-                                <span className="px-4 py-2.5 text-stone-500 text-[13px] flex-1 truncate">{url}</span>
-                                <button className="p-2.5 hover:bg-stone-100 text-stone-500 transition-colors border-l border-stone-200" title="주소 복사"><Copy className="h-4 w-4" /></button>
-                                <a href={url} target="_blank" rel="noreferrer" className="p-2.5 hover:bg-stone-100 text-[#9333EA] transition-colors border-l border-stone-200" title="새 창으로 열기"><ExternalLink className="h-4 w-4" /></a>
-                              </div>
-                            ))}
+                {!isLoadingPublishedPosts && publishedPosts.length === 0 && (
+                  <div className="py-16 text-center">
+                    <p className="text-[16px] font-bold text-stone-900 mb-1">발행된 매거진이 없습니다.</p>
+                    <p className="text-[14px] font-medium text-stone-500">검수 데스크에서 라이브 발행하면 이곳에 표시됩니다.</p>
+                  </div>
+                )}
+
+                {!isLoadingPublishedPosts &&
+                  publishedPosts.map((post) => {
+                    const postId = String(post.id);
+                    const title = String(post.title || post.title_ko || '').trim() || '(제목 없음)';
+                    const thumbnail = String(post.thumbnail_url ?? '').trim() || REVIEW_FALLBACK_THUMB;
+                    const dateLabel = formatReviewDate(post.published_at || post.created_at);
+                    const isActive = post.is_active !== false;
+                    const urls = buildMagazineLiveUrls(post.slug);
+                    const isExpanded = expandedResultId === postId;
+
+                    return (
+                      <div key={postId} className="flex flex-col transition-colors hover:bg-stone-50/50">
+                        <div
+                          onClick={() => setExpandedResultId(isExpanded ? null : postId)}
+                          className="flex flex-col md:flex-row md:items-center px-6 py-5 cursor-pointer gap-4 group"
+                        >
+                          <div className="w-40 shrink-0 text-[13px] font-medium text-stone-500">
+                            {dateLabel}
                           </div>
 
-                          {/* 국가별 트래픽 통계 */}
-                          <div className="w-full lg:w-72 shrink-0">
-                            <h4 className="text-[12px] font-bold text-stone-500 uppercase tracking-widest mb-4">Traffic By Region</h4>
-                            <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm space-y-3.5">
-                              {item.traffic.map((region) => (
-                                <div key={region.code} className="flex items-center justify-between">
-                                  <span className="text-[13px] font-bold text-stone-700 flex items-center">
-                                    <span className={`w-2 h-2 rounded-full ${region.color} mr-2`}></span>
-                                    {region.label}
-                                  </span>
-                                  <span className="text-[14px] font-black text-stone-900">{region.views.toLocaleString()}</span>
-                                </div>
-                              ))}
+                          <div className="w-24 shrink-0">
+                            {isActive ? (
+                              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[11px] font-black rounded-md tracking-wider">
+                                발행완료
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 bg-stone-200 text-stone-600 text-[11px] font-black rounded-md tracking-wider">
+                                비공개
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 shrink-0 rounded-xl overflow-hidden border border-stone-200 bg-stone-100 shadow-sm">
+                              <img src={thumbnail} alt={title} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-[15px] text-stone-900 line-clamp-1 group-hover:text-[#9333EA] transition-colors">
+                                {title}
+                              </div>
+                              {post.slug ? (
+                                <p className="mt-0.5 text-[11px] font-medium text-stone-400 truncate">
+                                  /magazine/{String(post.slug)}
+                                </p>
+                              ) : null}
                             </div>
                           </div>
 
+                          <div className="w-32 shrink-0 flex items-center justify-end text-[15px] font-black text-stone-900">
+                            <Eye className="h-4 w-4 text-stone-400 mr-1.5" /> —
+                          </div>
+
+                          <div className="w-20 shrink-0 flex items-center justify-end gap-0.5 text-stone-400">
+                            <button
+                              type="button"
+                              title="매거진 삭제"
+                              aria-label="매거진 삭제"
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleDeletePublishedPost(postId);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <span className="group-hover:text-[#9333EA] transition-colors p-1">
+                              {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                            </span>
+                          </div>
                         </div>
 
-                        {/* 사후 관리 버튼 */}
-                        <div className="mt-6 pt-5 border-t border-stone-200 flex items-center justify-end gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setActiveTab('review'); }}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-100 transition-colors"
-                          >
-                            <Pencil className="h-3.5 w-3.5" /> 글 수정
-                          </button>
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-100 transition-colors"
-                          >
-                            <EyeOff className="h-3.5 w-3.5" /> 비공개 전환
-                          </button>
-                        </div>
+                        {isExpanded && (
+                          <div className="bg-stone-50 border-t border-stone-100 px-6 py-6 animate-in slide-in-from-top-2 duration-200">
+                            <div className="flex flex-col lg:flex-row gap-8">
+                              <div className="flex-1 space-y-3">
+                                <h4 className="text-[12px] font-bold text-stone-500 uppercase tracking-widest mb-4">
+                                  Live URLs
+                                </h4>
+                                {Object.entries(urls).map(([lang, url]) => (
+                                  <div
+                                    key={lang}
+                                    className="flex items-center bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm"
+                                  >
+                                    <span className="px-4 py-2.5 bg-stone-100 text-stone-700 text-[13px] font-black uppercase w-16 text-center border-r border-stone-200">
+                                      {lang}
+                                    </span>
+                                    <span className="px-4 py-2.5 text-stone-500 text-[13px] flex-1 truncate">
+                                      {url}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="p-2.5 hover:bg-stone-100 text-stone-500 transition-colors border-l border-stone-200"
+                                      title="주소 복사"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void navigator.clipboard.writeText(`${window.location.origin}${url}`);
+                                        toast.success('URL이 복사되었습니다.');
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </button>
+                                    <a
+                                      href={url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="p-2.5 hover:bg-stone-100 text-[#9333EA] transition-colors border-l border-stone-200"
+                                      title="새 창으로 열기"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="w-full lg:w-72 shrink-0">
+                                <h4 className="text-[12px] font-bold text-stone-500 uppercase tracking-widest mb-4">
+                                  SEO Summary
+                                </h4>
+                                <div className="bg-white border border-stone-200 rounded-xl p-5 shadow-sm space-y-2.5 text-[12px] text-stone-600">
+                                  <p>
+                                    <span className="font-black text-stone-800">Slug</span>:{' '}
+                                    {String(post.slug ?? '—')}
+                                  </p>
+                                  <p className="line-clamp-3">
+                                    <span className="font-black text-stone-800">Meta KR</span>:{' '}
+                                    {String(post.meta_ko ?? '—')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-6 pt-5 border-t border-stone-200 flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveTab('review');
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-100 transition-colors"
+                              >
+                                <Pencil className="h-3.5 w-3.5" /> 검수 데스크로
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             </div>
           </div>
