@@ -406,8 +406,7 @@ function ClientLayoutContent() {
     pathname === '/shape-best-list' ||
     pathname === '/search-trend-list' ||
     pathname === '/trend' ||
-    pathname === '/magazine' ||
-    pathname.startsWith('/magazine/') ||
+    /^(\/(en|jp|vn|th))?\/magazine(\/|$)/.test(pathname) ||
     pathname === '/texture' ||
     pathname === '/texture-list' ||
     pathname === '/syrup-best' ||

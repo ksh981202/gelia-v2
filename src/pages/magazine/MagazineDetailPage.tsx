@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Loader2, Share2, User } from 'lucide-react'
+import { toast } from 'sonner'
+import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 
 type MagazineLang = 'ko' | 'en' | 'jp' | 'vn' | 'th'
@@ -232,6 +234,35 @@ export default function MagazineDetailPage() {
 
   const pageTitle = title ? `${title} | GELIA` : 'GELIA Magazine'
 
+  const handleShare = async () => {
+    const shareData = {
+      title: title || 'GELIA Magazine',
+      text: description || '',
+      url: window.location.href,
+    }
+
+    if (typeof navigator.share === 'function') {
+      try {
+        const canShare =
+          typeof navigator.canShare !== 'function' || navigator.canShare(shareData)
+        if (canShare) {
+          await navigator.share(shareData)
+          return
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        console.error('공유 실패:', err)
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('매거진 주소가 복사되었습니다. 친구에게 공유해보세요!')
+    } catch {
+      toast.error('주소 복사에 실패했습니다.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 font-['Pretendard']">
@@ -300,22 +331,51 @@ export default function MagazineDetailPage() {
           : null}
       </Helmet>
 
-      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-3xl items-center px-5 py-3">
+      <ClientGlobalHeader showBackButton />
+
+      <nav className="relative flex items-center justify-between w-full h-[56px] px-4 bg-white sticky top-0 z-50 border-b border-gray-100 md:hidden">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-800 transition-colors hover:bg-gray-100"
+          aria-label="뒤로 가기"
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.4} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="absolute left-1/2 -translate-x-1/2 text-[20px] font-semibold tracking-widest text-gray-900 leading-none"
+          style={{ fontFamily: "'Playfair Display', serif" }}
+          aria-label="GELIA 홈"
+        >
+          GELIA
+        </button>
+
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-900 transition-colors"
+            onClick={() => void handleShare()}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-800 transition-colors hover:bg-gray-100"
+            aria-label="공유하기"
           >
-            <ArrowLeft className="h-4 w-4" />
-            {lang === 'en' ? 'Back' : lang === 'jp' ? '戻る' : lang === 'vn' ? 'Quay lại' : lang === 'th' ? 'ย้อนกลับ' : '뒤로'}
+            <Share2 className="h-5 w-5" strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/my')}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-800 transition-colors hover:bg-gray-100"
+            aria-label="마이페이지"
+          >
+            <User className="h-5 w-5" strokeWidth={2.2} />
           </button>
         </div>
-      </header>
+      </nav>
 
       <div className="w-full max-w-3xl mx-auto px-5 py-10 font-['Pretendard']">
         {seoSlug ? (
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex items-center justify-end gap-4">
             <div
               className="inline-flex items-center gap-0 rounded-full border border-gray-200 bg-gray-50/80 px-3 py-1"
               role="navigation"
@@ -349,6 +409,14 @@ export default function MagazineDetailPage() {
                 )
               })}
             </div>
+            <button
+              type="button"
+              onClick={() => void handleShare()}
+              className="hidden md:flex items-center justify-center p-2 text-gray-500 hover:text-gray-900 transition-colors"
+              aria-label="공유하기"
+            >
+              <Share2 className="h-5 w-5" strokeWidth={2.2} />
+            </button>
           </div>
         ) : null}
         <h1 className="text-3xl md:text-4xl font-extrabold text-black mb-8 break-words whitespace-pre-wrap">

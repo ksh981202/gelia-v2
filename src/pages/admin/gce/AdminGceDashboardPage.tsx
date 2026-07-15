@@ -694,8 +694,9 @@ const sanitizeGceMagazineHtml = (html: string) =>
       'ol',
       'li',
       'img',
+      'a',
     ],
-    ALLOWED_ATTR: ['class', 'src', 'alt', 'style'],
+    ALLOWED_ATTR: ['class', 'src', 'alt', 'style', 'href'],
     ALLOW_DATA_ATTR: false,
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
     FORBID_ATTR: ['onerror', 'onload', 'onclick'],
@@ -768,13 +769,40 @@ const normalizeGlId = (rawId: string): NormalizedGlId => {
   };
 };
 
-/** GL-XXXX → nail_designs.image_url 맵 (실 R2 경로, UUID 포함) */
+/** GL-XXXX → nail_designs.image_url / id 맵 (실 R2 경로, UUID 포함) */
 const resolveGceNailImageUrls = async (
   glIds: string[],
-): Promise<{ urlByKey: Record<string, string>; fallbackUrls: string[] }> => {
+): Promise<{
+  urlByKey: Record<string, string>;
+  idByKey: Record<string, string>;
+  fallbackUrls: string[];
+}> => {
   const urlByKey: Record<string, string> = {};
+  const idByKey: Record<string, string> = {};
   const normalized = glIds.map(normalizeGlId);
   const paddedIds = Array.from(new Set(normalized.map((n) => n.padded)));
+
+  const registerRow = (row: {
+    id?: string | null;
+    image_url?: string | null;
+    source_filename?: string | null;
+  }, extraKeys: string[] = []) => {
+    const url = String(row.image_url ?? '').trim();
+    const nailUuid = String(row.id ?? '').trim();
+    if (!url) return;
+    const filename = String(row.source_filename ?? '').trim();
+    const stem = filename.replace(/\.[^.]+$/, '').toUpperCase();
+    const keys = new Set<string>(extraKeys);
+    if (stem) {
+      keys.add(stem);
+      keys.add(`GL-${(stem.match(/(\d+)/)?.[1] ?? '').replace(/^0+/, '') || '0'}`);
+    }
+    for (const key of keys) {
+      if (!key) continue;
+      urlByKey[key] = url;
+      if (nailUuid) idByKey[key] = nailUuid;
+    }
+  };
 
   if (paddedIds.length > 0) {
     const filenames = paddedIds.flatMap((id) => [
@@ -786,7 +814,7 @@ const resolveGceNailImageUrls = async (
 
     const { data, error } = await supabase
       .from('nail_designs')
-      .select('source_filename, image_url, image_r2_key')
+      .select('id, source_filename, image_url, image_r2_key')
       .in('source_filename', filenames);
 
     if (error) {
@@ -794,16 +822,7 @@ const resolveGceNailImageUrls = async (
     }
 
     for (const row of data ?? []) {
-      const url = String(row.image_url ?? '').trim();
-      if (!url) continue;
-      const filename = String(row.source_filename ?? '').trim();
-      const stem = filename.replace(/\.[^.]+$/, '').toUpperCase();
-      if (stem) {
-        urlByKey[stem] = url;
-        // 짧은 키도 함께 등록 (GL-201 ↔ GL-0000201)
-        const shortKey = `GL-${(stem.match(/(\d+)/)?.[1] ?? '').replace(/^0+/, '') || '0'}`;
-        urlByKey[shortKey] = url;
-      }
+      registerRow(row);
     }
 
     // 파일명 미매칭 → image_r2_key에 패딩 ID 포함 여부로 보조 조회
@@ -811,18 +830,19 @@ const resolveGceNailImageUrls = async (
     for (const padded of missingPadded) {
       const { data: rows, error: keyErr } = await supabase
         .from('nail_designs')
-        .select('image_url, source_filename, image_r2_key')
+        .select('id, image_url, source_filename, image_r2_key')
         .ilike('image_r2_key', `%${padded}%`)
         .limit(1);
       if (keyErr) {
         console.warn('[resolveGceNailImageUrls] image_r2_key 조회 실패:', keyErr.message);
         continue;
       }
-      const url = String(rows?.[0]?.image_url ?? '').trim();
-      if (!url) continue;
-      urlByKey[padded] = url;
-      const shortKey = `GL-${(padded.match(/(\d+)/)?.[1] ?? '').replace(/^0+/, '') || '0'}`;
-      urlByKey[shortKey] = url;
+      const row = rows?.[0];
+      if (!row) continue;
+      registerRow(row, [
+        padded,
+        `GL-${(padded.match(/(\d+)/)?.[1] ?? '').replace(/^0+/, '') || '0'}`,
+      ]);
     }
   }
 
@@ -838,7 +858,7 @@ const resolveGceNailImageUrls = async (
     .map((row) => String(row.image_url ?? '').trim())
     .filter(Boolean);
 
-  return { urlByKey, fallbackUrls };
+  return { urlByKey, idByKey, fallbackUrls };
 };
 
 const pickFallbackImageUrl = (glId: string, fallbackUrls: string[]): string => {
@@ -1134,7 +1154,7 @@ const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) 
 };
 
 const MAGAZINE_BODY_P_CLASS =
-  'mb-5 md:mb-7 text-[16px] md:text-[17px] leading-[1.8] font-light text-[#2b2b2b] break-words whitespace-pre-wrap';
+  'mb-2 md:mb-3 text-[16px] md:text-[17px] leading-[1.8] font-light text-[#2b2b2b] break-words whitespace-pre-wrap';
 
 const wrapMagazinePlainParagraph = (text: string, highlightClass: string): string => {
   const formatted = formatGceInlineText(text, highlightClass).replace(/\n/g, '<br/>');
@@ -1231,7 +1251,7 @@ const buildMagazineHtml = async (
     const token = String(m[1] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
     return token ? `GL-${token}` : '';
   }).filter(Boolean);
-  const { urlByKey, fallbackUrls } = await resolveGceNailImageUrls(parsedIds);
+  const { urlByKey, idByKey, fallbackUrls } = await resolveGceNailImageUrls(parsedIds);
 
   let rebuilt = '';
   let cursor = 0;
@@ -1247,18 +1267,29 @@ const buildMagazineHtml = async (
     const id = `GL-${token}`;
     const { raw, padded } = normalizeGlId(id);
     const dbUrl = urlByKey[padded] || urlByKey[raw] || urlByKey[id] || urlByKey[id.toUpperCase()] || '';
+    const nailUuid = idByKey[padded] || idByKey[raw] || idByKey[id] || idByKey[id.toUpperCase()] || '';
     const finalUrl = dbUrl || pickFallbackImageUrl(padded, fallbackUrls);
     // SECURITY (속성 인젝션): src/alt 모두 이스케이프 + http(s)만 허용
     const safeSrc = sanitizeHttpUrlForAttr(finalUrl);
     const safeMissingId = escapeGceHtmlText(padded);
+    // 실제 상세 라우트는 /detail/:uuid (GL 문자열 경로 아님)
+    const safeDetailId =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(nailUuid)
+        ? nailUuid
+        : '';
 
     console.log('1. 파싱된 ID:', id, '(정규화:', padded + ')');
     console.log('2. DB 조회 결과(image_url):', dbUrl || null);
     console.log('3. 최종 조립된 <img> src URL:', finalUrl);
     console.log('3-1. img alt:', imgAlt);
+    console.log('3-2. detail link id:', safeDetailId || null);
 
     if (safeSrc) {
-      rebuilt += `\n\n<div class="my-12 w-full"><img src="${safeSrc}" alt="${imgAlt}" class="w-full rounded-2xl shadow-xl object-cover" /></div>\n\n`;
+      const imgTag = `<img src="${safeSrc}" alt="${imgAlt}" class="w-full rounded-2xl shadow-xl object-cover cursor-pointer hover:opacity-90 transition-opacity" />`;
+      const linked = safeDetailId
+        ? `<a href="/detail/${safeDetailId}" class="block w-full">${imgTag}</a>`
+        : imgTag;
+      rebuilt += `\n\n<div class="my-12 w-full">${linked}</div>\n\n`;
     } else {
       rebuilt += `\n\n<div class="my-12 w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center text-sm text-stone-500">이미지를 찾을 수 없습니다 (${safeMissingId})</div>\n\n`;
     }
