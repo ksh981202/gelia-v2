@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { 
   BarChart2, Sparkles, Loader2, 
   Globe, Calendar, CheckSquare, Clock, 
@@ -10,6 +10,7 @@ import {
   Wrench, Pencil,
   Rocket, CalendarClock,
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
 
@@ -667,7 +668,88 @@ const escapeGceHtmlText = (value: string) =>
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    // SECURITY: 속성값 인젝션 차단용 단일따옴표까지 이스케이프
+    .replace(/'/g, '&#39;');
+
+/**
+ * SECURITY (XSS): 관리자 미리보기/발행 HTML에 스크립트·이벤트핸들러·javascript: URL이
+ * 섞이지 않도록 DOMPurify로 허용 태그만 남긴다.
+ */
+const sanitizeGceMagazineHtml = (html: string) =>
+  DOMPurify.sanitize(String(html ?? ''), {
+    ALLOWED_TAGS: [
+      'p',
+      'div',
+      'span',
+      'strong',
+      'em',
+      'b',
+      'i',
+      'br',
+      'h3',
+      'h4',
+      'h5',
+      'ul',
+      'ol',
+      'li',
+      'img',
+    ],
+    ALLOWED_ATTR: ['class', 'src', 'alt', 'style'],
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+  });
+
+/** SECURITY: img src는 http(s)만 허용해 속성 탈출·javascript: 인젝션을 차단 */
+const isSafeHttpUrl = (rawUrl: string): boolean => {
+  const trimmed = String(rawUrl ?? '').trim();
+  if (!trimmed) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const sanitizeHttpUrlForAttr = (rawUrl: string): string => {
+  const trimmed = String(rawUrl ?? '').trim();
+  if (!isSafeHttpUrl(trimmed)) return '';
+  try {
+    return escapeGceHtmlText(new URL(trimmed).toString());
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * SECURITY (ReDoS): `\s*`/`.*` 같은 개행 포함 탐욕 패턴 대신
+ * 동일 줄(`[\t ]*`, `[^\n\r]*`)만 매칭해 백트래킹을 제한한다.
+ */
+const EDITOR_TITLE_LINE_RE = /^제목[\t ]*:[\t ]*([^\n\r]*)/;
+const EDITOR_TITLE_STRIP_RE = /^제목[\t ]*:[\t ]*[^\n\r]*(?:\r?\n)*/;
+
+/** SECURITY (DB): 슬러그는 영소문자/숫자/하이픈만, 길이 제한 */
+const sanitizePublishSlug = (raw: string): string =>
+  String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
+
+/**
+ * SECURITY (DB): 메타 설명에서 HTML/제어문자 제거 후 길이 제한
+ * (Supabase는 파라미터 바인딩이라 SQL 인젝션은 완화되나, XSS 페이로드 저장을 막는다)
+ */
+const sanitizeMetaDescription = (raw: string): string =>
+  String(raw ?? '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .trim()
+    .slice(0, 320);
 
 type NormalizedGlId = {
   raw: string;
@@ -931,18 +1013,9 @@ const resolveThemeHighlightClass = (theme: GceThemeType): string => {
   return 'text-purple-700 font-bold bg-purple-50 px-1';
 };
 
-const buildDiamondHeadingHtml = (theme: GceThemeType, badgeIndex: number, title: string): string => {
-  let badgeHtml = '';
-  if (theme === '2') {
-    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-stone-900 to-black text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
-  } else if (theme === '3') {
-    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
-  } else if (theme === '4') {
-    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-amber-600 to-orange-700 text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
-  } else {
-    badgeHtml = `<span class="flex items-center justify-center min-w-[32px] w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md font-bold rounded-full text-sm shrink-0">${badgeIndex}</span>`;
-  }
-  return `\n\n<div class="flex items-center gap-3 mt-14 mb-6">${badgeHtml}<h3 class="text-2xl font-bold text-gray-900 m-0 break-words">${title}</h3></div>\n\n`;
+/** 💎 넘버링 제목 — items-center로 번호·제목 광학적 수직 중앙 정렬 */
+const buildDiamondHeadingHtml = (_theme: GceThemeType, badgeIndex: number, title: string): string => {
+  return `\n\n<div class="flex items-center gap-3 mt-12 mb-6 min-w-0 w-full"><span style="background-color: #2b2b2b; color: #ffffff;" class="flex shrink-0 items-center justify-center w-8 h-8 rounded-full text-[15px] font-bold leading-none">${badgeIndex}</span><h3 class="min-w-0 flex-1 text-[20px] md:text-[22px] font-bold text-[#2b2b2b] m-0 break-words whitespace-normal leading-tight">${title}</h3></div>\n\n`;
 };
 
 const buildTipBoxHtml = (theme: GceThemeType, label: string, bodyHtml: string): string => {
@@ -985,16 +1058,18 @@ const buildCheckListItemHtml = (theme: GceThemeType, itemHtml: string): string =
 };
 
 const buildHighlightStrongHtml = (theme: GceThemeType, inner: string): string => {
+  // SECURITY (XSS): ✨ 마커 안 텍스트는 이스케이프 후 삽입 (원시 HTML 주입 차단)
+  const safeInner = escapeGceHtmlText(inner);
   if (theme === '2') {
-    return `<strong class="text-stone-900 font-bold bg-stone-100 px-1">${inner}</strong>`;
+    return `<strong class="text-stone-900 font-bold bg-stone-100 px-1">${safeInner}</strong>`;
   }
   if (theme === '3') {
-    return `<strong class="text-cyan-800 font-bold bg-cyan-50 px-1">${inner}</strong>`;
+    return `<strong class="text-cyan-800 font-bold bg-cyan-50 px-1">${safeInner}</strong>`;
   }
   if (theme === '4') {
-    return `<strong class="text-amber-900 font-bold bg-amber-50 px-1">${inner}</strong>`;
+    return `<strong class="text-amber-900 font-bold bg-amber-50 px-1">${safeInner}</strong>`;
   }
-  return `<strong class="text-purple-700 font-bold bg-purple-50 px-1">${inner}</strong>`;
+  return `<strong class="text-purple-700 font-bold bg-purple-50 px-1">${safeInner}</strong>`;
 };
 
 /** 📝 총평 + ✅ 체크리스트 → 올드머니 요약 박스 (테마 스킨 적용) */
@@ -1059,74 +1134,32 @@ const buildSummaryBoxHtml = (heading: string, body: string, skin: GceThemeSkin) 
 };
 
 const MAGAZINE_BODY_P_CLASS =
-  'mb-4 md:mb-6 text-[16px] md:text-[17px] leading-[1.7] md:leading-[1.85] font-light text-[#2b2b2b] break-words whitespace-pre-wrap';
-
-/** 언어별 문단당 문장 수 (JP/VN 2~3 → 3, EN 3~4 → 4) */
-const resolveSentenceChunkSize = (langKey: string): number => {
-  if (langKey === 'KR') return 1;
-  if (langKey === 'JP' || langKey === 'VN') return 3;
-  if (langKey === 'EN') return 4;
-  return 1;
-};
-
-/** 문장 종료 기호 기준 분리 (공백 유무 무관 — KR `다.다음` 포함) */
-const splitPlainTextIntoSentences = (raw: string): string[] => {
-  const text = String(raw ?? '')
-    .replace(/\s*\n+\s*/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!text) return [];
-
-  const matched = text.match(/[^.!?。！？]+[.!?。！？]+(?:["'”’)\]]+)?|[^.!?。！？]+$/g);
-  return (matched ?? [text])
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-};
-
-const groupSentencesForLang = (sentences: string[], langKey: string): string[] => {
-  if (sentences.length === 0) return [];
-  const chunkSize = resolveSentenceChunkSize(langKey);
-  if (chunkSize <= 1) return sentences;
-
-  const joiner = langKey === 'JP' ? '' : ' ';
-  const groups: string[] = [];
-  for (let i = 0; i < sentences.length; i += chunkSize) {
-    groups.push(
-      sentences
-        .slice(i, i + chunkSize)
-        .join(joiner)
-        .trim(),
-    );
-  }
-  return groups.filter(Boolean);
-};
+  'mb-5 md:mb-7 text-[16px] md:text-[17px] leading-[1.8] font-light text-[#2b2b2b] break-words whitespace-pre-wrap';
 
 const wrapMagazinePlainParagraph = (text: string, highlightClass: string): string => {
   const formatted = formatGceInlineText(text, highlightClass).replace(/\n/g, '<br/>');
   return `<p class="${MAGAZINE_BODY_P_CLASS}">${formatted}</p>`;
 };
 
-/** 순수 텍스트 블록 → 언어별 문장 그룹핑 → <p> 래핑 (HTML 섬 제외) */
+/**
+ * Dumb Pipe: AI 원본 줄바꿈만 존중 — 마침표 문장 쪼개기/묶기 없음
+ * 상위 split(/\n\s*\n/)으로 나뉜 단락 덩어리를 그대로 1개 <p>로 출력
+ */
 const wrapPlainTextBlockByLang = (
   block: string,
-  langKey: string,
+  _langKey: string,
   highlightClass: string,
 ): string => {
   const trimmed = block.trim();
   if (!trimmed) return '';
 
-  // TH: 마침표 쪼개기 생략 — 원본 \\n\\n 블록(=현재 block)을 그대로 1개 <p>
-  if (langKey === 'TH') {
-    return wrapMagazinePlainParagraph(trimmed, highlightClass);
-  }
+  // 블록 내부에 남은 \\n\\n 도 단락으로 재분리 (이중 안전)
+  const paragraphs = trimmed.split(/\n\s*\n/).filter((p) => p.trim());
+  if (paragraphs.length === 0) return '';
 
-  const sentences = splitPlainTextIntoSentences(trimmed);
-  const groups = groupSentencesForLang(sentences, langKey);
-  if (groups.length === 0) {
-    return wrapMagazinePlainParagraph(trimmed, highlightClass);
-  }
-
-  return groups.map((g) => wrapMagazinePlainParagraph(g, highlightClass)).join('\n');
+  return paragraphs
+    .map((p) => wrapMagazinePlainParagraph(p.trim(), highlightClass))
+    .join('\n');
 };
 
 /** 템플릿 2(큐레이션 리스트형) — 하이엔드 정규식 파이프라인 + 이미지 해석 */
@@ -1144,6 +1177,14 @@ const buildMagazineHtml = async (
   console.log('[buildMagazineHtml] 자동 테마:', skin.id, skin.label, '| lang:', langKey);
   let html = String(markdown ?? '');
   let index = 1;
+
+  // 1. 모든 종류의 연속된 선(하이픈, 밑줄, 엠대시, 엔대시, 희귀 유니코드 선) 제거
+  html = html.replace(/^[\s\-_─—–=~━―－]{3,}\s*$/gm, '');
+
+  // 2. 혹시라도 HTML <hr> 태그로 변환된 찌꺼기가 있다면 파괴
+  html = html.replace(/<hr\s*\/?>/gi, '');
+
+  html = html.replace(/\n{3,}/g, '\n\n');
 
   // SEO 마커는 본문에서 제거 (우측 SEO 폼으로만 사용)
   html = html.replace(/\[SEO_SLUG\]\s*:\s*[^\n]*/gi, '');
@@ -1185,7 +1226,11 @@ const buildMagazineHtml = async (
 
   // ── 4. [IMAGE_GL-…] → R2/DB URL 치환 (+ 언어별 제목 alt)
   const imageMatches = Array.from(html.matchAll(/\[IMAGE_GL-([a-zA-Z0-9_-]+)\]/gi));
-  const parsedIds = imageMatches.map((m) => `GL-${String(m[1] ?? '')}`);
+  const parsedIds = imageMatches.map((m) => {
+    // SECURITY: capture 그룹을 화이트리스트 문자만 남긴 뒤 ID로 조립
+    const token = String(m[1] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
+    return token ? `GL-${token}` : '';
+  }).filter(Boolean);
   const { urlByKey, fallbackUrls } = await resolveGceNailImageUrls(parsedIds);
 
   let rebuilt = '';
@@ -1194,20 +1239,28 @@ const buildMagazineHtml = async (
   let match: RegExpExecArray | null;
   while ((match = imageRe.exec(html)) !== null) {
     rebuilt += html.slice(cursor, match.index);
-    const id = `GL-${String(match[1] ?? '')}`;
+    const token = String(match[1] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!token) {
+      cursor = match.index + match[0].length;
+      continue;
+    }
+    const id = `GL-${token}`;
     const { raw, padded } = normalizeGlId(id);
     const dbUrl = urlByKey[padded] || urlByKey[raw] || urlByKey[id] || urlByKey[id.toUpperCase()] || '';
     const finalUrl = dbUrl || pickFallbackImageUrl(padded, fallbackUrls);
+    // SECURITY (속성 인젝션): src/alt 모두 이스케이프 + http(s)만 허용
+    const safeSrc = sanitizeHttpUrlForAttr(finalUrl);
+    const safeMissingId = escapeGceHtmlText(padded);
 
     console.log('1. 파싱된 ID:', id, '(정규화:', padded + ')');
     console.log('2. DB 조회 결과(image_url):', dbUrl || null);
     console.log('3. 최종 조립된 <img> src URL:', finalUrl);
     console.log('3-1. img alt:', imgAlt);
 
-    if (finalUrl) {
-      rebuilt += `\n\n<div class="my-12 w-full"><img src="${finalUrl}" alt="${imgAlt}" class="w-full rounded-2xl shadow-xl object-cover" /></div>\n\n`;
+    if (safeSrc) {
+      rebuilt += `\n\n<div class="my-12 w-full"><img src="${safeSrc}" alt="${imgAlt}" class="w-full rounded-2xl shadow-xl object-cover" /></div>\n\n`;
     } else {
-      rebuilt += `\n\n<div class="my-12 w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center text-sm text-stone-500">이미지를 찾을 수 없습니다 (${padded})</div>\n\n`;
+      rebuilt += `\n\n<div class="my-12 w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center text-sm text-stone-500">이미지를 찾을 수 없습니다 (${safeMissingId})</div>\n\n`;
     }
     cursor = match.index + match[0].length;
   }
@@ -1238,7 +1291,7 @@ const buildMagazineHtml = async (
     ),
   );
 
-  // ── 8. 언어별 문장 그룹핑 → <p> 래핑 (이미 HTML로 치환된 섬은 보호)
+  // ── 8. Dumb Pipe: AI 원본 \\n\\n 단락만 <p> 래핑 (마침표 강제 분리 없음)
   const protectedHtml = protectTopLevelDivBlocks(html);
   const textForSplit = protectedHtml.text;
 
@@ -1248,19 +1301,10 @@ const buildMagazineHtml = async (
     console.log('1. 치환 전 원본 텍스트 조각:', textForSplit);
   }
 
-  // 보호된 HTML 섬(@@GELIA_HTML_n@@)과 구조 블록은 \\n\\n 단위로만 분리 — 순수 텍스트만 문장 그룹핑
-  const blocks = textForSplit.split(/\n\s*\n/);
+  const blocks = textForSplit.split(/\n\s*\n/).filter((p) => p.trim());
 
   if (shouldDiagnoseKrBreak) {
-    const plainSample = blocks.find(
-      (b) =>
-        b.trim() &&
-        !/^@@GELIA_HTML_\d+@@$/.test(b.trim()) &&
-        !/^<(div|img|section|article|header|ul|ol|li|h[1-6]|strong)\b/i.test(b.trim()),
-    );
-    const sentences = plainSample ? splitPlainTextIntoSentences(plainSample) : [];
-    console.log('2. 마침표 정규식 통과 후(문장 배열 샘플):', sentences);
-    console.log("3. split('\\n\\n') 결과 블록 배열:", blocks);
+    console.log("2. split('\\n\\n') 결과 단락 배열:", blocks);
     console.log('=== [KR 줄바꿈 진단 끝] ===');
   }
 
@@ -1278,8 +1322,10 @@ const buildMagazineHtml = async (
     .join('\n');
 
   html = restoreHtmlIslands(wrapped, protectedHtml.islands);
-  console.log('4. 최종 조립된 HTML:', html);
-  return html;
+  // SECURITY (XSS): 최종 HTML을 DOMPurify로 정화 후 반환 (스크립트/이벤트 속성 제거)
+  const sanitized = sanitizeGceMagazineHtml(html);
+  console.log('4. 최종 조립된 HTML:', sanitized);
+  return sanitized;
 };
 
 export default function AdminGceDashboardPage() {
@@ -1472,13 +1518,14 @@ export default function AdminGceDashboardPage() {
     }
     if (isPublishingMagazine) return;
 
-    const slug = publishSlug.trim();
+    // SECURITY (DB): 슬러그 화이트리스트 재검증 — 비정상 문자·과장이 섞인 값 차단
+    const slug = sanitizePublishSlug(publishSlug);
     if (!slug) {
-      toast.error('URL 슬러그를 입력해주세요.');
+      toast.error('URL 슬러그를 입력해주세요. (영문/숫자/하이픈만 가능)');
       return;
     }
 
-    const contentKo = String(selectedReview.content_ko ?? '').trim();
+    const contentKo = sanitizeGceMagazineHtml(String(selectedReview.content_ko ?? '').trim());
     if (!String(selectedReview.title ?? '').trim() || !contentKo) {
       toast.error('제목과 KR 본문이 있어야 발행할 수 있습니다.');
       return;
@@ -1491,7 +1538,16 @@ export default function AdminGceDashboardPage() {
       Array.isArray(selectedReview.image_urls) && selectedReview.image_urls.length > 0
         ? String(selectedReview.image_urls[0] ?? '').trim()
         : '';
-    const thumbnail_url = thumbnailFromHtml || thumbnailFromList || null;
+    const thumbnailCandidate = thumbnailFromHtml || thumbnailFromList || '';
+    // SECURITY: DB에 저장하는 썸네일도 http(s)만 허용
+    const thumbnail_url = isSafeHttpUrl(thumbnailCandidate) ? thumbnailCandidate : null;
+
+    // SECURITY (DB): 메타 설명 HTML/제어문자 제거 후 저장
+    const metaKo = sanitizeMetaDescription(publishMeta.KR) || null;
+    const metaEn = sanitizeMetaDescription(publishMeta.EN) || null;
+    const metaJp = sanitizeMetaDescription(publishMeta.JP) || null;
+    const metaVn = sanitizeMetaDescription(publishMeta.VN) || null;
+    const metaTh = sanitizeMetaDescription(publishMeta.TH) || null;
 
     const publishedAt = new Date().toISOString();
     const livePayload = {
@@ -1505,19 +1561,19 @@ export default function AdminGceDashboardPage() {
       title_jp: String(selectedReview.title_jp ?? '').trim() || null,
       title_vn: String(selectedReview.title_vn ?? '').trim() || null,
       title_th: String(selectedReview.title_th ?? '').trim() || null,
-      // 레거시 content + content_ko 동시 기록
+      // 레거시 content + content_ko 동시 기록 (저장 직전 XSS 정화)
       content: contentKo,
       content_ko: contentKo,
-      content_en: String(selectedReview.content_en ?? '').trim() || null,
-      content_jp: String(selectedReview.content_jp ?? '').trim() || null,
-      content_vn: String(selectedReview.content_vn ?? '').trim() || null,
-      content_th: String(selectedReview.content_th ?? '').trim() || null,
+      content_en: sanitizeGceMagazineHtml(String(selectedReview.content_en ?? '').trim()) || null,
+      content_jp: sanitizeGceMagazineHtml(String(selectedReview.content_jp ?? '').trim()) || null,
+      content_vn: sanitizeGceMagazineHtml(String(selectedReview.content_vn ?? '').trim()) || null,
+      content_th: sanitizeGceMagazineHtml(String(selectedReview.content_th ?? '').trim()) || null,
       // DB 실컬럼: meta_ko ~ meta_th (요청의 meta_desc_* 매핑)
-      meta_ko: publishMeta.KR.trim() || null,
-      meta_en: publishMeta.EN.trim() || null,
-      meta_jp: publishMeta.JP.trim() || null,
-      meta_vn: publishMeta.VN.trim() || null,
-      meta_th: publishMeta.TH.trim() || null,
+      meta_ko: metaKo,
+      meta_en: metaEn,
+      meta_jp: metaJp,
+      meta_vn: metaVn,
+      meta_th: metaTh,
       sub_category: String(selectedReview.category ?? '').trim() || null,
       published_at: publishedAt,
     };
@@ -1652,12 +1708,13 @@ export default function AdminGceDashboardPage() {
     langCode: 'KR' | 'EN' | 'JP' | 'VN' | 'TH',
     text: string,
   ) => {
+    // SECURITY (ReDoS): 첫 줄만 분리한 뒤 선형 정규식으로 제목 추출
     const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
-    const titleMatch = firstLine.match(/^제목\s*:\s*(.*)/);
+    const titleMatch = firstLine.match(EDITOR_TITLE_LINE_RE);
 
     if (titleMatch) {
-      const extractedTitle = String(titleMatch[1] ?? '').trim();
-      const bodyOnly = text.replace(/^제목\s*:\s*.*\r?\n*/, '').trim();
+      const extractedTitle = String(titleMatch[1] ?? '').trim().slice(0, 200);
+      const bodyOnly = text.replace(EDITOR_TITLE_STRIP_RE, '').trim();
 
       setEditorTitles((prev) => ({
         ...prev,
@@ -1676,39 +1733,37 @@ export default function AdminGceDashboardPage() {
     }));
   };
 
-  const handlePublishMetaChange = (text: string) => {
-    if (!text.includes('[SEO_SLUG]')) {
+  /** 통합 SEO([SEO_SLUG]/[DESC_xx]) 붙여넣기 → 슬러그·5개국어 메타 State 자동 분배 */
+  const handleMetaChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+
+    // SEO 뭉치 텍스트를 붙여넣은 경우 감지
+    if (text.includes('[SEO_SLUG]') || text.includes('[DESC_KR]')) {
+      const slugMatch = text.match(/\[SEO_SLUG\]\s*:\s*([^\n]+)/);
+      const krMatch = text.match(/\[DESC_KR\]\s*:\s*([^\n]+)/);
+      const enMatch = text.match(/\[DESC_EN\]\s*:\s*([^\n]+)/);
+      const jpMatch = text.match(/\[DESC_JP\]\s*:\s*([^\n]+)/);
+      const vnMatch = text.match(/\[DESC_VN\]\s*:\s*([^\n]+)/);
+      const thMatch = text.match(/\[DESC_TH\]\s*:\s*([^\n]+)/);
+
+      // SECURITY: 슬러그는 영문/숫자/하이픈만 허용
+      if (slugMatch) setPublishSlug(sanitizePublishSlug(slugMatch[1].trim()));
+
+      setPublishMeta((prev) => ({
+        ...prev,
+        KR: krMatch ? sanitizeMetaDescription(krMatch[1].trim()) : prev.KR,
+        EN: enMatch ? sanitizeMetaDescription(enMatch[1].trim()) : prev.EN,
+        JP: jpMatch ? sanitizeMetaDescription(jpMatch[1].trim()) : prev.JP,
+        VN: vnMatch ? sanitizeMetaDescription(vnMatch[1].trim()) : prev.VN,
+        TH: thMatch ? sanitizeMetaDescription(thMatch[1].trim()) : prev.TH,
+      }));
+    } else {
+      // 일반적인 타이핑의 경우 (현재 언어만 업데이트)
       setPublishMeta((prev) => ({
         ...prev,
         [previewLang]: text,
       }));
-      return;
     }
-
-    const slugRaw = text.match(/\[SEO_SLUG\]\s*:\s*([^\n]+)/)?.[1]?.trim() ?? '';
-    const descKr = text.match(/\[DESC_KR\]\s*:\s*([^\n]+)/)?.[1]?.trim() ?? '';
-    const descEn = text.match(/\[DESC_EN\]\s*:\s*([^\n]+)/)?.[1]?.trim() ?? '';
-    const descJp = text.match(/\[DESC_JP\]\s*:\s*([^\n]+)/)?.[1]?.trim() ?? '';
-    const descVn = text.match(/\[DESC_VN\]\s*:\s*([^\n]+)/)?.[1]?.trim() ?? '';
-    const descTh = text.match(/\[DESC_TH\]\s*:\s*([^\n]+)/)?.[1]?.trim() ?? '';
-
-    if (slugRaw) {
-      setPublishSlug(
-        slugRaw
-          .toLowerCase()
-          .replace(/[^a-z0-9-]/g, '')
-          .replace(/-{2,}/g, '-'),
-      );
-    }
-
-    const nextMeta: PublishMetaState = {
-      KR: descKr || '',
-      EN: descEn || '',
-      JP: descJp || '',
-      VN: descVn || '',
-      TH: descTh || '',
-    };
-    setPublishMeta(nextMeta);
   };
 
   const handleApplySmartTemplate = async () => {
@@ -2620,13 +2675,15 @@ export default function AdminGceDashboardPage() {
                           </header>
 
                           {/* 뷰어 영역 (HTML 렌더링) — whitespace-pre-wrap 금지: <p> 블록이 여백 담당 */}
+                          {/* SECURITY (XSS): dangerouslySetInnerHTML 직전에 DOMPurify 정화 */}
                           <div
                             className="mt-6 magazine-editorial-body font-['Pretendard'] text-[#2b2b2b] tracking-[-0.02em]"
                             dangerouslySetInnerHTML={{
-                              __html:
+                              __html: sanitizeGceMagazineHtml(
                                 selectedReview[
                                   PREVIEW_LANG_TABS.find((t) => t.id === previewLang)?.field ?? 'content_ko'
                                 ] || '',
+                              ),
                             }}
                           />
                         </article>
@@ -2655,14 +2712,7 @@ export default function AdminGceDashboardPage() {
                           <input
                             type="text"
                             value={publishSlug}
-                            onChange={(e) =>
-                              setPublishSlug(
-                                e.target.value
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9-]/g, '')
-                                  .replace(/-{2,}/g, '-'),
-                              )
-                            }
+                            onChange={(e) => setPublishSlug(sanitizePublishSlug(e.target.value))}
                             placeholder="summer-vacation-nail"
                             className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-[13px] font-bold text-stone-800 outline-none focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
                           />
@@ -2678,7 +2728,7 @@ export default function AdminGceDashboardPage() {
                           <textarea
                             rows={3}
                             value={publishMeta[previewLang] || ''}
-                            onChange={(e) => handlePublishMetaChange(e.target.value)}
+                            onChange={handleMetaChange}
                             placeholder={`${previewLang} 검색 결과에 보여질 매거진 요약을 입력하세요.`}
                             className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-[13px] font-medium leading-relaxed text-stone-800 outline-none resize-y focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/20"
                           />
