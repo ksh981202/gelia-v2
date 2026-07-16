@@ -24,6 +24,25 @@ const FACTORY_CATEGORIES = [
   '계절/톤',
 ] as const;
 
+/** 테마 라벨 → DB tags/situations/category 매칭용 키워드 */
+const FACTORY_CATEGORY_KEYWORDS: Record<(typeof FACTORY_CATEGORIES)[number], string[]> = {
+  '썸머/바캉스': ['여름', '바캉스', '휴가', '비치', '수영장', '화려한', '바다', '해변', '시원', '청량', '썸머'],
+  '웨딩/하객': ['웨딩', '하객', '우아한', '청순', '단아', '신부', '화이트', '예식', '브라이덜'],
+  '오피스/데일리': ['오피스', '데일리', '출근', '깔끔', '심플', '미니멀', '회사', '데일리룩'],
+  '계절/톤': ['가을', '겨울', '봄', '톤', '웜톤', '쿨톤', '시즌', '계절', '베이지', '브라운'],
+};
+
+const shuffleArray = <T,>(items: T[]): T[] => {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j]!;
+    copy[j] = tmp!;
+  }
+  return copy;
+};
+
 const REVIEW_FALLBACK_THUMB =
   'https://picsum.photos/seed/gelia-review/100/100';
 
@@ -215,41 +234,87 @@ type GceGeneratedIdea = {
   images: GceIdeaImage[];
 };
 
-/** 카테고리별 하이엔드 매거진 제목 템플릿 */
+/** CTR 극대화 후킹 카피 템플릿 ({keyword}=태그 최빈값, {theme}=기획 테마) */
+const CTR_HOOK_TITLE_TEMPLATES = [
+  'SNS 대란템! 분위기 여신으로 만들어줄 {theme} 무드 보드',
+  '에디터 강력 추천, {keyword} 느낌 낭낭한 {theme} 큐레이션',
+  '꾸안꾸의 정석! 단정하면서도 세련된 {theme} 디자인 5선',
+  '실패 없는 선택, {keyword} 매력을 끌어올리는 {theme} 가이드',
+] as const;
+
+/** 카테고리별 하이엔드 매거진 제목 템플릿 (CTR 후킹 풀 공유) */
 const IDEA_TITLE_TEMPLATES: Record<string, string[]> = {
-  '썸머/바캉스': [
-    '2026 바캉스 네일! 수영장에서 시선 강탈하는 {keyword} 룩북',
-    '여름휴가 준비 끝! 청량감 100% {keyword} 네일 5선',
-    '뜨거운 태양 아래 더 빛나는 {keyword} 바캉스 큐레이션',
-  ],
-  '웨딩/하객': [
-    '하객룩의 정석! 단정하고 우아한 {keyword} 네일 가이드',
-    '가장 눈부신 신부를 위한 {keyword} 웨딩 네일 룩북',
-    '식장에서 은은하게 빛나는 고급스러운 {keyword} 스타일링',
-  ],
-  '오피스/데일리': [
-    '출근룩 완성! 단정하면서도 세련된 {keyword} 데일리 네일',
-    '키보드 칠 때마다 기분 좋아지는 {keyword} 오피스 룩북',
-    '꾸안꾸의 정석! 은은하고 세련된 {keyword} 무드 5선',
-  ],
-  '계절/톤': [
-    '이번 시즌 가장 핫한 트렌드! {keyword} 맞춤 큐레이션',
-    '내 피부톤에 찰떡같이 어울리는 {keyword} 퍼스널 네일',
-    '분위기 여신으로 만들어줄 {keyword} 감성 네일 룩북',
-  ],
+  '썸머/바캉스': [...CTR_HOOK_TITLE_TEMPLATES],
+  '웨딩/하객': [...CTR_HOOK_TITLE_TEMPLATES],
+  '오피스/데일리': [...CTR_HOOK_TITLE_TEMPLATES],
+  '계절/톤': [...CTR_HOOK_TITLE_TEMPLATES],
 };
 
-const IDEA_TITLE_FALLBACK_TEMPLATES = [
-  '에디터 픽! 지금 가장 주목받는 {keyword} 네일 룩북',
-  '손끝부터 완성되는 분위기, {keyword} 매거진 큐레이션',
-  '오늘의 추천! 세련미 가득한 {keyword} 스타일 5선',
-];
+const IDEA_TITLE_FALLBACK_TEMPLATES = [...CTR_HOOK_TITLE_TEMPLATES];
+
+const HOOK_KEYWORD_STOP = new Set([
+  '젤리아',
+  '네일',
+  '디자인',
+  '스타일',
+  '무드',
+  '추천',
+  'and',
+  'the',
+]);
+
+/** 5장 tags/situations 토큰 중 최빈 1개 (테마 키워드 우선) */
+const pickDominantHookKeyword = (
+  images: Array<{ tags?: string; concept?: string }>,
+  category: string,
+): string => {
+  const freq = new Map<string, number>();
+  for (const img of images) {
+    const raw = `${img.tags ?? ''},${img.concept ?? ''}`;
+    for (const part of raw.split(/[,，/|·•]/)) {
+      const token = part.trim().replace(/\s+/g, ' ');
+      if (token.length < 2 || HOOK_KEYWORD_STOP.has(token.toLowerCase())) continue;
+      freq.set(token, (freq.get(token) ?? 0) + 1);
+    }
+  }
+
+  const themeKeys =
+    FACTORY_CATEGORY_KEYWORDS[category as (typeof FACTORY_CATEGORIES)[number]] ?? [];
+  let bestTheme: string | null = null;
+  let bestThemeScore = 0;
+  for (const key of themeKeys) {
+    const score = freq.get(key) ?? 0;
+    if (score > bestThemeScore) {
+      bestThemeScore = score;
+      bestTheme = key;
+    }
+  }
+  if (bestTheme && bestThemeScore > 0) return bestTheme;
+
+  let best = '';
+  let bestScore = 0;
+  for (const [token, score] of freq) {
+    if (score > bestScore || (score === bestScore && token.length < best.length)) {
+      best = token;
+      bestScore = score;
+    }
+  }
+  if (best) return best;
+  return themeKeys[0] ?? '네일';
+};
 
 const pickMagazineIdeaTitle = (category: string, keyword: string) => {
   const pool = IDEA_TITLE_TEMPLATES[category] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
-  const template = pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? '{keyword} 네일 룩북';
+  const template = pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? '{theme} 네일 룩북';
   const safeKeyword = String(keyword ?? '').trim() || '네일';
-  return template.replace(/\{keyword\}/g, safeKeyword);
+  const safeTheme = String(category ?? '').trim() || '네일';
+  return template.replace(/\{keyword\}/g, safeKeyword).replace(/\{theme\}/g, safeTheme);
+};
+
+type GceDailyIdeasCache = {
+  date: string;
+  ideas: GceGeneratedIdea[];
+  ideaImageUrlByGl: Record<string, string>;
 };
 
 /** DB source_filename 규칙: GL- + 숫자 7자리 (예: GL-0005520) */
@@ -292,6 +357,19 @@ const joinIdeaTagParts = (...parts: Array<string | string[] | null | undefined>)
   return [...new Set(flat)].slice(0, 6).join(', ') || '젤리아 네일 디자인';
 };
 
+type GceIdeaPoolItem = {
+  glId: string;
+  concept: string;
+  tags: string;
+  image_url: string;
+  matchText: string;
+};
+
+const nailMatchesCategoryKeywords = (item: GceIdeaPoolItem, keywords: string[]) => {
+  const haystack = item.matchText;
+  return keywords.some((kw) => kw && haystack.includes(kw));
+};
+
 const buildIdeasFromNailDesigns = (
   rows: Array<{
     id?: string | number | null;
@@ -312,6 +390,7 @@ const buildIdeasFromNailDesigns = (
       const glId = formatGlAssetId(row.id, row.source_filename);
       if (!glId || glId === `GL-${'0'.repeat(GL_ID_DIGIT_LEN)}`) return null;
       const concept = String(row.title ?? '').trim() || '네일 디자인';
+      const categoryRaw = String(row.category ?? '').trim();
       const tags = joinIdeaTagParts(
         row.nail_length,
         row.color,
@@ -321,12 +400,26 @@ const buildIdeasFromNailDesigns = (
         row.situations,
         row.category,
       );
-      return { glId, concept, tags, image_url: String(row.image_url ?? '').trim() };
+      const matchText = [
+        concept,
+        tags,
+        categoryRaw,
+        joinIdeaTagParts(row.situations, row.tags, row.styles),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return {
+        glId,
+        concept,
+        tags,
+        image_url: String(row.image_url ?? '').trim(),
+        matchText,
+      } satisfies GceIdeaPoolItem;
     })
-    .filter(Boolean) as Array<{ glId: string; concept: string; tags: string; image_url: string }>;
+    .filter(Boolean) as GceIdeaPoolItem[];
 
   // 동일 GL 중복 제거
-  const unique: typeof usable = [];
+  const unique: GceIdeaPoolItem[] = [];
   const seen = new Set<string>();
   for (const item of usable) {
     if (seen.has(item.glId)) continue;
@@ -334,12 +427,42 @@ const buildIdeasFromNailDesigns = (
     unique.push(item);
   }
 
+  if (unique.length < 5) return [];
+
   const ideas: GceGeneratedIdea[] = [];
   const maxIdeas = 10;
+  const usedGlIds = new Set<string>();
+
   for (let i = 0; i < maxIdeas; i += 1) {
-    const chunk = unique.slice(i * 5, i * 5 + 5);
-    if (chunk.length < 5) break;
-    const category = FACTORY_CATEGORIES[i % FACTORY_CATEGORIES.length];
+    const category =
+      FACTORY_CATEGORIES[i % FACTORY_CATEGORIES.length] ??
+      FACTORY_CATEGORIES[Math.floor(Math.random() * FACTORY_CATEGORIES.length)];
+    const keywords = (FACTORY_CATEGORY_KEYWORDS[category] ?? []).map((k) => k.toLowerCase());
+
+    const available = unique.filter((item) => !usedGlIds.has(item.glId));
+    let filteredNails = available.filter((item) => nailMatchesCategoryKeywords(item, keywords));
+
+    // Fallback: 테마 매칭 5장 미만이면 미사용 풀에서 랜덤 보충
+    if (filteredNails.length < 5) {
+      const need = 5 - filteredNails.length;
+      const already = new Set(filteredNails.map((n) => n.glId));
+      const fillers = shuffleArray(available.filter((item) => !already.has(item.glId))).slice(0, need);
+      filteredNails = [...filteredNails, ...fillers];
+    }
+
+    // 그래도 부족하면 전체 unique에서 보충 (재사용 허용)
+    if (filteredNails.length < 5) {
+      const need = 5 - filteredNails.length;
+      const already = new Set(filteredNails.map((n) => n.glId));
+      const fillers = shuffleArray(unique.filter((item) => !already.has(item.glId))).slice(0, need);
+      filteredNails = [...filteredNails, ...fillers];
+    }
+
+    if (filteredNails.length < 5) break;
+
+    const chunk = shuffleArray(filteredNails).slice(0, 5);
+    for (const item of chunk) usedGlIds.add(item.glId);
+
     const images: GceIdeaImage[] = chunk.map((item) => ({
       id: item.glId,
       concept: item.concept,
@@ -347,7 +470,7 @@ const buildIdeasFromNailDesigns = (
       tags: item.tags,
       image_url: item.image_url,
     }));
-    const keyword = images[0]?.design_name || images[0]?.concept || '네일';
+    const keyword = pickDominantHookKeyword(images, category);
     ideas.push({
       id: i + 1,
       category,
@@ -845,6 +968,11 @@ const buildMagazineHtml = async (
   let html = String(markdown ?? '');
   let index = 1;
 
+  // 클립보드 복사 시 딸려온 불필요한 HTML 찌꺼기 태그(div 등) 원천 제거
+  // [IMAGE_GL-...] 대괄호 태그는 < > 패턴이 아니므로 보존됨
+  html = html.replace(/<\/?div[^>]*>/gi, '');
+  html = html.replace(/<\/?[^>]+(>|$)/g, '');
+
   // 1. 모든 종류의 연속된 선(하이픈, 밑줄, 엠대시, 엔대시, 희귀 유니코드 선) 제거
   html = html.replace(/^[\s\-_─—–=~━―－]{3,}\s*$/gm, '');
 
@@ -945,11 +1073,16 @@ const buildMagazineHtml = async (
   rebuilt += html.slice(cursor);
   html = rebuilt;
 
-  // ── 5. 📝 전체 요약 박스 (외곽)
-  html = html.replace(/📝\s*([^\n]+)([\s\S]*)/g, (_match, heading: string, body: string) => {
-    const safeHeading = formatGceInlineText(String(heading ?? '').trim() || '한눈에 보는 총평', highlightClass);
-    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
-  });
+  // ── 5~7. 체크리스트 조립 순서: 내부(- → ✅) 먼저, 외곽(📝) 마지막
+  // (기존 📝→✅→- 순서는 외곽 </div>가 마지막 ✅ rest에 흡수되어 텍스트 누출됨)
+
+  // ── 5. `-` / `•` 체크리스트 → li (불릿 있는 줄만 — 본문 문단 보호)
+  html = html.replace(/(?:^|\n)\s*[-•]\s*([^\n]+)/g, (_match, item: string) =>
+    buildCheckListItemHtml(
+      theme,
+      formatGceInlineText(String(item ?? '').trim(), highlightClass),
+    ),
+  );
 
   // ── 6. ✅ 내부 타겟 박스 (테마별 카드 태그 전체 하드코딩)
   html = html.replace(/✅\s*([^\n]+)\n([\s\S]*?)(?=(✅|$))/g, (_match, title: string, rest: string) => {
@@ -961,13 +1094,11 @@ const buildMagazineHtml = async (
     return `${buildCheckCardOpenHtml(theme, titleText)}${restBody}</ul></div>`;
   });
 
-  // ── 7. `-` / `•` 체크리스트 → li (불릿 있는 줄만 — 본문 문단 보호)
-  html = html.replace(/(?:^|\n)\s*[-•]\s*([^\n]+)/g, (_match, item: string) =>
-    buildCheckListItemHtml(
-      theme,
-      formatGceInlineText(String(item ?? '').trim(), highlightClass),
-    ),
-  );
+  // ── 7. 📝 전체 요약 박스 (외곽) — 내부 카드/리스트 조립 후 최후에 래핑
+  html = html.replace(/📝\s*([^\n]+)([\s\S]*)/g, (_match, heading: string, body: string) => {
+    const safeHeading = formatGceInlineText(String(heading ?? '').trim() || '한눈에 보는 총평', highlightClass);
+    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
+  });
 
   // ── 8. Dumb Pipe: AI 원본 \\n\\n 단락만 <p> 래핑 (마침표 강제 분리 없음)
   const protectedHtml = protectTopLevelDivBlocks(html);
@@ -1700,6 +1831,42 @@ export default function AdminGceDashboardPage() {
     if (isGeneratingIdeas) return;
     setIsGeneratingIdeas(true);
     try {
+      const TODAY = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' }).format(new Date());
+      const CACHE_KEY = 'GCE_DAILY_IDEAS_V1';
+
+      // Daily cache hit → ideas + URL 맵 동시 복원 (썸네일 깜빡임 방지)
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw) as GceDailyIdeasCache;
+          if (cached?.date === TODAY && Array.isArray(cached.ideas) && cached.ideas.length > 0) {
+            setIdeaImageUrlByGl(
+              cached.ideaImageUrlByGl && typeof cached.ideaImageUrlByGl === 'object'
+                ? cached.ideaImageUrlByGl
+                : {},
+            );
+            setGeneratedIdeas(cached.ideas);
+            setIsStep1Expanded(true);
+            toast.success('오늘의 캐시된 기획안을 불러왔습니다! (DB 호출 없음)');
+            return;
+          }
+        }
+      } catch (cacheReadErr) {
+        console.warn('[handleGenerateIdeas] cache read failed:', cacheReadErr);
+      }
+
+      const PAGE_SIZE = 300;
+
+      // 전체 DB 구간에서 무작위 윈도우를 고르기 위한 exact count
+      const { count, error: countError } = await supabase
+        .from('nail_designs')
+        .select('*', { count: 'exact', head: true });
+      if (countError) throw countError;
+
+      const totalCount = count ?? 0;
+      const maxOffset = Math.max(0, totalCount - PAGE_SIZE);
+      const randomOffset = Math.floor(Math.random() * (maxOffset + 1));
+
       // design_name 컬럼 없음 → title / source_filename 사용 (실 GL 코드는 source_filename)
       const { data, error } = await supabase
         .from('nail_designs')
@@ -1707,9 +1874,13 @@ export default function AdminGceDashboardPage() {
           'id, title, tags, source_filename, image_url, situations, styles, category, color, mood, nail_length, created_at',
         )
         .order('created_at', { ascending: false })
-        .limit(50);
+        .range(randomOffset, randomOffset + PAGE_SIZE - 1);
 
       if (error) throw error;
+
+      console.log(
+        `[handleGenerateIdeas] Random Offset: ${randomOffset} / total ${totalCount} (page ${PAGE_SIZE})`,
+      );
 
       const ideas = buildIdeasFromNailDesigns(data ?? []);
       if (ideas.length === 0) {
@@ -1730,6 +1901,20 @@ export default function AdminGceDashboardPage() {
       setIdeaImageUrlByGl(urlByKey);
       setGeneratedIdeas(enrichedIdeas);
       setIsStep1Expanded(true);
+
+      try {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            date: TODAY,
+            ideas: enrichedIdeas,
+            ideaImageUrlByGl: urlByKey,
+          } satisfies GceDailyIdeasCache),
+        );
+      } catch (cacheWriteErr) {
+        console.warn('[handleGenerateIdeas] cache write failed:', cacheWriteErr);
+      }
+
       toast.success(`오늘의 추천 기획안 ${ideas.length}개가 실DB에서 추출되었습니다!`);
     } catch (err) {
       console.error('[handleGenerateIdeas]', err);
@@ -1747,6 +1932,14 @@ export default function AdminGceDashboardPage() {
       console.error('[handleCopyIdeaPrompt]', err);
       toast.error('클립보드 복사에 실패했습니다.');
     }
+  };
+
+  const handleResetEditor = () => {
+    setEditorTitles({ KR: '', EN: '', JP: '', VN: '', TH: '' });
+    setEditorContents({ KR: '', EN: '', JP: '', VN: '', TH: '' });
+    setPublishSlug('');
+    setPublishMeta({ ...EMPTY_PUBLISH_META });
+    toast.success('에디터가 깨끗하게 비워졌습니다. 🧹');
   };
 
   const handleDownloadIdeaImage = async (img: GceIdeaImage) => {
@@ -2092,7 +2285,19 @@ export default function AdminGceDashboardPage() {
 
               <div className="mt-8 flex flex-col gap-6">
                 <div className="w-full">
-                  <label className="mb-1.5 block text-[13px] font-bold text-stone-600">본문 (AI 원고 · 다국어 세로 입력)</label>
+                  <div className="mb-1.5 flex items-center justify-between gap-3">
+                    <label className="block text-[13px] font-bold text-stone-600">
+                      본문 (AI 원고 · 다국어 세로 입력)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleResetEditor}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      전체 비우기
+                    </button>
+                  </div>
                   <div className="space-y-4">
                     {(
                       [
