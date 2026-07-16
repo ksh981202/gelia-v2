@@ -8,9 +8,10 @@ import {
   PenTool, FileEdit,
   Trash2, X, Star,
   Wrench, Pencil,
-  Rocket, CalendarClock,
+  Rocket, CalendarClock, Download,
 } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
 
@@ -200,7 +201,13 @@ const MOCK_BEST_ARTICLES = [
   { id: 3, title: '여름휴가 네일 무조건 이거 박제! 쿨톤 인생 네일 찾음 🌊✨', image: 'https://picsum.photos/seed/occ3/200/200', views: 7500, growth: '+22%', channel: 'sns' },
 ];
 
-type GceIdeaImage = { id: string; concept: string; design_name: string; tags: string };
+type GceIdeaImage = {
+  id: string;
+  concept: string;
+  design_name: string;
+  tags: string;
+  image_url?: string;
+};
 type GceGeneratedIdea = {
   id: number;
   category: string;
@@ -291,6 +298,7 @@ const buildIdeasFromNailDesigns = (
     title?: string | null;
     tags?: string[] | string | null;
     source_filename?: string | null;
+    image_url?: string | null;
     situations?: string[] | null;
     styles?: string[] | null;
     category?: string | null;
@@ -313,9 +321,9 @@ const buildIdeasFromNailDesigns = (
         row.situations,
         row.category,
       );
-      return { glId, concept, tags };
+      return { glId, concept, tags, image_url: String(row.image_url ?? '').trim() };
     })
-    .filter(Boolean) as Array<{ glId: string; concept: string; tags: string }>;
+    .filter(Boolean) as Array<{ glId: string; concept: string; tags: string; image_url: string }>;
 
   // 동일 GL 중복 제거
   const unique: typeof usable = [];
@@ -337,6 +345,7 @@ const buildIdeasFromNailDesigns = (
       concept: item.concept,
       design_name: item.concept,
       tags: item.tags,
+      image_url: item.image_url,
     }));
     const keyword = images[0]?.design_name || images[0]?.concept || '네일';
     ideas.push({
@@ -997,12 +1006,106 @@ const buildMagazineHtml = async (
   return sanitized;
 };
 
+const buildGceGlDownloadFilename = (glId: string) => {
+  const normalized = formatGlAssetId(glId);
+  return `${normalized}.webp`;
+};
+
+const resolveIdeaImageSrc = (img: GceIdeaImage, urlByKey: Record<string, string>) => {
+  const direct = String(img.image_url ?? '').trim();
+  if (direct) return direct;
+  const { raw, padded } = normalizeGlId(img.id);
+  return urlByKey[padded] || urlByKey[raw] || urlByKey[img.id] || urlByKey[img.id.toUpperCase()] || '';
+};
+
+const enrichIdeaImagesWithResolvedUrls = (
+  images: GceIdeaImage[],
+  urlByKey: Record<string, string>,
+): GceIdeaImage[] =>
+  images.map((img) => {
+    const resolved = resolveIdeaImageSrc(img, urlByKey);
+    return resolved ? { ...img, image_url: resolved } : img;
+  });
+
+const collectIdeaImageDownloadSources = async (
+  images: GceIdeaImage[],
+  cachedUrlByGl: Record<string, string> = {},
+) => {
+  const glIds = Array.from(new Set(images.map((img) => img.id).filter(Boolean)));
+  const { urlByKey } = glIds.length > 0 ? await resolveGceNailImageUrls(glIds) : { urlByKey: {} };
+  const mergedUrlByGl = { ...cachedUrlByGl, ...urlByKey };
+
+  return images
+    .map((img) => ({
+      img,
+      src: resolveIdeaImageSrc(img, mergedUrlByGl),
+    }))
+    .filter((entry): entry is { img: GceIdeaImage; src: string } => Boolean(entry.src));
+};
+
+const triggerBlobDownload = (blob: Blob, filename: string) => {
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  anchor.rel = 'noopener';
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+};
+
+const buildCorsProxyImageUrl = (url: string) =>
+  `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=webp`;
+
+/** direct CORS → wsrv.nl 프록시 순으로 blob 확보 (no-cors는 opaque 응답이라 blob 불가) */
+const fetchImageBlobForDownload = async (src: string): Promise<Blob> => {
+  const attempts: Array<{ label: string; url: string; init?: RequestInit }> = [
+    { label: 'direct-cors', url: src, init: { mode: 'cors', credentials: 'omit' } },
+    { label: 'wsrv-proxy', url: buildCorsProxyImageUrl(src) },
+  ];
+
+  let lastError: unknown;
+  for (const attempt of attempts) {
+    try {
+      const response = await fetch(attempt.url, attempt.init);
+      if (!response.ok) {
+        throw new Error(`이미지 fetch 실패 (${response.status}) [${attempt.label}]`);
+      }
+      const blob = await response.blob();
+      if (!blob.size) {
+        throw new Error(`빈 이미지 blob [${attempt.label}]`);
+      }
+      return blob;
+    } catch (err) {
+      lastError = err;
+      console.warn(`[fetchImageBlobForDownload] ${attempt.label} failed:`, err);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('이미지를 Blob으로 변환하지 못했습니다.');
+};
+
+/** fetch → blob → <a download> 강제 다운로드 (프록시 우회, 새 창 방지) */
+const forceDownloadGceNailImage = async (imageUrl: string, glId: string) => {
+  const src = String(imageUrl ?? '').trim();
+  if (!src) throw new Error('다운로드할 이미지 URL이 없습니다.');
+
+  const filename = buildGceGlDownloadFilename(glId);
+  const blob = await fetchImageBlobForDownload(src);
+  triggerBlobDownload(blob, filename);
+};
+
 export default function AdminGceDashboardPage() {
   const [activeTab, setActiveTab] = useState<'insight' | 'factory' | 'review' | 'result'>('factory');
 
   // GCE titles (검수 데스크용) + Planning & Editor state
   const [dbTitles, setDbTitles] = useState<any[]>([]);
   const [generatedIdeas, setGeneratedIdeas] = useState<GceGeneratedIdea[]>([]);
+  const [ideaImageUrlByGl, setIdeaImageUrlByGl] = useState<Record<string, string>>({});
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isStep1Expanded, setIsStep1Expanded] = useState(true);
   const [editorTitles, setEditorTitles] = useState({
@@ -1045,6 +1148,34 @@ export default function AdminGceDashboardPage() {
   useEffect(() => {
     void fetchGceTitles();
   }, []);
+
+  useEffect(() => {
+    if (generatedIdeas.length === 0) {
+      setIdeaImageUrlByGl({});
+      return;
+    }
+
+    const glIds = Array.from(
+      new Set(
+        generatedIdeas.flatMap((idea) => idea.images.map((img) => img.id)).filter(Boolean),
+      ),
+    );
+    if (glIds.length === 0) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { urlByKey } = await resolveGceNailImageUrls(glIds);
+        if (!cancelled) setIdeaImageUrlByGl(urlByKey);
+      } catch (err) {
+        console.error('[ideaImageUrlByGl]', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [generatedIdeas]);
 
   // Review Tab State
   const [reviewSelectedIds, setReviewSelectedIds] = useState<number[]>([]);
@@ -1573,7 +1704,7 @@ export default function AdminGceDashboardPage() {
       const { data, error } = await supabase
         .from('nail_designs')
         .select(
-          'id, title, tags, source_filename, situations, styles, category, color, mood, nail_length, created_at',
+          'id, title, tags, source_filename, image_url, situations, styles, category, color, mood, nail_length, created_at',
         )
         .order('created_at', { ascending: false })
         .limit(50);
@@ -1587,7 +1718,17 @@ export default function AdminGceDashboardPage() {
         return;
       }
 
-      setGeneratedIdeas(ideas);
+      const glIds = Array.from(
+        new Set(ideas.flatMap((idea) => idea.images.map((img) => img.id)).filter(Boolean)),
+      );
+      const { urlByKey } = await resolveGceNailImageUrls(glIds);
+      const enrichedIdeas = ideas.map((idea) => ({
+        ...idea,
+        images: enrichIdeaImagesWithResolvedUrls(idea.images, urlByKey),
+      }));
+
+      setIdeaImageUrlByGl(urlByKey);
+      setGeneratedIdeas(enrichedIdeas);
       setIsStep1Expanded(true);
       toast.success(`오늘의 추천 기획안 ${ideas.length}개가 실DB에서 추출되었습니다!`);
     } catch (err) {
@@ -1605,6 +1746,68 @@ export default function AdminGceDashboardPage() {
     } catch (err) {
       console.error('[handleCopyIdeaPrompt]', err);
       toast.error('클립보드 복사에 실패했습니다.');
+    }
+  };
+
+  const handleDownloadIdeaImage = async (img: GceIdeaImage) => {
+    const [source] = await collectIdeaImageDownloadSources([img], ideaImageUrlByGl);
+    if (!source?.src) {
+      toast.error(`${img.id} 이미지 URL을 찾을 수 없습니다.`);
+      return;
+    }
+    try {
+      await forceDownloadGceNailImage(source.src, img.id);
+      toast.success(`${buildGceGlDownloadFilename(img.id)} 다운로드 완료`);
+    } catch (err) {
+      console.error('[handleDownloadIdeaImage]', err);
+      toast.error(`${img.id} 다운로드에 실패했습니다.`);
+    }
+  };
+
+  const handleBulkDownloadIdeaImages = async (idea: GceGeneratedIdea) => {
+    const toastId = toast.loading('이미지를 압축 중입니다...');
+    try {
+      const sources = await collectIdeaImageDownloadSources(idea.images, ideaImageUrlByGl);
+      if (sources.length === 0) {
+        toast.error('다운로드할 이미지가 없습니다.', { id: toastId });
+        return;
+      }
+
+      const zip = new JSZip();
+      const packed = (
+        await Promise.all(
+          sources.map(async ({ img, src }) => {
+            try {
+              const blob = await fetchImageBlobForDownload(src);
+              return { filename: buildGceGlDownloadFilename(img.id), blob };
+            } catch (err) {
+              console.error('[handleBulkDownloadIdeaImages]', img.id, err);
+              return null;
+            }
+          }),
+        )
+      ).filter((entry): entry is { filename: string; blob: Blob } => entry !== null);
+
+      if (packed.length === 0) {
+        toast.error('이미지 URL은 확인됐지만 다운로드에 실패했습니다.', { id: toastId });
+        return;
+      }
+
+      for (const { filename, blob } of packed) {
+        zip.file(filename, blob);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      triggerBlobDownload(zipBlob, 'GELIA_기획안_이미지.zip');
+
+      if (packed.length < idea.images.length) {
+        toast.warning(`${packed.length}/${idea.images.length}장 압축 완료 · ZIP 다운로드`, { id: toastId });
+        return;
+      }
+      toast.success(`${packed.length}장 ZIP 압축 다운로드 완료!`, { id: toastId });
+    } catch (err) {
+      console.error('[handleBulkDownloadIdeaImages]', err);
+      toast.error('ZIP 다운로드에 실패했습니다.', { id: toastId });
     }
   };
 
@@ -1818,14 +2021,58 @@ export default function AdminGceDashboardPage() {
                           </ul>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => void handleCopyIdeaPrompt(idea)}
-                          className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-900 px-4 py-3 text-[13px] font-black text-white hover:bg-stone-800 transition-colors"
-                        >
-                          <Copy className="h-4 w-4" />
-                          📋 챗GPT용 원고 작성 프롬프트 복사
-                        </button>
+                        <div className="flex gap-2 overflow-x-auto my-4 pb-1">
+                          {idea.images.map((img) => {
+                            const src = resolveIdeaImageSrc(img, ideaImageUrlByGl);
+                            return (
+                              <div
+                                key={img.id}
+                                className="group relative shrink-0 w-20 h-20 rounded-md overflow-hidden border border-stone-200 bg-stone-100"
+                              >
+                                {src ? (
+                                  <img
+                                    src={src}
+                                    alt={`${img.id} ${img.concept}`}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] font-bold text-stone-400">
+                                    {img.id}
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDownloadIdeaImage(img)}
+                                  className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100"
+                                  aria-label={`${img.id} 다운로드`}
+                                  title={`${buildGceGlDownloadFilename(img.id)} 다운로드`}
+                                >
+                                  <Download className="h-4 w-4 text-white" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleBulkDownloadIdeaImages(idea)}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-[13px] font-black text-[#9333EA] hover:bg-violet-100 transition-colors"
+                          >
+                            <Download className="h-4 w-4" />
+                            ⬇️ 5장 일괄 다운로드
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleCopyIdeaPrompt(idea)}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-900 px-4 py-3 text-[13px] font-black text-white hover:bg-stone-800 transition-colors"
+                          >
+                            <Copy className="h-4 w-4" />
+                            📋 챗GPT용 원고 작성 프롬프트 복사
+                          </button>
+                        </div>
                       </article>
                     ))}
                   </div>
