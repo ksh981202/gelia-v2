@@ -18,18 +18,32 @@ import { supabase } from '@/shared/api/supabaseClient';
 type DraftUiStatus = 'draft' | 'pending' | 'generating' | 'completed' | 'review' | 'published';
 
 const FACTORY_CATEGORIES = [
-  '썸머/바캉스',
-  '웨딩/하객',
   '오피스/데일리',
+  '키치/하이틴',
+  '올드머니/럭셔리',
+  '청순/여리여리',
+  '웨딩/하객',
+  '파티/클럽',
+  '썸머/바캉스',
+  '시크/모던',
+  '유니크/아트',
   '계절/톤',
 ] as const;
 
+type FactoryCategory = (typeof FACTORY_CATEGORIES)[number];
+
 /** 테마 라벨 → DB tags/situations/category 매칭용 키워드 */
-const FACTORY_CATEGORY_KEYWORDS: Record<(typeof FACTORY_CATEGORIES)[number], string[]> = {
-  '썸머/바캉스': ['여름', '바캉스', '휴가', '비치', '수영장', '화려한', '바다', '해변', '시원', '청량', '썸머'],
-  '웨딩/하객': ['웨딩', '하객', '우아한', '청순', '단아', '신부', '화이트', '예식', '브라이덜'],
-  '오피스/데일리': ['오피스', '데일리', '출근', '깔끔', '심플', '미니멀', '회사', '데일리룩'],
-  '계절/톤': ['가을', '겨울', '봄', '톤', '웜톤', '쿨톤', '시즌', '계절', '베이지', '브라운'],
+const FACTORY_CATEGORY_KEYWORDS: Record<FactoryCategory, string[]> = {
+  '오피스/데일리': ['베이지', '누드', '심플', '시럽', '단정', '오피스', '데일리', '출근', '미니멀'],
+  '키치/하이틴': ['네온', '드로잉', '팝', '별', '체크', '키치', '하이틴', '하트', '컬러풀'],
+  '올드머니/럭셔리': ['진주', '골드', '트위드', '클래식', '올드머니', '럭셔리', '고급', '샴페인'],
+  '청순/여리여리': ['파스텔', '화이트', '그라데이션', '꽃', '청순', '여리', '소프트', '핑크'],
+  '웨딩/하객': ['화이트', '자개', '우아한', '프렌치', '웨딩', '하객', '신부', '예식'],
+  '파티/클럽': ['글리터', '풀스톤', '블랙', '체인', '파티', '클럽', '스톤', '화려한'],
+  '썸머/바캉스': ['여름', '바다', '조개', '형광', '바캉스', '비치', '수영장', '해변', '청량'],
+  '시크/모던': ['블랙', '다크', '무광', '매트', '실버', '시크', '모던', '미니멀'],
+  '유니크/아트': ['아트', '드로잉', '마블', '유니크', '패턴', '핸드페인팅', '오브제'],
+  '계절/톤': ['가을', '겨울', '봄', '웜톤', '쿨톤', '시즌', '계절', '브라운', '베이지'],
 };
 
 const shuffleArray = <T,>(items: T[]): T[] => {
@@ -234,23 +248,75 @@ type GceGeneratedIdea = {
   images: GceIdeaImage[];
 };
 
-/** CTR 극대화 후킹 카피 템플릿 ({keyword}=태그 최빈값, {theme}=기획 테마) */
-const CTR_HOOK_TITLE_TEMPLATES = [
-  'SNS 대란템! 분위기 여신으로 만들어줄 {theme} 무드 보드',
-  '에디터 강력 추천, {keyword} 느낌 낭낭한 {theme} 큐레이션',
-  '꾸안꾸의 정석! 단정하면서도 세련된 {theme} 디자인 5선',
-  '실패 없는 선택, {keyword} 매력을 끌어올리는 {theme} 가이드',
-] as const;
-
-/** 카테고리별 하이엔드 매거진 제목 템플릿 (CTR 후킹 풀 공유) */
-const IDEA_TITLE_TEMPLATES: Record<string, string[]> = {
-  '썸머/바캉스': [...CTR_HOOK_TITLE_TEMPLATES],
-  '웨딩/하객': [...CTR_HOOK_TITLE_TEMPLATES],
-  '오피스/데일리': [...CTR_HOOK_TITLE_TEMPLATES],
-  '계절/톤': [...CTR_HOOK_TITLE_TEMPLATES],
+/** 테마별 하이엔드 다이내믹 타이틀 ({keyword}=태그 최빈값, {theme}=기획 테마) */
+const THEME_SPECIFIC_TITLE_TEMPLATES: Record<FactoryCategory, string[]> = {
+  '오피스/데일리': [
+    '출근룩 완성! {keyword}으로 정리한 오피스 네일 5선',
+    '키보드 위에서도 세련되게, {keyword} 데일리 무드 보드',
+    '꾸안꾸의 정석! 단정한 {theme} 큐레이션',
+    '실패 없는 {keyword} 시럽톤으로 채운 출근 네일 가이드',
+  ],
+  '키치/하이틴': [
+    'SNS 대란템! {keyword} 포인트로 터트리는 하이틴 무드',
+    '귀여움 과다복용, {keyword}이 살아있는 {theme} 5선',
+    '네온부터 드로잉까지! {keyword} 키치 네일 룩북',
+    '팝하고 짜릿한 {theme}, {keyword}로 완성하는 손끝',
+  ],
+  '올드머니/럭셔리': [
+    '조용한 고급감, {keyword}가 빛나는 올드머니 네일',
+    '트위드·진주 무드! {keyword}로 쌓은 {theme} 큐레이션',
+    '에디터 픽 럭셔리, {keyword} 클래식 핸드 룩북',
+    '과하지 않은 존재감, {keyword} 올드머니 가이드',
+  ],
+  '청순/여리여리': [
+    '숨결처럼 부드러운 {keyword} 파스텔 {theme}',
+    '여리여리 손끝, {keyword} 그라데이션 무드 보드',
+    '화이트·플라워로 채운 {theme} 5선',
+    '청순함 한 스푼, {keyword}가 스며든 네일 큐레이션',
+  ],
+  '웨딩/하객': [
+    '식장에서 가장 우아한 손끝, {keyword} {theme}',
+    '하객룩의 정석! {keyword} 프렌치 웨딩 가이드',
+    '신부·하객 모두 빛나는 {keyword} 네일 룩북',
+    '자개처럼 은은한 {theme}, {keyword}로 완성',
+  ],
+  '파티/클럽': [
+    '시선 강탈 확정, {keyword} 풀스톤 {theme}',
+    '클럽 조명 아래에서 더 빛나는 {keyword} 파티 네일',
+    '글리터·체인으로 무장한 {theme} 5선',
+    '오늘 밤의 주인공, {keyword} 스톤 큐레이션',
+  ],
+  '썸머/바캉스': [
+    '바다보다 먼저 눈에 띄는 {keyword} 바캉스 네일',
+    '수영장 시선 강탈! {keyword} 썸머 {theme}',
+    '조개·형광 감성 가득한 {theme} 룩북',
+    '휴가 준비 끝, {keyword}로 채운 여름 핸드',
+  ],
+  '시크/모던': [
+    '말없는 세련미, {keyword} 매트 {theme}',
+    '다크·실버로 조율한 {keyword} 시크 네일 5선',
+    '무광이 답이다! {keyword} 모던 큐레이션',
+    '과하지 않은 쿨함, {keyword} {theme} 가이드',
+  ],
+  '유니크/아트': [
+    '손끝이 갤러리, {keyword} 아트 {theme}',
+    '마블·드로잉으로 완성한 {keyword} 유니크 룩북',
+    '남들과 다른 한 끗, {keyword} {theme} 5선',
+    '아트네일의 정수, {keyword} 핸드페인팅 큐레이션',
+  ],
+  '계절/톤': [
+    '내 톤에 찰떡, {keyword} {theme} 퍼스널 네일',
+    '시즌 무드 완벽 매칭! {keyword} 톤 큐레이션',
+    '웜·쿨 고민 끝, {keyword}로 고른 {theme} 5선',
+    '이번 시즌 손끝 트렌드, {keyword} 계절 가이드',
+  ],
 };
 
-const IDEA_TITLE_FALLBACK_TEMPLATES = [...CTR_HOOK_TITLE_TEMPLATES];
+const IDEA_TITLE_FALLBACK_TEMPLATES = [
+  '에디터 픽! {keyword} 감성으로 채운 {theme} 네일 룩북',
+  '손끝부터 분위기 전환, {keyword} {theme} 큐레이션',
+  '오늘의 추천! {keyword}가 살아있는 {theme} 스타일 5선',
+];
 
 const HOOK_KEYWORD_STOP = new Set([
   '젤리아',
@@ -278,8 +344,7 @@ const pickDominantHookKeyword = (
     }
   }
 
-  const themeKeys =
-    FACTORY_CATEGORY_KEYWORDS[category as (typeof FACTORY_CATEGORIES)[number]] ?? [];
+  const themeKeys = FACTORY_CATEGORY_KEYWORDS[category as FactoryCategory] ?? [];
   let bestTheme: string | null = null;
   let bestThemeScore = 0;
   for (const key of themeKeys) {
@@ -304,7 +369,8 @@ const pickDominantHookKeyword = (
 };
 
 const pickMagazineIdeaTitle = (category: string, keyword: string) => {
-  const pool = IDEA_TITLE_TEMPLATES[category] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
+  const pool =
+    THEME_SPECIFIC_TITLE_TEMPLATES[category as FactoryCategory] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
   const template = pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? '{theme} 네일 룩북';
   const safeKeyword = String(keyword ?? '').trim() || '네일';
   const safeTheme = String(category ?? '').trim() || '네일';
@@ -432,11 +498,11 @@ const buildIdeasFromNailDesigns = (
   const ideas: GceGeneratedIdea[] = [];
   const maxIdeas = 10;
   const usedGlIds = new Set<string>();
+  // 확장 카테고리를 셔플한 뒤 앞에서 10개(중복 없이) 할당 — i % N 순환 폐기
+  const shuffledCategories = shuffleArray([...FACTORY_CATEGORIES]).slice(0, maxIdeas);
 
-  for (let i = 0; i < maxIdeas; i += 1) {
-    const category =
-      FACTORY_CATEGORIES[i % FACTORY_CATEGORIES.length] ??
-      FACTORY_CATEGORIES[Math.floor(Math.random() * FACTORY_CATEGORIES.length)];
+  for (let i = 0; i < shuffledCategories.length; i += 1) {
+    const category = shuffledCategories[i]!;
     const keywords = (FACTORY_CATEGORY_KEYWORDS[category] ?? []).map((k) => k.toLowerCase());
 
     const available = unique.filter((item) => !usedGlIds.has(item.glId));
@@ -865,8 +931,18 @@ const resolveThemeHighlightClass = (theme: GceThemeType): string => {
 };
 
 /** 💎 넘버링 제목 — items-center로 번호·제목 광학적 수직 중앙 정렬 */
+const DIAMOND_BADGE_COLORS = [
+  '#2B2B2B', // Deep Charcoal (기본)
+  '#1C252E', // Deep Navy (세련된 네이비)
+  '#3E2723', // Dark Espresso (고급스러운 브라운)
+  '#2E3B32', // Deep Olive (차분한 올리브)
+  '#312735', // Muted Plum (우아한 플럼)
+];
+
 const buildDiamondHeadingHtml = (_theme: GceThemeType, badgeIndex: number, title: string): string => {
-  return `\n\n<div class="flex items-center gap-3 mt-12 mb-6 min-w-0 w-full"><span style="background-color: #2b2b2b; color: #ffffff;" class="flex shrink-0 items-center justify-center w-8 h-8 rounded-full text-[15px] font-bold leading-none">${badgeIndex}</span><h3 class="min-w-0 flex-1 text-[20px] md:text-[22px] font-bold text-[#2b2b2b] m-0 break-words whitespace-normal leading-tight">${title}</h3></div>\n\n`;
+  const color =
+    DIAMOND_BADGE_COLORS[(badgeIndex - 1) % DIAMOND_BADGE_COLORS.length] ?? DIAMOND_BADGE_COLORS[0];
+  return `\n\n<div class="flex items-center gap-3 mt-12 mb-6 min-w-0 w-full"><span style="background-color: ${color}; color: #ffffff;" class="flex shrink-0 items-center justify-center w-8 h-8 rounded-full text-[15px] font-bold leading-none">${badgeIndex}</span><h3 class="min-w-0 flex-1 text-[20px] md:text-[22px] font-bold text-[#2b2b2b] m-0 break-words whitespace-normal leading-tight">${title}</h3></div>\n\n`;
 };
 
 const buildTipBoxHtml = (theme: GceThemeType, label: string, bodyHtml: string): string => {
@@ -880,6 +956,13 @@ const buildTipBoxHtml = (theme: GceThemeType, label: string, bodyHtml: string): 
     return `\n\n<div class="my-8 p-5 bg-amber-50/90 border-amber-100 rounded-2xl border"><strong class="block text-amber-900 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
   }
   return `\n\n<div class="my-8 p-5 bg-purple-50/80 border-purple-100 rounded-2xl border"><strong class="block text-purple-700 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+};
+
+/** 🚫 Caution(실수 방지) 박스 — Tip과 구조 유사, 라이트 핑크/레드 경고 톤 (다국어 타이틀 동적) */
+const buildCautionBoxHtml = (title: string, content: string): string => {
+  const safeTitle = String(title ?? '').trim() || 'Caution';
+  const titleHtml = safeTitle.startsWith('🚫') ? safeTitle : `🚫 ${safeTitle}`;
+  return `\n\n<div class="rounded-xl p-4 my-4 md:my-5 bg-[#FFF5F6] border border-red-100"><strong class="block text-[#D9534F] font-bold mb-1.5 text-[15px] break-words">${titleHtml}</strong>${content}</div>\n\n`;
 };
 
 const buildCheckCardOpenHtml = (theme: GceThemeType, titleText: string): string => {
@@ -991,9 +1074,10 @@ const buildMagazineHtml = async (
     titleForAlt ? `${titleForAlt} - GELIA` : 'GELIA Magazine',
   );
 
-  // ── 0. 마커 줄 단위 격리 (💎 / 📌 / 📝 / [IMAGE_…])
+  // ── 0. 마커 줄 단위 격리 (💎 / 📌 / 🚫 / 📝 / [IMAGE_…])
   html = html.replace(/(💎\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(📌\s*[^\n]+)/g, '\n\n$1\n\n');
+  html = html.replace(/(🚫\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(📝\s*[^\n]+)/g, '\n\n$1\n\n');
   html = html.replace(/(\[IMAGE_.*?\])/gi, '\n\n$1\n\n');
 
@@ -1018,6 +1102,21 @@ const buildMagazineHtml = async (
       : '';
     return buildTipBoxHtml(theme, safeLabel, bodyHtml);
   });
+
+  // ── 3-1. 🚫 Caution(실수 방지) 박스 — 언어 무관(🚫 + 콜론 기준 동적 타이틀/본문)
+  html = html.replace(
+    /🚫\s*([^:：\n]+)[:：]\s*([^\n]*)/g,
+    (_match, title: string, body: string) => {
+      const safeTitle = formatGceInlineText(String(title ?? '').trim(), highlightClass);
+      const safeBody = String(body ?? '').trim()
+        ? formatGceInlineText(String(body).trim(), highlightClass)
+        : '';
+      const bodyHtml = safeBody
+        ? `<p class="text-[15px] md:text-[16px] text-gray-800 leading-[1.7] break-keep m-0">${safeBody}</p>`
+        : '';
+      return buildCautionBoxHtml(safeTitle, bodyHtml);
+    },
+  );
 
   // ── 4. [IMAGE_GL-…] → R2/DB URL 치환 (+ 언어별 제목 alt)
   const imageMatches = Array.from(html.matchAll(/\[IMAGE_GL-([a-zA-Z0-9_-]+)\]/gi));
@@ -1832,7 +1931,7 @@ export default function AdminGceDashboardPage() {
     setIsGeneratingIdeas(true);
     try {
       const TODAY = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' }).format(new Date());
-      const CACHE_KEY = 'GCE_DAILY_IDEAS_V1';
+      const CACHE_KEY = 'GCE_DAILY_IDEAS_V2';
 
       // Daily cache hit → ideas + URL 맵 동시 복원 (썸네일 깜빡임 방지)
       try {

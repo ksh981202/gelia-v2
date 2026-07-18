@@ -219,16 +219,16 @@ export default function GlobalMagazinePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {listArticles.map((article) => (
-              <article key={article.id} className="group cursor-pointer flex flex-col h-full" onClick={() => navigate('/en/magazine/1')}>
-                <div className="w-full aspect-[3/4] overflow-hidden rounded-xl bg-stone-200 mb-5 relative shrink-0 shadow-sm">
-                  <img src={article.image} alt={article.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded text-[10px] font-bold tracking-widest text-stone-900 uppercase">
+              <article key={article.id} className="group flex h-full cursor-pointer flex-col items-center" onClick={() => navigate('/en/magazine/1')}>
+                <div className="relative mb-5 aspect-[3/4] w-full shrink-0 overflow-hidden rounded-xl bg-stone-200 shadow-sm">
+                  <img src={article.image} alt={article.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute top-3 left-3 rounded bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-stone-900 backdrop-blur-sm">
                     {article.subCategory}
                   </div>
                 </div>
-                <div className="flex flex-col flex-1">
-                  <span className="text-[11px] font-bold text-[#9333EA] tracking-widest mb-2 uppercase">{article.category}</span>
-                  <h4 className="text-[17px] font-bold text-stone-900 leading-snug mb-3 group-hover:text-[#9333EA] transition-colors line-clamp-2 break-keep">
+                <div className="flex w-full flex-1 flex-col">
+                  <span className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-[#9333EA]">{article.category}</span>
+                  <h4 className="mb-3 w-full text-center text-[17px] font-bold leading-snug text-stone-900 transition-colors line-clamp-2 break-keep group-hover:text-[#9333EA]">
                     {article.title}
                   </h4>
                   <p className="text-[13px] text-stone-500 line-clamp-3 mb-4 flex-1 break-keep">
@@ -252,30 +252,30 @@ export default function GlobalMagazinePage() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 md:gap-6 space-y-4 md:space-y-6">
               {MOCK_TRENDS.map((item) => (
-                <article key={item.id} className="break-inside-avoid group cursor-pointer flex flex-col gap-3 mb-6">
+                <article key={item.id} className="group mb-6 flex cursor-pointer break-inside-avoid flex-col items-center gap-3">
                   {/* 이미지 영역 */}
-                  <div className={`w-full ${item.height} rounded-2xl overflow-hidden bg-stone-200 relative shadow-sm`}>
-                    <img src={item.image} alt={item.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className={`relative w-full ${item.height} overflow-hidden rounded-2xl bg-stone-200 shadow-sm`}>
+                    <img src={item.image} alt={item.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     
                     {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-start justify-end p-3 z-10">
-                      <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md text-stone-400 hover:text-rose-500 hover:bg-white transition-colors shadow-sm">
+                    <div className="absolute inset-0 z-10 flex items-start justify-end bg-black/20 p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-stone-400 shadow-sm backdrop-blur-md transition-colors hover:bg-white hover:text-rose-500">
                         <Heart className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                   
                   {/* 텍스트(기사 정보) 영역 */}
-                  <div className="px-1 flex flex-col gap-1.5">
+                  <div className="flex w-full flex-col gap-1.5 px-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-[#9333EA] tracking-widest uppercase">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#9333EA]">
                         {activeSubCategory || 'TRENDING'}
                       </span>
                       <span className="flex items-center text-[10px] font-bold text-stone-400">
-                        <Clock className="h-3 w-3 mr-1" /> 3 min
+                        <Clock className="mr-1 h-3 w-3" /> 3 min
                       </span>
                     </div>
-                    <h3 className="text-[15px] font-bold text-stone-900 leading-snug group-hover:text-[#9333EA] transition-colors line-clamp-2 break-keep">
+                    <h3 className="w-full text-center text-[15px] font-bold leading-snug text-stone-900 transition-colors line-clamp-2 break-keep group-hover:text-[#9333EA]">
                       {item.title} 디자인 완벽 가이드 및 스타일링 팁
                     </h3>
                   </div>

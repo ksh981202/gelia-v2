@@ -135,9 +135,9 @@ export default function EditorPickTab() {
             <Link
               key={post.id}
               to={`/magazine/${post.id}`}
-              className="group block cursor-pointer"
+              className="group flex flex-col items-center cursor-pointer"
             >
-              <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100">
+              <div className="w-full aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100">
                 {post.thumbnail_url ? (
                   <img
                     src={post.thumbnail_url}
@@ -150,7 +150,7 @@ export default function EditorPickTab() {
                   <ThumbnailPlaceholder />
                 )}
               </div>
-              <h3 className="mt-3 text-[15px] font-bold leading-snug tracking-tight text-gray-800 line-clamp-2">
+              <h3 className="mt-3 w-full text-center text-[15px] font-bold leading-snug tracking-tight text-gray-800 line-clamp-2">
                 {renderHighlightedTitle(title)}
               </h3>
             </Link>
