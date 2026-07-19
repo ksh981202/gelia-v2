@@ -6,6 +6,36 @@ export const SITE_ORIGIN = (
   'https://gelia.app'
 ).replace(/\/$/, '')
 
+export type MagazineSeoLang = 'ko' | 'en' | 'jp' | 'vn' | 'th'
+
+/** BCP47 html lang — 라우트 jp/vn ≠ html lang */
+export function magazineHtmlLang(lang: MagazineSeoLang): string {
+  if (lang === 'jp') return 'ja'
+  if (lang === 'vn') return 'vi'
+  return lang
+}
+
+/** Open Graph locale (language_TERRITORY) */
+export function magazineOgLocale(lang: MagazineSeoLang): string {
+  if (lang === 'en') return 'en_US'
+  if (lang === 'jp') return 'ja_JP'
+  if (lang === 'vn') return 'vi_VN'
+  if (lang === 'th') return 'th_TH'
+  return 'ko_KR'
+}
+
+/** Helmet htmlAttributes 실패 대비 — documentElement.lang 강제 동기화 */
+export function applyDocumentHtmlLang(langCode: string): () => void {
+  if (typeof document === 'undefined') return () => undefined
+  const root = document.documentElement
+  const prev = root.getAttribute('lang')
+  root.setAttribute('lang', langCode)
+  return () => {
+    if (prev == null || prev === '') root.setAttribute('lang', 'ko')
+    else root.setAttribute('lang', prev)
+  }
+}
+
 /** HTML/마크다운 찌꺼기 제거 → 한 줄 평문 */
 export function stripHtmlToPlainText(input: string): string {
   return String(input ?? '')

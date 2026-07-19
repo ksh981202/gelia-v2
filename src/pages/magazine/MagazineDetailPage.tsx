@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronLeft, Loader2, Share2, User } from 'lucide-react'
 import { toast } from 'sonner'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
-import { SITE_ORIGIN, buildSeoDescription, toAbsoluteSeoUrl } from '@/shared/lib/seoMeta'
+import { SITE_ORIGIN, buildSeoDescription, toAbsoluteSeoUrl, applyDocumentHtmlLang, magazineHtmlLang, magazineOgLocale } from '@/shared/lib/seoMeta'
 
 type MagazineLang = 'ko' | 'en' | 'jp' | 'vn' | 'th'
 
@@ -123,24 +123,19 @@ function magazineHref(pathPrefix: string, slug: string): string {
   return `${SITE_ORIGIN}${pathPrefix}/magazine/${slug}`
 }
 
-/** Open Graph locale (language_TERRITORY). 라우트 jp/vn ≠ BCP47. */
-function ogLocaleFromLang(lang: MagazineLang): string {
-  if (lang === 'en') return 'en_US'
-  if (lang === 'jp') return 'ja_JP'
-  if (lang === 'vn') return 'vi_VN'
-  if (lang === 'th') return 'th_TH'
-  return 'ko_KR'
-}
-
 export default function MagazineDetailPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { slug, lang: langParam } = useParams<{ slug: string; lang?: string }>()
   const lang = langFromPathname(pathname, langParam)
+  const htmlLang = magazineHtmlLang(lang)
+  const ogLocale = magazineOgLocale(lang)
 
   const [post, setPost] = useState<BoardPostRow | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => applyDocumentHtmlLang(htmlLang), [htmlLang])
 
   useEffect(() => {
     let cancelled = false
@@ -261,8 +256,9 @@ export default function MagazineDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 font-['Pretendard']">
-        <Helmet>
+        <Helmet htmlAttributes={{ lang: htmlLang }}>
           <title>GELIA Magazine</title>
+          <meta property="og:locale" content={ogLocale} />
         </Helmet>
         <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
         <p className="text-sm font-medium text-gray-400">매거진을 불러오는 중...</p>
@@ -273,9 +269,10 @@ export default function MagazineDetailPage() {
   if (notFound || !post) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4 px-6 font-['Pretendard']">
-        <Helmet>
+        <Helmet htmlAttributes={{ lang: htmlLang }}>
           <title>페이지를 찾을 수 없습니다 | GELIA</title>
           <meta name="robots" content="noindex" />
+          <meta property="og:locale" content={ogLocale} />
         </Helmet>
         <p className="text-6xl font-black text-gray-200">404</p>
         <h1 className="text-xl font-bold text-gray-900">페이지를 찾을 수 없습니다</h1>
@@ -296,8 +293,7 @@ export default function MagazineDetailPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Helmet>
-        <html lang={lang === 'jp' ? 'ja' : lang === 'vn' ? 'vi' : lang} />
+      <Helmet htmlAttributes={{ lang: htmlLang }}>
         <title>{pageTitle}</title>
         {description ? <meta name="description" content={description} /> : null}
         {canonicalUrl ? <link rel="canonical" href={canonicalUrl} /> : null}
@@ -308,7 +304,7 @@ export default function MagazineDetailPage() {
         {description ? <meta property="og:description" content={description} /> : null}
         {canonicalUrl ? <meta property="og:url" content={canonicalUrl} /> : null}
         {ogImage ? <meta property="og:image" content={ogImage} /> : null}
-        <meta property="og:locale" content={ogLocaleFromLang(lang)} />
+        <meta property="og:locale" content={ogLocale} />
 
         <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
         <meta name="twitter:title" content={title || pageTitle} />

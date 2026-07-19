@@ -1,17 +1,21 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import {
   SITE_ORIGIN,
+  applyDocumentHtmlLang,
   buildSeoDescription,
+  magazineHtmlLang,
+  magazineOgLocale,
   toAbsoluteSeoUrl,
+  type MagazineSeoLang,
 } from '@/shared/lib/seoMeta'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
 import { ChevronLeft, Share2 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 type MagazineDetailPost = {
   id: string
@@ -66,6 +70,15 @@ async function copyCurrentUrl() {
   document.body.removeChild(textarea)
 }
 
+function langFromPathAndContext(pathname: string, isEnglish: boolean): MagazineSeoLang {
+  const m = pathname.match(/^\/(en|jp|vn|th)(?:\/|$)/i)
+  if (m) {
+    const code = m[1].toLowerCase()
+    if (code === 'en' || code === 'jp' || code === 'vn' || code === 'th') return code
+  }
+  return isEnglish ? 'en' : 'ko'
+}
+
 function MagazineDetailSkeleton({ isEnglish }: { isEnglish: boolean }) {
   return (
     <article
@@ -97,7 +110,14 @@ export default function ClientMagazineDetailPage() {
   const { language } = useLanguageContext()
   const isEnglish = language === 'en'
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { id } = useParams()
+  const seoLang = langFromPathAndContext(pathname, isEnglish)
+  const htmlLang = magazineHtmlLang(seoLang)
+  const ogLocale = magazineOgLocale(seoLang)
+
+  useEffect(() => applyDocumentHtmlLang(htmlLang), [htmlLang])
+
   const {
     data: post,
     isPending,
@@ -142,7 +162,6 @@ export default function ClientMagazineDetailPage() {
         ? window.location.href
         : undefined
     return {
-      htmlLang: isEnglish ? 'en' : 'ko',
       pageTitle,
       title,
       description,
@@ -153,8 +172,7 @@ export default function ClientMagazineDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <html lang={seoMeta.htmlLang} />
+      <Helmet htmlAttributes={{ lang: htmlLang }}>
         <title>{seoMeta.pageTitle}</title>
         <meta name="description" content={seoMeta.description} />
         {seoMeta.canonicalUrl ? <link rel="canonical" href={seoMeta.canonicalUrl} /> : null}
@@ -165,7 +183,7 @@ export default function ClientMagazineDetailPage() {
         <meta property="og:description" content={seoMeta.description} />
         {seoMeta.canonicalUrl ? <meta property="og:url" content={seoMeta.canonicalUrl} /> : null}
         {seoMeta.ogImage ? <meta property="og:image" content={seoMeta.ogImage} /> : null}
-        <meta property="og:locale" content={isEnglish ? 'en_US' : 'ko_KR'} />
+        <meta property="og:locale" content={ogLocale} />
 
         <meta name="twitter:card" content={seoMeta.ogImage ? 'summary_large_image' : 'summary'} />
         <meta name="twitter:title" content={seoMeta.title} />
