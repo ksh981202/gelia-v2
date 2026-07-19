@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronLeft, Loader2, Share2, User } from 'lucide-react'
 import { toast } from 'sonner'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
+import { SITE_ORIGIN, buildSeoDescription, toAbsoluteSeoUrl } from '@/shared/lib/seoMeta'
 
 type MagazineLang = 'ko' | 'en' | 'jp' | 'vn' | 'th'
 
@@ -37,12 +38,6 @@ const MAGAZINE_POST_TYPES = ['magazine', 'magazine_editor', 'Magazine', 'magazin
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-const SITE_ORIGIN = (
-  import.meta.env.VITE_SITE_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : '') ||
-  'https://gelia.app'
-).replace(/\/$/, '')
 
 /** hreflang BCP47 code → public path prefix (jp URL path, ja hreflang) */
 const HREFLANG_ALTERNATES: { hreflang: string; pathPrefix: string }[] = [
@@ -119,15 +114,6 @@ function extractFirstImageUrl(html: string): string | null {
   return match?.[1]?.trim() || null
 }
 
-function toAbsoluteUrl(url: string | null | undefined): string | null {
-  if (!url?.trim()) return null
-  const u = url.trim()
-  if (/^https?:\/\//i.test(u)) return u
-  if (u.startsWith('//')) return `https:${u}`
-  if (u.startsWith('/')) return `${SITE_ORIGIN}${u}`
-  return u
-}
-
 function magazineCanonicalPath(lang: MagazineLang, slug: string): string {
   if (lang === 'ko') return `/magazine/${slug}`
   return `/${lang}/magazine/${slug}`
@@ -135,6 +121,15 @@ function magazineCanonicalPath(lang: MagazineLang, slug: string): string {
 
 function magazineHref(pathPrefix: string, slug: string): string {
   return `${SITE_ORIGIN}${pathPrefix}/magazine/${slug}`
+}
+
+/** Open Graph locale (language_TERRITORY). 라우트 jp/vn ≠ BCP47. */
+function ogLocaleFromLang(lang: MagazineLang): string {
+  if (lang === 'en') return 'en_US'
+  if (lang === 'jp') return 'ja_JP'
+  if (lang === 'vn') return 'vi_VN'
+  if (lang === 'th') return 'th_TH'
+  return 'ko_KR'
 }
 
 export default function MagazineDetailPage() {
@@ -209,13 +204,13 @@ export default function MagazineDetailPage() {
     }
   }, [slug])
 
-  const { title, content, description } = useMemo(
-    () =>
-      post
-        ? pickLocalizedFields(post, lang)
-        : { title: '', content: '', description: '' },
-    [post, lang],
-  )
+  const { title, content, description } = useMemo(() => {
+    if (!post) return { title: '', content: '', description: '' }
+    const picked = pickLocalizedFields(post, lang)
+    const description =
+      picked.description || buildSeoDescription(picked.content, 150)
+    return { ...picked, description }
+  }, [post, lang])
 
   const seoSlug = (post?.slug || slug || '').trim()
 
@@ -225,7 +220,7 @@ export default function MagazineDetailPage() {
       extractFirstImageUrl(content) ||
       extractFirstImageUrl(post.content_ko || '') ||
       extractFirstImageUrl(post.content || '')
-    return toAbsoluteUrl(fromContent || post.thumbnail_url)
+    return toAbsoluteSeoUrl(fromContent || post.thumbnail_url)
   }, [post, content])
 
   const canonicalUrl = seoSlug
@@ -313,6 +308,7 @@ export default function MagazineDetailPage() {
         {description ? <meta property="og:description" content={description} /> : null}
         {canonicalUrl ? <meta property="og:url" content={canonicalUrl} /> : null}
         {ogImage ? <meta property="og:image" content={ogImage} /> : null}
+        <meta property="og:locale" content={ogLocaleFromLang(lang)} />
 
         <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
         <meta name="twitter:title" content={title || pageTitle} />

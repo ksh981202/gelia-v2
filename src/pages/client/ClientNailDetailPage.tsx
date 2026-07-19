@@ -16,6 +16,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
@@ -24,6 +25,11 @@ import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import { useNailDetailViewTracking } from "@/features/nail-activity/useNailDetailViewTracking";
 import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { supabase } from "@/shared/api/supabaseClient";
+import {
+  SITE_ORIGIN,
+  buildSeoDescription,
+  toAbsoluteSeoUrl,
+} from "@/shared/lib/seoMeta";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 
@@ -518,6 +524,33 @@ const Detail = () => {
     return localized || (isEnglish ? "Nail Design" : "네일 디자인");
   }, [displayRow, pickLocalized, isEnglish]);
 
+  const seoMeta = useMemo(() => {
+    const rawDesc = pickLocalized(displayRow?.description, displayRow?.description_en);
+    const description =
+      buildSeoDescription(rawDesc, 150) ||
+      (isEnglish
+        ? `${displayTitle} nail design curated on GELIA`
+        : `${displayTitle} 네일 디자인 | 젤리아에서 찾아보세요`);
+    const detailId = displayRow?.id || nailId;
+    return {
+      htmlLang: isEnglish ? "en" : "ko",
+      pageTitle: `${displayTitle} | GELIA`,
+      title: displayTitle,
+      description,
+      ogImage: toAbsoluteSeoUrl(displayRow?.image_url),
+      canonicalUrl: detailId ? `${SITE_ORIGIN}/detail/${detailId}` : undefined,
+    };
+  }, [
+    displayRow?.description,
+    displayRow?.description_en,
+    displayRow?.id,
+    displayRow?.image_url,
+    displayTitle,
+    isEnglish,
+    nailId,
+    pickLocalized,
+  ]);
+
   const error = useMemo(() => {
     if (!nailId) return "잘못된 주소예요.";
     if (queryError) return "네일 정보를 불러오지 못했어요.";
@@ -786,6 +819,26 @@ const Detail = () => {
   );
 
   const pageShell = (main: ReactNode) => (
+    <>
+      <Helmet>
+        <html lang={seoMeta.htmlLang} />
+        <title>{seoMeta.pageTitle}</title>
+        <meta name="description" content={seoMeta.description} />
+        {seoMeta.canonicalUrl ? <link rel="canonical" href={seoMeta.canonicalUrl} /> : null}
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="GELIA" />
+        <meta property="og:title" content={seoMeta.title} />
+        <meta property="og:description" content={seoMeta.description} />
+        {seoMeta.canonicalUrl ? <meta property="og:url" content={seoMeta.canonicalUrl} /> : null}
+        {seoMeta.ogImage ? <meta property="og:image" content={seoMeta.ogImage} /> : null}
+        <meta property="og:locale" content={isEnglish ? "en_US" : "ko_KR"} />
+
+        <meta name="twitter:card" content={seoMeta.ogImage ? "summary_large_image" : "summary"} />
+        <meta name="twitter:title" content={seoMeta.title} />
+        <meta name="twitter:description" content={seoMeta.description} />
+        {seoMeta.ogImage ? <meta name="twitter:image" content={seoMeta.ogImage} /> : null}
+      </Helmet>
     <div className="min-h-screen w-full bg-[#fdfaf7]">
       <div className="relative mx-auto min-h-screen w-full max-w-md bg-[#fdfaf7] text-slate-900 md:max-w-[1200px]">
         <ClientGlobalHeader showBackButton />
@@ -929,6 +982,7 @@ const Detail = () => {
         />
       </div>
     </div>
+    </>
   );
 
   if (isLoading && !displayRow) {

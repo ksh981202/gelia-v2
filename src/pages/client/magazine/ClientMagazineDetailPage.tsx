@@ -1,9 +1,16 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import {
+  SITE_ORIGIN,
+  buildSeoDescription,
+  toAbsoluteSeoUrl,
+} from '@/shared/lib/seoMeta'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
 import { ChevronLeft, Share2 } from 'lucide-react'
+import { useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNavigate, useParams } from 'react-router-dom'
 
 type MagazineDetailPost = {
@@ -121,8 +128,51 @@ export default function ClientMagazineDetailPage() {
   const sanitizedContent = DOMPurify.sanitize(content ?? '')
   const createdAt = formatCreatedAt(post?.created_at ?? null, isEnglish)
 
+  const seoMeta = useMemo(() => {
+    const description =
+      buildSeoDescription(String(content ?? ''), 150) ||
+      (isEnglish
+        ? `${title} | GELIA Magazine`
+        : `${title} | 젤리아 매거진`)
+    const pageTitle = title ? `${title} | GELIA` : 'GELIA Magazine'
+    const ogImage = toAbsoluteSeoUrl(post?.thumbnail_url)
+    const canonicalUrl = id?.trim()
+      ? `${SITE_ORIGIN}/magazine/${id.trim()}`
+      : typeof window !== 'undefined'
+        ? window.location.href
+        : undefined
+    return {
+      htmlLang: isEnglish ? 'en' : 'ko',
+      pageTitle,
+      title,
+      description,
+      ogImage,
+      canonicalUrl,
+    }
+  }, [content, id, isEnglish, post?.thumbnail_url, title])
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <html lang={seoMeta.htmlLang} />
+        <title>{seoMeta.pageTitle}</title>
+        <meta name="description" content={seoMeta.description} />
+        {seoMeta.canonicalUrl ? <link rel="canonical" href={seoMeta.canonicalUrl} /> : null}
+
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="GELIA" />
+        <meta property="og:title" content={seoMeta.title} />
+        <meta property="og:description" content={seoMeta.description} />
+        {seoMeta.canonicalUrl ? <meta property="og:url" content={seoMeta.canonicalUrl} /> : null}
+        {seoMeta.ogImage ? <meta property="og:image" content={seoMeta.ogImage} /> : null}
+        <meta property="og:locale" content={isEnglish ? 'en_US' : 'ko_KR'} />
+
+        <meta name="twitter:card" content={seoMeta.ogImage ? 'summary_large_image' : 'summary'} />
+        <meta name="twitter:title" content={seoMeta.title} />
+        <meta name="twitter:description" content={seoMeta.description} />
+        {seoMeta.ogImage ? <meta name="twitter:image" content={seoMeta.ogImage} /> : null}
+      </Helmet>
+
       <ClientGlobalHeader showBackButton />
 
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-background/90 px-4 backdrop-blur-xl md:hidden">
