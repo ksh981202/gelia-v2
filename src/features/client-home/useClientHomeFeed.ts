@@ -3,7 +3,7 @@ import { supabase } from '../../shared/api/supabaseClient'
 import type { NailDesignRow } from '../../shared/types/database.types'
 
 const NAIL_DESIGN_COLUMNS =
-  'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves'
+  'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves,color,color_en,nail_length,length_en,styles,styles_en'
 
 const POP_POOL = 20
 const LATEST_POOL = 30

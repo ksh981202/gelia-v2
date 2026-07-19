@@ -3,7 +3,8 @@ import { useLanguageContext } from '@/contexts/LanguageContext';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { CurationFallback } from '@/shared/ui/CurationFallback';
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
 const MOOD_TABS = ["🎀 발레코어", "🎧 Y2K/키치", "🥂 올드머니/시크"] as const;
@@ -114,13 +115,6 @@ export default function MoodPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const openDetail = (item?: NailDesignRow) => {
-    if (!item) return;
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
-    });
-  };
-
   return (
     <div className="relative min-h-screen w-full bg-white text-[#333] antialiased">
       {/* 상단 헤더 */}
@@ -176,10 +170,15 @@ export default function MoodPage() {
 
         {/* 섹션 2: 히어로 배너 */}
         <section className="mb-0 mt-5 px-5 pt-0">
-          <div className="relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-sm" onClick={() => openDetail(heroItem)}>
-            {heroItem?.image_url ? (
+          {heroItem?.id ? (
+          <Link
+            to={`/detail/${heroItem.id}`}
+            state={{ initialNailData: { ...heroItem, imageUrl: heroItem.image_url, title: displayItemTitle(heroItem, isEnglish) } }}
+            className="relative mb-0 block aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-sm"
+          >
+            {heroItem.image_url ? (
               <img
-                alt={displayItemTitle(heroItem, isEnglish)}
+                alt={buildNailImageSeoAlt(heroItem, isEnglish)}
                 className="absolute inset-0 h-full w-full object-cover object-center"
                 src={heroItem.image_url}
                 loading="eager"
@@ -193,7 +192,7 @@ export default function MoodPage() {
             ) : (
               <CurationFallback isEnglish={isEnglish} />
             )}
-            {heroItem?.image_url ? (
+            {heroItem.image_url ? (
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-6 pb-6 pt-20 pointer-events-none">
                 <div className="relative z-10">
                   <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
@@ -202,7 +201,12 @@ export default function MoodPage() {
                 </div>
               </div>
             ) : null}
+          </Link>
+          ) : (
+          <div className="relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-3xl shadow-sm">
+            <CurationFallback isEnglish={isEnglish} />
           </div>
+          )}
         </section>
 
         {/* 섹션 3: 세련된 미니멀 시크 BEST (가로 스크롤) */}
@@ -217,12 +221,17 @@ export default function MoodPage() {
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {minimalChicItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-32 shrink-0 flex-col bg-transparent p-0 text-left">
+              <Link
+                key={item.id}
+                to={`/detail/${item.id}`}
+                state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
+                className="flex w-32 shrink-0 flex-col"
+              >
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
-                      alt={displayItemTitle(item, isEnglish)}
+                      alt={buildNailImageSeoAlt(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       loading="lazy"
                       decoding="async"
@@ -238,7 +247,7 @@ export default function MoodPage() {
                     {displayItemTitle(item, isEnglish)}
                   </span>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -255,12 +264,17 @@ export default function MoodPage() {
           </div>
           <div className="mb-0 grid grid-cols-2 gap-4 pb-10">
             {popularMoodItems.map((item) => (
-              <article key={item.id} className="flex flex-col gap-0 cursor-pointer" onClick={() => openDetail(item)}>
+              <Link
+                key={item.id}
+                to={`/detail/${item.id}`}
+                state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
+                className="flex flex-col gap-0"
+              >
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2 bg-gray-100">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
-                      alt={displayItemTitle(item, isEnglish)}
+                      alt={buildNailImageSeoAlt(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       loading="lazy"
                       decoding="async"
@@ -276,7 +290,7 @@ export default function MoodPage() {
                     {displayItemTitle(item, isEnglish)}
                   </span>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </section>

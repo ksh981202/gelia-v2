@@ -1,4 +1,5 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
@@ -26,7 +27,8 @@ const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; order
   saved: { table: 'user_saves', orderColumn: 'created_at' },
 }
 
-const MY_PAGE_NAIL_COLUMNS = 'id,title,title_en,image_url'
+const MY_PAGE_NAIL_COLUMNS =
+  'id,title,title_en,image_url,color,color_en,nail_length,length_en,styles,styles_en'
 
 function isActiveTab(value: string | null): value is ActiveTab {
   return value === 'recent' || value === 'liked' || value === 'saved'
@@ -196,19 +198,6 @@ export default function ClientMyPage() {
     )
   }
 
-  const openDetail = (nailId: string, title: string, imageUrl: string) => {
-    navigate(`/detail/${nailId}`, {
-      state: {
-        initialNailData: {
-          id: nailId,
-          imageUrl,
-          title,
-          color: '',
-          mood: '',
-        },
-      },
-    })
-  }
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -359,24 +348,25 @@ export default function ClientMyPage() {
                   (isEnglish ? 'Nail Design' : '네일 디자인')
                 const imageUrl = String(item.image_url ?? '').trim()
                 return (
-                  <article
+                  <Link
                     key={item.id}
-                    className="flex cursor-pointer flex-col"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openDetail(item.id, title, imageUrl)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        openDetail(item.id, title, imageUrl)
-                      }
+                    to={`/detail/${item.id}`}
+                    state={{
+                      initialNailData: {
+                        id: item.id,
+                        imageUrl,
+                        title,
+                        color: '',
+                        mood: '',
+                      },
                     }}
+                    className="flex cursor-pointer flex-col"
                   >
                     <div className="aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
-                          alt={title}
+                          alt={buildNailImageSeoAlt(item, isEnglish)}
                           className="h-full w-full object-cover transition-transform hover:scale-105"
                         />
                       ) : null}
@@ -384,7 +374,7 @@ export default function ClientMyPage() {
                     <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">
                       {title}
                     </div>
-                  </article>
+                  </Link>
                 )
               })}
             </div>

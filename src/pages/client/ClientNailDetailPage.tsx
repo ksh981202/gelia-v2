@@ -18,6 +18,7 @@ import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import { useNailDetailViewTracking } from "@/features/nail-activity/useNailDetailViewTracking";
@@ -1314,17 +1315,16 @@ const Detail = () => {
             const simSrc = item.image_url?.trim() || "";
             const simTitle = pickLocalized(item.title, item.title_en) || (isEnglish ? "Nail Design" : "네일 디자인");
             return (
-              <button
+              <Link
                 key={item.id}
-                type="button"
-                onClick={() => navigate(`/detail/${item.id}`)}
+                to={`/detail/${item.id}`}
                 className="block w-[130px] shrink-0 snap-start lg:w-auto"
                 aria-label={simTitle}
               >
                 {simSrc ? (
                   <img
                     src={simSrc}
-                    alt={simTitle}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="aspect-[3/4] w-full rounded-xl object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -1333,7 +1333,7 @@ const Detail = () => {
                   <div className="aspect-[3/4] w-full animate-pulse rounded-xl bg-gray-100" aria-hidden />
                 )}
                 <p className="mt-2 truncate text-center text-[13px] font-semibold text-stone-800">{simTitle}</p>
-              </button>
+              </Link>
             );
           })}
         </div>

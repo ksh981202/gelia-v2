@@ -1,3 +1,4 @@
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import {
   DEFAULT_GALLERY_SORT,
   DEFAULT_GALLERY_TAB,
@@ -345,7 +346,7 @@ export default function PartsListPage() {
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item, isEnglish)}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full object-cover object-center transition-transform duration-300 hover:scale-105"
                         loading={index < 4 ? 'eager' : 'lazy'}
                         decoding="async"

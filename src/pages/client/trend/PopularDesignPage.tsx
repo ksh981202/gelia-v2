@@ -1,13 +1,14 @@
 import { useRecommendHubQuery } from "@/entities/nail-design/api/useRecommendHubQuery";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { filterNonZeroRankingRpcRows } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { supabase } from "@/shared/api/supabaseClient";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { NailImage } from "@/shared/ui/NailImage";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 // 공통 썸네일 클래스
@@ -17,7 +18,7 @@ const TREND_SKELETON_ROWS = 5;
 const SHAPE_PREVIEW_KEYWORD = "라운드 스퀘어 오발 아몬드 코핀 발레리나";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 const POPULAR_DESIGN_SHAPE_COLUMNS =
-  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements,popularity,views,saves,likes";
 
 type RankingNailRow = NailDesignRow & { ranking_score?: number };
 
@@ -181,11 +182,6 @@ export default function PopularDesignPage() {
     [hubData, engagementFallback],
   );
 
-  const goDetail = (item: NailDesignRow) => {
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: initialNailData(item, isEnglish) },
-    });
-  };
 
   return (
     <div className="relative min-h-screen w-full bg-white font-sans text-slate-900 antialiased">
@@ -228,21 +224,22 @@ export default function PopularDesignPage() {
           ) : (
             <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {periodBest.map((item, index) => (
-                <article
+                <Link
                   key={item.id}
+                  to={`/detail/${item.id}`}
+                  state={{ initialNailData: initialNailData(item, isEnglish) }}
                   className="flex w-32 flex-none cursor-pointer flex-col"
-                  onClick={() => goDetail(item)}
                 >
                   <div className={`relative ${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
                     <NailImage
                       src={item.image_url}
-                      alt={displayItemTitle(item, isEnglish)}
+                      alt={buildNailImageSeoAlt(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       priority={index < 4}
                     />
                   </div>
                   <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
-                </article>
+                </Link>
               ))}
             </div>
           )}
@@ -264,21 +261,22 @@ export default function PopularDesignPage() {
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {reactionBest.map((item, index) => (
-              <article
+              <Link
                 key={item.id}
+                to={`/detail/${item.id}`}
+                state={{ initialNailData: initialNailData(item, isEnglish) }}
                 className="flex w-44 shrink-0 cursor-pointer flex-col"
-                onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
                   <NailImage
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     priority={index < 4}
                   />
                 </div>
                 <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
-              </article>
+              </Link>
             ))}
           </div>
         </section>
@@ -299,21 +297,22 @@ export default function PopularDesignPage() {
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {shapeBest.map((item, index) => (
-              <article
+              <Link
                 key={item.id}
+                to={`/detail/${item.id}`}
+                state={{ initialNailData: initialNailData(item, isEnglish) }}
                 className="flex w-32 flex-none cursor-pointer flex-col"
-                onClick={() => goDetail(item)}
               >
                 <div className={`${NAIL_THUMB_IMAGE_FRAME} bg-gray-100`}>
                   <NailImage
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     priority={index < 4}
                   />
                 </div>
                 <span className={NAIL_THUMB_TITLE}>{displayItemTitle(item, isEnglish)}</span>
-              </article>
+              </Link>
             ))}
           </div>
         </section>

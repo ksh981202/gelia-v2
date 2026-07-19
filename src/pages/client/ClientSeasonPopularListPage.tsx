@@ -6,6 +6,7 @@ import {
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
@@ -449,7 +450,7 @@ export default function ClientSeasonPopularListPage() {
                         {item.image_url ? (
                           <img
                             src={item.image_url}
-                            alt={displayItemTitle(item, isEnglish)}
+                            alt={buildNailImageSeoAlt(item, isEnglish)}
                             className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                             loading={index < 4 ? 'eager' : 'lazy'}
                             fetchPriority={index < 4 ? 'high' : undefined}

@@ -8,7 +8,7 @@ export const DEFAULT_GALLERY_TAB = '전체'
 export const DEFAULT_GALLERY_SORT = '최신순'
 
 export const GALLERY_COLUMNS =
-  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,views,situations,styles,nail_length,color,mood,design_elements'
+  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,views,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements'
 
 export const RANKING_WEEKLY_LIMIT = 100
 /** 탭 필터 ilike 대상 스칼라 컬럼 */

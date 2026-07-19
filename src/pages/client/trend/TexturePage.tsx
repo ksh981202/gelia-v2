@@ -1,8 +1,9 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
 const TEXTURE_CATEGORIES = [
@@ -104,12 +105,9 @@ export default function TexturePage() {
     setSearchParams(next, { replace: true });
   };
 
-  const openDetail = (item?: NailDesignRow) => {
-    if (!item) return;
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
-    });
-  };
+  const detailState = (item: NailDesignRow) => ({
+    initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) },
+  });
 
   return (
     <div className="relative min-h-screen w-full bg-white text-[#1A1A1A]">
@@ -165,10 +163,14 @@ export default function TexturePage() {
 
         {/* 섹션 2: 히어로 배너 */}
         <section className="mb-0 px-5">
-          <div className="relative mb-0 block w-full aspect-[3/4] overflow-hidden rounded-[2rem] shadow-lg shadow-black/5" onClick={() => openDetail(heroItem)}>
-            {heroItem?.image_url ? (
+          {heroItem ? (
+            <Link
+              to={`/detail/${heroItem.id}`}
+              state={detailState(heroItem)}
+              className="relative mb-0 block w-full aspect-[3/4] overflow-hidden rounded-[2rem] shadow-lg shadow-black/5"
+            >
               <img
-                alt={displayItemTitle(heroItem, isEnglish)}
+                alt={buildNailImageSeoAlt(heroItem, isEnglish)}
                 className="h-full w-full object-cover object-center"
                 src={heroItem.image_url}
                 loading="eager"
@@ -178,19 +180,17 @@ export default function TexturePage() {
                   e.currentTarget.style.display = "none";
                 }}
               />
-            ) : null}
-            <div className="absolute inset-x-0 bottom-0 px-8 pb-8 pt-0">
-              <div className="relative z-10">
-                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
-                  {heroItem
-                    ? displayItemTitle(heroItem, isEnglish)
-                    : isEnglish
-                      ? `${displayTextureLabel(activeTab, isEnglish)} Nails`
-                      : `${activeTab} 네일`}
-                </h2>
+              <div className="absolute inset-x-0 bottom-0 px-8 pb-8 pt-0">
+                <div className="relative z-10">
+                  <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
+                    {displayItemTitle(heroItem, isEnglish)}
+                  </h2>
+                </div>
               </div>
-            </div>
-          </div>
+            </Link>
+          ) : (
+            <div className="relative mb-0 block w-full aspect-[3/4] overflow-hidden rounded-[2rem] shadow-lg shadow-black/5 bg-gray-100" />
+          )}
         </section>
 
         {/* 섹션 3: 지금 가장 핫한 시럽 BEST */}
@@ -209,10 +209,10 @@ export default function TexturePage() {
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {syrupBestItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="w-44 shrink-0 text-left">
+              <Link key={item.id} to={`/detail/${item.id}`} state={detailState(item)} className="block w-44 shrink-0">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                   <img
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     src={item.image_url}
                     loading="lazy"
@@ -227,7 +227,7 @@ export default function TexturePage() {
                     {displayItemTitle(item, isEnglish)}
                   </span>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -249,10 +249,10 @@ export default function TexturePage() {
           <div className="mb-0 grid grid-cols-2 gap-x-4 gap-y-8">
             {recommendGalleryItems.map((item) => (
               <article key={item.id} className="group flex flex-col gap-0">
-                <button type="button" onClick={() => openDetail(item)} className="text-left">
+                <Link to={`/detail/${item.id}`} state={detailState(item)} className="block">
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
                     <img
-                      alt={displayItemTitle(item, isEnglish)}
+                      alt={buildNailImageSeoAlt(item, isEnglish)}
                       className="h-full w-full object-cover object-center"
                       src={item.image_url}
                       loading="lazy"
@@ -267,7 +267,7 @@ export default function TexturePage() {
                       {displayItemTitle(item, isEnglish)}
                     </span>
                   </div>
-                </button>
+                </Link>
               </article>
             ))}
           </div>

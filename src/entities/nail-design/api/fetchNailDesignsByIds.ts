@@ -1,7 +1,8 @@
 import { supabase } from '../../../shared/api/supabaseClient'
 import type { NailDesignRow } from '../../../shared/types/database.types'
 
-const BY_IDS_COLUMNS = 'id,title,title_en,image_url'
+const BY_IDS_COLUMNS =
+  'id,title,title_en,image_url,color,color_en,nail_length,length_en,styles,styles_en'
 
 /** 요청 ID 순서를 유지한 채 `nail_designs` 행을 반환합니다. */
 export async function fetchNailDesignsByIds(ids: string[]): Promise<NailDesignRow[]> {

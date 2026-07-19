@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Search } from "lucide-react";
@@ -14,7 +15,7 @@ const TAB_ITEMS = [
 ] as const;
 const REACTION_SCROLL_Y_KEY = "gelia_reaction_best_scroll_y";
 const REACTION_BEST_COLUMNS =
-  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements,popularity,views,saves,likes";
 
 type ReactionBestSortColumn = "saves" | "likes";
 
@@ -221,7 +222,7 @@ export default function ReactionBestListPage() {
                 className="relative block w-full cursor-pointer overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm aspect-[3/4] text-left"
               >
                 <img
-                  alt={displayItemTitle(top1, isEnglish)}
+                  alt={buildNailImageSeoAlt(top1, isEnglish)}
                   className="h-full w-full object-cover object-center"
                   src={top1.image_url}
                   loading="eager"
@@ -259,7 +260,7 @@ export default function ReactionBestListPage() {
                   >
                     <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 bg-gray-200 shadow-sm">
                       <img
-                        alt={title}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                         src={item.image_url}
                         loading="lazy"

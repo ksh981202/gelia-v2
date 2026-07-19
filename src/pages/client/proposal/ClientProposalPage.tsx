@@ -1,8 +1,10 @@
 import { useProposalPageQuery } from "@/features/pro/api/useProposalPageQuery";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 import type { NailDesignRow } from "@/shared/types/database.types";
+import { buildNailImageSeoAlt, displayItemTitle } from "@/entities/nail-design/lib/nailDisplayText";
 import type { LucideIcon } from "lucide-react";
 import { Loader2, Map, MessageCircle } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 function InstagramIcon({ size = 20 }: { size?: number }) {
   return (
@@ -40,42 +42,40 @@ function formatCustomerDisplayName(name: string): string {
   return `${pureName} 고객님`;
 }
 
-function openNailDetail(navigate: ReturnType<typeof useNavigate>, nail: NailDesignRow) {
+function openNailDetailState(nail: NailDesignRow, isEnglish: boolean) {
   const imageUrl = String(nail.image_url ?? "").trim();
-  const title = String(nail.title ?? "").trim() || "네일 디자인";
+  const title = displayItemTitle(nail, isEnglish);
 
-  navigate(`/detail/${nail.id}`, {
-    state: {
-      initialNailData: {
-        id: nail.id,
-        imageUrl,
-        image_url: imageUrl,
-        title,
-        color: "",
-        mood: "",
-      },
+  return {
+    initialNailData: {
+      id: nail.id,
+      imageUrl,
+      image_url: imageUrl,
+      title,
+      color: "",
+      mood: "",
     },
-  });
+  };
 }
 
 function ProposalGalleryNailCard({
   nail,
   originalIndex,
-  onOpen,
+  isEnglish,
 }: {
   nail: NailDesignRow;
   originalIndex: number;
-  onOpen: (nail: NailDesignRow) => void;
+  isEnglish: boolean;
 }) {
   const imageUrl = String(nail.image_url ?? "").trim();
-  const title = String(nail.title ?? "").trim() || "네일 디자인";
+  const title = displayItemTitle(nail, isEnglish);
   const badgeLabel = String(originalIndex + 1).padStart(2, "0");
 
   return (
     <article className="w-full">
-      <button
-        type="button"
-        onClick={() => onOpen(nail)}
+      <Link
+        to={`/detail/${nail.id}`}
+        state={openNailDetailState(nail, isEnglish)}
         className="relative block w-full overflow-hidden rounded-2xl bg-white text-left shadow-sm transition-transform hover:shadow-md active:scale-[0.98] md:rounded-3xl"
         aria-label={`${badgeLabel} ${title} 상세 보기`}
       >
@@ -85,7 +85,7 @@ function ProposalGalleryNailCard({
         {imageUrl ? (
           <img
             src={imageUrl}
-            alt={title}
+            alt={buildNailImageSeoAlt(nail, isEnglish)}
             className="block w-full object-cover"
             loading="lazy"
             decoding="async"
@@ -93,7 +93,7 @@ function ProposalGalleryNailCard({
         ) : (
           <div className="aspect-[3/4] w-full bg-stone-200" aria-hidden />
         )}
-      </button>
+      </Link>
       <p className="mt-3 truncate px-1 text-center text-[14px] font-semibold text-stone-800 md:mt-4 md:text-[15px]">
         {title}
       </p>
@@ -102,7 +102,8 @@ function ProposalGalleryNailCard({
 }
 
 export default function ClientProposalPage() {
-  const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const { id } = useParams<{ id: string }>();
   const proposalId = (id ?? "").trim();
   const { data, isLoading, isError } = useProposalPageQuery(proposalId || undefined);
@@ -160,7 +161,7 @@ export default function ClientProposalPage() {
                 key={nail.id}
                 nail={nail}
                 originalIndex={index}
-                onOpen={(item) => openNailDetail(navigate, item)}
+                isEnglish={isEnglish}
               />
             ))}
           </section>

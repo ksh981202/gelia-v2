@@ -5,11 +5,14 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
+import {
+  buildNailImageSeoAlt,
+  displayItemTitle,
+} from '@/entities/nail-design/lib/nailDisplayText'
 import { useLanguageContext } from '@/contexts/LanguageContext'
-import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 const GALLERY_TABS = [
   { ko: '전체', en: 'All', keyword: '' },
@@ -25,13 +28,6 @@ type SortValue = (typeof SORT_VALUES)[number]
 
 function isSortValue(value: string): value is SortValue {
   return (SORT_VALUES as readonly string[]).includes(value)
-}
-
-function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
-  const ko = String(item.title ?? '').trim()
-  const en = String(item.title_en ?? '').trim()
-  if (isEnglish && en) return en
-  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
 }
 
 export default function ClientGalleryPage() {
@@ -258,46 +254,25 @@ export default function ClientGalleryPage() {
         ) : (
           <>
             {galleryItems.map((item, index) => (
-              <article
+              <Link
                 key={item.id}
-                className="flex cursor-pointer flex-col gap-2"
-                role="button"
-                tabIndex={0}
-                onClick={() =>
-                  navigate(`/detail/${item.id}`, {
-                    state: {
-                      initialNailData: {
-                        id: item.id,
-                        imageUrl: item.image_url,
-                        title: displayItemTitle(item, isEnglish),
-                        color: '',
-                        mood: '',
-                      },
-                    },
-                  })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    navigate(`/detail/${item.id}`, {
-                      state: {
-                        initialNailData: {
-                          id: item.id,
-                          imageUrl: item.image_url,
-                          title: displayItemTitle(item, isEnglish),
-                          color: '',
-                          mood: '',
-                        },
-                      },
-                    })
-                  }
+                to={`/detail/${item.id}`}
+                state={{
+                  initialNailData: {
+                    id: item.id,
+                    imageUrl: item.image_url,
+                    title: displayItemTitle(item, isEnglish),
+                    color: item.color ?? '',
+                    mood: item.mood ?? '',
+                  },
                 }}
+                className="flex cursor-pointer flex-col gap-2"
               >
                 <div className="aspect-[3/4] w-full min-h-0 overflow-hidden rounded-xl bg-gray-100">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
-                      alt={displayItemTitle(item, isEnglish)}
+                      alt={buildNailImageSeoAlt(item, isEnglish)}
                       className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                       loading={index < 4 ? 'eager' : 'lazy'}
                       fetchPriority={index < 4 ? 'high' : undefined}
@@ -310,7 +285,7 @@ export default function ClientGalleryPage() {
                     {displayItemTitle(item, isEnglish)}
                   </p>
                 </div>
-              </article>
+              </Link>
             ))}
             {isFetchingNextPage ? (
               <>

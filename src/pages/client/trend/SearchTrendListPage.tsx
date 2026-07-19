@@ -4,6 +4,7 @@ import {
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
 import { NAIL_KEYWORD_EN_DICTIONARY } from "@/shared/constants/nailKeywords";
 import type { NailDesignRow } from "@/shared/types/database.types";
@@ -248,7 +249,7 @@ export default function SearchTrendListPage() {
                       {item.image_url ? (
                         <img
                           src={item.image_url}
-                          alt={title}
+                          alt={buildNailImageSeoAlt(item, isEnglish)}
                           className="h-full w-full object-cover object-center transition-transform hover:scale-105"
                           loading={index < 4 ? "eager" : "lazy"}
                           decoding="async"

@@ -5,12 +5,13 @@ import {
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort';
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const SYRUP_BEST_TABS = ['전체', '🤍 누드/여리', '🍑 과즙/생기', '🧊 얼음/물방울', '✨ 시럽그라데이션', '💎 포인트/파츠'] as const;
 const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
@@ -175,14 +176,6 @@ export default function SyrupBestListPage() {
     return () => observer.disconnect();
   }, [activeTabKeyword, fetchNextPage, hasNextPage, isFetchingNextPage, sortType]);
 
-  const openDetail = useCallback(
-    (item: NailDesignRow) => {
-      navigate(`/detail/${item.id}`, {
-        state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
-      });
-    },
-    [isEnglish, navigate],
-  );
 
   return (
     <div className="relative min-h-screen w-full bg-white text-slate-900">
@@ -299,12 +292,16 @@ export default function SyrupBestListPage() {
           <>
             {galleryItems.map((item, index) => (
               <article key={item.id} className="flex cursor-pointer flex-col gap-2">
-                <button type="button" onClick={() => openDetail(item)} className="w-full text-left">
+                <Link
+                  to={`/detail/${item.id}`}
+                  state={{ initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } }}
+                  className="block w-full"
+                >
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item, isEnglish)}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full object-cover object-center"
                         loading={index < 4 ? 'eager' : 'lazy'}
                         decoding="async"
@@ -321,7 +318,7 @@ export default function SyrupBestListPage() {
                       {displayItemTitle(item, isEnglish)}
                     </p>
                   </div>
-                </button>
+                </Link>
               </article>
             ))}
             {isFetchingNextPage

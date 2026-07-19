@@ -1,8 +1,9 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
 const PARTS_CATEGORIES = [
@@ -101,12 +102,9 @@ export default function PartsPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const openDetail = (item?: NailDesignRow) => {
-    if (!item) return;
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
-    });
-  };
+  const detailState = (item: NailDesignRow) => ({
+    initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) },
+  });
 
   return (
     <div className="relative min-h-screen w-full bg-white text-[#1A1A1A]">
@@ -161,10 +159,14 @@ export default function PartsPage() {
 
         {/* 섹션 2: 히어로 배너 */}
         <section className="mb-0 px-5">
-          <div className="group relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-[20px] shadow-lg" onClick={() => openDetail(heroItem)}>
-            {heroItem?.image_url ? (
+          {heroItem ? (
+            <Link
+              to={`/detail/${heroItem.id}`}
+              state={detailState(heroItem)}
+              className="group relative mb-0 block aspect-[3/4] w-full overflow-hidden rounded-[20px] shadow-lg"
+            >
               <img
-                alt={displayItemTitle(heroItem, isEnglish)}
+                alt={buildNailImageSeoAlt(heroItem, isEnglish)}
                 className="h-full w-full object-cover object-center"
                 src={heroItem.image_url}
                 loading="eager"
@@ -175,19 +177,17 @@ export default function PartsPage() {
                   e.currentTarget.parentElement?.classList.add("bg-gray-100");
                 }}
               />
-            ) : null}
-            <div className="absolute inset-x-5 bottom-5">
-              <div className="relative z-10">
-                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
-                  {heroItem
-                    ? displayItemTitle(heroItem, isEnglish)
-                    : isEnglish
-                      ? `${displayPartsLabel(activeTab, isEnglish)} Nails`
-                      : `${activeTab} 네일`}
-                </h2>
+              <div className="absolute inset-x-5 bottom-5">
+                <div className="relative z-10">
+                  <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
+                    {displayItemTitle(heroItem, isEnglish)}
+                  </h2>
+                </div>
               </div>
-            </div>
-          </div>
+            </Link>
+          ) : (
+            <div className="group relative mb-0 aspect-[3/4] w-full overflow-hidden rounded-[20px] shadow-lg bg-gray-100" />
+          )}
         </section>
 
         {/* 섹션 3: 지금 가장 핫한 스톤 BEST (가로 스크롤) */}
@@ -206,11 +206,11 @@ export default function PartsPage() {
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {stoneBestItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-44 shrink-0 flex-col bg-transparent p-0 text-center">
+              <Link key={item.id} to={`/detail/${item.id}`} state={detailState(item)} className="flex w-44 shrink-0 flex-col text-center">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -223,7 +223,7 @@ export default function PartsPage() {
                 <span className="w-full min-w-0 text-[14px] font-medium tracking-tight truncate text-gray-800 px-1">
                   {displayItemTitle(item, isEnglish)}
                 </span>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -244,11 +244,11 @@ export default function PartsPage() {
           </div>
           <div className="mb-0 grid grid-cols-2 gap-4 pb-10">
             {fullPartsItems.map((item) => (
-              <article key={item.id} className="flex flex-col gap-0 cursor-pointer" onClick={() => openDetail(item)}>
+              <Link key={item.id} to={`/detail/${item.id}`} state={detailState(item)} className="flex flex-col gap-0 cursor-pointer">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -261,7 +261,7 @@ export default function PartsPage() {
                 <span className="w-full min-w-0 text-center text-[14px] font-medium tracking-tight truncate text-gray-800 px-1">
                   {displayItemTitle(item, isEnglish)}
                 </span>
-              </article>
+              </Link>
             ))}
           </div>
         </section>

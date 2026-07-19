@@ -5,12 +5,15 @@ import {
   useGalleryCountQuery,
   useGalleryInfiniteQuery,
 } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
-import type { NailDesignRow } from '@/shared/types/database.types'
+import {
+  buildNailImageSeoAlt,
+  displayItemTitle,
+} from '@/entities/nail-design/lib/nailDisplayText'
 import { GalleryListHeaderWithSort } from '@/widgets/gallery-list/GalleryListHeaderWithSort'
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle'
 import { ChevronDown, ChevronLeft, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { THEME_TAB_LABELS, type ThemeTabLabel } from './themeTabs'
 
 const SORT_VALUES = ['인기순', '최신순', '저장 많은 순'] as const
@@ -44,13 +47,6 @@ function resolveActiveThemeTabLabel(rawTab: string | null): ThemeTabLabel {
 function themeTabKeywordForQuery(label: ThemeTabLabel): string {
   if (label === '전체') return DEFAULT_GALLERY_TAB
   return extractPureThemeKeyword(label)
-}
-
-function displayItemTitle(item: NailDesignRow, isEnglish: boolean): string {
-  const ko = String(item.title ?? '').trim()
-  const en = String(item.title_en ?? '').trim()
-  if (isEnglish && en) return en
-  return ko || en || (isEnglish ? 'Nail Design' : '네일 디자인')
 }
 
 export default function ClientGalleryExploreListPage() {
@@ -115,20 +111,6 @@ export default function ClientGalleryExploreListPage() {
     if (value === '인기순') return isEnglish ? 'Popular' : '인기순'
     if (value === '최신순') return isEnglish ? 'Newest' : '최신순'
     return isEnglish ? 'Most Saved' : '저장 많은 순'
-  }
-
-  const openDetail = (item: NailDesignRow) => {
-    navigate(`/detail/${item.id}`, {
-      state: {
-        initialNailData: {
-          id: item.id,
-          imageUrl: item.image_url,
-          title: displayItemTitle(item, isEnglish),
-          color: '',
-          mood: '',
-        },
-      },
-    })
   }
 
   useEffect(() => {
@@ -302,24 +284,25 @@ export default function ClientGalleryExploreListPage() {
         ) : (
           <>
             {galleryItems.map((item, index) => (
-              <article
+              <Link
                 key={item.id}
-                className="flex cursor-pointer flex-col gap-2"
-                role="button"
-                tabIndex={0}
-                onClick={() => openDetail(item)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    openDetail(item)
-                  }
+                to={`/detail/${item.id}`}
+                state={{
+                  initialNailData: {
+                    id: item.id,
+                    imageUrl: item.image_url,
+                    title: displayItemTitle(item, isEnglish),
+                    color: item.color ?? '',
+                    mood: item.mood ?? '',
+                  },
                 }}
+                className="flex cursor-pointer flex-col gap-2"
               >
                 <div className="aspect-[3/4] w-full min-h-0 overflow-hidden rounded-xl bg-gray-100">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
-                      alt={displayItemTitle(item, isEnglish)}
+                      alt={buildNailImageSeoAlt(item, isEnglish)}
                       className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                       loading={index < 4 ? 'eager' : 'lazy'}
                       fetchPriority={index < 4 ? 'high' : undefined}
@@ -332,7 +315,7 @@ export default function ClientGalleryExploreListPage() {
                     {displayItemTitle(item, isEnglish)}
                   </p>
                 </div>
-              </article>
+              </Link>
             ))}
             {isFetchingNextPage ? (
               <>

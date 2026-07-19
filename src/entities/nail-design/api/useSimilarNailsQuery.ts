@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../../shared/api/supabaseClient'
 import type { NailDesignRow } from '../../../shared/types/database.types'
 
-const SIMILAR_COLUMNS = 'id,title,title_en,image_url,created_at'
+const SIMILAR_COLUMNS =
+  'id,title,title_en,image_url,created_at,color,color_en,nail_length,length_en,styles,styles_en'
 const SIMILAR_LIMIT = 5
 const MAX_SIMILAR_TAGS = 6
 
@@ -13,7 +14,17 @@ const SIMILAR_ARRAY_CS_COLUMNS = ['styles', 'situations'] as const
 
 export type SimilarNailRow = Pick<
   NailDesignRow,
-  'id' | 'title' | 'title_en' | 'image_url' | 'created_at'
+  | 'id'
+  | 'title'
+  | 'title_en'
+  | 'image_url'
+  | 'created_at'
+  | 'color'
+  | 'color_en'
+  | 'nail_length'
+  | 'length_en'
+  | 'styles'
+  | 'styles_en'
 >
 
 export type UseSimilarNailsOptions = {

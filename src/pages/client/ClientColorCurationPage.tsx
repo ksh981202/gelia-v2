@@ -1,6 +1,7 @@
 import { useGalleryInfiniteQuery } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { CurationFallback } from '@/shared/ui/CurationFallback'
 import { ChevronLeft, Search } from 'lucide-react'
@@ -177,7 +178,7 @@ function HorizontalPreviewSection({
                 {item.image_url ? (
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
@@ -354,7 +355,7 @@ export default function ClientColorCurationPage() {
             {heroNail?.image_url ? (
               <img
                 src={heroNail.image_url}
-                alt={displayItemTitle(heroNail, isEnglish)}
+                alt={buildNailImageSeoAlt(heroNail, isEnglish)}
                 className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
@@ -409,7 +410,7 @@ export default function ClientColorCurationPage() {
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={displayItemTitle(item, isEnglish)}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full object-cover"
                         loading="lazy"
                         decoding="async"

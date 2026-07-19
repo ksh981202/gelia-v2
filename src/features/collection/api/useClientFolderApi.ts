@@ -50,7 +50,8 @@ function invalidateUserSavedCountQuery(queryClient: QueryClient, userId: string)
 }
 
 const CLIENT_FOLDER_COLUMNS = 'id,user_id,name,is_public,created_at'
-const FOLDER_NAIL_COLUMNS = 'id,title,title_en,image_url,category'
+const FOLDER_NAIL_COLUMNS =
+  'id,title,title_en,image_url,category,color,color_en,nail_length,length_en,styles,styles_en'
 const COVER_NAIL_COLUMNS = 'id,image_url'
 
 async function fetchNailCoverImage(nailId: string): Promise<string | null> {

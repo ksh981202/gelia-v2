@@ -8,12 +8,13 @@ import {
 import { useDeleteDefaultSavesMutation } from '@/features/nail-activity/api/useClientActivityApi'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { CheckCircle2, ChevronLeft, Link as LinkIcon, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 function nailTitle(item: NailDesignRow, isEnglish: boolean): string {
@@ -27,35 +28,25 @@ function CollectionNailCard({
   isEnglish,
   isEditing,
   isSelected,
-  onInteract,
+  onSelect,
 }: {
   item: NailDesignRow
   isEnglish: boolean
   isEditing: boolean
   isSelected: boolean
-  onInteract: (id: string, title: string, imageUrl: string) => void
+  onSelect: (id: string) => void
 }) {
   const imageUrl = String(item.image_url ?? '').trim()
   const title = nailTitle(item, isEnglish)
+  const cardClassName = `mb-4 break-inside-avoid cursor-pointer ${isEditing && isSelected ? 'rounded-2xl ring-2 ring-stone-800 ring-offset-2' : ''}`
 
-  return (
-    <article
-      className={`mb-4 break-inside-avoid cursor-pointer ${isEditing && isSelected ? 'rounded-2xl ring-2 ring-stone-800 ring-offset-2' : ''}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => onInteract(item.id, title, imageUrl)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onInteract(item.id, title, imageUrl)
-        }
-      }}
-    >
+  const cardContent = (
+    <>
       <div className="relative overflow-hidden rounded-2xl border border-black/5 bg-gray-100 shadow-sm">
         {imageUrl ? (
           <img
             src={imageUrl}
-            alt={title}
+            alt={buildNailImageSeoAlt(item, isEnglish)}
             className={`h-auto w-full object-cover ${isEditing ? '' : 'transition-transform hover:scale-[1.02]'}`}
             loading="lazy"
             decoding="async"
@@ -82,7 +73,44 @@ function CollectionNailCard({
       <p className="mt-2 truncate px-1 text-center text-[13px] font-semibold text-stone-800">
         {title}
       </p>
-    </article>
+    </>
+  )
+
+  if (isEditing) {
+    return (
+      <article
+        className={cardClassName}
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(item.id)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onSelect(item.id)
+          }
+        }}
+      >
+        {cardContent}
+      </article>
+    )
+  }
+
+  return (
+    <Link
+      to={`/detail/${item.id}`}
+      state={{
+        initialNailData: {
+          id: item.id,
+          imageUrl,
+          title,
+          color: '',
+          mood: '',
+        },
+      }}
+      className={`${cardClassName} block`}
+    >
+      {cardContent}
+    </Link>
   )
 }
 
@@ -171,35 +199,11 @@ export default function ClientCollectionPage() {
     }
   }, [folder?.name, folderId, isDefaultFolder, isEnglish, isOwner, makeFolderPublicMutation])
 
-  const openDetail = useCallback(
-    (nailId: string, title: string, imageUrl: string) => {
-      navigate(`/detail/${nailId}`, {
-        state: {
-          initialNailData: {
-            id: nailId,
-            imageUrl,
-            title,
-            color: '',
-            mood: '',
-          },
-        },
-      })
-    },
-    [navigate],
-  )
-
-  const handleCardInteract = useCallback(
-    (nailId: string, title: string, imageUrl: string) => {
-      if (isEditing) {
-        setSelectedIds((prev) =>
-          prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
-        )
-        return
-      }
-      openDetail(nailId, title, imageUrl)
-    },
-    [isEditing, openDetail],
-  )
+  const handleSelect = useCallback((nailId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
+    )
+  }, [])
 
   const isFolderDeletePending = deleteFolderMutation.isPending
 
@@ -436,7 +440,7 @@ export default function ClientCollectionPage() {
                   isEnglish={isEnglish}
                   isEditing={isEditing && isOwner}
                   isSelected={selectedIds.includes(item.id)}
-                  onInteract={handleCardInteract}
+                  onSelect={handleSelect}
                 />
               ))}
             </div>

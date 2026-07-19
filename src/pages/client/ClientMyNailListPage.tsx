@@ -3,6 +3,7 @@ import {
   useDeleteRecentViewsMutation,
 } from '@/features/nail-activity/api/useClientActivityApi'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { supabase } from '@/shared/api/supabaseClient'
@@ -10,7 +11,7 @@ import type { NailDesignRow } from '@/shared/types/database.types'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { CheckCircle2, ChevronLeft } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 type ListType = 'recent' | 'liked' | 'saved'
 type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
@@ -22,7 +23,8 @@ const LIST_TITLES: Record<ListType, { ko: string; en: string }> = {
 }
 
 const LIST_PAGE_SIZE = 10
-const MY_LIST_NAIL_COLUMNS = 'id,title,title_en,image_url'
+const MY_LIST_NAIL_COLUMNS =
+  'id,title,title_en,image_url,color,color_en,nail_length,length_en,styles,styles_en'
 const GALLERY_GRID_CLASS = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-4'
 
 const ACTIVITY_TABLE_BY_TYPE: Record<ListType, { table: UserActivityTable; orderColumn: string }> = {
@@ -178,37 +180,16 @@ export default function ClientMyNailListPage() {
     return () => observer.disconnect()
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, listType])
 
-  const openDetail = (nailId: string, title: string, imageUrl: string) => {
-    navigate(`/detail/${nailId}`, {
-      state: {
-        initialNailData: {
-          id: nailId,
-          imageUrl,
-          title,
-          color: '',
-          mood: '',
-        },
-      },
-    })
-  }
-
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false)
     setSelectedIds([])
   }, [])
 
-  const handleCardClick = useCallback(
-    (nailId: string, title: string, imageUrl: string) => {
-      if (isEditing) {
-        setSelectedIds((prev) =>
-          prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
-        )
-        return
-      }
-      openDetail(nailId, title, imageUrl)
-    },
-    [isEditing, navigate],
-  )
+  const handleSelect = useCallback((nailId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(nailId) ? prev.filter((id) => id !== nailId) : [...prev, nailId],
+    )
+  }, [])
 
   const handleBulkDelete = useCallback(async () => {
     if (!currentUserId || selectedIds.length === 0 || !listType || listType === 'saved') return
@@ -360,25 +341,14 @@ export default function ClientMyNailListPage() {
                   const title = nailDisplayTitle(item, isEnglish)
                   const imageUrl = String(item.image_url ?? '').trim()
                   const isSelected = selectedIds.includes(item.id)
-                  return (
-                    <article
-                      key={item.id}
-                      className={`flex cursor-pointer flex-col ${isEditing && isSelected ? 'rounded-xl ring-2 ring-stone-800 ring-offset-2 md:rounded-2xl' : ''}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleCardClick(item.id, title, imageUrl)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handleCardClick(item.id, title, imageUrl)
-                        }
-                      }}
-                    >
+                  const cardClassName = `flex cursor-pointer flex-col ${isEditing && isSelected ? 'rounded-xl ring-2 ring-stone-800 ring-offset-2 md:rounded-2xl' : ''}`
+                  const cardContent = (
+                    <>
                       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
-                            alt={title}
+                            alt={buildNailImageSeoAlt(item, isEnglish)}
                             className={`h-full w-full object-cover transition-transform ${isEditing ? '' : 'hover:scale-105'}`}
                           />
                         ) : null}
@@ -401,7 +371,46 @@ export default function ClientMyNailListPage() {
                       <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">
                         {title}
                       </div>
-                    </article>
+                    </>
+                  )
+
+                  if (isEditing) {
+                    return (
+                      <article
+                        key={item.id}
+                        className={cardClassName}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleSelect(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            handleSelect(item.id)
+                          }
+                        }}
+                      >
+                        {cardContent}
+                      </article>
+                    )
+                  }
+
+                  return (
+                    <Link
+                      key={item.id}
+                      to={`/detail/${item.id}`}
+                      state={{
+                        initialNailData: {
+                          id: item.id,
+                          imageUrl,
+                          title,
+                          color: '',
+                          mood: '',
+                        },
+                      }}
+                      className={cardClassName}
+                    >
+                      {cardContent}
+                    </Link>
                   )
                 })
               )}

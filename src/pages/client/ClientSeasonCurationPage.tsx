@@ -1,5 +1,6 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { CurationFallback } from '@/shared/ui/CurationFallback'
 import { ChevronLeft, Search } from 'lucide-react'
@@ -115,20 +116,15 @@ export default function ClientSeasonCurationPage() {
     setSearchParams({ tab: season }, { replace: true })
   }
 
-  const goDetail = (item?: NailDesignRow) => {
-    if (!item?.id) return
-    navigate(`/detail/${item.id}`, {
-      state: {
-        initialNailData: {
-          id: item.id,
-          imageUrl: item.image_url,
-          title: displayItemTitle(item, isEnglish),
-          color: '',
-          mood: '',
-        },
-      },
-    })
-  }
+  const detailState = (item: NailDesignRow) => ({
+    initialNailData: {
+      id: item.id,
+      imageUrl: item.image_url,
+      title: displayItemTitle(item, isEnglish),
+      color: '',
+      mood: '',
+    },
+  })
 
   return (
     <div className="relative w-full bg-white">
@@ -202,41 +198,31 @@ export default function ClientSeasonCurationPage() {
             })}
           </nav>
 
-          <div
-            className={`${heroNail ? 'cursor-pointer' : ''} relative mt-5 aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-100 sm:aspect-[4/5]`}
-            role={heroNail ? 'button' : undefined}
-            tabIndex={heroNail ? 0 : undefined}
-            onClick={() => goDetail(heroNail)}
-            onKeyDown={(e) => {
-              if (!heroNail) return
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                goDetail(heroNail)
-              }
-            }}
-          >
-            {heroNail?.image_url ? (
+          {heroNail ? (
+            <Link
+              to={`/detail/${heroNail.id}`}
+              state={detailState(heroNail)}
+              className="relative mt-5 block aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-100 sm:aspect-[4/5]"
+            >
               <img
                 src={heroNail.image_url}
-                alt={displayItemTitle(heroNail, isEnglish)}
+                alt={buildNailImageSeoAlt(heroNail, isEnglish)}
                 className="h-full w-full object-cover"
                 loading="lazy"
                 decoding="async"
               />
-            ) : (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4">
+                <p className="truncate text-lg font-bold text-white drop-shadow-md">
+                  {displayItemTitle(heroNail, isEnglish)}
+                </p>
+              </div>
+            </Link>
+          ) : (
+            <div className="relative mt-5 aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-100 sm:aspect-[4/5]">
               <CurationFallback isEnglish={isEnglish} />
-            )}
-            {heroNail?.image_url ? (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <p className="truncate text-lg font-bold text-white drop-shadow-md">
-                    {displayItemTitle(heroNail, isEnglish)}
-                  </p>
-                </div>
-              </>
-            ) : null}
-          </div>
+            </div>
+          )}
         </section>
 
         <section
@@ -257,16 +243,16 @@ export default function ClientSeasonCurationPage() {
 
           <div className="-mx-5 min-w-0 flex snap-x snap-mandatory gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {vacationItems.map((item) => (
-              <button
+              <Link
                 key={item.id}
-                type="button"
-                onClick={() => goDetail(item)}
-                className="flex w-40 shrink-0 flex-col gap-2 text-left"
+                to={`/detail/${item.id}`}
+                state={detailState(item)}
+                className="flex w-40 shrink-0 flex-col gap-2"
               >
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
@@ -275,7 +261,7 @@ export default function ClientSeasonCurationPage() {
                 <p className="truncate text-center text-[13px] text-gray-800">
                   {displayItemTitle(item, isEnglish)}
                 </p>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -298,16 +284,16 @@ export default function ClientSeasonCurationPage() {
 
           <div className="grid grid-cols-2 gap-4">
             {popularItems.map((item) => (
-              <button
+              <Link
                 key={item.id}
-                type="button"
-                onClick={() => goDetail(item)}
-                className="flex flex-col gap-2 text-left"
+                to={`/detail/${item.id}`}
+                state={detailState(item)}
+                className="flex flex-col gap-2"
               >
                 <div className="aspect-[4/5] w-full overflow-hidden rounded-xl bg-gray-100">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
@@ -316,7 +302,7 @@ export default function ClientSeasonCurationPage() {
                 <p className="truncate text-center text-sm text-gray-800">
                   {displayItemTitle(item, isEnglish)}
                 </p>
-              </button>
+              </Link>
             ))}
           </div>
         </section>

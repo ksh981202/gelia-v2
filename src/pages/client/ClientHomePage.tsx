@@ -14,6 +14,7 @@ import FolderSelectModal from "@/features/collection/components/FolderSelectModa
 import { useUserStore } from "@/features/user-actions/useUserStore";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { ADMIN_EMAILS } from "@/shared/constants/auth";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import type { NailDesignRow } from "@/shared/types/database.types";
@@ -21,7 +22,18 @@ import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react"
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-type HomeNailCard = { id: string; title: string; titleEn: string; image: string };
+type HomeNailCard = {
+  id: string
+  title: string
+  titleEn: string
+  image: string
+  color: string
+  colorEn: string
+  nailLength: string
+  lengthEn: string
+  styles: string[]
+  stylesEn: string[]
+}
 
 function toHomeNailCard(row: NailDesignRow): HomeNailCard {
   return {
@@ -29,7 +41,29 @@ function toHomeNailCard(row: NailDesignRow): HomeNailCard {
     title: row.title,
     titleEn: row.title_en,
     image: row.image_url,
-  };
+    color: String(row.color ?? '').trim(),
+    colorEn: String(row.color_en ?? '').trim(),
+    nailLength: String(row.nail_length ?? '').trim(),
+    lengthEn: String(row.length_en ?? '').trim(),
+    styles: Array.isArray(row.styles) ? row.styles : [],
+    stylesEn: Array.isArray(row.styles_en) ? row.styles_en : [],
+  }
+}
+
+function homeNailSeoAlt(nail: HomeNailCard, isEnglish: boolean): string {
+  return buildNailImageSeoAlt(
+    {
+      title: nail.title,
+      title_en: nail.titleEn,
+      color: nail.color,
+      color_en: nail.colorEn,
+      nail_length: nail.nailLength,
+      length_en: nail.lengthEn,
+      styles: nail.styles,
+      styles_en: nail.stylesEn,
+    },
+    isEnglish,
+  )
 }
 
 const CATEGORY_CHIPS = [
@@ -66,12 +100,10 @@ function PcHomeGalleryCard({
   item,
   index,
   isEnglish,
-  onOpen,
 }: {
   item: NailDesignRow;
   index: number;
   isEnglish: boolean;
-  onOpen: (id: string) => void;
 }) {
   const card = toHomeNailCard(item);
   const savedNails = useUserStore((state) => state.savedNails);
@@ -86,14 +118,14 @@ function PcHomeGalleryCard({
 
   return (
     <>
-    <div
-      className="group cursor-pointer break-inside-avoid"
-      onClick={() => onOpen(item.id)}
+    <Link
+      to={`/detail/${item.id}`}
+      className="group block cursor-pointer break-inside-avoid"
     >
       <div className="relative overflow-hidden rounded-2xl border border-black/5 shadow-sm">
         <img
           src={card.image}
-          alt={homeNailTitle(card, isEnglish)}
+          alt={buildNailImageSeoAlt(item, isEnglish)}
           loading={index < 12 ? "eager" : "lazy"}
           fetchPriority={index < 4 ? "high" : undefined}
           decoding="async"
@@ -120,7 +152,7 @@ function PcHomeGalleryCard({
       <p className="mt-3 truncate px-2 text-center text-[14px] font-semibold text-stone-800">
         {homeNailTitle(card, isEnglish)}
       </p>
-    </div>
+    </Link>
     <FolderSelectModal
       isOpen={isFolderModalOpen}
       onClose={() => setIsFolderModalOpen(false)}
@@ -347,9 +379,9 @@ export default function ClientHomePage() {
                 </div>
               ))
             : recommendNails.map((nail, index) => (
-            <div key={nail.id} className="relative w-full flex-none snap-center cursor-pointer" onClick={() => navigate(`/detail/${nail.id}`)}>
+            <Link key={nail.id} to={`/detail/${nail.id}`} className="relative w-full flex-none snap-center cursor-pointer">
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
+                <img src={nail.image} alt={homeNailSeoAlt(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
                 <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/40 to-transparent p-5 pt-12">
                   <div className="flex w-full flex-col items-start text-left">
                     <span className="mb-2 inline-block rounded-full bg-[#FF7E67] px-3 py-1 text-[11px] font-bold text-white shadow-sm">PICK</span>
@@ -357,17 +389,17 @@ export default function ClientHomePage() {
                   </div>
                 </div>
                 {index > 0 && (
-                  <button type="button" className="absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); const el = scrollRef.current; if (!el) return; el.scrollBy({ left: -el.clientWidth, behavior: "smooth" }); }}>
+                  <button type="button" className="absolute left-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = scrollRef.current; if (!el) return; el.scrollBy({ left: -el.clientWidth, behavior: "smooth" }); }}>
                     <ChevronLeft size={18} strokeWidth={2} />
                   </button>
                 )}
                 {index < recommendNails.length - 1 && (
-                  <button type="button" className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); const el = scrollRef.current; if (!el) return; el.scrollBy({ left: el.clientWidth, behavior: "smooth" }); }}>
+                  <button type="button" className="absolute right-3 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); const el = scrollRef.current; if (!el) return; el.scrollBy({ left: el.clientWidth, behavior: "smooth" }); }}>
                     <ChevronRight size={18} strokeWidth={2} />
                   </button>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -411,12 +443,12 @@ export default function ClientHomePage() {
                 </div>
               ))
             : trendNails.map((nail) => (
-                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/detail/${nail.id}`)}>
+                <Link key={nail.id} to={`/detail/${nail.id}`} className="flex w-full cursor-pointer flex-col items-center">
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
+                    <img src={nail.image} alt={homeNailSeoAlt(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
                   </div>
                   <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{homeNailTitle(nail, isEnglish)}</span>
-                </div>
+                </Link>
               ))}
         </div>
         <div className="hidden min-w-0 px-4 pb-8 pt-4 md:block">
@@ -458,7 +490,6 @@ export default function ClientHomePage() {
                       item={item}
                       index={index}
                       isEnglish={isEnglish}
-                      onOpen={(id) => navigate(`/detail/${id}`)}
                     />
                   ))}
                   {isFetchingNextPage
@@ -492,12 +523,12 @@ export default function ClientHomePage() {
                 </div>
               ))
             : popularNails.map((nail) => (
-                <div key={nail.id} className="flex w-full cursor-pointer flex-col items-center" onClick={() => navigate(`/detail/${nail.id}`)}>
+                <Link key={nail.id} to={`/detail/${nail.id}`} className="flex w-full cursor-pointer flex-col items-center">
                   <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={homeNailTitle(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
+                    <img src={nail.image} alt={homeNailSeoAlt(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
                   </div>
                   <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{homeNailTitle(nail, isEnglish)}</span>
-                </div>
+                </Link>
               ))}
         </div>
       </section>

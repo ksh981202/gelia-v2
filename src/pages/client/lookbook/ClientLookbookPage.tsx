@@ -1,44 +1,44 @@
 import { useLookbookPageQuery } from "@/features/pro/api/useLookbookPageQuery";
+import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt, displayItemTitle } from "@/entities/nail-design/lib/nailDisplayText";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { Loader2 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
-function openNailDetail(navigate: ReturnType<typeof useNavigate>, nail: NailDesignRow) {
+function lookbookDetailState(nail: NailDesignRow, isEnglish: boolean) {
   const imageUrl = String(nail.image_url ?? "").trim();
-  const title = String(nail.title ?? "").trim() || "네일 디자인";
+  const title = displayItemTitle(nail, isEnglish);
 
-  navigate(`/detail/${nail.id}`, {
-    state: {
-      initialNailData: {
-        id: nail.id,
-        imageUrl,
-        image_url: imageUrl,
-        title,
-        color: "",
-        mood: "",
-      },
+  return {
+    initialNailData: {
+      id: nail.id,
+      imageUrl,
+      image_url: imageUrl,
+      title,
+      color: "",
+      mood: "",
     },
-  });
+  };
 }
 
 function LookbookGalleryNailCard({
   nail,
   originalIndex,
-  onOpen,
+  isEnglish,
 }: {
   nail: NailDesignRow;
   originalIndex: number;
-  onOpen: (nail: NailDesignRow) => void;
+  isEnglish: boolean;
 }) {
   const imageUrl = String(nail.image_url ?? "").trim();
-  const title = String(nail.title ?? "").trim() || "네일 디자인";
+  const title = displayItemTitle(nail, isEnglish);
   const badgeLabel = String(originalIndex + 1).padStart(2, "0");
 
   return (
     <article className="mb-4 w-full break-inside-avoid">
-      <button
-        type="button"
-        onClick={() => onOpen(nail)}
+      <Link
+        to={`/detail/${nail.id}`}
+        state={lookbookDetailState(nail, isEnglish)}
         className="relative block w-full overflow-hidden rounded-2xl bg-white text-left shadow-sm transition-transform hover:shadow-md active:scale-[0.98] md:rounded-3xl"
         aria-label={`${badgeLabel} ${title} 상세 보기`}
       >
@@ -48,7 +48,7 @@ function LookbookGalleryNailCard({
         {imageUrl ? (
           <img
             src={imageUrl}
-            alt={title}
+            alt={buildNailImageSeoAlt(nail, isEnglish)}
             className="block w-full object-cover"
             loading="lazy"
             decoding="async"
@@ -56,14 +56,15 @@ function LookbookGalleryNailCard({
         ) : (
           <div className="aspect-[3/4] w-full bg-stone-200" aria-hidden />
         )}
-      </button>
+      </Link>
       <p className="mt-2 truncate px-1 text-center text-sm font-semibold text-stone-700">{title}</p>
     </article>
   );
 }
 
 export default function ClientLookbookPage() {
-  const navigate = useNavigate();
+  const { language } = useLanguageContext();
+  const isEnglish = language === "en";
   const { id } = useParams<{ id: string }>();
   const lookbookId = (id ?? "").trim();
   const { data, isLoading, isError } = useLookbookPageQuery(lookbookId || undefined);
@@ -113,7 +114,7 @@ export default function ClientLookbookPage() {
                 key={nail.id}
                 nail={nail}
                 originalIndex={index}
-                onOpen={(item) => openNailDetail(navigate, item)}
+                isEnglish={isEnglish}
               />
             ))}
           </section>

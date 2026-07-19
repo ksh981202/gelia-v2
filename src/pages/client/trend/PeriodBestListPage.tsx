@@ -1,6 +1,7 @@
 import { filterNonZeroRankingRpcRows } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
@@ -198,7 +199,7 @@ export default function PeriodBestListPage() {
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={title}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full object-cover object-center transition-transform hover:scale-105"
                         loading={index < 4 ? "eager" : "lazy"}
                         decoding="async"

@@ -1,6 +1,7 @@
 import { fetchNailDesignsBySearch } from '@/entities/nail-design/api/fetchNailDesignsBySearch'
 import { usePopularSearchTrends } from '@/entities/nail-design/api/usePopularSearchTrends'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { supabase } from '@/shared/api/supabaseClient'
 import { ALLOWED_NAIL_KEYWORDS } from '@/shared/constants/allowedNailKeywords'
 import { NAIL_KEYWORD_EN_DICTIONARY } from '@/shared/constants/nailKeywords'
@@ -13,7 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import ClientHeaderUtilityIcons from '@/components/client/ClientHeaderUtilityIcons'
 import { ChevronLeft, Search, TrendingDown, TrendingUp } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 const TREND_SKELETON_ROWS = 5
 
@@ -128,19 +129,6 @@ export default function SearchMainPage() {
     isError: isTrendsError,
   } = usePopularSearchTrends()
 
-  const openDetail = (id: string, title: string, imageUrl: string) => {
-    navigate(`/detail/${id}`, {
-      state: {
-        initialNailData: {
-          id,
-          imageUrl,
-          title,
-          color: '',
-          mood: '',
-        },
-      },
-    })
-  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
@@ -309,24 +297,25 @@ export default function SearchMainPage() {
                   : koTitle || enTitle || (isEnglish ? 'Nail Design' : '네일 디자인')
               const imageUrl = String(item.image_url ?? '').trim()
               return (
-                <article
+                <Link
                   key={item.id}
-                  className="flex cursor-pointer flex-col gap-2"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openDetail(item.id, title, imageUrl)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      openDetail(item.id, title, imageUrl)
-                    }
+                  to={`/detail/${item.id}`}
+                  state={{
+                    initialNailData: {
+                      id: item.id,
+                      imageUrl,
+                      title,
+                      color: '',
+                      mood: '',
+                    },
                   }}
+                  className="flex cursor-pointer flex-col gap-2"
                 >
                   <div className="aspect-[3/4] w-full min-h-0 overflow-hidden rounded-xl bg-gray-100">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
-                        alt={title}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                         loading="lazy"
                         decoding="async"
@@ -336,7 +325,7 @@ export default function SearchMainPage() {
                   <p className="line-clamp-2 w-full px-1 text-center text-sm font-medium tracking-tight text-gray-800">
                     {title}
                   </p>
-                </article>
+                </Link>
               )
               })
             )}

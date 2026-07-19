@@ -1,5 +1,6 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { Bookmark, ChevronLeft, Search } from 'lucide-react'
 import { useMemo } from 'react'
@@ -134,7 +135,7 @@ export default function ClientTodaySpecialPage() {
             >
               <img
                 src={pick.image_url}
-                alt={title}
+                alt={buildNailImageSeoAlt(pick, isEnglish)}
                 className="h-full w-full object-cover"
                 loading={index === 0 ? 'eager' : 'lazy'}
                 decoding="async"

@@ -1,8 +1,9 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
 const TEXTURE_CAPTIONS = ['시럽 네일', '자석 네일', '미러파우더 네일'] as const;
@@ -80,6 +81,54 @@ function findMoodHero(pool: NailDesignRow[]): NailDesignRow | undefined {
   });
 }
 
+function renderTrendLinkCard(
+  card: TrendCardItem,
+  isEnglish: boolean,
+  widthClass: string,
+) {
+  const nail = card.item;
+  const content = (
+    <>
+      <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
+        {nail?.image_url ? (
+          <img
+            src={nail.image_url}
+            alt={nail ? buildNailImageSeoAlt(nail, isEnglish) : displayTrendCardName(card, isEnglish)}
+            className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : null}
+      </div>
+      <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
+        {displayTrendCardName(card, isEnglish)}
+      </span>
+    </>
+  );
+
+  if (!nail?.id) {
+    return (
+      <div key={card.id} className={`${widthClass} flex shrink-0 flex-col`}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      key={card.id}
+      to={`/detail/${nail.id}`}
+      state={{ initialNailData: nail }}
+      className={`${widthClass} flex shrink-0 flex-col`}
+    >
+      {content}
+    </Link>
+  );
+}
+
 export default function TrendPage() {
   const navigate = useNavigate();
   const { language } = useLanguageContext();
@@ -90,13 +139,6 @@ export default function TrendPage() {
   const partsItems = useMemo(() => buildTrendCards(PARTS_CAPTIONS, hubData), [hubData]);
   const patternItems = useMemo(() => buildTrendCards(PATTERN_CAPTIONS, hubData), [hubData]);
   const moodHeroItem = useMemo(() => findMoodHero(hubData), [hubData]);
-
-  const openDetail = (item?: NailDesignRow) => {
-    if (!item) return;
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: item },
-    });
-  };
 
   return (
     <div className="relative min-h-screen w-full bg-gray-50 text-gray-900">
@@ -138,27 +180,7 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {textureItems.map(item => (
-              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-44 shrink-0 flex-col bg-transparent p-0 text-left">
-                <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
-                  {item.item?.image_url ? (
-                    <img
-                      src={item.item.image_url}
-                      alt={displayTrendCardName(item, isEnglish)}
-                      className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : null}
-                </div>
-                <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
-                  {displayTrendCardName(item, isEnglish)}
-                </span>
-              </button>
-            ))}
+            {textureItems.map((item) => renderTrendLinkCard(item, isEnglish, 'w-44'))}
           </div>
         </section>
 
@@ -177,27 +199,7 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {partsItems.map(item => (
-              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 flex-col bg-transparent p-0 text-left">
-                <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
-                  {item.item?.image_url ? (
-                    <img
-                      src={item.item.image_url}
-                      alt={displayTrendCardName(item, isEnglish)}
-                      className="w-full aspect-[3/4] rounded-2xl object-cover object-center shadow-sm"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : null}
-                </div>
-                <p className="font-sans font-medium text-[13px] sm:text-[14px] text-gray-800 tracking-tight text-center mt-2.5">
-                  {displayTrendCardName(item, isEnglish)}
-                </p>
-              </button>
-            ))}
+            {partsItems.map((item) => renderTrendLinkCard(item, isEnglish, 'w-32'))}
           </div>
         </section>
 
@@ -216,27 +218,7 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {patternItems.map(item => (
-              <button key={item.id} type="button" onClick={() => openDetail(item.item)} className="flex w-32 shrink-0 flex-col bg-transparent p-0 text-left">
-                <div className="w-full aspect-[3/4] rounded-2xl bg-gray-100 shadow-sm overflow-hidden">
-                  {item.item?.image_url ? (
-                    <img
-                      src={item.item.image_url}
-                      alt={displayTrendCardName(item, isEnglish)}
-                      className="w-full aspect-[3/4] object-cover object-center rounded-2xl shadow-sm"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : null}
-                </div>
-                <span className="mt-3 w-full text-center text-sm font-medium text-gray-800 line-clamp-1">
-                  {displayTrendCardName(item, isEnglish)}
-                </span>
-              </button>
-            ))}
+            {patternItems.map((item) => renderTrendLinkCard(item, isEnglish, 'w-32'))}
           </div>
         </section>
 
@@ -255,11 +237,15 @@ export default function TrendPage() {
             </button>
           </div>
           <div className="w-full">
-            <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-gray-100 shadow-sm" onClick={() => openDetail(moodHeroItem)}>
-              {moodHeroItem?.image_url ? (
+            {moodHeroItem ? (
+              <Link
+                to={`/detail/${moodHeroItem.id}`}
+                state={{ initialNailData: moodHeroItem }}
+                className="relative block w-full h-[180px] rounded-2xl overflow-hidden bg-gray-100 shadow-sm"
+              >
                 <img
                   src={moodHeroItem.image_url}
-                  alt={isEnglish ? 'Hot Trend Mood' : '핫 트렌드 무드'}
+                  alt={buildNailImageSeoAlt(moodHeroItem, isEnglish)}
                   className="absolute inset-0 w-full h-full object-cover object-center"
                   loading="lazy"
                   decoding="async"
@@ -267,20 +253,22 @@ export default function TrendPage() {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-              ) : null}
-              <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center">
-                <span className="font-sans font-bold text-[13px] tracking-widest text-white/90 drop-shadow-md mb-1.5">
-                  AESTHETIC MOOD
-                </span>
-                <h3 className="font-sans text-lg font-bold text-white drop-shadow-lg mb-4">
-                  {isEnglish ? 'The Hottest Nail Mood Now' : '요즘 가장 핫한 네일 무드'}
-                </h3>
-                <div className="px-5 py-2 bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-bold rounded-full shadow-md">
-                  View Moodboard
+                <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center">
+                  <span className="font-sans font-bold text-[13px] tracking-widest text-white/90 drop-shadow-md mb-1.5">
+                    AESTHETIC MOOD
+                  </span>
+                  <h3 className="font-sans text-lg font-bold text-white drop-shadow-lg mb-4">
+                    {isEnglish ? 'The Hottest Nail Mood Now' : '요즘 가장 핫한 네일 무드'}
+                  </h3>
+                  <div className="px-5 py-2 bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-bold rounded-full shadow-md">
+                    View Moodboard
+                  </div>
                 </div>
-              </div>
-            </div>
+              </Link>
+            ) : (
+              <div className="relative w-full h-[180px] rounded-2xl overflow-hidden bg-gray-100 shadow-sm" />
+            )}
           </div>
         </section>
 

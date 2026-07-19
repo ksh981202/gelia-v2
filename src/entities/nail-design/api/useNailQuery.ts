@@ -7,7 +7,7 @@ const PAGE_SIZE = 6
 const RANKING_MAX_ITEMS = 50
 
 const NAIL_DESIGN_COLUMNS =
-  'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves'
+  'id,created_at,title,title_en,image_url,image_r2_key,category,tags,tags_en,popularity,saves,color,color_en,nail_length,length_en,styles,styles_en'
 
 /** 헌법 3조: 1차 정렬 + 항상 `id` 내림차순 2차 고정핀 */
 function orderedNailDesignsQuery(sort: string) {

@@ -1,8 +1,9 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery';
 import { useLanguageContext } from '@/contexts/LanguageContext';
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import type { NailDesignRow } from '@/shared/types/database.types';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 
 const PATTERN_CATEGORIES = [
@@ -162,12 +163,9 @@ export default function PatternPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const openDetail = (item?: NailDesignRow) => {
-    if (!item) return;
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
-    });
-  };
+  const detailState = (item: NailDesignRow) => ({
+    initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) },
+  });
 
   return (
     <div className="relative min-h-screen w-full bg-white text-neutral-800">
@@ -219,10 +217,14 @@ export default function PatternPage() {
 
         {/* 섹션 2: 히어로 배너 */}
         <section className="mb-0 px-5">
-          <div className="group relative mb-0 w-full aspect-[3/4] md:aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-lg" onClick={() => openDetail(heroItem)}>
-            {heroItem?.image_url ? (
+          {heroItem ? (
+            <Link
+              to={`/detail/${heroItem.id}`}
+              state={detailState(heroItem)}
+              className="group relative mb-0 block w-full aspect-[3/4] md:aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-lg"
+            >
               <img
-                alt={displayItemTitle(heroItem, isEnglish)}
+                alt={buildNailImageSeoAlt(heroItem, isEnglish)}
                 className="absolute inset-0 w-full h-full object-cover object-center"
                 src={heroItem.image_url}
                 loading="eager"
@@ -233,19 +235,17 @@ export default function PatternPage() {
                   e.currentTarget.parentElement?.classList.add("bg-gray-100");
                 }}
               />
-            ) : null}
-            <div className="absolute inset-x-6 bottom-6">
-              <div className="relative z-10">
-                <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
-                  {heroItem
-                    ? displayItemTitle(heroItem, isEnglish)
-                    : isEnglish
-                      ? `${displayPatternLabel(activeTab, isEnglish)} Nails`
-                      : `${activeTab} 네일`}
-                </h2>
+              <div className="absolute inset-x-6 bottom-6">
+                <div className="relative z-10">
+                  <h2 className="text-lg font-bold text-white drop-shadow-md truncate leading-tight">
+                    {displayItemTitle(heroItem, isEnglish)}
+                  </h2>
+                </div>
               </div>
-            </div>
-          </div>
+            </Link>
+          ) : (
+            <div className="group relative mb-0 w-full aspect-[3/4] md:aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-lg" />
+          )}
         </section>
 
         {/* 섹션 3: 지금 가장 핫한 마블 BEST */}
@@ -260,11 +260,11 @@ export default function PatternPage() {
           </div>
           <div className="-mx-5 min-w-0 flex gap-4 overflow-x-auto pl-5 pr-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {marbleBestItems.map((item) => (
-              <button key={item.id} type="button" onClick={() => openDetail(item)} className="flex w-44 shrink-0 flex-col bg-transparent p-0 text-left">
+              <Link key={item.id} to={`/detail/${item.id}`} state={detailState(item)} className="flex w-44 shrink-0 flex-col">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -277,7 +277,7 @@ export default function PatternPage() {
                 <span className="w-full min-w-0 text-center text-[13px] sm:text-sm font-medium tracking-tight truncate text-gray-800 px-1">
                   {displayItemTitle(item, isEnglish)}
                 </span>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -294,11 +294,11 @@ export default function PatternPage() {
           </div>
           <div className="mb-0 grid grid-cols-2 gap-4 pb-10">
             {popularArtItems.map((item) => (
-              <article key={item.id} className="flex flex-col gap-0 cursor-pointer" onClick={() => openDetail(item)}>
+              <Link key={item.id} to={`/detail/${item.id}`} state={detailState(item)} className="flex flex-col gap-0 cursor-pointer">
                 <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm mb-2">
                   <img
                     src={item.image_url}
-                    alt={displayItemTitle(item, isEnglish)}
+                    alt={buildNailImageSeoAlt(item, isEnglish)}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -311,7 +311,7 @@ export default function PatternPage() {
                 <span className="w-full min-w-0 text-center text-sm font-medium tracking-tight truncate text-gray-800 px-1">
                   {displayItemTitle(item, isEnglish)}
                 </span>
-              </article>
+              </Link>
             ))}
           </div>
         </section>

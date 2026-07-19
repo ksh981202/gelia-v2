@@ -1,10 +1,11 @@
 import { supabase } from "@/shared/api/supabaseClient";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { ChevronLeft, Share2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const LENGTH_KEYWORDS: Record<string, string[]> = {
   "length-short": ["짧은", "숏", "쇼트", "short"],
@@ -38,7 +39,7 @@ const COLOR_KEYWORDS: Record<string, string[]> = {
 };
 
 const DIAGNOSIS_NAIL_COLUMNS =
-  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,hand_type,color,mood,design_elements,popularity,views,saves,likes";
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,styles_en,nail_length,length_en,hand_type,color,color_en,mood,design_elements,popularity,views,saves,likes";
 
 const RESULT_META: Record<string, { styleTag: string; styleTag_en: string; description: string; description_en: string }> = {
   simple: {
@@ -247,21 +248,11 @@ const TestResultPage = ({ onNailClick }: TestResultMobileProps) => {
     window.scrollTo(0, 0);
   }, []);
 
-  const openDetail = (item: NailDesignRow) => {
-    if (onNailClick) {
-      onNailClick(item);
-      return;
-    }
-    navigate(`/detail/${item.id}`, {
-      state: { initialNailData: { ...item, imageUrl: item.image_url, title: displayItemTitle(item, isEnglish) } },
-    });
-  };
-
   const renderImage = (item: NailDesignRow, className: string) => (
     item.image_url ? (
       <img
         src={item.image_url}
-        alt={displayItemTitle(item, isEnglish)}
+        alt={buildNailImageSeoAlt(item, isEnglish)}
         className={className}
         loading="lazy"
         decoding="async"
@@ -272,6 +263,51 @@ const TestResultPage = ({ onNailClick }: TestResultMobileProps) => {
       />
     ) : null
   );
+
+  const renderNailCard = (
+    item: NailDesignRow,
+    className: string,
+    titleClassName: string,
+  ) => {
+    const cardContent = (
+      <>
+        <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-200 shadow-sm">
+          {renderImage(item, "h-full w-full object-cover object-center")}
+        </div>
+        <p className={titleClassName}>{displayItemTitle(item, isEnglish)}</p>
+      </>
+    );
+
+    if (onNailClick) {
+      return (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onNailClick(item)}
+          className={className}
+        >
+          {cardContent}
+        </button>
+      );
+    }
+
+    return (
+      <Link
+        key={item.id}
+        to={`/detail/${item.id}`}
+        state={{
+          initialNailData: {
+            ...item,
+            imageUrl: item.image_url,
+            title: displayItemTitle(item, isEnglish),
+          },
+        }}
+        className={className}
+      >
+        {cardContent}
+      </Link>
+    );
+  };
 
   return (
     <div className="relative mx-auto flex min-h-[100dvh] max-w-md flex-col overflow-x-hidden bg-[#FCFAF7] pb-32">
@@ -324,19 +360,13 @@ const TestResultPage = ({ onNailClick }: TestResultMobileProps) => {
               {isEnglish ? "We couldn't load the recommended nail images." : "추천 네일 이미지를 불러오지 못했어요."}
             </p>
           ) : (
-            mainNails.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => openDetail(item)}
-                className="flex w-full cursor-pointer flex-col border-0 bg-transparent p-0 text-inherit"
-              >
-                <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl bg-gray-200 shadow-sm">
-                  {renderImage(item, "h-full w-full object-cover object-center")}
-                </div>
-                <p className="mt-2 text-center text-[14px] font-medium text-gray-800 sm:text-[15px]">{displayItemTitle(item, isEnglish)}</p>
-              </button>
-            ))
+            mainNails.map((item) =>
+              renderNailCard(
+                item,
+                "flex w-full cursor-pointer flex-col border-0 bg-transparent p-0 text-inherit",
+                "mt-2 text-center text-[14px] font-medium text-gray-800 sm:text-[15px]",
+              ),
+            )
           )}
         </div>
 
@@ -360,21 +390,13 @@ const TestResultPage = ({ onNailClick }: TestResultMobileProps) => {
                 {isEnglish ? "We're preparing more style images." : "추가 스타일 이미지를 준비 중이에요."}
               </p>
             ) : (
-              subNails.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => openDetail(item)}
-                  className="flex w-full cursor-pointer flex-col gap-2 border-0 bg-transparent p-0 text-inherit"
-                >
-                  <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-200 object-cover object-center">
-                    {renderImage(item, "h-full w-full object-cover object-center")}
-                  </div>
-                  <p className="text-center break-keep text-[12px] font-medium text-gray-800 sm:text-[13px]">
-                    {displayItemTitle(item, isEnglish)}
-                  </p>
-                </button>
-              ))
+              subNails.map((item) =>
+                renderNailCard(
+                  item,
+                  "flex w-full cursor-pointer flex-col gap-2 border-0 bg-transparent p-0 text-inherit",
+                  "text-center break-keep text-[12px] font-medium text-gray-800 sm:text-[13px]",
+                ),
+              )
             )}
           </div>
         </section>

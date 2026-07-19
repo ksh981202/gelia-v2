@@ -1,5 +1,6 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { CurationFallback } from '@/shared/ui/CurationFallback'
 import { ChevronLeft, Search } from 'lucide-react'
@@ -118,17 +119,16 @@ function resolveStyleTabIndex(searchParams: URLSearchParams): number {
   return byTab >= 0 ? byTab : 0
 }
 
-/** V1 `OccasionNailThumb` — `ClientPage`와 동일 퍼블리싱 */
 function StyleNailThumbShell({
+  nail,
   title,
   variant,
-  imageUrl,
-  onActivate,
+  isEnglish,
 }: {
+  nail?: NailDesignRow
   title: string
   variant: 'carousel' | 'grid'
-  imageUrl?: string | null
-  onActivate: () => void
+  isEnglish: boolean
 }) {
   const FRAME =
     'aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5'
@@ -143,25 +143,15 @@ function StyleNailThumbShell({
 
   const frameExtra =
     variant === 'carousel' ? 'bg-muted shadow-sm' : 'shadow-sm'
+  const imageUrl = nail?.image_url?.trim() ?? null
 
-  return (
-    <div
-      className={outerClass}
-      role="button"
-      tabIndex={0}
-      onClick={onActivate}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onActivate()
-        }
-      }}
-    >
+  const cardContent = (
+    <>
       <div className={`${FRAME} ${frameExtra}`}>
         {imageUrl ? (
           <img
             src={imageUrl}
-            alt={title}
+            alt={nail ? buildNailImageSeoAlt(nail, isEnglish) : title}
             className="h-full w-full object-cover object-center"
             loading="lazy"
             decoding="async"
@@ -175,7 +165,29 @@ function StyleNailThumbShell({
       >
         <span className={CAPTION}>{title}</span>
       </div>
-    </div>
+    </>
+  )
+
+  if (!nail?.id) {
+    return <div className={outerClass}>{cardContent}</div>
+  }
+
+  return (
+    <Link
+      to={`/detail/${nail.id}`}
+      state={{
+        initialNailData: {
+          id: nail.id,
+          imageUrl,
+          title,
+          color: '',
+          mood: '',
+        },
+      }}
+      className={outerClass}
+    >
+      {cardContent}
+    </Link>
   )
 }
 
@@ -252,20 +264,15 @@ export default function ClientStyleCurationPage() {
     return slots
   }, [galleryItems])
 
-  const goDetail = (nail?: NailDesignRow) => {
-    if (!nail?.id) return
-    navigate(`/detail/${nail.id}`, {
-      state: {
-        initialNailData: {
-          id: nail.id,
-          imageUrl: nail.image_url,
-          title: nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? 'Nail Design' : '네일 디자인'),
-          color: '',
-          mood: '',
-        },
-      },
-    })
-  }
+  const detailState = (nail: NailDesignRow) => ({
+    initialNailData: {
+      id: nail.id,
+      imageUrl: nail.image_url,
+      title: nailDisplayTitle(nail, isEnglish) ?? (isEnglish ? 'Nail Design' : '네일 디자인'),
+      color: '',
+      mood: '',
+    },
+  })
 
   const heroImageUrl = heroNail?.image_url?.trim() ?? null
   const heroTitle =
@@ -356,43 +363,42 @@ export default function ClientStyleCurationPage() {
         </nav>
 
         <section className="mb-0 mt-5 px-5" aria-label="스타일 히어로">
-          <div
-            className={`${STYLE_HERO_BANNER_FRAME} cursor-pointer`}
-            onClick={() => goDetail(heroNail)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                goDetail(heroNail)
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="absolute inset-0">
-              {heroImageUrl ? (
-                <img
-                  src={heroImageUrl}
-                  alt={heroTitle}
-                  className="h-full w-full object-cover object-center"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <CurationFallback isEnglish={isEnglish} />
-              )}
-            </div>
-            {heroImageUrl ? (
-              <div className="absolute inset-x-5 bottom-5 z-10">
-                <div className="relative z-10">
-                  <h2
-                    className={`${NAIL_HERO_BANNER_TITLE_CLASS} truncate leading-tight`}
-                  >
-                    {heroTitle}
-                  </h2>
-                </div>
+          {heroNail ? (
+            <Link
+              to={`/detail/${heroNail.id}`}
+              state={detailState(heroNail)}
+              className={`${STYLE_HERO_BANNER_FRAME} block cursor-pointer`}
+            >
+              <div className="absolute inset-0">
+                {heroImageUrl ? (
+                  <img
+                    src={heroImageUrl}
+                    alt={buildNailImageSeoAlt(heroNail, isEnglish)}
+                    className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <CurationFallback isEnglish={isEnglish} />
+                )}
               </div>
-            ) : null}
-          </div>
+              {heroImageUrl ? (
+                <div className="absolute inset-x-5 bottom-5 z-10">
+                  <div className="relative z-10">
+                    <h2
+                      className={`${NAIL_HERO_BANNER_TITLE_CLASS} truncate leading-tight`}
+                    >
+                      {heroTitle}
+                    </h2>
+                  </div>
+                </div>
+              ) : null}
+            </Link>
+          ) : (
+            <div className={`${STYLE_HERO_BANNER_FRAME} bg-gray-100`}>
+              <CurationFallback isEnglish={isEnglish} />
+            </div>
+          )}
         </section>
 
         <div className="mb-0 px-5">
@@ -420,8 +426,8 @@ export default function ClientStyleCurationPage() {
                   key={nail.id}
                   variant="carousel"
                   title={nailDisplayTitle(nail, isEnglish) ?? ''}
-                  imageUrl={nail.image_url?.trim() ?? null}
-                  onActivate={() => goDetail(nail)}
+                  nail={nail}
+                  isEnglish={isEnglish}
                 />
               ))}
             </div>
@@ -453,8 +459,8 @@ export default function ClientStyleCurationPage() {
                   nailDisplayTitle(nail, isEnglish) ??
                   (isEnglish ? `Style gallery ${index + 1}` : `스타일 갤러리 ${index + 1}`)
                 }
-                imageUrl={nail?.image_url?.trim() ?? null}
-                onActivate={() => goDetail(nail)}
+                nail={nail}
+                isEnglish={isEnglish}
               />
             ))}
           </div>

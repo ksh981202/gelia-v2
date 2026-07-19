@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabaseClient";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
@@ -14,7 +15,7 @@ const STONE_BEST_SKELETON_COUNT = 8;
 const STONE_BEST_SCROLL_Y_KEY = "gelia_stone_best_scroll_y";
 const ARRAY_TEXT_FILTER_INDEXES = [0, 1, 2, 3, 4, 5] as const;
 const STONE_BEST_COLUMNS =
-  "id,created_at,title,title_en,image_url,category,tags,situations,styles,nail_length,color,mood,design_elements,popularity,views,saves,likes";
+  "id,created_at,title,title_en,image_url,category,tags,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements,popularity,views,saves,likes";
 
 type RankingNailRow = NailDesignRow & { ranking_score: number };
 
@@ -279,7 +280,7 @@ export default function StoneBestListPage() {
                     {item.image_url ? (
                       <img
                         src={item.image_url}
-                        alt={title}
+                        alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full object-cover object-center transition-transform hover:scale-105"
                         loading="lazy"
                         decoding="async"

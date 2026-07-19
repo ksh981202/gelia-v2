@@ -1,4 +1,5 @@
 import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHubQuery'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { ChevronLeft, Search } from 'lucide-react'
@@ -250,7 +251,11 @@ export default function ClientRecommendPage() {
                   <HubThumbnail
                     nail={occasionMatches[index]}
                     aspectClassName="aspect-[4/5]"
-                    alt={cardLabel(card.cardTitle, card.cardTitleEn)}
+                    alt={
+                      occasionMatches[index]
+                        ? buildNailImageSeoAlt(occasionMatches[index], isEnglish)
+                        : cardLabel(card.cardTitle, card.cardTitleEn)
+                    }
                     loading={index < 2 ? 'eager' : 'lazy'}
                   />
                   <span className="mt-3 line-clamp-2 w-full text-center text-sm font-medium text-gray-800">
@@ -300,7 +305,11 @@ export default function ClientRecommendPage() {
                   <HubThumbnail
                     nail={styleMatches[index]}
                     aspectClassName="aspect-[3/4]"
-                    alt={cardLabel(card.cardTitle, card.cardTitleEn)}
+                    alt={
+                      styleMatches[index]
+                        ? buildNailImageSeoAlt(styleMatches[index], isEnglish)
+                        : cardLabel(card.cardTitle, card.cardTitleEn)
+                    }
                     loading={index < 3 ? 'eager' : 'lazy'}
                   />
                   <p className="mt-3 line-clamp-2 w-full text-center text-sm font-medium tracking-tight text-gray-800">
@@ -415,7 +424,7 @@ export default function ClientRecommendPage() {
                 {heroCard.image ? (
                   <img
                     src={heroCard.image}
-                    alt={heroCard.title}
+                    alt={todayNail ? buildNailImageSeoAlt(todayNail, isEnglish) : heroCard.title}
                     className="absolute inset-0 h-full w-full object-cover"
                     loading="eager"
                     decoding="async"

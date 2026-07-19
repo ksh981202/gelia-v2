@@ -1,4 +1,5 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { filterNonZeroRankingRpcRows } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
@@ -282,7 +283,7 @@ export default function ClientStyleBestListPage() {
                             {item.image_url ? (
                               <img
                                 src={item.image_url}
-                                alt={title}
+                                alt={buildNailImageSeoAlt(item, isEnglish)}
                                 className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                                 loading="lazy"
                                 decoding="async"

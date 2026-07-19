@@ -1068,9 +1068,9 @@ const buildMagazineHtml = async (
   html = html.replace(/\[SEO_SLUG\]\s*:\s*[^\n]*/gi, '');
   html = html.replace(/\[SEO_DESC\]\s*:\s*[^\n]*/gi, '');
 
-  // 다국어 이미지 SEO: 해당 언어 제목 → alt (없으면 Fallback)
+  // 이미지 alt Fallback: 직전 💎 디자인명 없을 때 기사 제목 사용
   const titleForAlt = String(currentTitle ?? '').trim();
-  const imgAlt = escapeGceHtmlText(
+  const fallbackImgAlt = escapeGceHtmlText(
     titleForAlt ? `${titleForAlt} - GELIA` : 'GELIA Magazine',
   );
 
@@ -1084,41 +1084,8 @@ const buildMagazineHtml = async (
   // ── 1. ✨ 형광펜 (테마별 <strong> 태그 전체 하드코딩)
   html = html.replace(/✨([^✨\n]+)✨/g, (_m, inner: string) => buildHighlightStrongHtml(theme, inner));
 
-  // ── 2. 💎 소제목 (그라데이션 뱃지 — 테마별 span 전체 하드코딩)
-  html = html.replace(/💎\s*([^\n]+)/g, (_match, p1: string) => {
-    const title = formatGceInlineText(String(p1).trim(), highlightClass);
-    return buildDiamondHeadingHtml(theme, index++, title);
-  });
-
-  // ── 3. 📌 팁 박스 (테마별 박스 태그 전체 하드코딩)
-  html = html.replace(/📌\s*([^:\n]+)(?::\s*([^\n]+))?/g, (_match, label: string, body?: string) => {
-    const safeLabel = formatGceInlineText(String(label ?? '').trim(), highlightClass);
-    const safeBody =
-      body != null && String(body).trim()
-        ? formatGceInlineText(String(body).trim(), highlightClass)
-        : '';
-    const bodyHtml = safeBody
-      ? `<span class="text-gray-700 text-[15px] leading-relaxed break-words">${safeBody}</span>`
-      : '';
-    return buildTipBoxHtml(theme, safeLabel, bodyHtml);
-  });
-
-  // ── 3-1. 🚫 Caution(실수 방지) 박스 — 언어 무관(🚫 + 콜론 기준 동적 타이틀/본문)
-  html = html.replace(
-    /🚫\s*([^:：\n]+)[:：]\s*([^\n]*)/g,
-    (_match, title: string, body: string) => {
-      const safeTitle = formatGceInlineText(String(title ?? '').trim(), highlightClass);
-      const safeBody = String(body ?? '').trim()
-        ? formatGceInlineText(String(body).trim(), highlightClass)
-        : '';
-      const bodyHtml = safeBody
-        ? `<p class="text-[15px] md:text-[16px] text-gray-800 leading-[1.7] break-keep m-0">${safeBody}</p>`
-        : '';
-      return buildCautionBoxHtml(safeTitle, bodyHtml);
-    },
-  );
-
-  // ── 4. [IMAGE_GL-…] → R2/DB URL 치환 (+ 언어별 제목 alt)
+  // ── 2. [IMAGE_GL-…] → R2/DB URL 치환 (+ 직전 💎 디자인명 추적 alt)
+  // 💎 HTML 변환보다 먼저 순회해야 원문 💎 제목을 currentDesignName으로 캡처 가능
   const imageMatches = Array.from(html.matchAll(/\[IMAGE_GL-([a-zA-Z0-9_-]+)\]/gi));
   const parsedIds = imageMatches.map((m) => {
     // SECURITY: capture 그룹을 화이트리스트 문자만 남긴 뒤 ID로 조립
@@ -1127,13 +1094,27 @@ const buildMagazineHtml = async (
   }).filter(Boolean);
   const { urlByKey, idByKey, fallbackUrls } = await resolveGceNailImageUrls(parsedIds);
 
+  let currentDesignName = '';
   let rebuilt = '';
   let cursor = 0;
-  const imageRe = /\[IMAGE_GL-([a-zA-Z0-9_-]+)\]/gi;
+  const trackRe = /(💎\s*([^\n]+))|(\[IMAGE_GL-([a-zA-Z0-9_-]+)\])/gi;
   let match: RegExpExecArray | null;
-  while ((match = imageRe.exec(html)) !== null) {
+  while ((match = trackRe.exec(html)) !== null) {
     rebuilt += html.slice(cursor, match.index);
-    const token = String(match[1] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
+
+    if (match[1]) {
+      // 💎 디자인 제목 — 텍스트 보존(이후 뱃지 변환) + alt 추적용 이름 갱신
+      const rawName = String(match[2] ?? '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/✨/g, '')
+        .trim();
+      if (rawName) currentDesignName = rawName;
+      rebuilt += match[1];
+      cursor = match.index + match[0].length;
+      continue;
+    }
+
+    const token = String(match[4] ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
     if (!token) {
       cursor = match.index + match[0].length;
       continue;
@@ -1151,11 +1132,14 @@ const buildMagazineHtml = async (
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(nailUuid)
         ? nailUuid
         : '';
+    const imgAlt = currentDesignName
+      ? escapeGceHtmlText(`${currentDesignName} - GELIA`)
+      : fallbackImgAlt;
 
     console.log('1. 파싱된 ID:', id, '(정규화:', padded + ')');
     console.log('2. DB 조회 결과(image_url):', dbUrl || null);
     console.log('3. 최종 조립된 <img> src URL:', finalUrl);
-    console.log('3-1. img alt:', imgAlt);
+    console.log('3-1. img alt:', imgAlt, currentDesignName ? '(💎 디자인명)' : '(기사 제목 Fallback)');
     console.log('3-2. detail link id:', safeDetailId || null);
 
     if (safeSrc) {
@@ -1171,6 +1155,40 @@ const buildMagazineHtml = async (
   }
   rebuilt += html.slice(cursor);
   html = rebuilt;
+
+  // ── 3. 💎 소제목 (그라데이션 뱃지 — 테마별 span 전체 하드코딩)
+  html = html.replace(/💎\s*([^\n]+)/g, (_match, p1: string) => {
+    const title = formatGceInlineText(String(p1).trim(), highlightClass);
+    return buildDiamondHeadingHtml(theme, index++, title);
+  });
+
+  // ── 4. 📌 팁 박스 (테마별 박스 태그 전체 하드코딩)
+  html = html.replace(/📌\s*([^:\n]+)(?::\s*([^\n]+))?/g, (_match, label: string, body?: string) => {
+    const safeLabel = formatGceInlineText(String(label ?? '').trim(), highlightClass);
+    const safeBody =
+      body != null && String(body).trim()
+        ? formatGceInlineText(String(body).trim(), highlightClass)
+        : '';
+    const bodyHtml = safeBody
+      ? `<span class="text-gray-700 text-[15px] leading-relaxed break-words">${safeBody}</span>`
+      : '';
+    return buildTipBoxHtml(theme, safeLabel, bodyHtml);
+  });
+
+  // ── 4-1. 🚫 Caution(실수 방지) 박스 — 언어 무관(🚫 + 콜론 기준 동적 타이틀/본문)
+  html = html.replace(
+    /🚫\s*([^:：\n]+)[:：]\s*([^\n]*)/g,
+    (_match, title: string, body: string) => {
+      const safeTitle = formatGceInlineText(String(title ?? '').trim(), highlightClass);
+      const safeBody = String(body ?? '').trim()
+        ? formatGceInlineText(String(body).trim(), highlightClass)
+        : '';
+      const bodyHtml = safeBody
+        ? `<p class="text-[15px] md:text-[16px] text-gray-800 leading-[1.7] break-keep m-0">${safeBody}</p>`
+        : '';
+      return buildCautionBoxHtml(safeTitle, bodyHtml);
+    },
+  );
 
   // ── 5~7. 체크리스트 조립 순서: 내부(- → ✅) 먼저, 외곽(📝) 마지막
   // (기존 📝→✅→- 순서는 외곽 </div>가 마지막 ✅ rest에 흡수되어 텍스트 누출됨)

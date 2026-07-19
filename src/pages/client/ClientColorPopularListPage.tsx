@@ -1,4 +1,5 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { supabase } from '@/shared/api/supabaseClient'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { GalleryListTypographyHeader } from '@/widgets/gallery-list/GalleryListTypographyHeader'
@@ -29,7 +30,7 @@ const COLOR_POPULAR_LIMIT = 50
 const COLOR_POPULAR_LIST_SCROLL_Y_KEY = 'gelia_color_popular_list_scroll_y'
 
 const COLOR_POPULAR_COLUMNS =
-  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,nail_length,color,mood,design_elements'
+  'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements'
 
 const COLOR_POPULAR_TAB_LABEL_EN: Record<ColorPopularTabLabel, string> = {
   전체: 'All',
@@ -318,7 +319,7 @@ export default function ClientColorPopularListPage() {
                         {item.image_url ? (
                           <img
                             src={item.image_url}
-                            alt={title}
+                            alt={buildNailImageSeoAlt(item, isEnglish)}
                             className="h-full w-full min-h-0 rounded-xl object-cover object-center"
                             loading={index < 4 ? 'eager' : 'lazy'}
                             fetchPriority={index < 4 ? 'high' : undefined}

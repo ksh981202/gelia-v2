@@ -1,3 +1,4 @@
+import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import {
   DEFAULT_GALLERY_TAB,
   normalizeGallerySort,
@@ -347,7 +348,7 @@ export default function TextureListPage() {
               {item.image_url ? (
                 <img
                   src={item.image_url}
-                  alt={displayItemTitle(item, isEnglish)}
+                  alt={buildNailImageSeoAlt(item, isEnglish)}
                   className="h-full w-full object-cover object-center"
                   loading={index < 4 ? 'eager' : 'lazy'}
                   decoding="async"
