@@ -14,7 +14,7 @@ import {
   Wand2,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import {
   Link,
   NavLink,
@@ -41,6 +41,7 @@ import {
 import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
 import { cn } from '@/lib/utils'
+import { ClientRouteSuspenseFallback } from '@/widgets/layout/ClientRouteSuspenseFallback'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -531,7 +532,9 @@ function ClientLayoutContent() {
         )}
 
         <main className={`flex min-h-0 flex-1 flex-col ${mainPbClass}`}>
-          <Outlet />
+          <Suspense fallback={<ClientRouteSuspenseFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
         </div>
 

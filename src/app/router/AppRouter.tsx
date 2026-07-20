@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import AdminGuard from './guards/AdminGuard'
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
+import { AppShellSuspenseFallback } from '../../widgets/layout/AppShellSuspenseFallback'
 import {
   createBrowserRouter,
   Navigate,
@@ -241,7 +242,7 @@ const router = createBrowserRouter([
 
 export function AppRouter() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-sm text-gray-400">화면을 불러오는 중입니다...</div>}>
+    <Suspense fallback={<AppShellSuspenseFallback />}>
       <RouterProvider router={router} />
     </Suspense>
   )

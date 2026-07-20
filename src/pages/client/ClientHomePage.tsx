@@ -16,6 +16,8 @@ import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { ADMIN_EMAILS } from "@/shared/constants/auth";
+import { getOptimizedNailImageUrl } from "@/shared/lib/nailImageUrl";
+import { NailImage } from "@/shared/ui/NailImage";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
@@ -94,6 +96,61 @@ function useIsMdDesktop() {
   }, []);
 
   return isDesktop;
+}
+
+const HOME_HERO_THUMB_WIDTH = 600
+
+const HOME_FEED_IMAGE_CLASS = "h-full w-full object-cover object-center"
+
+function HomeMainFeedImage({
+  src,
+  alt,
+  variant,
+}: {
+  src: string
+  alt: string
+  variant: "hero" | "default"
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    setLoaded(false)
+    const frame = requestAnimationFrame(() => {
+      const img = containerRef.current?.querySelector("img")
+      if (img?.complete && img.naturalWidth > 0) setLoaded(true)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [src])
+
+  const imageClassName = loaded ? HOME_FEED_IMAGE_CLASS : `${HOME_FEED_IMAGE_CLASS} opacity-0`
+
+  return (
+    <div ref={containerRef} className="relative h-full w-full">
+      {!loaded ? (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse" aria-hidden />
+      ) : null}
+      {variant === "hero" ? (
+        <NailImage
+          src={src}
+          alt={alt}
+          priority
+          thumbWidth={HOME_HERO_THUMB_WIDTH}
+          className={imageClassName}
+          onLoad={() => setLoaded(true)}
+        />
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          className={imageClassName}
+          onLoad={() => setLoaded(true)}
+        />
+      )}
+    </div>
+  )
 }
 
 function PcHomeGalleryCard({
@@ -291,7 +348,7 @@ export default function ClientHomePage() {
     const link = document.createElement("link");
     link.rel = "preload";
     link.as = "image";
-    link.href = firstImage;
+    link.href = getOptimizedNailImageUrl(firstImage, { width: HOME_HERO_THUMB_WIDTH });
     link.fetchPriority = "high";
     document.head.appendChild(link);
 
@@ -381,7 +438,11 @@ export default function ClientHomePage() {
             : recommendNails.map((nail, index) => (
             <Link key={nail.id} to={`/detail/${nail.id}`} className="relative w-full flex-none snap-center cursor-pointer">
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                <img src={nail.image} alt={homeNailSeoAlt(nail, isEnglish)} fetchPriority={index === 0 ? "high" : undefined} loading={index > 0 ? "lazy" : undefined} decoding={index > 0 ? "async" : undefined} className="h-full w-full object-cover object-center" />
+                <HomeMainFeedImage
+                  src={nail.image}
+                  alt={homeNailSeoAlt(nail, isEnglish)}
+                  variant={index === 0 ? "hero" : "default"}
+                />
                 <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/40 to-transparent p-5 pt-12">
                   <div className="flex w-full flex-col items-start text-left">
                     <span className="mb-2 inline-block rounded-full bg-[#FF7E67] px-3 py-1 text-[11px] font-bold text-white shadow-sm">PICK</span>
@@ -444,8 +505,12 @@ export default function ClientHomePage() {
               ))
             : trendNails.map((nail) => (
                 <Link key={nail.id} to={`/detail/${nail.id}`} className="flex w-full cursor-pointer flex-col items-center">
-                  <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={homeNailSeoAlt(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
+                    <HomeMainFeedImage
+                      src={nail.image}
+                      alt={homeNailSeoAlt(nail, isEnglish)}
+                      variant="default"
+                    />
                   </div>
                   <span className="mt-2.5 w-full text-center text-[13px] font-medium leading-snug tracking-tight text-gray-800 line-clamp-2">{homeNailTitle(nail, isEnglish)}</span>
                 </Link>
@@ -524,8 +589,12 @@ export default function ClientHomePage() {
               ))
             : popularNails.map((nail) => (
                 <Link key={nail.id} to={`/detail/${nail.id}`} className="flex w-full cursor-pointer flex-col items-center">
-                  <div className="aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
-                    <img src={nail.image} alt={homeNailSeoAlt(nail, isEnglish)} loading="lazy" decoding="async" className="h-full w-full object-cover object-center" />
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-black/5 shadow-sm">
+                    <HomeMainFeedImage
+                      src={nail.image}
+                      alt={homeNailSeoAlt(nail, isEnglish)}
+                      variant="default"
+                    />
                   </div>
                   <span className="mt-2.5 w-full text-center text-[14px] font-medium tracking-tight text-gray-800 truncate">{homeNailTitle(nail, isEnglish)}</span>
                 </Link>
