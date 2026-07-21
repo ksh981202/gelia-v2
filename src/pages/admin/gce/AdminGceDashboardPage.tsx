@@ -4,7 +4,7 @@ import {
   Globe, Calendar, CheckSquare, Clock, 
   Link, Copy, ExternalLink,
   CalendarDays, ChevronDown, ChevronUp, Eye, Globe2,
-  Target, Zap, Trophy, ArrowUpRight, Activity,
+  Target, Zap, Trophy, Activity,
   PenTool, FileEdit,
   Trash2, X, Star,
   Wrench, Pencil,
@@ -14,6 +14,12 @@ import DOMPurify from 'dompurify';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
+import {
+  EMPTY_MAGAZINE_GCE_INSIGHT,
+  fetchMagazineGceInsight,
+  normalizeMagazineGceInsight,
+  type MagazineGceInsight,
+} from '@/features/magazine/api/fetchMagazineGceInsight';
 
 type DraftUiStatus = 'draft' | 'pending' | 'generating' | 'completed' | 'review' | 'published';
 
@@ -228,11 +234,13 @@ const buildMagazineLiveUrls = (slug: string | null | undefined) => {
   } as const;
 };
 
-const MOCK_BEST_ARTICLES = [
-  { id: 1, title: '여름 쿨톤 피부를 2배 맑게 밝혀주는 핑크 시럽 네일 완벽 가이드', image: 'https://picsum.photos/seed/nailhero2/200/200', views: 12450, growth: '+15%', channel: 'web' },
-  { id: 2, title: '단정함과 세련됨의 끝판왕! 여름 오피스룩 미니멀 프렌치', image: 'https://picsum.photos/seed/occ2/200/200', views: 8200, growth: '+8%', channel: 'web' },
-  { id: 3, title: '여름휴가 네일 무조건 이거 박제! 쿨톤 인생 네일 찾음 🌊✨', image: 'https://picsum.photos/seed/occ3/200/200', views: 7500, growth: '+22%', channel: 'sns' },
-];
+const MAGAZINE_LANG_BADGE_CLASS: Record<string, string> = {
+  EN: 'bg-blue-100 text-blue-700',
+  JP: 'bg-emerald-100 text-emerald-700',
+  KR: 'bg-rose-100 text-rose-700',
+  VN: 'bg-violet-100 text-violet-700',
+  TH: 'bg-amber-100 text-amber-800',
+};
 
 type GceIdeaImage = {
   id: string;
@@ -1349,6 +1357,8 @@ const forceDownloadGceNailImage = async (imageUrl: string, glId: string) => {
 
 export default function AdminGceDashboardPage() {
   const [activeTab, setActiveTab] = useState<'insight' | 'factory' | 'review' | 'result'>('factory');
+  const [magazineInsight, setMagazineInsight] = useState<MagazineGceInsight | null>(null);
+  const [isLoadingMagazineInsight, setIsLoadingMagazineInsight] = useState(false);
 
   // GCE titles (검수 데스크용) + Planning & Editor state
   const [dbTitles, setDbTitles] = useState<any[]>([]);
@@ -1396,6 +1406,28 @@ export default function AdminGceDashboardPage() {
   useEffect(() => {
     void fetchGceTitles();
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'insight') return;
+
+    let cancelled = false;
+    setIsLoadingMagazineInsight(true);
+    void fetchMagazineGceInsight()
+      .then((data) => {
+        if (!cancelled) setMagazineInsight(normalizeMagazineGceInsight(data));
+      })
+      .catch((err) => {
+        console.error('[magazineInsight]', err);
+        if (!cancelled) setMagazineInsight({ ...EMPTY_MAGAZINE_GCE_INSIGHT });
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingMagazineInsight(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     if (generatedIdeas.length === 0) {
@@ -2121,6 +2153,13 @@ export default function AdminGceDashboardPage() {
     }
   };
 
+  const insightSnapshot = normalizeMagazineGceInsight(magazineInsight);
+  const insightQueueCount = (reviewData?.length ?? 0) + (generatedIdeas?.length ?? 0);
+  const insightPublishedCount = insightSnapshot.publishedCount;
+  const insightTotalViews = insightSnapshot.totalViews;
+  const insightTopArticles = insightSnapshot.topArticles;
+  const insightViewsByLang = insightSnapshot.viewsByLanguage;
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 bg-[#FAFAFA] min-h-screen">
       <div className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -2157,12 +2196,16 @@ export default function AdminGceDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[13px] font-bold text-stone-500 uppercase tracking-widest">Global Traffic</h3>
+                  <h3 className="text-[13px] font-bold text-stone-500 uppercase tracking-widest">Total Views</h3>
                   <div className="p-2 bg-blue-50 rounded-full"><Globe className="h-4 w-4 text-blue-500" /></div>
                 </div>
                 <div>
-                  <div className="flex items-end gap-2"><span className="text-3xl font-black text-stone-900">24,892</span></div>
-                  <p className="mt-2 text-[12px] font-bold text-emerald-500 flex items-center"><ArrowUpRight className="h-3 w-3 mr-1" /> +18.2% vs last week</p>
+                  <div className="flex items-end gap-2">
+                    <span className="text-3xl font-black text-stone-900">
+                      {isLoadingMagazineInsight ? '—' : (Number(insightTotalViews) || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[12px] font-medium text-stone-500">Magazine detail page views (all languages)</p>
                 </div>
               </div>
 
@@ -2172,8 +2215,13 @@ export default function AdminGceDashboardPage() {
                   <div className="p-2 bg-purple-50 rounded-full"><Target className="h-4 w-4 text-[#9333EA]" /></div>
                 </div>
                 <div>
-                  <div className="flex items-end gap-2"><span className="text-3xl font-black text-stone-900">1,240</span><span className="text-[14px] font-bold text-stone-400 mb-1">posts</span></div>
-                  <p className="mt-2 text-[12px] font-medium text-stone-500">5 Languages across 3 platforms</p>
+                  <div className="flex items-end gap-2">
+                    <span className="text-3xl font-black text-stone-900">
+                      {isLoadingMagazineInsight ? '—' : insightPublishedCount.toLocaleString()}
+                    </span>
+                    <span className="text-[14px] font-bold text-stone-400 mb-1">posts</span>
+                  </div>
+                  <p className="mt-2 text-[12px] font-medium text-stone-500">Live magazine rows in board_posts</p>
                 </div>
               </div>
 
@@ -2183,8 +2231,11 @@ export default function AdminGceDashboardPage() {
                   <div className="p-2 bg-amber-50 rounded-full"><Activity className="h-4 w-4 text-amber-500" /></div>
                 </div>
                 <div>
-                  <div className="flex items-end gap-2"><span className="text-3xl font-black text-stone-900">45</span><span className="text-[14px] font-bold text-stone-400 mb-1">waiting</span></div>
-                  <p className="mt-2 text-[12px] font-medium text-stone-500">Content bank ready to generate</p>
+                  <div className="flex items-end gap-2">
+                    <span className="text-3xl font-black text-stone-900">{insightQueueCount.toLocaleString()}</span>
+                    <span className="text-[14px] font-bold text-stone-400 mb-1">waiting</span>
+                  </div>
+                  <p className="mt-2 text-[12px] font-medium text-stone-500">GCE review desk + local idea queue</p>
                 </div>
               </div>
 
@@ -2203,44 +2254,42 @@ export default function AdminGceDashboardPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-1 rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
-                <h3 className="text-[16px] font-extrabold text-stone-900 mb-6 flex items-center"><Globe className="h-5 w-5 text-stone-400 mr-2" /> Traffic by Region</h3>
+                <h3 className="text-[16px] font-extrabold text-stone-900 mb-6 flex items-center"><Globe className="h-5 w-5 text-stone-400 mr-2" /> Views by Language</h3>
                 <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between text-[13px] font-bold mb-2"><span>🇺🇸 English (Global)</span><span>45%</span></div>
-                    <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full w-[45%]"></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[13px] font-bold mb-2"><span>🇯🇵 Japanese</span><span>25%</span></div>
-                    <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full w-[25%]"></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[13px] font-bold mb-2"><span>🇰🇷 Korean</span><span>15%</span></div>
-                    <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-rose-500 rounded-full w-[15%]"></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-[13px] font-bold mb-2"><span>🌏 Others (TH, VI)</span><span>15%</span></div>
-                    <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-stone-800 rounded-full w-[15%]"></div></div>
-                  </div>
+                  {(insightViewsByLang?.length ?? 0) === 0 ? (
+                    <p className="text-[13px] font-medium text-stone-400">No view data yet.</p>
+                  ) : (
+                    (insightViewsByLang ?? []).map((row) => (
+                      <div key={row?.key ?? row?.label ?? 'lang-row'}>
+                        <div className="flex justify-between text-[13px] font-bold mb-2"><span>{row?.flag} {row?.label}</span><span>{row?.percent ?? 0}%</span></div>
+                        <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${row?.barClass ?? 'bg-stone-400'}`} style={{ width: `${Math.min(100, Math.max(0, row?.percent ?? 0))}%` }} /></div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
               <div className="lg:col-span-2 rounded-3xl border border-stone-200 bg-white p-8 shadow-sm">
-                <h3 className="text-[16px] font-extrabold text-stone-900 mb-6 flex items-center"><Trophy className="h-5 w-5 text-amber-500 mr-2" /> Weekly Top Performing Articles</h3>
+                <h3 className="text-[16px] font-extrabold text-stone-900 mb-6 flex items-center"><Trophy className="h-5 w-5 text-amber-500 mr-2" /> Top Performing Articles</h3>
                 <div className="space-y-4">
-                  {MOCK_BEST_ARTICLES.map((article, idx) => (
-                    <div key={article.id} className="flex items-center gap-5 p-4 rounded-2xl border border-stone-100 bg-stone-50 transition-colors hover:bg-white hover:border-[#9333EA]/30 hover:shadow-sm">
-                      <div className="flex items-center justify-center w-8 font-black text-[18px] text-stone-300">{idx + 1}</div>
-                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0"><img src={article.image} alt={article.title} className="w-full h-full object-cover" /></div>
-                      <div className="flex-1">
-                        <span className={`inline-block mb-1.5 px-2 py-0.5 text-[10px] font-black tracking-wider rounded uppercase ${article.channel === 'web' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}`}>{article.channel}</span>
-                        <h4 className="text-[14px] font-bold text-stone-900 line-clamp-1">{article.title}</h4>
+                  {(insightTopArticles?.length ?? 0) === 0 ? (
+                    <p className="text-[13px] font-medium text-stone-400 py-6 text-center">No published magazine views yet.</p>
+                  ) : (
+                    (insightTopArticles ?? []).map((article, idx) => (
+                      <div key={article?.id ?? `top-article-${idx}`} className="flex items-center gap-5 p-4 rounded-2xl border border-stone-100 bg-stone-50 transition-colors hover:bg-white hover:border-[#9333EA]/30 hover:shadow-sm">
+                        <div className="flex items-center justify-center w-8 font-black text-[18px] text-stone-300">{idx + 1}</div>
+                        <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0"><img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover" /></div>
+                        <div className="flex-1">
+                          <span className={`inline-block mb-1.5 px-2 py-0.5 text-[10px] font-black tracking-wider rounded uppercase ${MAGAZINE_LANG_BADGE_CLASS[article.langBadge] ?? 'bg-stone-100 text-stone-700'}`}>{article.langBadge}</span>
+                          <h4 className="text-[14px] font-bold text-stone-900 line-clamp-1">{article.title}</h4>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[15px] font-black text-stone-900">{(Number(article?.views) || 0).toLocaleString()}</div>
+                          <div className="text-[12px] font-bold text-stone-400">views</div>
+                        </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-[15px] font-black text-stone-900">{article.views.toLocaleString()}</div>
-                        <div className="text-[12px] font-bold text-emerald-500">{article.growth}</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>

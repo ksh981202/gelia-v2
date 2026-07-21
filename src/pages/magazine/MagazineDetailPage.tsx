@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, Loader2, Share2, User } from 'lucide-react'
 import { toast } from 'sonner'
+import { incrementMagazineViewCount } from '@/features/magazine/api/incrementMagazineView'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import { SITE_ORIGIN, buildSeoDescription, toAbsoluteSeoUrl, applyDocumentHtmlLang, magazineHtmlLang, magazineOgLocale } from '@/shared/lib/seoMeta'
@@ -198,6 +199,11 @@ export default function MagazineDetailPage() {
       cancelled = true
     }
   }, [slug])
+
+  useEffect(() => {
+    if (!post?.id || loading || notFound) return
+    void incrementMagazineViewCount(post.id, lang)
+  }, [post?.id, lang, loading, notFound])
 
   const { title, content, description } = useMemo(() => {
     if (!post) return { title: '', content: '', description: '' }

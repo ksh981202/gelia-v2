@@ -1,3 +1,4 @@
+import { incrementMagazineViewCount } from '@/features/magazine/api/incrementMagazineView'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import {
   SITE_ORIGIN,
@@ -130,6 +131,11 @@ export default function ClientMagazineDetailPage() {
     enabled: Boolean(id),
   })
   const showLoading = isPending || isLoading || isFetching
+
+  useEffect(() => {
+    if (!post?.id || showLoading) return
+    void incrementMagazineViewCount(post.id, seoLang)
+  }, [post?.id, seoLang, showLoading])
 
   const handleShareClick = async () => {
     try {
