@@ -960,35 +960,35 @@ const buildDiamondHeadingHtml = (_theme: GceThemeType, badgeIndex: number, title
 
 const buildTipBoxHtml = (theme: GceThemeType, label: string, bodyHtml: string): string => {
   if (theme === '2') {
-    return `\n\n<div class="my-8 p-5 bg-stone-100 border-stone-200 rounded-2xl border"><strong class="block text-stone-900 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+    return `\n\n<div class="my-8 p-5 bg-stone-100 border-stone-200 rounded-2xl border max-w-full overflow-hidden break-words whitespace-normal"><strong class="block text-stone-900 mb-1 text-[15px] break-words whitespace-normal">${label}</strong>${bodyHtml}</div>\n\n`;
   }
   if (theme === '3') {
-    return `\n\n<div class="my-8 p-5 bg-cyan-50/90 border-cyan-100 rounded-2xl border"><strong class="block text-cyan-800 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+    return `\n\n<div class="my-8 p-5 bg-cyan-50/90 border-cyan-100 rounded-2xl border max-w-full overflow-hidden break-words whitespace-normal"><strong class="block text-cyan-800 mb-1 text-[15px] break-words whitespace-normal">${label}</strong>${bodyHtml}</div>\n\n`;
   }
   if (theme === '4') {
-    return `\n\n<div class="my-8 p-5 bg-amber-50/90 border-amber-100 rounded-2xl border"><strong class="block text-amber-900 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+    return `\n\n<div class="my-8 p-5 bg-amber-50/90 border-amber-100 rounded-2xl border max-w-full overflow-hidden break-words whitespace-normal"><strong class="block text-amber-900 mb-1 text-[15px] break-words whitespace-normal">${label}</strong>${bodyHtml}</div>\n\n`;
   }
-  return `\n\n<div class="my-8 p-5 bg-purple-50/80 border-purple-100 rounded-2xl border"><strong class="block text-purple-700 mb-1 text-[15px] break-words">${label}</strong>${bodyHtml}</div>\n\n`;
+  return `\n\n<div class="my-8 p-5 bg-purple-50/80 border-purple-100 rounded-2xl border max-w-full overflow-hidden break-words whitespace-normal"><strong class="block text-purple-700 mb-1 text-[15px] break-words whitespace-normal">${label}</strong>${bodyHtml}</div>\n\n`;
 };
 
 /** 🚫 Caution(실수 방지) 박스 — Tip과 구조 유사, 라이트 핑크/레드 경고 톤 (다국어 타이틀 동적) */
 const buildCautionBoxHtml = (title: string, content: string): string => {
   const safeTitle = String(title ?? '').trim() || 'Caution';
   const titleHtml = safeTitle.startsWith('🚫') ? safeTitle : `🚫 ${safeTitle}`;
-  return `\n\n<div class="rounded-xl p-4 my-4 md:my-5 bg-[#FFF5F6] border border-red-100"><strong class="block text-[#D9534F] font-bold mb-1.5 text-[15px] break-words">${titleHtml}</strong>${content}</div>\n\n`;
+  return `\n\n<div class="rounded-xl p-4 my-4 md:my-5 bg-[#FFF5F6] border border-red-100 max-w-full overflow-hidden break-words whitespace-normal"><strong class="block text-[#D9534F] font-bold mb-1.5 text-[15px] break-words whitespace-normal">${titleHtml}</strong>${content}</div>\n\n`;
 };
 
 const buildCheckCardOpenHtml = (theme: GceThemeType, titleText: string): string => {
   if (theme === '2') {
-    return `<div class="bg-stone-100 rounded-2xl p-6 my-6"><h5 class="text-stone-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-stone-900 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+    return `<div class="bg-stone-100 rounded-2xl p-6 my-6 max-w-full overflow-hidden break-words whitespace-normal"><h5 class="text-stone-900 font-bold text-lg mb-4 flex items-center gap-2 break-words whitespace-normal"><span class="w-2 h-2 bg-stone-900 rounded-full shrink-0"></span>${titleText}</h5><ul class="space-y-3">`;
   }
   if (theme === '3') {
-    return `<div class="bg-sky-50 rounded-2xl p-6 my-6"><h5 class="text-cyan-800 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-cyan-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+    return `<div class="bg-sky-50 rounded-2xl p-6 my-6 max-w-full overflow-hidden break-words whitespace-normal"><h5 class="text-cyan-800 font-bold text-lg mb-4 flex items-center gap-2 break-words whitespace-normal"><span class="w-2 h-2 bg-cyan-600 rounded-full shrink-0"></span>${titleText}</h5><ul class="space-y-3">`;
   }
   if (theme === '4') {
-    return `<div class="bg-orange-50/80 rounded-2xl p-6 my-6"><h5 class="text-amber-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-amber-700 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+    return `<div class="bg-orange-50/80 rounded-2xl p-6 my-6 max-w-full overflow-hidden break-words whitespace-normal"><h5 class="text-amber-900 font-bold text-lg mb-4 flex items-center gap-2 break-words whitespace-normal"><span class="w-2 h-2 bg-amber-700 rounded-full shrink-0"></span>${titleText}</h5><ul class="space-y-3">`;
   }
-  return `<div class="bg-gray-50 rounded-2xl p-6 my-6"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-purple-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+  return `<div class="bg-gray-50 rounded-2xl p-6 my-6 max-w-full overflow-hidden break-words whitespace-normal"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2 break-words whitespace-normal"><span class="w-2 h-2 bg-purple-600 rounded-full shrink-0"></span>${titleText}</h5><ul class="space-y-3">`;
 };
 
 const buildCheckListItemHtml = (theme: GceThemeType, itemHtml: string): string => {
@@ -1020,7 +1020,7 @@ const buildHighlightStrongHtml = (theme: GceThemeType, inner: string): string =>
 };
 
 const MAGAZINE_BODY_P_CLASS =
-  'mb-2 md:mb-3 text-[16px] md:text-[17px] leading-[1.8] font-light text-[#2b2b2b] break-words whitespace-pre-wrap';
+  'mb-2 md:mb-3 text-[16px] md:text-[17px] leading-[1.8] font-light text-[#2b2b2b] break-words whitespace-pre-wrap max-w-full';
 
 const wrapMagazinePlainParagraph = (text: string, highlightClass: string): string => {
   const formatted = formatGceInlineText(text, highlightClass).replace(/\n/g, '<br/>');
@@ -1197,7 +1197,7 @@ const buildMagazineHtml = async (
         ? formatGceInlineText(String(body).trim(), highlightClass)
         : '';
       const bodyHtml = safeBody
-        ? `<p class="text-[15px] md:text-[16px] text-gray-800 leading-[1.7] break-keep m-0">${safeBody}</p>`
+        ? `<p class="text-[15px] md:text-[16px] text-gray-800 leading-[1.7] break-words whitespace-normal m-0">${safeBody}</p>`
         : '';
       return buildCautionBoxHtml(safeTitle, bodyHtml);
     },
@@ -1227,7 +1227,7 @@ const buildMagazineHtml = async (
   // ── 7. 📝 전체 요약 박스 (외곽) — 내부 카드/리스트 조립 후 최후에 래핑
   html = html.replace(/📝\s*([^\n]+)([\s\S]*)/g, (_match, heading: string, body: string) => {
     const safeHeading = formatGceInlineText(String(heading ?? '').trim() || '한눈에 보는 총평', highlightClass);
-    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm flex flex-col gap-6"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
+    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm flex flex-col gap-6 max-w-full overflow-hidden break-words whitespace-normal"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words whitespace-normal">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
   });
 
   // ── 8. Dumb Pipe: AI 원본 \\n\\n 단락만 <p> 래핑 (마침표 강제 분리 없음)

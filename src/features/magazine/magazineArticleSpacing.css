@@ -14,3 +14,44 @@
 .magazine-article-body .rounded-2xl.p-6 + .rounded-2xl.p-6:not(.my-12) {
   margin-top: 1.5rem !important;
 }
+
+/* ── 다국어(JP/TH/VN 등) 띄어쓰기 없는 텍스트 오버플로우 방지 ── */
+.magazine-article-body {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.magazine-article-body *,
+.magazine-article-body p,
+.magazine-article-body strong,
+.magazine-article-body span,
+.magazine-article-body li,
+.magazine-article-body h3,
+.magazine-article-body h4,
+.magazine-article-body h5 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  /* 과거 HTML의 break-keep(keep-all)이 JP 장문을 가로로 밀어내는 것을 무력화 */
+  word-break: break-word !important;
+}
+
+/* Tip / Caution / 타겟 추천 / 결론 외곽 박스 */
+.magazine-article-body > div,
+.magazine-article-body div.rounded-xl,
+.magazine-article-body div.rounded-2xl,
+.magazine-article-body div.rounded-3xl,
+.magazine-article-body div[class*='bg-'],
+.magazine-article-body div[class*='border'] {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.magazine-article-body img {
+  max-width: 100% !important;
+  height: auto;
+}
