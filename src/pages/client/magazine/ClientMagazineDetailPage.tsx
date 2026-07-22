@@ -1,4 +1,6 @@
 import { incrementMagazineViewCount } from '@/features/magazine/api/incrementMagazineView'
+import { MAGAZINE_ARTICLE_BODY_CLASS } from '@/features/magazine/magazineArticleBody'
+import '@/features/magazine/magazineArticleSpacing.css'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import {
   SITE_ORIGIN,
@@ -237,7 +239,7 @@ export default function ClientMagazineDetailPage() {
               </time>
             ) : null}
             <div
-              className="mt-8 whitespace-pre-wrap break-words break-all overflow-hidden text-base leading-relaxed text-gray-700 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_img]:my-5 [&_img]:max-w-full [&_img]:rounded-2xl [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-5 [&_ul]:list-disc"
+              className={`${MAGAZINE_ARTICLE_BODY_CLASS} mt-8 whitespace-pre-wrap break-words break-all overflow-hidden text-base leading-relaxed text-gray-700 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_img]:my-5 [&_img]:max-w-full [&_img]:rounded-2xl [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-5 [&_ul]:list-disc`}
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
           </article>

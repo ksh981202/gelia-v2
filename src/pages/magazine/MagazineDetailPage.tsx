@@ -4,6 +4,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, Loader2, Share2, User } from 'lucide-react'
 import { toast } from 'sonner'
 import { incrementMagazineViewCount } from '@/features/magazine/api/incrementMagazineView'
+import { MAGAZINE_ARTICLE_BODY_CLASS } from '@/features/magazine/magazineArticleBody'
+import '@/features/magazine/magazineArticleSpacing.css'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import { SITE_ORIGIN, buildSeoDescription, toAbsoluteSeoUrl, applyDocumentHtmlLang, magazineHtmlLang, magazineOgLocale } from '@/shared/lib/seoMeta'
@@ -420,7 +422,7 @@ export default function MagazineDetailPage() {
         <h1 className="text-3xl md:text-4xl font-extrabold text-black mb-8 break-words whitespace-pre-wrap">
           {title || 'Untitled'}
         </h1>
-        <div className="text-gray-800" dangerouslySetInnerHTML={{ __html: content || '' }} />
+        <div className={`${MAGAZINE_ARTICLE_BODY_CLASS} text-gray-800`} dangerouslySetInnerHTML={{ __html: content || '' }} />
       </div>
     </div>
   )

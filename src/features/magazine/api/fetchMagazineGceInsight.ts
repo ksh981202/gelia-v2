@@ -58,19 +58,47 @@ const VIEW_COUNT_SELECT =
 
 const BASE_SELECT = 'id, title, title_en, thumbnail_url'
 
+/** null / undefined / NaN → 0 */
+function safeCount(value: unknown): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+function sanitizeBoardPostRow(row: unknown): BoardPostInsightRow | null {
+  if (!row || typeof row !== 'object') return null
+  const r = row as Record<string, unknown>
+  const id = r.id
+  if (id == null || id === '') return null
+
+  return {
+    id: String(id),
+    title: r.title == null ? null : String(r.title),
+    title_en: r.title_en == null ? null : String(r.title_en),
+    thumbnail_url: r.thumbnail_url == null ? null : String(r.thumbnail_url),
+    view_count: safeCount(r.view_count),
+    view_count_ko: safeCount(r.view_count_ko),
+    view_count_en: safeCount(r.view_count_en),
+    view_count_jp: safeCount(r.view_count_jp),
+    view_count_vn: safeCount(r.view_count_vn),
+    view_count_th: safeCount(r.view_count_th),
+  }
+}
+
 function pickPrimaryLangBadge(row: BoardPostInsightRow): string {
   const ranked = [
-    { badge: 'KR', v: Number(row.view_count_ko) || 0 },
-    { badge: 'EN', v: Number(row.view_count_en) || 0 },
-    { badge: 'JP', v: Number(row.view_count_jp) || 0 },
-    { badge: 'VN', v: Number(row.view_count_vn) || 0 },
-    { badge: 'TH', v: Number(row.view_count_th) || 0 },
+    { badge: 'KR', v: safeCount(row.view_count_ko) },
+    { badge: 'EN', v: safeCount(row.view_count_en) },
+    { badge: 'JP', v: safeCount(row.view_count_jp) },
+    { badge: 'VN', v: safeCount(row.view_count_vn) },
+    { badge: 'TH', v: safeCount(row.view_count_th) },
   ].sort((a, b) => b.v - a.v)
   return (ranked[0]?.v ?? 0) > 0 ? (ranked[0]?.badge ?? 'KR') : 'KR'
 }
 
-function buildInsightFromRows(rows: BoardPostInsightRow[]): MagazineGceInsight {
-  const safeRows = Array.isArray(rows) ? rows : []
+function buildInsightFromRows(rows: unknown[]): MagazineGceInsight {
+  const safeRows = (Array.isArray(rows) ? rows : [])
+    .map(sanitizeBoardPostRow)
+    .filter((row): row is BoardPostInsightRow => row != null)
   const publishedCount = safeRows.length
 
   let totalKo = 0
@@ -81,12 +109,12 @@ function buildInsightFromRows(rows: BoardPostInsightRow[]): MagazineGceInsight {
   let totalViews = 0
 
   for (const row of safeRows) {
-    totalViews += Number(row?.view_count) || 0
-    totalKo += Number(row?.view_count_ko) || 0
-    totalEn += Number(row?.view_count_en) || 0
-    totalJp += Number(row?.view_count_jp) || 0
-    totalVn += Number(row?.view_count_vn) || 0
-    totalTh += Number(row?.view_count_th) || 0
+    totalViews += safeCount(row.view_count)
+    totalKo += safeCount(row.view_count_ko)
+    totalEn += safeCount(row.view_count_en)
+    totalJp += safeCount(row.view_count_jp)
+    totalVn += safeCount(row.view_count_vn)
+    totalTh += safeCount(row.view_count_th)
   }
 
   const langBuckets = [
@@ -102,32 +130,33 @@ function buildInsightFromRows(rows: BoardPostInsightRow[]): MagazineGceInsight {
     },
   ]
 
-  const langTotal = langBuckets.reduce((sum, b) => sum + b.views, 0)
+  const langTotal = langBuckets.reduce((sum, b) => sum + safeCount(b.views), 0)
   const viewsByLanguage: MagazineLangViewRow[] = langBuckets.map((b) => ({
     ...b,
-    percent: langTotal > 0 ? Math.round((b.views / langTotal) * 100) : 0,
+    views: safeCount(b.views),
+    percent: langTotal > 0 ? Math.round((safeCount(b.views) / langTotal) * 100) : 0,
   }))
 
   const topArticles: MagazineTopArticleRow[] = [...safeRows]
-    .sort((a, b) => (Number(b?.view_count) || 0) - (Number(a?.view_count) || 0))
+    .sort((a, b) => safeCount(b.view_count) - safeCount(a.view_count))
     .slice(0, 3)
     .map((row, index) => ({
-      id: String(row?.id ?? `magazine-${index}`),
-      title: String(row?.title || row?.title_en || 'GELIA Magazine').trim(),
-      thumbnail: String(row?.thumbnail_url || '').trim() || FALLBACK_THUMB,
+      id: String(row.id || `magazine-${index}`),
+      title: String(row.title || row.title_en || 'GELIA Magazine').trim() || 'GELIA Magazine',
+      thumbnail: String(row.thumbnail_url || '').trim() || FALLBACK_THUMB,
       langBadge: pickPrimaryLangBadge(row),
-      views: Number(row?.view_count) || 0,
+      views: safeCount(row.view_count),
     }))
 
-  return {
+  return normalizeMagazineGceInsight({
     totalViews,
     viewsByLanguage,
     topArticles,
     publishedCount,
-  }
+  })
 }
 
-async function fetchMagazineRows(select: string): Promise<BoardPostInsightRow[]> {
+async function fetchMagazineRows(select: string): Promise<unknown[]> {
   const { data, error } = await supabase
     .from('board_posts')
     .select(select)
@@ -137,7 +166,7 @@ async function fetchMagazineRows(select: string): Promise<BoardPostInsightRow[]>
     throw error
   }
 
-  return (data ?? []) as unknown as BoardPostInsightRow[]
+  return Array.isArray(data) ? data : []
 }
 
 /** GCE 인사이트 — view_count 컬럼 미적용 DB도 0으로 안전 폴백 */
@@ -149,21 +178,39 @@ export async function fetchMagazineGceInsight(): Promise<MagazineGceInsight> {
     console.warn('[fetchMagazineGceInsight] view_count columns unavailable, falling back:', primaryError)
     try {
       const rows = await fetchMagazineRows(BASE_SELECT)
-      return buildInsightFromRows(
-        rows.map((row) => ({
-          ...row,
-          view_count: 0,
-          view_count_ko: 0,
-          view_count_en: 0,
-          view_count_jp: 0,
-          view_count_vn: 0,
-          view_count_th: 0,
-        })),
-      )
+      return buildInsightFromRows(rows)
     } catch (fallbackError) {
       console.error('[fetchMagazineGceInsight]', fallbackError)
-      return { ...EMPTY_MAGAZINE_GCE_INSIGHT }
+      return normalizeMagazineGceInsight(EMPTY_MAGAZINE_GCE_INSIGHT)
     }
+  }
+}
+
+const LANG_VIEW_DEFAULTS: Record<MagazineLangViewRow['key'], Omit<MagazineLangViewRow, 'views' | 'percent'>> = {
+  en: { key: 'en', label: 'English (Global)', flag: '🇺🇸', barClass: 'bg-blue-500' },
+  jp: { key: 'jp', label: 'Japanese', flag: '🇯🇵', barClass: 'bg-emerald-500' },
+  ko: { key: 'ko', label: 'Korean', flag: '🇰🇷', barClass: 'bg-rose-500' },
+  others: { key: 'others', label: 'Others (TH, VI)', flag: '🌏', barClass: 'bg-stone-800' },
+}
+
+function normalizeLangViewRow(
+  row: Partial<MagazineLangViewRow> | null | undefined,
+): MagazineLangViewRow {
+  const key = row?.key
+  const defaults =
+    key && key in LANG_VIEW_DEFAULTS
+      ? LANG_VIEW_DEFAULTS[key]
+      : {
+          key: 'others' as const,
+          label: String(row?.label ?? 'Unknown'),
+          flag: String(row?.flag ?? '🌏'),
+          barClass: String(row?.barClass ?? 'bg-stone-400'),
+        }
+
+  return {
+    ...defaults,
+    views: safeCount(row?.views),
+    percent: Math.min(100, Math.max(0, safeCount(row?.percent))),
   }
 }
 
@@ -173,16 +220,18 @@ export function normalizeMagazineGceInsight(
   if (!raw) return { ...EMPTY_MAGAZINE_GCE_INSIGHT }
 
   return {
-    totalViews: Number(raw.totalViews) || 0,
-    publishedCount: Number(raw.publishedCount) || 0,
-    viewsByLanguage: Array.isArray(raw.viewsByLanguage) ? raw.viewsByLanguage : [],
+    totalViews: safeCount(raw.totalViews),
+    publishedCount: safeCount(raw.publishedCount),
+    viewsByLanguage: Array.isArray(raw.viewsByLanguage)
+      ? raw.viewsByLanguage.map((row) => normalizeLangViewRow(row))
+      : [],
     topArticles: Array.isArray(raw.topArticles)
       ? raw.topArticles.map((article, index) => ({
           id: String(article?.id ?? `top-${index}`),
           title: String(article?.title ?? 'GELIA Magazine'),
           thumbnail: String(article?.thumbnail ?? FALLBACK_THUMB),
           langBadge: String(article?.langBadge ?? 'KR'),
-          views: Number(article?.views) || 0,
+          views: safeCount(article?.views),
         }))
       : [],
   }

@@ -242,6 +242,11 @@ const MAGAZINE_LANG_BADGE_CLASS: Record<string, string> = {
   TH: 'bg-amber-100 text-amber-800',
 };
 
+const formatInsightCount = (value: unknown): string => {
+  const n = Number(value);
+  return (Number.isFinite(n) ? n : 0).toLocaleString();
+};
+
 type GceIdeaImage = {
   id: string;
   concept: string;
@@ -975,15 +980,15 @@ const buildCautionBoxHtml = (title: string, content: string): string => {
 
 const buildCheckCardOpenHtml = (theme: GceThemeType, titleText: string): string => {
   if (theme === '2') {
-    return `<div class="bg-stone-100 rounded-2xl p-6 mb-5"><h5 class="text-stone-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-stone-900 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+    return `<div class="bg-stone-100 rounded-2xl p-6 my-6"><h5 class="text-stone-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-stone-900 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
   }
   if (theme === '3') {
-    return `<div class="bg-sky-50 rounded-2xl p-6 mb-5"><h5 class="text-cyan-800 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-cyan-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+    return `<div class="bg-sky-50 rounded-2xl p-6 my-6"><h5 class="text-cyan-800 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-cyan-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
   }
   if (theme === '4') {
-    return `<div class="bg-orange-50/80 rounded-2xl p-6 mb-5"><h5 class="text-amber-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-amber-700 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+    return `<div class="bg-orange-50/80 rounded-2xl p-6 my-6"><h5 class="text-amber-900 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-amber-700 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
   }
-  return `<div class="bg-gray-50 rounded-2xl p-6 mb-5"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-purple-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
+  return `<div class="bg-gray-50 rounded-2xl p-6 my-6"><h5 class="text-purple-700 font-bold text-lg mb-4 flex items-center gap-2"><span class="w-2 h-2 bg-purple-600 rounded-full"></span>${titleText}</h5><ul class="space-y-3">`;
 };
 
 const buildCheckListItemHtml = (theme: GceThemeType, itemHtml: string): string => {
@@ -1222,7 +1227,7 @@ const buildMagazineHtml = async (
   // ── 7. 📝 전체 요약 박스 (외곽) — 내부 카드/리스트 조립 후 최후에 래핑
   html = html.replace(/📝\s*([^\n]+)([\s\S]*)/g, (_match, heading: string, body: string) => {
     const safeHeading = formatGceInlineText(String(heading ?? '').trim() || '한눈에 보는 총평', highlightClass);
-    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
+    return `\n\n<div class="my-12 p-8 bg-white border border-gray-200 rounded-3xl shadow-sm flex flex-col gap-6"><h4 class="text-2xl font-extrabold text-black mb-8 text-center pb-6 border-b border-gray-100 break-words">${safeHeading}</h4>${body ?? ''}</div>\n\n`;
   });
 
   // ── 8. Dumb Pipe: AI 원본 \\n\\n 단락만 <p> 래핑 (마침표 강제 분리 없음)
@@ -1418,7 +1423,7 @@ export default function AdminGceDashboardPage() {
       })
       .catch((err) => {
         console.error('[magazineInsight]', err);
-        if (!cancelled) setMagazineInsight({ ...EMPTY_MAGAZINE_GCE_INSIGHT });
+        if (!cancelled) setMagazineInsight(normalizeMagazineGceInsight(EMPTY_MAGAZINE_GCE_INSIGHT));
       })
       .finally(() => {
         if (!cancelled) setIsLoadingMagazineInsight(false);
@@ -2202,7 +2207,7 @@ export default function AdminGceDashboardPage() {
                 <div>
                   <div className="flex items-end gap-2">
                     <span className="text-3xl font-black text-stone-900">
-                      {isLoadingMagazineInsight ? '—' : (Number(insightTotalViews) || 0).toLocaleString()}
+                      {isLoadingMagazineInsight ? '—' : formatInsightCount(insightTotalViews)}
                     </span>
                   </div>
                   <p className="mt-2 text-[12px] font-medium text-stone-500">Magazine detail page views (all languages)</p>
@@ -2217,7 +2222,7 @@ export default function AdminGceDashboardPage() {
                 <div>
                   <div className="flex items-end gap-2">
                     <span className="text-3xl font-black text-stone-900">
-                      {isLoadingMagazineInsight ? '—' : insightPublishedCount.toLocaleString()}
+                      {isLoadingMagazineInsight ? '—' : formatInsightCount(insightPublishedCount)}
                     </span>
                     <span className="text-[14px] font-bold text-stone-400 mb-1">posts</span>
                   </div>
@@ -2232,7 +2237,7 @@ export default function AdminGceDashboardPage() {
                 </div>
                 <div>
                   <div className="flex items-end gap-2">
-                    <span className="text-3xl font-black text-stone-900">{insightQueueCount.toLocaleString()}</span>
+                    <span className="text-3xl font-black text-stone-900">{formatInsightCount(insightQueueCount)}</span>
                     <span className="text-[14px] font-bold text-stone-400 mb-1">waiting</span>
                   </div>
                   <p className="mt-2 text-[12px] font-medium text-stone-500">GCE review desk + local idea queue</p>
@@ -2278,13 +2283,13 @@ export default function AdminGceDashboardPage() {
                     (insightTopArticles ?? []).map((article, idx) => (
                       <div key={article?.id ?? `top-article-${idx}`} className="flex items-center gap-5 p-4 rounded-2xl border border-stone-100 bg-stone-50 transition-colors hover:bg-white hover:border-[#9333EA]/30 hover:shadow-sm">
                         <div className="flex items-center justify-center w-8 font-black text-[18px] text-stone-300">{idx + 1}</div>
-                        <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0"><img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover" /></div>
+                        <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0"><img src={article?.thumbnail ?? ''} alt={article?.title ?? 'Magazine'} className="w-full h-full object-cover" /></div>
                         <div className="flex-1">
-                          <span className={`inline-block mb-1.5 px-2 py-0.5 text-[10px] font-black tracking-wider rounded uppercase ${MAGAZINE_LANG_BADGE_CLASS[article.langBadge] ?? 'bg-stone-100 text-stone-700'}`}>{article.langBadge}</span>
-                          <h4 className="text-[14px] font-bold text-stone-900 line-clamp-1">{article.title}</h4>
+                          <span className={`inline-block mb-1.5 px-2 py-0.5 text-[10px] font-black tracking-wider rounded uppercase ${MAGAZINE_LANG_BADGE_CLASS[article?.langBadge ?? ''] ?? 'bg-stone-100 text-stone-700'}`}>{article?.langBadge ?? 'KR'}</span>
+                          <h4 className="text-[14px] font-bold text-stone-900 line-clamp-1">{article?.title ?? 'GELIA Magazine'}</h4>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-[15px] font-black text-stone-900">{(Number(article?.views) || 0).toLocaleString()}</div>
+                          <div className="text-[15px] font-black text-stone-900">{formatInsightCount(article?.views)}</div>
                           <div className="text-[12px] font-bold text-stone-400">views</div>
                         </div>
                       </div>
