@@ -3,9 +3,11 @@ import AdminGuard from './guards/AdminGuard'
 import AdminLayout from '../../widgets/layout/AdminLayout'
 import ClientLayout from '../../widgets/layout/ClientLayout'
 import { AppShellSuspenseFallback } from '../../widgets/layout/AppShellSuspenseFallback'
+import GlobalErrorFallback, { AppErrorBoundary } from '../../components/GlobalErrorFallback'
 import {
   createBrowserRouter,
   Navigate,
+  Outlet,
   RouterProvider,
 } from 'react-router-dom'
 
@@ -109,8 +111,13 @@ const ProTestResultPage = lazy(() =>
 
 const router = createBrowserRouter([
   {
+    element: <Outlet />,
+    errorElement: <GlobalErrorFallback />,
+    children: [
+  {
     path: '/',
     element: <ClientLayout />,
+    errorElement: <GlobalErrorFallback />,
     children: [
       { index: true, element: <ClientHomePage /> },
       { path: 'category', element: <CategoryPage /> },
@@ -199,9 +206,11 @@ const router = createBrowserRouter([
   {
     path: '/pro',
     element: <ProAuthGuard />,
+    errorElement: <GlobalErrorFallback />,
     children: [
       {
         element: <ProLayout />,
+        errorElement: <GlobalErrorFallback />,
         children: [
           { index: true, element: <ProDashboardPage /> },
           { path: 'proposals', element: <ProSentProposalsPage /> },
@@ -223,9 +232,11 @@ const router = createBrowserRouter([
   {
     path: '/admin',
     element: <AdminGuard />,
+    errorElement: <GlobalErrorFallback />,
     children: [
       {
         element: <AdminLayout />,
+        errorElement: <GlobalErrorFallback />,
         children: [
           { index: true, element: <Navigate to="upload" replace /> },
           { path: 'upload', element: <AdminUploadPage /> },
@@ -237,13 +248,17 @@ const router = createBrowserRouter([
     ],
   },
   { path: '/client/*', element: <Navigate to="/" replace /> },
-  { path: '*', element: <NotFoundPage /> },
+  { path: '*', element: <NotFoundPage />, errorElement: <GlobalErrorFallback /> },
+    ],
+  },
 ])
 
 export function AppRouter() {
   return (
-    <Suspense fallback={<AppShellSuspenseFallback />}>
-      <RouterProvider router={router} />
-    </Suspense>
+    <AppErrorBoundary>
+      <Suspense fallback={<AppShellSuspenseFallback />}>
+        <RouterProvider router={router} />
+      </Suspense>
+    </AppErrorBoundary>
   )
 }

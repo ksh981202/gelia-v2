@@ -12,14 +12,25 @@ export function useCurrentUserId(): string | null {
       if (!cancelled) setUserId(id)
     }
 
-    void supabase.auth.getSession().then(({ data }) => {
-      apply(data.session?.user?.id?.trim() || null)
-    })
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        apply(data.session?.user?.id?.trim() || null)
+      })
+      .catch((err) => {
+        console.warn('[useCurrentUserId] getSession failed', err)
+        apply(null)
+      })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      apply(session?.user?.id?.trim() || null)
+      try {
+        apply(session?.user?.id?.trim() || null)
+      } catch (err) {
+        console.warn('[useCurrentUserId] onAuthStateChange failed', err)
+        apply(null)
+      }
     })
 
     return () => {

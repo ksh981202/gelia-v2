@@ -263,7 +263,7 @@ export default function ClientHomePage() {
   const [isFooterOpen, setIsFooterOpen] = useState(false);
   const [isAutoPlayPaused, setIsAutoPlayPaused] = useState(false);
   const isDesktop = useIsMdDesktop();
-  const { data: feed, isLoading } = useClientHomeFeed();
+  const { data: feed, isLoading, isError: isFeedError, refetch: refetchFeed } = useClientHomeFeed();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
   const gallerySort = useClientPcFilterStore((state) => state.gallerySort);
@@ -404,6 +404,22 @@ export default function ClientHomePage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fdfaf7] pb-4 md:overflow-x-visible md:bg-white md:pb-0">
+      {isFeedError ? (
+        <div className="mx-5 mt-4 rounded-2xl border border-rose-100 bg-rose-50/80 px-4 py-4 text-center md:mx-auto md:max-w-3xl">
+          <p className="text-[14px] font-medium text-stone-700">
+            {isEnglish
+              ? "We couldn't load the home feed. Please try again."
+              : "홈 피드를 불러오지 못했습니다. 다시 시도해 주세요."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void refetchFeed()}
+            className="mt-3 rounded-full bg-stone-900 px-4 py-2 text-[13px] font-bold text-white"
+          >
+            {isEnglish ? "Retry" : "다시 시도"}
+          </button>
+        </div>
+      ) : null}
       <section className="mt-2 px-5 md:hidden">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-[20px] font-bold tracking-tight text-gray-900">
