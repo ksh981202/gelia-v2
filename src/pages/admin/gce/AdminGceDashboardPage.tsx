@@ -20,7 +20,6 @@ import {
   normalizeMagazineGceInsight,
   type MagazineGceInsight,
 } from '@/features/magazine/api/fetchMagazineGceInsight';
-
 type DraftUiStatus = 'draft' | 'pending' | 'generating' | 'completed' | 'review' | 'published';
 
 const FACTORY_CATEGORIES = [
@@ -652,6 +651,13 @@ const sanitizePublishSlug = (raw: string): string =>
     .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 120);
+
+/** 발행 시 중복 방지 — base slug 뒤에 영문/숫자 4자리 short hash 병합 */
+const makeUniquePublishSlug = (baseSlug: string): string => {
+  const shortHash = Math.random().toString(36).substring(2, 6).padEnd(4, '0').slice(0, 4);
+  const trimmedBase = baseSlug.slice(0, 115);
+  return `${trimmedBase}-${shortHash}`;
+};
 
 /**
  * SECURITY (DB): 메타 설명에서 HTML/제어문자 제거 후 길이 제한
@@ -1604,11 +1610,13 @@ export default function AdminGceDashboardPage() {
     if (isPublishingMagazine) return;
 
     // SECURITY (DB): 슬러그 화이트리스트 재검증 — 비정상 문자·과장이 섞인 값 차단
-    const slug = sanitizePublishSlug(publishSlug);
-    if (!slug) {
+    const baseSlug = sanitizePublishSlug(publishSlug);
+    if (!baseSlug) {
       toast.error('URL 슬러그를 입력해주세요. (영문/숫자/하이픈만 가능)');
       return;
     }
+    // 중복 slug 원천 차단: 항상 short hash 병합 후 DB 저장
+    const uniqueSlug = makeUniquePublishSlug(baseSlug);
 
     const contentKo = sanitizeGceMagazineHtml(String(selectedReview.content_ko ?? '').trim());
     if (!String(selectedReview.title ?? '').trim() || !contentKo) {
@@ -1639,7 +1647,7 @@ export default function AdminGceDashboardPage() {
       // 라이브 클라이언트는 magazine_editor 조회 — 스키마 호환 유지
       post_type: 'magazine_editor',
       is_active: true,
-      slug,
+      slug: uniqueSlug,
       thumbnail_url,
       title: String(selectedReview.title ?? '').trim(),
       title_en: String(selectedReview.title_en ?? '').trim() || null,
@@ -1679,7 +1687,7 @@ export default function AdminGceDashboardPage() {
         .update({
           status: 'published',
           published_at: publishedAt,
-          slug,
+          slug: uniqueSlug,
           meta_ko: livePayload.meta_ko,
           meta_en: livePayload.meta_en,
           meta_jp: livePayload.meta_jp,
