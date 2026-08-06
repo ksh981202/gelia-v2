@@ -260,74 +260,74 @@ type GceGeneratedIdea = {
   images: GceIdeaImage[];
 };
 
-/** 테마별 하이엔드 다이내믹 타이틀 ({keyword}=태그 최빈값, {theme}=기획 테마) */
+/** 테마별 SEO 타이틀 ({keyword}=태그 최빈값, {theme}=기획 테마) — 검색 핵심어를 앞부분에 배치 */
 const THEME_SPECIFIC_TITLE_TEMPLATES: Record<FactoryCategory, string[]> = {
   '오피스/데일리': [
-    '출근룩 완성! {keyword}으로 정리한 오피스 네일 5선',
-    '키보드 위에서도 세련되게, {keyword} 데일리 무드 보드',
-    '꾸안꾸의 정석! 단정한 {theme} 큐레이션',
-    '실패 없는 {keyword} 시럽톤으로 채운 출근 네일 가이드',
+    '단정한 {theme} 네일 추천 | {keyword} 시럽으로 완성하는 출근룩',
+    '직장인 {keyword} 네일 디자인 5선 | 깔끔한 {theme} 가이드',
+    '{theme} 네일 추천 | 실패 없는 {keyword} 데일리 출근 네일',
+    '{keyword} 네일 디자인 | 오피스에 맞는 {theme} 심플 네일 추천',
   ],
   '키치/하이틴': [
-    'SNS 대란템! {keyword} 포인트로 터트리는 하이틴 무드',
-    '귀여움 과다복용, {keyword}이 살아있는 {theme} 5선',
-    '네온부터 드로잉까지! {keyword} 키치 네일 룩북',
-    '팝하고 짜릿한 {theme}, {keyword}로 완성하는 손끝',
+    '{theme} 네일 추천 | SNS 인기 {keyword} 키치 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 귀여운 {theme} 하이틴 네일 추천',
+    '하이틴 {keyword} 네일아트 | 포인트 강한 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 네온·드로잉 {keyword} 키치 네일 추천',
   ],
   '올드머니/럭셔리': [
-    '조용한 고급감, {keyword}가 빛나는 올드머니 네일',
-    '트위드·진주 무드! {keyword}로 쌓은 {theme} 큐레이션',
-    '에디터 픽 럭셔리, {keyword} 클래식 핸드 룩북',
-    '과하지 않은 존재감, {keyword} 올드머니 가이드',
+    '{theme} 네일 추천 | {keyword} 클래식 럭셔리 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 고급스러운 {theme} 네일 추천',
+    '올드머니 {keyword} 네일아트 | 트위드·진주 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 과하지 않은 {keyword} 럭셔리 네일 추천',
   ],
   '청순/여리여리': [
-    '숨결처럼 부드러운 {keyword} 파스텔 {theme}',
-    '여리여리 손끝, {keyword} 그라데이션 무드 보드',
-    '화이트·플라워로 채운 {theme} 5선',
-    '청순함 한 스푼, {keyword}가 스며든 네일 큐레이션',
+    '{theme} 네일 추천 | {keyword} 파스텔 여리여리 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 청순한 {theme} 그라데이션 추천',
+    '여리여리 {keyword} 네일아트 | 화이트·플라워 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 부드러운 {keyword} 청순 네일 추천',
   ],
   '웨딩/하객': [
-    '식장에서 가장 우아한 손끝, {keyword} {theme}',
-    '하객룩의 정석! {keyword} 프렌치 웨딩 가이드',
-    '신부·하객 모두 빛나는 {keyword} 네일 룩북',
-    '자개처럼 은은한 {theme}, {keyword}로 완성',
+    '{theme} 네일 추천 | {keyword} 프렌치 웨딩·하객 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 식장 어울리는 {theme} 네일 추천',
+    '웨딩 {keyword} 네일아트 | 신부·하객 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 자개·화이트 {keyword} 하객 네일 추천',
   ],
   '파티/클럽': [
-    '시선 강탈 확정, {keyword} 풀스톤 {theme}',
-    '클럽 조명 아래에서 더 빛나는 {keyword} 파티 네일',
-    '글리터·체인으로 무장한 {theme} 5선',
-    '오늘 밤의 주인공, {keyword} 스톤 큐레이션',
+    '{theme} 네일 추천 | {keyword} 풀스톤 파티 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 클럽 조명에 빛나는 {theme} 네일 추천',
+    '파티 {keyword} 네일아트 | 글리터·체인 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 시선 강탈 {keyword} 스톤 네일 추천',
   ],
   '썸머/바캉스': [
-    '바다보다 먼저 눈에 띄는 {keyword} 바캉스 네일',
-    '수영장 시선 강탈! {keyword} 썸머 {theme}',
-    '조개·형광 감성 가득한 {theme} 룩북',
-    '휴가 준비 끝, {keyword}로 채운 여름 핸드',
+    '{theme} 네일 추천 | {keyword} 바캉스 여름 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 수영장·해변 {theme} 네일 추천',
+    '여름 {keyword} 네일아트 | 조개·형광 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 휴가 필수 {keyword} 썸머 네일 추천',
   ],
   '시크/모던': [
-    '말없는 세련미, {keyword} 매트 {theme}',
-    '다크·실버로 조율한 {keyword} 시크 네일 5선',
-    '무광이 답이다! {keyword} 모던 큐레이션',
-    '과하지 않은 쿨함, {keyword} {theme} 가이드',
+    '{theme} 네일 추천 | {keyword} 매트 시크 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 다크·실버 {theme} 네일 추천',
+    '시크 {keyword} 네일아트 | 무광 모던 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 쿨한 {keyword} 모던 네일 추천',
   ],
   '유니크/아트': [
-    '손끝이 갤러리, {keyword} 아트 {theme}',
-    '마블·드로잉으로 완성한 {keyword} 유니크 룩북',
-    '남들과 다른 한 끗, {keyword} {theme} 5선',
-    '아트네일의 정수, {keyword} 핸드페인팅 큐레이션',
+    '{theme} 네일 추천 | {keyword} 마블·드로잉 아트 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 개성 있는 {theme} 네일 추천',
+    '유니크 {keyword} 네일아트 | 핸드페인팅 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 남다른 {keyword} 아트네일 추천',
   ],
   '계절/톤': [
-    '내 톤에 찰떡, {keyword} {theme} 퍼스널 네일',
-    '시즌 무드 완벽 매칭! {keyword} 톤 큐레이션',
-    '웜·쿨 고민 끝, {keyword}로 고른 {theme} 5선',
-    '이번 시즌 손끝 트렌드, {keyword} 계절 가이드',
+    '피부 톤이 밝아지는 {keyword} 네일아트 | {theme} 퍼스널 컬러 추천',
+    '{theme} 네일 추천 | {keyword} 웜·쿨톤 맞춤 네일 디자인',
+    '{keyword} 네일 디자인 5선 | 시즌 맞는 {theme} 네일 추천',
+    '{theme} 네일 디자인 | 이번 시즌 {keyword} 톤 네일 추천',
   ],
 };
 
 const IDEA_TITLE_FALLBACK_TEMPLATES = [
-  '에디터 픽! {keyword} 감성으로 채운 {theme} 네일 룩북',
-  '손끝부터 분위기 전환, {keyword} {theme} 큐레이션',
-  '오늘의 추천! {keyword}가 살아있는 {theme} 스타일 5선',
+  '{theme} 네일 추천 | {keyword} 네일 디자인 룩북',
+  '{keyword} 네일 디자인 5선 | {theme} 스타일 네일 추천',
+  '{theme} 네일 디자인 | 인기 {keyword} 네일아트 추천',
 ];
 
 const HOOK_KEYWORD_STOP = new Set([
@@ -385,14 +385,13 @@ const pickMagazineIdeaTitle = (category: string, keyword: string) => {
     THEME_SPECIFIC_TITLE_TEMPLATES[category as FactoryCategory] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
   const template = pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? '{theme} 네일 룩북';
   const safeKeyword = String(keyword ?? '').trim() || '네일';
-  const safeTheme = String(category ?? '').trim() || '네일';
+  // '계절/톤', '키치/하이틴' 등 → 제목용으로 '/' 를 공백으로 정제
+  const safeTheme =
+    String(category ?? '')
+      .trim()
+      .replace(/\//g, ' ')
+      .replace(/\s+/g, ' ') || '네일';
   return template.replace(/\{keyword\}/g, safeKeyword).replace(/\{theme\}/g, safeTheme);
-};
-
-type GceDailyIdeasCache = {
-  date: string;
-  ideas: GceGeneratedIdea[];
-  ideaImageUrlByGl: Record<string, string>;
 };
 
 /** DB source_filename 규칙: GL- + 숫자 7자리 (예: GL-0005520) */
@@ -1993,58 +1992,62 @@ export default function AdminGceDashboardPage() {
     if (isGeneratingIdeas) return;
     setIsGeneratingIdeas(true);
     try {
-      const TODAY = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' }).format(new Date());
-      const CACHE_KEY = 'GCE_DAILY_IDEAS_V2';
-
-      // Daily cache hit → ideas + URL 맵 동시 복원 (썸네일 깜빡임 방지)
+      // 일일 캐시 폐기 — 버튼마다 최신 풀을 다시 조회
       try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const cached = JSON.parse(raw) as GceDailyIdeasCache;
-          if (cached?.date === TODAY && Array.isArray(cached.ideas) && cached.ideas.length > 0) {
-            setIdeaImageUrlByGl(
-              cached.ideaImageUrlByGl && typeof cached.ideaImageUrlByGl === 'object'
-                ? cached.ideaImageUrlByGl
-                : {},
-            );
-            setGeneratedIdeas(cached.ideas);
-            setIsStep1Expanded(true);
-            toast.success('오늘의 캐시된 기획안을 불러왔습니다! (DB 호출 없음)');
-            return;
-          }
-        }
-      } catch (cacheReadErr) {
-        console.warn('[handleGenerateIdeas] cache read failed:', cacheReadErr);
+        localStorage.removeItem('GCE_DAILY_IDEAS_V2');
+      } catch {
+        /* ignore */
       }
 
-      const PAGE_SIZE = 300;
+      const NAIL_IDEA_SELECT =
+        'id, title, tags, source_filename, image_url, situations, styles, category, color, mood, nail_length, created_at';
+      const LATEST_SIZE = 300; // Query A — 최신 트렌드 ~30%
+      const PAST_SIZE = 700; // Query B — 과거 랜덤 ~70%
 
-      // 전체 DB 구간에서 무작위 윈도우를 고르기 위한 exact count
+      // exact count로 과거 윈도우 오프셋 산출 후, A/B 병렬 fetch
       const { count, error: countError } = await supabase
         .from('nail_designs')
         .select('*', { count: 'exact', head: true });
       if (countError) throw countError;
 
       const totalCount = count ?? 0;
-      const maxOffset = Math.max(0, totalCount - PAGE_SIZE);
-      const randomOffset = Math.floor(Math.random() * (maxOffset + 1));
+      // 최신 300장을 피하고 그 아래에서 700장 윈도우를 무작위 선택 (과거·중반 번호대 포함)
+      const maxPastStart = Math.max(0, totalCount - PAST_SIZE);
+      const minPastStart = Math.min(LATEST_SIZE, maxPastStart);
+      const pastOffset =
+        minPastStart + Math.floor(Math.random() * (Math.max(0, maxPastStart - minPastStart) + 1));
 
-      // design_name 컬럼 없음 → title / source_filename 사용 (실 GL 코드는 source_filename)
-      const { data, error } = await supabase
-        .from('nail_designs')
-        .select(
-          'id, title, tags, source_filename, image_url, situations, styles, category, color, mood, nail_length, created_at',
-        )
-        .order('created_at', { ascending: false })
-        .range(randomOffset, randomOffset + PAGE_SIZE - 1);
+      const [latestRes, pastRes] = await Promise.all([
+        supabase
+          .from('nail_designs')
+          .select(NAIL_IDEA_SELECT)
+          .order('created_at', { ascending: false })
+          .limit(LATEST_SIZE),
+        supabase
+          .from('nail_designs')
+          .select(NAIL_IDEA_SELECT)
+          .order('created_at', { ascending: false })
+          .range(pastOffset, pastOffset + PAST_SIZE - 1),
+      ]);
 
-      if (error) throw error;
+      if (latestRes.error) throw latestRes.error;
+      if (pastRes.error) throw pastRes.error;
+
+      // A+B 병합 후 id 기준 중복 제거 → 통합 Pool
+      const mergedById = new Map<string, (typeof latestRes.data)[number]>();
+      for (const row of [...(latestRes.data ?? []), ...(pastRes.data ?? [])]) {
+        const id = String(row?.id ?? '').trim();
+        if (!id) continue;
+        mergedById.set(id, row);
+      }
+      const mergedPool = Array.from(mergedById.values());
+      const shuffledPool = shuffleArray(mergedPool);
 
       console.log(
-        `[handleGenerateIdeas] Random Offset: ${randomOffset} / total ${totalCount} (page ${PAGE_SIZE})`,
+        `[handleGenerateIdeas] mix A=${latestRes.data?.length ?? 0} + B@${pastOffset}=${pastRes.data?.length ?? 0} → unique ${shuffledPool.length} / total ${totalCount}`,
       );
 
-      const ideas = buildIdeasFromNailDesigns(data ?? []);
+      const ideas = buildIdeasFromNailDesigns(shuffledPool);
       if (ideas.length === 0) {
         toast.error('기획안을 만들 수 있는 네일 데이터가 부족합니다. (최소 5컷 필요)');
         setGeneratedIdeas([]);
@@ -2063,19 +2066,6 @@ export default function AdminGceDashboardPage() {
       setIdeaImageUrlByGl(urlByKey);
       setGeneratedIdeas(enrichedIdeas);
       setIsStep1Expanded(true);
-
-      try {
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({
-            date: TODAY,
-            ideas: enrichedIdeas,
-            ideaImageUrlByGl: urlByKey,
-          } satisfies GceDailyIdeasCache),
-        );
-      } catch (cacheWriteErr) {
-        console.warn('[handleGenerateIdeas] cache write failed:', cacheWriteErr);
-      }
 
       toast.success(`오늘의 추천 기획안 ${ideas.length}개가 실DB에서 추출되었습니다!`);
     } catch (err) {
