@@ -4,7 +4,7 @@ import {
   CalendarHeart,
   ChevronDown,
   ChevronUp,
-  Heart,
+  // Heart, // 624: TS6133 — 컬렉션 진입점 주석 후 미사용
   Home,
   Palette,
   Scissors,
@@ -38,9 +38,10 @@ import {
   type PcSidebarCategoryId,
   type SidebarFilterItem,
 } from '@/features/client-home/clientPcSidebarConfig'
-import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
-import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
-import { cn } from '@/lib/utils'
+// 624: TS6133 — 컬렉션 진입점 주석 후 미사용
+// import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+// import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
+// import { cn } from '@/lib/utils'
 import { ClientRouteSuspenseFallback } from '@/widgets/layout/ClientRouteSuspenseFallback'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -147,14 +148,15 @@ function isMobileOnlyRoute(pathname: string): boolean {
   return mobileOnlyPrefixes.some((prefix) => pathname.startsWith(prefix))
 }
 
-function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
-  if (location.pathname.startsWith('/collection/')) return true
-  if (location.pathname === '/my/list/saved') return true
-  if (location.pathname === '/my') {
-    return new URLSearchParams(location.search).get('tab') === 'saved'
-  }
-  return false
-}
+// 624: TS6133 — 하단 컬렉션 탭 주석 후 미사용
+// function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
+//   if (location.pathname.startsWith('/collection/')) return true
+//   if (location.pathname === '/my/list/saved') return true
+//   if (location.pathname === '/my') {
+//     return new URLSearchParams(location.search).get('tab') === 'saved'
+//   }
+//   return false
+// }
 
 const SIDEBAR_ITEM_BASE_CLASS =
   'w-full cursor-pointer py-2 text-left text-[15px] font-medium text-stone-700 transition-colors hover:text-black'
@@ -339,7 +341,8 @@ function ClientLayoutContent() {
   const navigate = useNavigate()
   const { pathname } = location
   const isMdUp = useIsMdUp()
-  const collectionNavActive = isCollectionNavActive(null, location)
+  // 624: TS6133 — 하단 컬렉션 탭 주석 후 미사용
+  // const collectionNavActive = isCollectionNavActive(null, location)
   const navigationType = useNavigationType()
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter)
   const colorFilter = useClientPcFilterStore((state) => state.colorFilter)
@@ -350,8 +353,9 @@ function ClientLayoutContent() {
   const togglePcFilter = useClientPcFilterStore((state) => state.toggleFilter)
   const toggleRankingFilter = useClientPcFilterStore((state) => state.toggleRankingFilter)
   const resetPcFilters = useClientPcFilterStore((state) => state.resetFilters)
-  const currentUserId = useCurrentUserId()
-  const { data: savedCount = 0 } = useUserSavedCountQuery(currentUserId)
+  // 624: TS6133 — 사이드바 컬렉션 카운트 주석 후 미사용
+  // const currentUserId = useCurrentUserId()
+  // const { data: savedCount = 0 } = useUserSavedCountQuery(currentUserId)
 
   const handleLogoClick = () => {
     resetPcFilters()

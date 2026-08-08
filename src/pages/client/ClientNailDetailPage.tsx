@@ -1,7 +1,7 @@
 import {
   // Bookmark, // 611: 저장수 메타 숨김 — 복구 시 주석 해제
   Brush,
-  ChevronDown,
+  // ChevronDown, // 624: TS6133 — 레시피 UI 주석 후 미사용
   ChevronLeft,
   Circle,
   Droplets,
@@ -18,7 +18,7 @@ import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
+// import { toast } from "sonner"; // 624: TS6133 — handleOpenFolderModal 주석 후 미사용
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
@@ -330,10 +330,13 @@ function expandTagTokensFromChips(chips: string[]): string[] {
   });
 }
 
+// 624: TS6133 — 시술 가이드 UI 숨김 후 미사용 (복구 시 주석 해제)
+/*
 type ProcedureSection = {
   title: string;
   content: string;
 };
+*/
 
 function safeTrimText(value: unknown): string {
   if (typeof value === "string") return value.trim();
@@ -341,6 +344,8 @@ function safeTrimText(value: unknown): string {
   return "";
 }
 
+// 624: TS6133 — procedureSteps 주석 후 미사용 (복구 시 주석 해제)
+/*
 function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "en"): ProcedureSection[] {
   try {
     const s = raw != null && typeof raw === "string" ? raw : "";
@@ -408,6 +413,7 @@ function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "e
     ];
   }
 }
+*/
 
 const Detail = () => {
   const { language, setLanguage } = useLanguageContext();
@@ -431,7 +437,8 @@ const Detail = () => {
     () => (nailRow ? normalizeNailRow(nailRow) : null),
     [nailRow],
   );
-  const [isRecipeOpen, setIsRecipeOpen] = useState(false);
+  // 624: TS6133 — 레시피 아코디언 UI 숨김 후 미사용
+  // const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const currentUserId = useCurrentUserId();
@@ -515,10 +522,11 @@ const Detail = () => {
     () => splitDesignElements(pickLocalized(displayRow?.design_elements, displayRow?.design_point_en)),
     [displayRow?.design_elements, displayRow?.design_point_en, pickLocalized],
   );
-  const procedureSteps = useMemo(
-    () => splitProcedureSteps(pickLocalized(displayRow?.procedure_guide, displayRow?.guide_en), language),
-    [displayRow?.procedure_guide, displayRow?.guide_en, pickLocalized, language],
-  );
+  // 624: TS6133 — 시술 가이드 UI 숨김 후 미사용
+  // const procedureSteps = useMemo(
+  //   () => splitProcedureSteps(pickLocalized(displayRow?.procedure_guide, displayRow?.guide_en), language),
+  //   [displayRow?.procedure_guide, displayRow?.guide_en, pickLocalized, language],
+  // );
   const formattedDescription = useMemo(() => {
     const raw = pickLocalized(displayRow?.description, displayRow?.description_en);
     if (!raw) return isEnglish ? "No description has been provided yet." : "등록된 상세 설명이 없어요.";
@@ -571,7 +579,8 @@ const Detail = () => {
   const isSaved = reactionOverride?.key === reactionKey ? reactionOverride.isSaved : storedIsSaved;
 
   const views = displayRow?.popularity ?? 0;
-  const saveDisplayCount = displayRow?.saves ?? 0;
+  // 624: TS6133 — 저장수 메타 숨김 후 미사용
+  // const saveDisplayCount = displayRow?.saves ?? 0;
   const likeDisplayCount = (displayRow?.likes ?? 0) + (isLiked ? 1 : 0);
 
   const similarExcludeId = displayRow?.id ?? nailId;
@@ -777,22 +786,23 @@ const Detail = () => {
     })();
   }, [displayRow, currentUserId, isLiked, isSaved, queryClient, reactionKey]);
 
-  const handleOpenFolderModal = useCallback(
-    (event: MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (!displayRow?.id) return;
-      if (!currentUserId) {
-        // 617: /login 누수 차단 — 비회원은 관리자 로그인으로 보내지 않음
-        // alert("로그인이 필요한 기능입니다.");
-        // navigate("/login");
-        toast(isEnglish ? "Saved to local collection." : "로컬 보관함에 저장되었습니다.");
-        return;
-      }
-      setIsFolderModalOpen(true);
-    },
-    [currentUserId, displayRow?.id, isEnglish],
-  );
+  // 624: TS6133 — 폴더 저장 버튼 Ghost UI 숨김 후 미사용 (복구 시 주석 해제)
+  // const handleOpenFolderModal = useCallback(
+  //   (event: MouseEvent<HTMLButtonElement>) => {
+  //     event.preventDefault();
+  //     event.stopPropagation();
+  //     if (!displayRow?.id) return;
+  //     if (!currentUserId) {
+  //       // 617: /login 누수 차단 — 비회원은 관리자 로그인으로 보내지 않음
+  //       // alert("로그인이 필요한 기능입니다.");
+  //       // navigate("/login");
+  //       toast(isEnglish ? "Saved to local collection." : "로컬 보관함에 저장되었습니다.");
+  //       return;
+  //     }
+  //     setIsFolderModalOpen(true);
+  //   },
+  //   [currentUserId, displayRow?.id, isEnglish],
+  // );
 
   const handleSaveSuccess = useCallback(() => {
     const nailDesignId = displayRow?.id ?? nailId;
