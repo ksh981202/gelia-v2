@@ -138,7 +138,8 @@ export default function ClientMyPage() {
         data: { session },
       } = await supabase.auth.getSession()
       if (!cancelled && !session) {
-        navigate('/login', { replace: true })
+        // 617: 좀비 라우트 — /login 대신 홈으로 (관리자 로그인 노출 차단)
+        navigate('/', { replace: true })
       }
     }
 
@@ -148,7 +149,7 @@ export default function ClientMyPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
-        navigate('/login', { replace: true })
+        navigate('/', { replace: true })
       }
     })
 

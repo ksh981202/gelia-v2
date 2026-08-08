@@ -150,7 +150,8 @@ export default function ClientCollectionPage() {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        navigate('/login', { replace: true })
+        // 617: 좀비 라우트 — /login 대신 홈으로 (관리자 로그인 노출 차단)
+        navigate('/', { replace: true })
       }
     }
 

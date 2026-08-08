@@ -1,4 +1,4 @@
-import { Search, Settings, User } from 'lucide-react'
+import { Search, Settings /*, User */ } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import LanguageToggle from '@/components/LanguageToggle'
@@ -60,6 +60,7 @@ export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeade
           <Settings size={18} className="text-foreground" strokeWidth={2} />
         </button>
       ) : null}
+      {/* 609: 일반 유저 마이페이지 진입점 임시 숨김 — 복구 시 주석 해제
       <button
         type="button"
         className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
@@ -68,6 +69,7 @@ export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeade
       >
         <User size={18} className="text-foreground" />
       </button>
+      */}
     </div>
   )
 }

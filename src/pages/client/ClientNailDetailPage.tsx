@@ -1,5 +1,5 @@
 import {
-  Bookmark,
+  // Bookmark, // 611: 저장수 메타 숨김 — 복구 시 주석 해제
   Brush,
   ChevronDown,
   ChevronLeft,
@@ -10,7 +10,7 @@ import {
   Search,
   Share2,
   Sparkles,
-  User,
+  // User, // 617: Ghost UI 차단 — 복구 시 주석 해제
   X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import type { MouseEvent, ReactNode, TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useNailDetailQuery } from "@/entities/nail-design/api/useNailDetailQuery";
 import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { useSimilarNailsQuery } from "@/entities/nail-design/api/useSimilarNailsQuery";
@@ -25,6 +26,10 @@ import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import { useNailDetailViewTracking } from "@/features/nail-activity/useNailDetailViewTracking";
 import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { supabase } from "@/shared/api/supabaseClient";
+import {
+  isNailLikedInStorage,
+  persistNailLikeState,
+} from "@/shared/lib/likedNailsStorage";
 import {
   SITE_ORIGIN,
   buildSeoDescription,
@@ -608,7 +613,18 @@ const Detail = () => {
 
   useEffect(() => {
     const nailDesignId = displayRow?.id;
-    if (!nailDesignId || !currentUserId) return;
+    if (!nailDesignId) return;
+
+    // 비회원: localStorage 좋아요 상태 복원
+    if (!currentUserId) {
+      setDbReactionState({
+        key: reactionKey,
+        isLiked: isNailLikedInStorage(nailDesignId, null),
+        isSaved: false,
+      });
+      setReactionOverride(null);
+      return;
+    }
 
     let cancelled = false;
 
@@ -699,17 +715,40 @@ const Detail = () => {
 
   const toggleLike = useCallback(() => {
     if (!displayRow?.id) return;
-    if (!currentUserId) {
-      alert("로그인이 필요한 기능입니다.");
-      navigate("/login");
-      return;
-    }
+    // 610: 비회원 로그인 강제 리다이렉트 해제
+    // if (!currentUserId) {
+    //   alert("로그인이 필요한 기능입니다.");
+    //   navigate("/login");
+    //   return;
+    // }
     const nailDesignId = displayRow.id;
     const next = !isLiked;
     const previousState = { key: reactionKey, isLiked, isSaved };
 
     setReactionOverride({ key: reactionKey, isLiked: next, isSaved });
     setDbReactionState({ key: reactionKey, isLiked: next, isSaved });
+
+    // 비회원: localStorage + best-effort 카운트 (실패해도 UI 유지)
+    if (!currentUserId) {
+      persistNailLikeState(nailDesignId, next, null);
+      void (async () => {
+        try {
+          await supabase.rpc("increment_likes", {
+            nail_id: nailDesignId,
+            increment_value: next ? 1 : -1,
+          });
+          queryClient.invalidateQueries({ queryKey: ["nail-designs", "reaction-best"] });
+          await queryClient.invalidateQueries({
+            queryKey: ["nail-design", "detail", "supabase", nailDesignId],
+          });
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn("[Detail] guest like count rpc failed", error);
+          }
+        }
+      })();
+      return;
+    }
 
     void (async () => {
       try {
@@ -723,6 +762,7 @@ const Detail = () => {
           increment_value: next ? 1 : -1,
         });
         if (likeCountError) throw likeCountError;
+        persistNailLikeState(nailDesignId, next, currentUserId);
         queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] });
         queryClient.invalidateQueries({ queryKey: ['my-page-count', 'liked', currentUserId] });
         queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'liked', currentUserId] });
@@ -735,7 +775,7 @@ const Detail = () => {
         }
       }
     })();
-  }, [displayRow, currentUserId, isLiked, isSaved, navigate, queryClient, reactionKey]);
+  }, [displayRow, currentUserId, isLiked, isSaved, queryClient, reactionKey]);
 
   const handleOpenFolderModal = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -743,13 +783,15 @@ const Detail = () => {
       event.stopPropagation();
       if (!displayRow?.id) return;
       if (!currentUserId) {
-        alert("로그인이 필요한 기능입니다.");
-        navigate("/login");
+        // 617: /login 누수 차단 — 비회원은 관리자 로그인으로 보내지 않음
+        // alert("로그인이 필요한 기능입니다.");
+        // navigate("/login");
+        toast(isEnglish ? "Saved to local collection." : "로컬 보관함에 저장되었습니다.");
         return;
       }
       setIsFolderModalOpen(true);
     },
-    [currentUserId, displayRow?.id, navigate],
+    [currentUserId, displayRow?.id, isEnglish],
   );
 
   const handleSaveSuccess = useCallback(() => {
@@ -783,14 +825,15 @@ const Detail = () => {
   const handleMainImageDoubleLike = useCallback(() => {
     if (isZoomOpen) return;
     if (!displayRow) return;
-    if (!currentUserId) {
-      alert("로그인이 필요한 기능입니다.");
-      navigate("/login");
-      return;
-    }
+    // 610: 비회원도 더블탭 좋아요 허용
+    // if (!currentUserId) {
+    //   alert("로그인이 필요한 기능입니다.");
+    //   navigate("/login");
+    //   return;
+    // }
     toggleLike();
     playFloatingHeart();
-  }, [displayRow, currentUserId, navigate, toggleLike, playFloatingHeart, isZoomOpen]);
+  }, [displayRow, toggleLike, playFloatingHeart, isZoomOpen]);
 
   const handleMainImageDoubleClick = useCallback(
     (e: MouseEvent<HTMLElement>) => {
@@ -897,6 +940,7 @@ const Detail = () => {
             >
               <Share2 className="h-5 w-5 text-slate-800" />
             </button>
+            {/* 617: Ghost UI — 마이페이지 User 아이콘 숨김 (/login 누수 차단)
             <Link
               to="/my"
               className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full transition-colors hover:bg-primary/10"
@@ -904,6 +948,7 @@ const Detail = () => {
             >
               <User className="h-5 w-5 text-slate-800" strokeWidth={2} />
             </Link>
+            */}
           </div>
         </nav>
 
@@ -914,16 +959,17 @@ const Detail = () => {
             <button
               type="button"
               className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
-              aria-pressed={isSaved}
-              onClick={handleOpenFolderModal}
+              aria-pressed={isLiked}
+              aria-label={t("detail.likeButton")}
+              onClick={toggleLike}
             >
-              <Bookmark
-                className={`h-4 w-4 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
+              <Heart
+                className={`h-4 w-4 shrink-0 transition-colors ${
+                  isLiked ? "fill-rose-500 text-rose-500" : "text-rose-500"
+                }`}
                 strokeWidth={2}
               />
-              <span className="truncate">
-                {isSaved ? (isEnglish ? "Added" : "컬렉션에 담김") : isEnglish ? "Add to Collection" : "컬렉션에 담기"}
-              </span>
+              <span className="truncate">{t("detail.likeButton")}</span>
             </button>
             <button
               type="button"
@@ -959,11 +1005,13 @@ const Detail = () => {
                   type="button"
                   onClick={() => {
                     setShowLoginModal(false);
-                    navigate("/login");
+                    // 617: /login 누수 차단 — 홈으로 복귀
+                    // navigate("/login");
+                    navigate("/", { replace: true });
                   }}
                   className="rounded-xl bg-[#FF7E67] px-4 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#f2664c]"
                 >
-                  {isEnglish ? "Go to Login" : "로그인하러 가기"}
+                  {isEnglish ? "Go to Home" : "홈으로 가기"}
                 </button>
               </div>
             </div>
@@ -1158,14 +1206,17 @@ const Detail = () => {
             <button
               type="button"
               className="flex flex-1 items-center justify-center gap-2 rounded-[14px] border border-stone-200 py-3.5 font-semibold text-stone-700 transition-colors hover:bg-stone-50 active:scale-[0.98]"
-              aria-pressed={isSaved}
-              onClick={handleOpenFolderModal}
+              aria-pressed={isLiked}
+              aria-label={t("detail.likeButton")}
+              onClick={toggleLike}
             >
-              <Bookmark
-                className={`h-5 w-5 shrink-0 ${isSaved ? "fill-orange-500 text-orange-500" : "text-orange-500"}`}
+              <Heart
+                className={`h-5 w-5 shrink-0 transition-colors ${
+                  isLiked ? "fill-rose-500 text-rose-500" : "text-rose-500"
+                }`}
                 strokeWidth={2}
               />
-              <span>{isSaved ? (isEnglish ? "Added" : "컬렉션에 담김") : isEnglish ? "Add to Collection" : "컬렉션에 담기"}</span>
+              <span>{t("detail.likeButton")}</span>
             </button>
             <button
               type="button"
@@ -1209,6 +1260,7 @@ const Detail = () => {
                   {isEnglish ? "Views" : "조회"}
                 </span>
               </span>
+              {/* 611: 컬렉션 숨김에 맞춰 메타 행 저장수 임시 숨김 — 복구 시 주석 해제
               <span className="inline-flex items-center gap-1.5">
                 <Bookmark className="h-4 w-4 shrink-0 text-orange-500" strokeWidth={1.5} />
                 <span>
@@ -1216,6 +1268,7 @@ const Detail = () => {
                   {isEnglish ? "Saves" : "저장"}
                 </span>
               </span>
+              */}
               <span
                 className="ml-auto flex lg:hidden items-center gap-1 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] text-gray-400 font-light"
                 aria-label={t("AI-generated")}
@@ -1295,6 +1348,7 @@ const Detail = () => {
         )}
       </section>
 
+      {/* 610: PRO 시술 가이드 임시 숨김 — 복구 시 주석 해제
       <div className="mt-10 w-full font-sans antialiased">
         <button
           type="button"
@@ -1359,6 +1413,7 @@ const Detail = () => {
           </div>
         )}
       </div>
+      */}
 
       <section className="mt-10">
         <div className="mb-4 flex items-center justify-between">

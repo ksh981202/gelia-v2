@@ -27,7 +27,9 @@ export default function ClientLoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  // 612: 일반 유저 회원가입 모드 원천 차단 — 복구 시 useState(false) + 토글 UI 주석 해제
+  // const [isSignUp, setIsSignUp] = useState(false);
+  const isSignUp = false;
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -76,14 +78,15 @@ export default function ClientLoginPage() {
     setErrorMsg('');
 
     try {
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        const signedUpUserId = data.user?.id ?? data.session?.user?.id ?? "";
-        if (signedUpUserId) mergeGuestRecentViewedToUser(signedUpUserId);
-        // 이메일 인증이 꺼져있다면 가입 즉시 로그인됨
-        navigate(postLoginPath, { replace: true });
-      } else {
+      // 612: 회원가입 API 경로 차단 — 로그인만 허용
+      // if (isSignUp) {
+      //   const { data, error } = await supabase.auth.signUp({ email, password });
+      //   if (error) throw error;
+      //   const signedUpUserId = data.user?.id ?? data.session?.user?.id ?? "";
+      //   if (signedUpUserId) mergeGuestRecentViewedToUser(signedUpUserId);
+      //   navigate(postLoginPath, { replace: true });
+      // } else {
+      {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         const signedInUserId = data.user?.id ?? data.session?.user?.id ?? "";
@@ -187,18 +190,14 @@ export default function ClientLoginPage() {
               ? 'GELIA PRO 시작하기'
               : isResetMode
               ? (isEnglish ? 'Find Password' : '비밀번호 찾기')
-              : isSignUp
-                ? (isEnglish ? 'Sign up for Gelia ✨' : '네일북 가입하기 ✨')
-                : (isEnglish ? 'Welcome!' : '환영합니다!')}
+              : 'GELIA Workspace'}
           </h2>
           <p className="text-[14px] text-gray-500">
             {isProRedirect
               ? '로그인 후 샵 정보를 입력하면 PRO 대시보드로 이동합니다.'
               : isResetMode
               ? (isEnglish ? 'We will send a reset link to your registered email.' : '가입한 이메일로 재설정 링크를 보내드릴게요.')
-              : isSignUp
-                ? (isEnglish ? 'Get started easily with your email.' : '간단하게 이메일로 시작해 보세요.')
-                : (isEnglish ? 'Find your perfect nail style.' : '나만의 네일 스타일을 찾아보세요.')}
+              : 'Authorized staff & partners only'}
           </p>
         </div>
 
@@ -267,9 +266,7 @@ export default function ClientLoginPage() {
                       ? (isEnglish ? 'Processing...' : '처리 중...')
                       : isResetMode
                         ? (isEnglish ? 'Send Reset Link' : '재설정 이메일 받기')
-                        : isSignUp
-                          ? (isEnglish ? 'Sign Up' : '회원가입')
-                          : (isEnglish ? 'Log in with Email' : '이메일로 로그인')}
+                        : (isEnglish ? 'Log in with Email' : '이메일로 로그인')}
                   </button>
 
                   {isResetMode && (
@@ -312,6 +309,7 @@ export default function ClientLoginPage() {
                   {isEnglish ? 'Continue with Google' : 'Google로 계속하기'}
                 </button>
 
+                {/* 612: 일반 유저 회원가입 토글 원천 차단 — 복구 시 주석 해제
                 <div className="mt-8 text-center text-[13px] text-gray-500">
                   {isSignUp
                     ? (isEnglish ? 'Already have an account? ' : '이미 계정이 있으신가요? ')
@@ -327,6 +325,7 @@ export default function ClientLoginPage() {
                     {isSignUp ? (isEnglish ? 'Log In' : '로그인하기') : (isEnglish ? 'Sign Up' : '회원가입하기')}
                   </button>
                 </div>
+                */}
               </>
             )}
         </div>

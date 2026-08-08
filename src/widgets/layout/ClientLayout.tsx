@@ -457,6 +457,7 @@ function ClientLayoutContent() {
 
             <div className="mt-6 mb-2 h-px w-full bg-stone-100" aria-hidden />
             <div className="flex w-full flex-col">
+              {/* 609: 일반 유저 컬렉션 진입점 임시 숨김 — 복구 시 주석 해제
               <Link
                 to="/my?tab=saved"
                 className="flex items-center justify-between py-3 transition-opacity hover:opacity-80"
@@ -469,6 +470,7 @@ function ClientLayoutContent() {
                   <span className="text-sm font-semibold tabular-nums text-stone-400">({savedCount})</span>
                 ) : null}
               </Link>
+              */}
               <Link
                 to="/test-intro"
                 className="flex items-center gap-2 py-3 text-[16px] font-bold text-stone-900 transition-colors hover:text-orange-600"
@@ -540,7 +542,7 @@ function ClientLayoutContent() {
 
         {!hideBottomNav && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe md:hidden"
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-4 border-t border-gray-200 bg-white pb-safe md:hidden"
           aria-label="하단 탭"
         >
           <NavLink
@@ -592,6 +594,7 @@ function ClientLayoutContent() {
             />
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
+          {/* 609: 일반 유저 컬렉션 탭 임시 숨김 — 복구 시 주석 해제 + grid-cols-5 로 되돌리기
           <NavLink
             to="/my?tab=saved"
             className={({ isActive }) =>
@@ -618,6 +621,7 @@ function ClientLayoutContent() {
               )
             }}
           </NavLink>
+          */}
         </nav>
         )}
       </div>

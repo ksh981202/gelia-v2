@@ -88,6 +88,15 @@ export default function ClientAccountSettingsPage() {
     let cancelled = false
     void (async () => {
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (cancelled) return
+        // 617: 좀비 라우트 — 비회원 /account 는 /login 대신 홈으로
+        if (!session) {
+          navigate('/', { replace: true })
+          return
+        }
         const { data, error } = await supabase.auth.getUser()
         if (cancelled) return
         if (error) return
@@ -99,7 +108,7 @@ export default function ClientAccountSettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [navigate])
 
   const handleLogout = async () => {
     try {
