@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import i18n from "@/shared/i18n/i18n";
 
 export type Language = "ko" | "en";
 
@@ -59,6 +60,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
+    void i18n.changeLanguage(language);
   }, [language]);
 
   const value = useMemo(

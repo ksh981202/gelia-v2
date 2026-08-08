@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, Loader2, Share2, User } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Info, Loader2, Share2, User } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import '@/shared/i18n/i18n'
 import { incrementMagazineViewCount } from '@/features/magazine/api/incrementMagazineView'
 import { MAGAZINE_ARTICLE_BODY_CLASS } from '@/features/magazine/magazineArticleBody'
 import '@/features/magazine/magazineArticleSpacing.css'
@@ -131,6 +133,7 @@ export default function MagazineDetailPage() {
   const { pathname } = useLocation()
   const { slug, lang: langParam } = useParams<{ slug: string; lang?: string }>()
   const lang = langFromPathname(pathname, langParam)
+  const { t } = useTranslation()
   const htmlLang = magazineHtmlLang(lang)
   const ogLocale = magazineOgLocale(lang)
 
@@ -423,6 +426,15 @@ export default function MagazineDetailPage() {
           {title || 'Untitled'}
         </h1>
         <div className={`${MAGAZINE_ARTICLE_BODY_CLASS} text-gray-800`} dangerouslySetInnerHTML={{ __html: content || '' }} />
+        <div
+          className="mt-16 mb-8 p-5 bg-stone-50/80 rounded-2xl border border-stone-100 flex items-start gap-3 w-full"
+          role="note"
+        >
+          <Info className="w-4 h-4 text-stone-400 flex-shrink-0 mt-0.5" aria-hidden />
+          <div className="text-[12px] text-stone-500 font-light leading-relaxed tracking-wide">
+            {t('magazine.aiDisclosure', { lng: lang })}
+          </div>
+        </div>
       </div>
     </div>
   )

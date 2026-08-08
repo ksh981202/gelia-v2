@@ -15,10 +15,12 @@ import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
-import { ChevronLeft, Share2 } from 'lucide-react'
+import { ChevronLeft, Info, Share2 } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import '@/shared/i18n/i18n'
 
 type MagazineDetailPost = {
   id: string
@@ -111,6 +113,7 @@ function MagazineDetailSkeleton({ isEnglish }: { isEnglish: boolean }) {
 
 export default function ClientMagazineDetailPage() {
   const { language } = useLanguageContext()
+  const { t } = useTranslation()
   const isEnglish = language === 'en'
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -242,6 +245,15 @@ export default function ClientMagazineDetailPage() {
               className={`${MAGAZINE_ARTICLE_BODY_CLASS} mt-8 text-base leading-relaxed text-gray-700 [&_a]:text-[#FF7D66] [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_img]:my-5 [&_img]:max-w-full [&_img]:rounded-2xl [&_li]:ml-4 [&_ol]:list-decimal [&_p]:mb-5 [&_ul]:list-disc`}
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
+            <div
+              className="mt-16 mb-8 flex w-full items-start gap-3 rounded-2xl border border-stone-100 bg-stone-50/80 p-5"
+              role="note"
+            >
+              <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-stone-400" aria-hidden />
+              <div className="text-[12px] font-light leading-relaxed tracking-wide text-stone-500">
+                {t('magazine.aiDisclosure', { lng: seoLang })}
+              </div>
+            </div>
           </article>
         ) : (
           <p className="py-16 text-center text-sm font-semibold text-gray-500">

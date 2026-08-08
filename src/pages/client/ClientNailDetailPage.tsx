@@ -32,6 +32,7 @@ import {
 } from "@/shared/lib/seoMeta";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
+import { useTranslation } from "react-i18next";
 
 type NailPhotoDetail = {
   id: string;
@@ -405,6 +406,7 @@ function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "e
 
 const Detail = () => {
   const { language, setLanguage } = useLanguageContext();
+  const { t } = useTranslation();
   const isEnglish = language === "en";
   const navigate = useNavigate();
   const handleTagClick = (tag: string) => {
@@ -1213,6 +1215,13 @@ const Detail = () => {
                   <span className="font-medium tabular-nums text-gray-500">{formatCount(saveDisplayCount)}</span>{" "}
                   {isEnglish ? "Saves" : "저장"}
                 </span>
+              </span>
+              <span
+                className="ml-auto flex lg:hidden items-center gap-1 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] text-gray-400 font-light"
+                aria-label={t("AI-generated")}
+              >
+                <Sparkles className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
+                {t("AI-generated")}
               </span>
             </div>
             <div className="relative overflow-hidden rounded-2xl border border-gray-50 bg-white p-5 shadow-sm">
