@@ -10,7 +10,7 @@ import {
   Search,
   Share2,
   Sparkles,
-  // User, // 617: Ghost UI 차단 — 복구 시 주석 해제
+  User,
   X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -624,46 +624,37 @@ const Detail = () => {
     const nailDesignId = displayRow?.id;
     if (!nailDesignId) return;
 
-    // 비회원: localStorage 좋아요 상태 복원
-    if (!currentUserId) {
-      setDbReactionState({
-        key: reactionKey,
-        isLiked: isNailLikedInStorage(nailDesignId, null),
-        isSaved: false,
-      });
-      setReactionOverride(null);
-      return;
-    }
+    // 641: 하트 UI도 게스트 키 SSOT로 복원 (세션 무관)
+    setDbReactionState({
+      key: reactionKey,
+      isLiked: isNailLikedInStorage(nailDesignId, null),
+      isSaved: false,
+    });
+    setReactionOverride(null);
+
+    if (!currentUserId) return;
 
     let cancelled = false;
 
     void (async () => {
       try {
-        const [likeResult, saveResult] = await Promise.all([
-          supabase
-            .from("user_likes")
-            .select("nail_id")
-            .eq("user_id", currentUserId)
-            .eq("nail_id", nailDesignId)
-            .maybeSingle(),
-          supabase
-            .from("user_saves")
-            .select("nail_id")
-            .eq("user_id", currentUserId)
-            .eq("nail_id", nailDesignId)
-            .maybeSingle(),
-        ]);
+        const saveResult = await supabase
+          .from("user_saves")
+          .select("nail_id")
+          .eq("user_id", currentUserId)
+          .eq("nail_id", nailDesignId)
+          .maybeSingle();
 
-        if (likeResult.error) throw likeResult.error;
         if (saveResult.error) throw saveResult.error;
         if (cancelled) return;
 
-        setDbReactionState({
+        setDbReactionState((prev) => ({
+          ...prev,
           key: reactionKey,
-          isLiked: Boolean(likeResult.data),
           isSaved: Boolean(saveResult.data),
-        });
-        setReactionOverride(null);
+          // isLiked는 게스트 로컬 SSOT 유지
+          isLiked: isNailLikedInStorage(nailDesignId, null),
+        }));
       } catch (error) {
         if (import.meta.env.DEV) {
           console.warn("[Detail] user reaction load failed", error);
@@ -737,9 +728,11 @@ const Detail = () => {
     setReactionOverride({ key: reactionKey, isLiked: next, isSaved });
     setDbReactionState({ key: reactionKey, isLiked: next, isSaved });
 
-    // 비회원: localStorage + best-effort 카운트 (실패해도 UI 유지)
+    // 641: 서랍장 SSOT — 세션 무관 게스트 키 강제 적재
+    persistNailLikeState(nailDesignId, next, null);
+
+    // 비회원: 카운트 RPC best-effort (실패해도 UI/로컬 유지)
     if (!currentUserId) {
-      persistNailLikeState(nailDesignId, next, null);
       void (async () => {
         try {
           await supabase.rpc("increment_likes", {
@@ -771,7 +764,6 @@ const Detail = () => {
           increment_value: next ? 1 : -1,
         });
         if (likeCountError) throw likeCountError;
-        persistNailLikeState(nailDesignId, next, currentUserId);
         queryClient.invalidateQueries({ queryKey: ['nail-designs', 'reaction-best'] });
         queryClient.invalidateQueries({ queryKey: ['my-page-count', 'liked', currentUserId] });
         queryClient.invalidateQueries({ queryKey: ['my-page-gallery', 'liked', currentUserId] });
@@ -779,6 +771,7 @@ const Detail = () => {
       } catch (error) {
         setReactionOverride(previousState);
         setDbReactionState(previousState);
+        persistNailLikeState(nailDesignId, previousState.isLiked, null);
         if (import.meta.env.DEV) {
           console.warn("[Detail] like update failed", error);
         }
@@ -950,7 +943,6 @@ const Detail = () => {
             >
               <Share2 className="h-5 w-5 text-slate-800" />
             </button>
-            {/* 617: Ghost UI — 마이페이지 User 아이콘 숨김 (/login 누수 차단)
             <Link
               to="/my"
               className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full transition-colors hover:bg-primary/10"
@@ -958,7 +950,6 @@ const Detail = () => {
             >
               <User className="h-5 w-5 text-slate-800" strokeWidth={2} />
             </Link>
-            */}
           </div>
         </nav>
 

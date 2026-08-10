@@ -41,6 +41,13 @@ export function pushRecentViewedNailId(nailId: string, userId?: string | null): 
   writeRecentViewedIds(next, userId)
 }
 
+export function removeRecentViewedNailIds(nailIds: string[], userId?: string | null): void {
+  const removeSet = new Set(nailIds.map((id) => id.trim()).filter(Boolean))
+  if (removeSet.size === 0) return
+  const next = readRecentViewedIds(userId).filter((id) => !removeSet.has(id))
+  writeRecentViewedIds(next, userId)
+}
+
 export function mergeGuestRecentViewedToUser(userId: string): void {
   const normalizedUserId = userId?.trim()
   if (!normalizedUserId || typeof window === 'undefined') return

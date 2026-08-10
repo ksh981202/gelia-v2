@@ -29,46 +29,13 @@ export function useNailLikeToggle(nailId: string | undefined) {
     const nailDesignId = nailId?.trim();
     if (!nailDesignId) return;
 
-    // 비회원: localStorage 좋아요 상태 복원
-    if (!currentUserId) {
-      setDbReactionState({
-        key: reactionKey,
-        isLiked: isNailLikedInStorage(nailDesignId, null),
-      });
-      setReactionOverride(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("user_likes")
-          .select("nail_id")
-          .eq("user_id", currentUserId)
-          .eq("nail_id", nailDesignId)
-          .maybeSingle();
-
-        if (error) throw error;
-        if (cancelled) return;
-
-        setDbReactionState({
-          key: reactionKey,
-          isLiked: Boolean(data),
-        });
-        setReactionOverride(null);
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.warn("[nail-activity] like state load failed", error);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [nailId, currentUserId, reactionKey]);
+    // 641: 하트 UI도 게스트 키 SSOT로 복원 (세션 무관)
+    setDbReactionState({
+      key: reactionKey,
+      isLiked: isNailLikedInStorage(nailDesignId, null),
+    });
+    setReactionOverride(null);
+  }, [nailId, reactionKey]);
 
   const toggleLike = useCallback(() => {
     const nailDesignId = nailId?.trim();
@@ -87,9 +54,11 @@ export function useNailLikeToggle(nailId: string | undefined) {
     setReactionOverride({ key: reactionKey, isLiked: next });
     setDbReactionState({ key: reactionKey, isLiked: next });
 
-    // 비회원: 로컬 스토리지만 갱신 + 카운트 RPC는 best-effort (실패해도 UI 유지)
+    // 641: 서랍장 SSOT — 세션 무관 게스트 키 강제 적재
+    persistNailLikeState(nailDesignId, next, null);
+
+    // 비회원: 카운트 RPC best-effort (실패해도 UI/로컬 유지)
     if (!currentUserId) {
-      persistNailLikeState(nailDesignId, next, null);
       void (async () => {
         try {
           await supabase.rpc("increment_likes", {
@@ -124,17 +93,16 @@ export function useNailLikeToggle(nailId: string | undefined) {
         });
         if (likeCountError) throw likeCountError;
 
-        persistNailLikeState(nailDesignId, next, currentUserId);
-
         await queryClient.invalidateQueries({ queryKey: ["nail-design", "detail", "supabase", nailDesignId] });
         queryClient.invalidateQueries({ queryKey: ["nail-designs", "reaction-best"] });
         queryClient.invalidateQueries({ queryKey: ["my-page-count", "liked", currentUserId] });
         queryClient.invalidateQueries({ queryKey: ["my-page-gallery", "liked", currentUserId] });
         queryClient.invalidateQueries({ queryKey: ["my-nail-list", "liked", currentUserId] });
       } catch (error) {
-        // 회원: DB 실패 시 롤백 / 비회원 경로는 위에서 분리
+        // 회원: DB 실패 시 롤백 (게스트 로컬도 원복)
         setReactionOverride(previousState);
         setDbReactionState(previousState);
+        persistNailLikeState(nailDesignId, previousState.isLiked, null);
         if (import.meta.env.DEV) {
           console.warn("[nail-activity] like update failed", error);
         }

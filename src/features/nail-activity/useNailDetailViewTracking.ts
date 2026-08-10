@@ -1,5 +1,6 @@
 import { useCurrentUserId } from "@/features/my-page/useCurrentUserId";
 import { supabase } from "@/shared/api/supabaseClient";
+import { pushRecentViewedNailId } from "@/shared/lib/recentViewedStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { trackNailActivity } from "./trackNailActivity";
@@ -9,11 +10,13 @@ export function useNailDetailViewTracking(nailId: string | undefined) {
   const currentUserId = useCurrentUserId();
   const popularityTrackedRef = useRef<string | null>(null);
   const userViewTrackedRef = useRef<string | null>(null);
+  const guestLocalTrackedRef = useRef<string | null>(null);
   const [optimisticViewNailId, setOptimisticViewNailId] = useState<string | null>(null);
 
   useEffect(() => {
     popularityTrackedRef.current = null;
     userViewTrackedRef.current = null;
+    guestLocalTrackedRef.current = null;
     setOptimisticViewNailId(null);
   }, [nailId]);
 
@@ -46,11 +49,19 @@ export function useNailDetailViewTracking(nailId: string | undefined) {
     })();
   }, [nailId, queryClient]);
 
+  // 641: 세션 무관 — 항상 recentViews_guest 적재 (서랍장 SSOT)
+  // 회원일 때만 추가 DB upsert 유지
   useEffect(() => {
     const nailDesignId = nailId?.trim();
-    if (!nailDesignId || !currentUserId) return;
-    if (userViewTrackedRef.current === nailDesignId) return;
+    if (!nailDesignId) return;
 
+    if (guestLocalTrackedRef.current !== nailDesignId) {
+      guestLocalTrackedRef.current = nailDesignId;
+      pushRecentViewedNailId(nailDesignId, null);
+    }
+
+    if (!currentUserId) return;
+    if (userViewTrackedRef.current === nailDesignId) return;
     userViewTrackedRef.current = nailDesignId;
 
     void (async () => {

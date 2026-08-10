@@ -4,7 +4,7 @@ import {
   CalendarHeart,
   ChevronDown,
   ChevronUp,
-  // Heart, // 624: TS6133 — 컬렉션 진입점 주석 후 미사용
+  Heart,
   Home,
   Palette,
   Scissors,
@@ -38,10 +38,11 @@ import {
   type PcSidebarCategoryId,
   type SidebarFilterItem,
 } from '@/features/client-home/clientPcSidebarConfig'
-// 624: TS6133 — 컬렉션 진입점 주석 후 미사용
-// import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
-// import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
-// import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import {
+  getLikedNailsCount,
+  LIKED_NAILS_CHANGED_EVENT,
+} from '@/shared/lib/likedNailsStorage'
 import { ClientRouteSuspenseFallback } from '@/widgets/layout/ClientRouteSuspenseFallback'
 
 const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -148,15 +149,13 @@ function isMobileOnlyRoute(pathname: string): boolean {
   return mobileOnlyPrefixes.some((prefix) => pathname.startsWith(prefix))
 }
 
-// 624: TS6133 — 하단 컬렉션 탭 주석 후 미사용
-// function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
-//   if (location.pathname.startsWith('/collection/')) return true
-//   if (location.pathname === '/my/list/saved') return true
-//   if (location.pathname === '/my') {
-//     return new URLSearchParams(location.search).get('tab') === 'saved'
-//   }
-//   return false
-// }
+// 639: 게스트 서랍장 — /my · /my/list 활성 표시
+function isCollectionNavActive(_match: unknown, location: { pathname: string; search: string }) {
+  if (location.pathname.startsWith('/collection/')) return true
+  if (location.pathname.startsWith('/my/list')) return true
+  if (location.pathname === '/my') return true
+  return false
+}
 
 const SIDEBAR_ITEM_BASE_CLASS =
   'w-full cursor-pointer py-2 text-left text-[15px] font-medium text-stone-700 transition-colors hover:text-black'
@@ -341,8 +340,7 @@ function ClientLayoutContent() {
   const navigate = useNavigate()
   const { pathname } = location
   const isMdUp = useIsMdUp()
-  // 624: TS6133 — 하단 컬렉션 탭 주석 후 미사용
-  // const collectionNavActive = isCollectionNavActive(null, location)
+  const collectionNavActive = isCollectionNavActive(null, location)
   const navigationType = useNavigationType()
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter)
   const colorFilter = useClientPcFilterStore((state) => state.colorFilter)
@@ -353,9 +351,17 @@ function ClientLayoutContent() {
   const togglePcFilter = useClientPcFilterStore((state) => state.toggleFilter)
   const toggleRankingFilter = useClientPcFilterStore((state) => state.toggleRankingFilter)
   const resetPcFilters = useClientPcFilterStore((state) => state.resetFilters)
-  // 624: TS6133 — 사이드바 컬렉션 카운트 주석 후 미사용
-  // const currentUserId = useCurrentUserId()
-  // const { data: savedCount = 0 } = useUserSavedCountQuery(currentUserId)
+  // 639: 사이드바 카운트 — 서버 savedCount → 로컬 좋아요 개수
+  const [likedCount, setLikedCount] = useState(() =>
+    typeof window === 'undefined' ? 0 : getLikedNailsCount(null),
+  )
+
+  useEffect(() => {
+    const syncLikedCount = () => setLikedCount(getLikedNailsCount(null))
+    syncLikedCount()
+    window.addEventListener(LIKED_NAILS_CHANGED_EVENT, syncLikedCount)
+    return () => window.removeEventListener(LIKED_NAILS_CHANGED_EVENT, syncLikedCount)
+  }, [])
 
   const handleLogoClick = () => {
     resetPcFilters()
@@ -461,20 +467,18 @@ function ClientLayoutContent() {
 
             <div className="mt-6 mb-2 h-px w-full bg-stone-100" aria-hidden />
             <div className="flex w-full flex-col">
-              {/* 609: 일반 유저 컬렉션 진입점 임시 숨김 — 복구 시 주석 해제
               <Link
-                to="/my?tab=saved"
+                to="/my?tab=liked"
                 className="flex items-center justify-between py-3 transition-opacity hover:opacity-80"
               >
                 <div className="flex items-center gap-2 text-[16px] font-bold text-stone-900">
                   <Heart className="h-5 w-5 fill-red-500 text-red-500" strokeWidth={2} aria-hidden />
                   <span>{isEnglish ? 'My Collections' : '내 컬렉션 보관함'}</span>
                 </div>
-                {savedCount > 0 ? (
-                  <span className="text-sm font-semibold tabular-nums text-stone-400">({savedCount})</span>
+                {likedCount > 0 ? (
+                  <span className="text-sm font-semibold tabular-nums text-stone-400">({likedCount})</span>
                 ) : null}
               </Link>
-              */}
               <Link
                 to="/test-intro"
                 className="flex items-center gap-2 py-3 text-[16px] font-bold text-stone-900 transition-colors hover:text-orange-600"
@@ -546,7 +550,7 @@ function ClientLayoutContent() {
 
         {!hideBottomNav && (
         <nav
-          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-4 border-t border-gray-200 bg-white pb-safe md:hidden"
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto grid h-[60px] w-full max-w-md grid-cols-5 border-t border-gray-200 bg-white pb-safe md:hidden"
           aria-label="하단 탭"
         >
           <NavLink
@@ -598,9 +602,8 @@ function ClientLayoutContent() {
             />
             <span className="text-[9px] font-medium leading-none sm:text-[10px]">{isEnglish ? 'Search' : '검색'}</span>
           </NavLink>
-          {/* 609: 일반 유저 컬렉션 탭 임시 숨김 — 복구 시 주석 해제 + grid-cols-5 로 되돌리기
           <NavLink
-            to="/my?tab=saved"
+            to="/my"
             className={({ isActive }) =>
               cn(
                 'm-0 flex h-full w-full min-w-0 cursor-pointer appearance-none flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-1 pt-1 pb-1.5 [-webkit-tap-highlight-color:transparent]',
@@ -625,7 +628,6 @@ function ClientLayoutContent() {
               )
             }}
           </NavLink>
-          */}
         </nav>
         )}
       </div>

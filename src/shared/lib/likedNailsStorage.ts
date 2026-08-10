@@ -66,3 +66,13 @@ export function persistNailLikeState(
     writeEntries(rest, userId)
   }
 }
+
+export function removeLikedNailIds(nailIds: string[], userId?: string | null): void {
+  if (typeof window === 'undefined') return
+  const removeSet = new Set(nailIds.map((id) => id.trim()).filter(Boolean))
+  if (removeSet.size === 0) return
+  writeEntries(
+    readLikedNailEntries(userId).filter((entry) => !removeSet.has(entry.id)),
+    userId,
+  )
+}

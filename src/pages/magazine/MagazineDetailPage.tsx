@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ChevronLeft, Info, Loader2, Share2 /*, User */ } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Info, Loader2, Share2, User } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import '@/shared/i18n/i18n'
@@ -365,7 +365,6 @@ export default function MagazineDetailPage() {
           >
             <Share2 className="h-5 w-5" strokeWidth={2.2} />
           </button>
-          {/* 617: Ghost UI — 마이페이지 User 아이콘 숨김 (/login 누수 차단)
           <button
             type="button"
             onClick={() => navigate('/my')}
@@ -374,7 +373,6 @@ export default function MagazineDetailPage() {
           >
             <User className="h-5 w-5" strokeWidth={2.2} />
           </button>
-          */}
         </div>
       </nav>
 

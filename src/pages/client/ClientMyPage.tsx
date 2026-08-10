@@ -1,77 +1,50 @@
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
-import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
-import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
-import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
+// import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
+// import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+// import { useUserSavedCountQuery } from '@/features/my-page/useUserSavedCountQuery'
 import { supabase } from '@/shared/api/supabaseClient'
+import {
+  LIKED_NAILS_CHANGED_EVENT,
+  readLikedNailEntries,
+} from '@/shared/lib/likedNailsStorage'
+import {
+  RECENT_VIEWED_CHANGED_EVENT,
+  readRecentViewedIds,
+} from '@/shared/lib/recentViewedStorage'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
-import { Bell, Camera, X } from 'lucide-react'
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+// import { Bell, Camera, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
-type ActiveTab = 'recent' | 'liked' | 'saved'
-type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
+type ActiveTab = 'recent' | 'liked'
+// type ActiveTab = 'recent' | 'liked' | 'saved' // 638: saved 탭 게스트 숨김
 
 const GALLERY_PREVIEW_LIMIT = 10
 
 const tabLabels: Record<ActiveTab, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
-}
-
-const ACTIVITY_TABLE_BY_TAB: Record<ActiveTab, { table: UserActivityTable; orderColumn: string }> = {
-  recent: { table: 'user_recent_views', orderColumn: 'viewed_at' },
-  liked: { table: 'user_likes', orderColumn: 'created_at' },
-  saved: { table: 'user_saves', orderColumn: 'created_at' },
+  // saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
 }
 
 const MY_PAGE_NAIL_COLUMNS =
   'id,title,title_en,image_url,color,color_en,nail_length,length_en,styles,styles_en'
 
 function isActiveTab(value: string | null): value is ActiveTab {
-  return value === 'recent' || value === 'liked' || value === 'saved'
+  return value === 'recent' || value === 'liked'
 }
 
-async function fetchActivityCount(table: UserActivityTable, userId: string | null): Promise<number> {
-  if (!userId) return 0
+async function fetchNailsByOrderedIds(ids: string[]): Promise<NailDesignRow[]> {
+  if (ids.length === 0) return []
 
-  const { count, error } = await supabase
-    .from(table)
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-
-  if (error) throw error
-  return count ?? 0
-}
-
-async function fetchActivityPreview(tab: ActiveTab, userId: string | null): Promise<NailDesignRow[]> {
-  if (!userId) return []
-
-  const { table, orderColumn } = ACTIVITY_TABLE_BY_TAB[tab]
-  const { data: activityRows, error: activityError } = await supabase
-    .from(table)
-    .select('nail_id')
-    .eq('user_id', userId)
-    .order(orderColumn, { ascending: false })
-    .limit(GALLERY_PREVIEW_LIMIT)
-
-  if (activityError) throw activityError
-
-  const nailIds =
-    activityRows
-      ?.map((row) => String((row as { nail_id?: unknown }).nail_id ?? '').trim())
-      .filter(Boolean) ?? []
-
-  if (nailIds.length === 0) return []
-
-  const { data: nailRows, error: nailError } = await supabase
+  const { data: nailRows, error } = await supabase
     .from('nail_designs')
     .select(MY_PAGE_NAIL_COLUMNS)
-    .in('id', nailIds)
+    .in('id', ids)
 
-  if (nailError) throw nailError
+  if (error) throw error
 
   const byId = new Map<string, NailDesignRow>()
   for (const row of nailRows ?? []) {
@@ -79,9 +52,7 @@ async function fetchActivityPreview(tab: ActiveTab, userId: string | null): Prom
     if (id) byId.set(id, row as NailDesignRow)
   }
 
-  return nailIds
-    .map((id) => byId.get(id))
-    .filter((row): row is NailDesignRow => Boolean(row))
+  return ids.map((id) => byId.get(id)).filter((row): row is NailDesignRow => Boolean(row))
 }
 
 export default function ClientMyPage() {
@@ -89,21 +60,24 @@ export default function ClientMyPage() {
   const isEnglish = language === 'en'
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const currentUserId = useCurrentUserId()
+  // const currentUserId = useCurrentUserId()
   const currentTab = searchParams.get('tab')
   const activeTab: ActiveTab = isActiveTab(currentTab) ? currentTab : 'recent'
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [profileImg, setProfileImg] = useState('/avatar/default_profile_heart.png')
-  const [tempImg, setTempImg] = useState('/avatar/default_profile_heart.png')
-  const [nickname, setNickname] = useState("")
-  const [tempNickname, setTempNickname] = useState("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [storageTick, setStorageTick] = useState(0)
 
-  const settingsTileClass =
-    'flex w-full items-center gap-3 rounded-xl bg-stone-50 p-5 text-[15px] font-medium text-stone-700 transition-all hover:bg-stone-100'
+  // 638: 게스트 서랍장 — 프로필/설정 모달 상태 비활성
+  // const [isModalOpen, setIsModalOpen] = useState(false)
+  // const [profileImg, setProfileImg] = useState('/avatar/default_profile_heart.png')
+  // const [tempImg, setTempImg] = useState('/avatar/default_profile_heart.png')
+  // const [nickname, setNickname] = useState("")
+  // const [tempNickname, setTempNickname] = useState("")
+  // const fileInputRef = useRef<HTMLInputElement>(null)
+  // const [isUploading, setIsUploading] = useState(false)
+
+  // const settingsTileClass =
+  //   'flex w-full items-center gap-3 rounded-xl bg-stone-50 p-5 text-[15px] font-medium text-stone-700 transition-all hover:bg-stone-100'
   const previewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
-  const folderPreviewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
+  // const folderPreviewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
 
   const statButtonClass = (isActive: boolean) =>
     `flex cursor-pointer flex-col items-center gap-0.5 px-3 py-2 transition-colors md:items-end md:px-4 ${
@@ -115,78 +89,60 @@ export default function ClientMyPage() {
       isActive ? 'text-orange-600' : 'text-stone-900'
     }`
   const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
-  const defaultNickname = isEnglish ? 'Nailiever' : '네일리버'
-  const { data: recentCount = 0, isLoading: isRecentCountLoading } = useQuery({
-    queryKey: ['my-page-count', 'recent', currentUserId],
-    queryFn: () => fetchActivityCount('user_recent_views', currentUserId),
-    enabled: Boolean(currentUserId),
-    staleTime: 30_000,
-  })
-  const { data: likedCount = 0, isLoading: isLikedCountLoading } = useQuery({
-    queryKey: ['my-page-count', 'liked', currentUserId],
-    queryFn: () => fetchActivityCount('user_likes', currentUserId),
-    enabled: Boolean(currentUserId),
-    staleTime: 30_000,
-  })
-  const { data: savedCount = 0, isLoading: isSavedCountLoading } = useUserSavedCountQuery(currentUserId)
+  // const defaultNickname = isEnglish ? 'Nailiever' : '네일리버'
 
+  // 638: localStorage 변경 시 카운트/프리뷰 즉시 갱신
   useEffect(() => {
-    let cancelled = false
-
-    const initCheck = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!cancelled && !session) {
-        // 617: 좀비 라우트 — /login 대신 홈으로 (관리자 로그인 노출 차단)
-        navigate('/', { replace: true })
-      }
-    }
-
-    void initCheck()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        navigate('/', { replace: true })
-      }
-    })
-
+    const bump = () => setStorageTick((n) => n + 1)
+    window.addEventListener(RECENT_VIEWED_CHANGED_EVENT, bump)
+    window.addEventListener(LIKED_NAILS_CHANGED_EVENT, bump)
     return () => {
-      cancelled = true
-      subscription.unsubscribe()
+      window.removeEventListener(RECENT_VIEWED_CHANGED_EVENT, bump)
+      window.removeEventListener(LIKED_NAILS_CHANGED_EVENT, bump)
     }
-  }, [navigate])
+  }, [])
 
+  // 638: ?tab=saved 등 레거시 URL → recent 로 정규화
   useEffect(() => {
-    let cancelled = false
-
-    const loadUserProfile = async () => {
-      const { data } = await supabase.auth.getUser()
-      const metadata = data.user?.user_metadata ?? {}
-      const displayName = typeof metadata.display_name === 'string' ? metadata.display_name.trim() : ''
-      const avatarUrl = typeof metadata.avatar_url === 'string' ? metadata.avatar_url.trim() : ''
-
-      if (cancelled) return
-
-      setNickname(displayName || defaultNickname)
-      if (avatarUrl) setProfileImg(avatarUrl)
+    if (currentTab && !isActiveTab(currentTab)) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('tab', 'recent')
+          return next
+        },
+        { replace: true },
+      )
     }
+  }, [currentTab, setSearchParams])
 
-    void loadUserProfile()
+  const recentIds = useMemo(() => readRecentViewedIds(null), [storageTick])
+  const likedIds = useMemo(
+    () => readLikedNailEntries(null).map((entry) => entry.id),
+    [storageTick],
+  )
+  const recentCount = recentIds.length
+  const likedCount = likedIds.length
 
-    return () => {
-      cancelled = true
-    }
-  }, [defaultNickname])
+  const previewIds = useMemo(() => {
+    const source = activeTab === 'liked' ? likedIds : recentIds
+    return source.slice(0, GALLERY_PREVIEW_LIMIT)
+  }, [activeTab, likedIds, recentIds])
 
-  const { data: galleryNails = [] } = useQuery({
-    queryKey: ['my-page-gallery', activeTab, currentUserId],
-    queryFn: () => fetchActivityPreview(activeTab, currentUserId),
-    enabled: Boolean(currentUserId) && activeTab !== 'saved',
+  const { data: galleryNails = [], isLoading: isGalleryLoading } = useQuery({
+    queryKey: ['my-page-gallery-guest', activeTab, previewIds.join(',')],
+    queryFn: () => fetchNailsByOrderedIds(previewIds),
+    enabled: previewIds.length > 0,
     staleTime: 30_000,
   })
+
+  // 638: 세션 가드 제거 — 비회원도 /my 서랍장 접근 가능
+  // useEffect(() => { ... getSession → navigate('/') ... }, [navigate])
+
+  // 638: 회원 프로필 로드 숨김
+  // useEffect(() => { ... loadUserProfile ... }, [defaultNickname])
+
+  // const { data: savedCount = 0, isLoading: isSavedCountLoading } = useUserSavedCountQuery(currentUserId)
 
   const handleTabChange = (tab: ActiveTab) => {
     setSearchParams(
@@ -199,51 +155,15 @@ export default function ClientMyPage() {
     )
   }
 
-
-  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-
-    if (!file) return
-    if (!currentUserId) {
-      alert(isEnglish ? 'Please sign in to continue.' : '로그인 후 이용해 주세요.')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert(isEnglish ? 'Only images up to 5MB can be uploaded.' : '5MB 이하의 이미지만 업로드할 수 있습니다.')
-      return
-    }
-
-    setIsUploading(true)
-    try {
-      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-      const fileName = `${currentUserId}_${Date.now()}.${extension}`
-      const { data, error } = await supabase.storage.from('avatars').upload(fileName, file)
-
-      if (error) throw error
-
-      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(data.path)
-      setTempImg(publicUrlData.publicUrl)
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : isEnglish
-            ? 'An error occurred while uploading the image.'
-            : '이미지 업로드 중 오류가 발생했습니다.'
-      alert(message)
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
   return (
     <div className="w-full flex flex-col min-h-screen bg-white">
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-white px-5 border-b border-gray-50">
         <div className="w-8" />
         <h1 className="text-lg font-bold text-gray-900 whitespace-nowrap">
-          {isEnglish ? 'My Page' : '마이페이지'}
+          {isEnglish ? 'My Vault' : '내 서랍장'}
         </h1>
+        <div className="w-8" />
+        {/* 638: 회원 전용 알림 버튼 숨김
         <button
           type="button"
           aria-label={isEnglish ? 'Notifications' : '알림'}
@@ -253,40 +173,24 @@ export default function ClientMyPage() {
           <Bell className="h-6 w-6 text-current" strokeWidth={2} />
           <span className="absolute right-1.5 top-1.5 h-[9px] w-[9px] rounded-full border-[2px] border-white bg-red-500" />
         </button>
+        */}
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-5 pb-12 pt-6 md:px-8 lg:px-10">
+        {/* 638: 회원 전용 프로필 카드 숨김 — 스탯만 유지
         <div className="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm md:flex md:items-center md:justify-between md:p-8">
           <div className="flex items-center gap-5">
-            <div
-              className="relative h-16 w-16 shrink-0 cursor-pointer overflow-hidden rounded-full border border-stone-200 bg-white md:h-20 md:w-20"
-              onClick={() => {
-                setTempImg(profileImg)
-                setTempNickname(nickname || defaultNickname)
-                setIsModalOpen(true)
-              }}
-            >
-              <img src={profileImg} alt={isEnglish ? 'Profile' : '프로필'} className="h-full w-full object-cover" />
-            </div>
-            <div className="min-w-0 text-left">
-              <div className="truncate text-xl font-bold text-stone-900 md:text-2xl">
-                {nickname || defaultNickname}
-              </div>
-              <p className="mt-1 text-[13px] text-stone-600">
-                {isEnglish ? 'Have a great day 🌷' : '좋은 하루 보내세요 🌷'}
-              </p>
-            </div>
+            ... profile avatar / nickname ...
           </div>
-
-          <div className="mt-8 flex w-full justify-between border-t border-stone-100 pt-6 md:mt-0 md:w-auto md:justify-end md:gap-2 md:border-t-0 md:pt-0">
+        */}
+        <div className="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm md:p-8">
+          <div className="flex w-full justify-between md:justify-end md:gap-2">
             <button
               type="button"
               className={statButtonClass(activeTab === 'recent')}
               onClick={() => handleTabChange('recent')}
             >
-              <span className={statNumberClass(activeTab === 'recent')}>
-                {isRecentCountLoading ? '...' : recentCount}
-              </span>
+              <span className={statNumberClass(activeTab === 'recent')}>{recentCount}</span>
               <span className="text-[14px] font-semibold text-stone-700">
                 {isEnglish ? 'Recently Viewed' : '최근 본 디자인'}
               </span>
@@ -297,26 +201,21 @@ export default function ClientMyPage() {
               className={statButtonClass(activeTab === 'liked')}
               onClick={() => handleTabChange('liked')}
             >
-              <span className={statNumberClass(activeTab === 'liked')}>
-                {isLikedCountLoading ? '...' : likedCount}
-              </span>
+              <span className={statNumberClass(activeTab === 'liked')}>{likedCount}</span>
               <span className="text-[14px] font-semibold text-stone-700">
                 {isEnglish ? 'Liked Nails' : '좋아요 한 네일'}
               </span>
             </button>
 
+            {/* 638: 내 컬렉션 보관함(Saved) 탭 숨김
             <button
               type="button"
               className={statButtonClass(activeTab === 'saved')}
               onClick={() => handleTabChange('saved')}
             >
-              <span className={statNumberClass(activeTab === 'saved')}>
-                {isSavedCountLoading ? '...' : savedCount}
-              </span>
-              <span className="text-[14px] font-semibold text-stone-700">
-                {isEnglish ? tabLabels.saved.en : tabLabels.saved.ko}
-              </span>
+              ...
             </button>
+            */}
           </div>
         </div>
 
@@ -332,15 +231,25 @@ export default function ClientMyPage() {
             </button>
           </div>
 
+          {/* 638: SavedFoldersGrid 숨김
           {activeTab === 'saved' ? (
-            <SavedFoldersGrid
-              userId={currentUserId}
-              isEnglish={isEnglish}
-              gridClassName={folderPreviewGridClass}
-            />
+            <SavedFoldersGrid ... />
           ) : (
-            <div className={previewGridClass}>
-              {galleryNails.map((item) => {
+          */}
+          <div className={previewGridClass}>
+            {isGalleryLoading && previewIds.length > 0 ? (
+              Array.from({ length: Math.min(previewIds.length, 4) }, (_, index) => (
+                <div key={`guest-vault-skel-${index}`} className="flex flex-col" aria-hidden>
+                  <div className="aspect-[4/5] w-full animate-pulse rounded-xl bg-gray-100 md:rounded-2xl" />
+                  <div className="mx-auto mt-2 h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
+                </div>
+              ))
+            ) : galleryNails.length === 0 ? (
+              <p className="col-span-full py-10 text-center text-sm text-stone-500">
+                {isEnglish ? 'No designs yet.' : '아직 등록된 디자인이 없어요.'}
+              </p>
+            ) : (
+              galleryNails.map((item) => {
                 const titleKo = String(item.title ?? '').trim()
                 const titleEn = String(item.title_en ?? '').trim()
                 const title =
@@ -377,136 +286,24 @@ export default function ClientMyPage() {
                     </div>
                   </Link>
                 )
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
+          {/* )} */}
         </section>
 
+        {/* 638: 회원 전용 설정 메뉴 숨김
         <section className="border-t border-stone-100 pb-12 pt-8">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
-            <button
-              type="button"
-              className={settingsTileClass}
-              onClick={() => navigate('/notifications')}
-            >
-              <span className="text-xl" aria-hidden>
-                🔔
-              </span>
-              {isEnglish ? 'Notification Settings' : '알림 설정'}
-            </button>
-            <button
-              type="button"
-              className={settingsTileClass}
-              onClick={() => navigate('/account')}
-            >
-              <span className="text-xl" aria-hidden>
-                ⚙️
-              </span>
-              {isEnglish ? 'Account Management' : '계정 관리'}
-            </button>
-            <button
-              type="button"
-              className={settingsTileClass}
-              onClick={() => navigate('/support')}
-            >
-              <span className="text-xl" aria-hidden>
-                🎧
-              </span>
-              {isEnglish ? 'Customer Service / Notice' : '고객센터 / 공지사항'}
-            </button>
-            <Link to="/pro" className={settingsTileClass}>
-              <span className="text-xl" aria-hidden>
-                👑
-              </span>
-              {isEnglish ? 'GELIA PRO (For Owners)' : 'GELIA PRO (원장님 전용)'}
-            </Link>
+            ... notifications / account / support / pro ...
           </div>
         </section>
+        */}
       </main>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-center items-end bg-black/60">
-          <div className="w-full max-w-md bg-white rounded-t-[32px] p-6 pb-10 animate-in slide-in-from-bottom-4 duration-300">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-[17px] font-bold text-gray-900">
-                {isEnglish ? 'Change Profile Photo' : '프로필 사진 변경'}
-              </h3>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="p-1 text-gray-500"><X size={22} /></button>
-            </div>
-
-            <div className="mb-6">
-              <p className="mb-3 text-[13px] font-medium text-gray-500">
-                {isEnglish ? 'Choose a default profile' : '기본 프로필 선택'}
-              </p>
-              <div className="flex items-center justify-between px-1">
-                {['tulip', 'pearl', 'heart', 'drop'].map((type) => {
-                  const isSelected = tempImg.includes(type);
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => setTempImg(`/avatar/default_profile_${type}.png`)}
-                      className={`relative w-[68px] h-[68px] shrink-0 overflow-hidden rounded-full bg-white transition-all outline-none ${
-                        isSelected
-                          ? 'ring-[2.5px] ring-[#9baef3] ring-offset-[3px] ring-offset-white'
-                          : 'border border-black/5'
-                      }`}
-                    >
-                      <img
-                        src={`/avatar/default_profile_${type}.png`}
-                        alt={type}
-                        className="w-full h-full object-cover rounded-full block bg-white"
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3.5 text-[14px] font-bold text-rose-500 transition-colors active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Camera size={18} />{' '}
-              {isUploading
-                ? isEnglish
-                  ? 'Uploading...'
-                  : '업로드 중...'
-                : isEnglish
-                  ? 'Choose from my album'
-                  : '내 앨범에서 사진 선택'}
-            </button>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-            />
-
-            <div className="mb-8">
-              <p className="mb-2 text-[13px] font-medium text-gray-500">
-                {isEnglish ? 'Change Nickname' : '닉네임 변경'}
-              </p>
-              <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3.5 text-[15px] outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" />
-            </div>
-
-            <button
-              type="button"
-              onClick={async () => {
-                setProfileImg(tempImg);
-                setNickname(tempNickname);
-                setIsModalOpen(false);
-                await supabase.auth.updateUser({ data: { display_name: tempNickname, avatar_url: tempImg } });
-              }}
-              className="w-full rounded-2xl bg-gray-900 py-4 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
-            >
-              {isEnglish ? 'Save Nickname' : '닉네임 저장'}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 638: 프로필 변경 모달 숨김
+      {isModalOpen && ( ... )}
+      */}
     </div>
   )
 }

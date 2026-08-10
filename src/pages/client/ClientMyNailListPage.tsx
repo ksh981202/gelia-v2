@@ -1,37 +1,38 @@
-import {
-  useDeleteLikesMutation,
-  useDeleteRecentViewsMutation,
-} from '@/features/nail-activity/api/useClientActivityApi'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
-import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
-import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
+// import SavedFoldersGrid from '@/features/collection/components/SavedFoldersGrid'
+// import { useCurrentUserId } from '@/features/my-page/useCurrentUserId'
 import { supabase } from '@/shared/api/supabaseClient'
+import {
+  LIKED_NAILS_CHANGED_EVENT,
+  readLikedNailEntries,
+  removeLikedNailIds,
+} from '@/shared/lib/likedNailsStorage'
+import {
+  RECENT_VIEWED_CHANGED_EVENT,
+  readRecentViewedIds,
+  removeRecentViewedNailIds,
+} from '@/shared/lib/recentViewedStorage'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { CheckCircle2, ChevronLeft } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-type ListType = 'recent' | 'liked' | 'saved'
-type UserActivityTable = 'user_recent_views' | 'user_likes' | 'user_saves'
+type ListType = 'recent' | 'liked'
+// type ListType = 'recent' | 'liked' | 'saved' // 638: saved 게스트 숨김
 
 const LIST_TITLES: Record<ListType, { ko: string; en: string }> = {
   recent: { ko: '최근 본 디자인', en: 'Recently Viewed' },
   liked: { ko: '좋아요 한 네일', en: 'Liked Nails' },
-  saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
+  // saved: { ko: '내 컬렉션 보관함', en: 'My Collections' },
 }
 
-const LIST_PAGE_SIZE = 10
+/** 프로젝트 SSOT: 무한 스크롤 페이지 단위 */
+const GALLERY_PAGE_SIZE = 10
 const MY_LIST_NAIL_COLUMNS =
   'id,title,title_en,image_url,color,color_en,nail_length,length_en,styles,styles_en'
 const GALLERY_GRID_CLASS = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-4'
-
-const ACTIVITY_TABLE_BY_TYPE: Record<ListType, { table: UserActivityTable; orderColumn: string }> = {
-  recent: { table: 'user_recent_views', orderColumn: 'viewed_at' },
-  liked: { table: 'user_likes', orderColumn: 'created_at' },
-  saved: { table: 'user_saves', orderColumn: 'created_at' },
-}
 
 type MyNailListPage = {
   items: NailDesignRow[]
@@ -39,7 +40,7 @@ type MyNailListPage = {
 }
 
 function isListType(value: string | undefined): value is ListType {
-  return value === 'recent' || value === 'liked' || value === 'saved'
+  return value === 'recent' || value === 'liked'
 }
 
 function nailDisplayTitle(item: NailDesignRow, isEnglish: boolean): string {
@@ -48,39 +49,28 @@ function nailDisplayTitle(item: NailDesignRow, isEnglish: boolean): string {
   return (isEnglish && en ? en : ko || en) || (isEnglish ? 'Nail Design' : '네일 디자인')
 }
 
-async function fetchMyNailListPage(
-  type: ListType,
-  userId: string | null,
-  page: number,
-): Promise<MyNailListPage> {
-  if (!userId) return { items: [], totalCount: 0 }
+function readGuestVaultIds(type: ListType): string[] {
+  if (type === 'liked') {
+    return readLikedNailEntries(null).map((entry) => entry.id)
+  }
+  return readRecentViewedIds(null)
+}
 
-  const { table, orderColumn } = ACTIVITY_TABLE_BY_TYPE[type]
-  const from = (page - 1) * LIST_PAGE_SIZE
-  const to = page * LIST_PAGE_SIZE - 1
+async function fetchGuestVaultPage(type: ListType, page: number): Promise<MyNailListPage> {
+  const allIds = readGuestVaultIds(type)
+  const from = (page - 1) * GALLERY_PAGE_SIZE
+  const pageIds = allIds.slice(from, from + GALLERY_PAGE_SIZE)
 
-  const { data: activityRows, count, error: activityError } = await supabase
-    .from(table)
-    .select('nail_id', { count: 'exact' })
-    .eq('user_id', userId)
-    .order(orderColumn, { ascending: false })
-    .range(from, to)
+  if (pageIds.length === 0) {
+    return { items: [], totalCount: allIds.length }
+  }
 
-  if (activityError) throw activityError
-
-  const nailIds =
-    activityRows
-      ?.map((row) => String((row as { nail_id?: unknown }).nail_id ?? '').trim())
-      .filter(Boolean) ?? []
-
-  if (nailIds.length === 0) return { items: [], totalCount: count ?? 0 }
-
-  const { data: nailRows, error: nailError } = await supabase
+  const { data: nailRows, error } = await supabase
     .from('nail_designs')
     .select(MY_LIST_NAIL_COLUMNS)
-    .in('id', nailIds)
+    .in('id', pageIds)
 
-  if (nailError) throw nailError
+  if (error) throw error
 
   const byId = new Map<string, NailDesignRow>()
   for (const row of nailRows ?? []) {
@@ -89,10 +79,8 @@ async function fetchMyNailListPage(
   }
 
   return {
-    items: nailIds
-      .map((id) => byId.get(id))
-      .filter((row): row is NailDesignRow => Boolean(row)),
-    totalCount: count ?? 0,
+    items: pageIds.map((id) => byId.get(id)).filter((row): row is NailDesignRow => Boolean(row)),
+    totalCount: allIds.length,
   }
 }
 
@@ -101,29 +89,28 @@ export default function ClientMyNailListPage() {
   const isEnglish = language === 'en'
   const navigate = useNavigate()
   const { type: typeParam } = useParams<{ type: string }>()
-  const currentUserId = useCurrentUserId()
+  // const currentUserId = useCurrentUserId()
   const observerRef = useRef<HTMLDivElement | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-
-  const deleteRecentViewsMutation = useDeleteRecentViewsMutation()
-  const deleteLikesMutation = useDeleteLikesMutation()
+  const [isDeletePending, setIsDeletePending] = useState(false)
+  const [storageTick, setStorageTick] = useState(0)
 
   const listType = isListType(typeParam) ? typeParam : null
   const pageTitle = listType ? LIST_TITLES[listType][isEnglish ? 'en' : 'ko'] : ''
 
+  // 638: 세션 가드 제거 — 비회원도 전체보기 접근 가능
+  // useEffect(() => { ... getSession → navigate('/') ... }, [navigate])
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session) {
-        // 617: 좀비 라우트 — /login 대신 홈으로 (관리자 로그인 노출 차단)
-        navigate('/', { replace: true })
-      }
+    const bump = () => setStorageTick((n) => n + 1)
+    window.addEventListener(RECENT_VIEWED_CHANGED_EVENT, bump)
+    window.addEventListener(LIKED_NAILS_CHANGED_EVENT, bump)
+    return () => {
+      window.removeEventListener(RECENT_VIEWED_CHANGED_EVENT, bump)
+      window.removeEventListener(LIKED_NAILS_CHANGED_EVENT, bump)
     }
-    void checkAuth()
-  }, [navigate])
+  }, [])
 
   useEffect(() => {
     if (!isListType(typeParam)) {
@@ -143,31 +130,31 @@ export default function ClientMyNailListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    refetch,
   } = useInfiniteQuery({
-    queryKey: ['my-nail-list', listType, currentUserId],
+    queryKey: ['my-nail-list-guest', listType, storageTick],
     queryFn: ({ pageParam }) =>
-      listType && listType !== 'saved'
-        ? fetchMyNailListPage(listType, currentUserId, pageParam as number)
+      listType
+        ? fetchGuestVaultPage(listType, pageParam as number)
         : Promise.resolve({ items: [], totalCount: 0 }),
-    enabled: Boolean(listType) && listType !== 'saved' && Boolean(currentUserId),
+    enabled: Boolean(listType),
     initialPageParam: 1,
     staleTime: 30_000,
     getNextPageParam: (lastPage, allPages, lastPageParam) => {
       const loadedCount = allPages.reduce((sum, page) => sum + page.items.length, 0)
-      if (loadedCount >= lastPage.totalCount || lastPage.items.length < LIST_PAGE_SIZE) return undefined
+      if (loadedCount >= lastPage.totalCount || lastPage.items.length < GALLERY_PAGE_SIZE) {
+        return undefined
+      }
       return (lastPageParam as number) + 1
     },
   })
 
-  const nails = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
-    [data],
-  )
+  const nails = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data])
   const totalCount = data?.pages[0]?.totalCount ?? 0
 
   useEffect(() => {
     const target = observerRef.current
-    if (!target || !hasNextPage || listType === 'saved') return
+    if (!target || !hasNextPage) return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -179,7 +166,7 @@ export default function ClientMyNailListPage() {
 
     observer.observe(target)
     return () => observer.disconnect()
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, listType])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   const handleCancelEdit = useCallback(() => {
     setIsEditing(false)
@@ -193,7 +180,7 @@ export default function ClientMyNailListPage() {
   }, [])
 
   const handleBulkDelete = useCallback(async () => {
-    if (!currentUserId || selectedIds.length === 0 || !listType || listType === 'saved') return
+    if (selectedIds.length === 0 || !listType || isDeletePending) return
 
     const confirmed = window.confirm(
       isEnglish
@@ -202,39 +189,25 @@ export default function ClientMyNailListPage() {
     )
     if (!confirmed) return
 
-    const isDeleting =
-      deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
-    if (isDeleting) return
-
+    setIsDeletePending(true)
     try {
       if (listType === 'recent') {
-        await deleteRecentViewsMutation.mutateAsync({
-          userId: currentUserId,
-          nailIds: selectedIds,
-        })
-      } else if (listType === 'liked') {
-        await deleteLikesMutation.mutateAsync({
-          userId: currentUserId,
-          nailIds: selectedIds,
-        })
+        removeRecentViewedNailIds(selectedIds, null)
+      } else {
+        removeLikedNailIds(selectedIds, null)
       }
       setIsEditing(false)
       setSelectedIds([])
+      setStorageTick((n) => n + 1)
+      await refetch()
     } catch (error) {
       const message = error instanceof Error ? error.message : '삭제에 실패했습니다.'
       window.alert(message)
+    } finally {
+      setIsDeletePending(false)
     }
-  }, [
-    currentUserId,
-    deleteLikesMutation,
-    deleteRecentViewsMutation,
-    isEnglish,
-    listType,
-    selectedIds,
-  ])
+  }, [isDeletePending, isEnglish, listType, refetch, selectedIds])
 
-  const isDeletePending =
-    deleteRecentViewsMutation.isPending || deleteLikesMutation.isPending
   const showEditControls = listType === 'recent' || listType === 'liked'
 
   if (!listType) {
@@ -257,20 +230,18 @@ export default function ClientMyNailListPage() {
             <h1 className="truncate text-[24px] font-extrabold tracking-tight text-stone-900">
               {pageTitle}
             </h1>
-            {listType !== 'saved' ? (
-              <span className="shrink-0 text-[16px] font-medium text-stone-500">
-                {isEnglish ? (
-                  <>
-                    (Total{' '}
-                    <span className="font-semibold text-orange-500">{totalCount || 0}</span> designs)
-                  </>
-                ) : (
-                  <>
-                    (총 <span className="font-semibold text-orange-500">{totalCount || 0}</span>개)
-                  </>
-                )}
-              </span>
-            ) : null}
+            <span className="shrink-0 text-[16px] font-medium text-stone-500">
+              {isEnglish ? (
+                <>
+                  (Total <span className="font-semibold text-orange-500">{totalCount || 0}</span>{' '}
+                  designs)
+                </>
+              ) : (
+                <>
+                  (총 <span className="font-semibold text-orange-500">{totalCount || 0}</span>개)
+                </>
+              )}
+            </span>
           </div>
           {showEditControls ? (
             <div className="flex shrink-0 items-center gap-2">
@@ -313,120 +284,119 @@ export default function ClientMyNailListPage() {
             </div>
           ) : null}
         </div>
+
+        {/* 638: SavedFoldersGrid 숨김
         {listType === 'saved' ? (
-          <SavedFoldersGrid
-            userId={currentUserId}
-            isEnglish={isEnglish}
-            gridClassName={GALLERY_GRID_CLASS}
-          />
+          <SavedFoldersGrid ... />
         ) : (
-          <>
-            <div className={GALLERY_GRID_CLASS}>
-              {isLoading ? (
-                Array.from({ length: 10 }, (_, index) => (
-                  <article key={`my-nail-list-skel-${index}`} className="flex flex-col" aria-hidden>
+        */}
+        <>
+          <div className={GALLERY_GRID_CLASS}>
+            {isLoading ? (
+              Array.from({ length: 10 }, (_, index) => (
+                <article key={`my-nail-list-skel-${index}`} className="flex flex-col" aria-hidden>
+                  <div className="aspect-[4/5] w-full animate-pulse overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl" />
+                  <div className="mx-auto mt-2 h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
+                </article>
+              ))
+            ) : isError ? (
+              <p className="col-span-full py-12 text-center text-sm text-stone-500">
+                {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했어요.'}
+              </p>
+            ) : nails.length === 0 ? (
+              <p className="col-span-full py-12 text-center text-sm text-stone-500">
+                {isEnglish ? 'No designs yet.' : '아직 등록된 디자인이 없어요.'}
+              </p>
+            ) : (
+              nails.map((item) => {
+                const title = nailDisplayTitle(item, isEnglish)
+                const imageUrl = String(item.image_url ?? '').trim()
+                const isSelected = selectedIds.includes(item.id)
+                const cardClassName = `flex cursor-pointer flex-col ${isEditing && isSelected ? 'rounded-xl ring-2 ring-stone-800 ring-offset-2 md:rounded-2xl' : ''}`
+                const cardContent = (
+                  <>
+                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={buildNailImageSeoAlt(item, isEnglish)}
+                          className={`h-full w-full object-cover transition-transform ${isEditing ? '' : 'hover:scale-105'}`}
+                        />
+                      ) : null}
+                      {isEditing ? (
+                        <span
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center"
+                          aria-hidden
+                        >
+                          {isSelected ? (
+                            <CheckCircle2
+                              className="h-7 w-7 fill-stone-800 text-white drop-shadow-md"
+                              strokeWidth={2}
+                            />
+                          ) : (
+                            <span className="h-6 w-6 rounded-full border-2 border-white bg-black/25 shadow-sm" />
+                          )}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">
+                      {title}
+                    </div>
+                  </>
+                )
+
+                if (isEditing) {
+                  return (
+                    <article
+                      key={item.id}
+                      className={cardClassName}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSelect(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSelect(item.id)
+                        }
+                      }}
+                    >
+                      {cardContent}
+                    </article>
+                  )
+                }
+
+                return (
+                  <Link
+                    key={item.id}
+                    to={`/detail/${item.id}`}
+                    state={{
+                      initialNailData: {
+                        id: item.id,
+                        imageUrl,
+                        title,
+                        color: '',
+                        mood: '',
+                      },
+                    }}
+                    className={cardClassName}
+                  >
+                    {cardContent}
+                  </Link>
+                )
+              })
+            )}
+            {isFetchingNextPage
+              ? [0, 1, 2, 3, 4].map((index) => (
+                  <article key={`my-nail-list-next-skel-${index}`} className="flex flex-col" aria-hidden>
                     <div className="aspect-[4/5] w-full animate-pulse overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl" />
                     <div className="mx-auto mt-2 h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
                   </article>
                 ))
-              ) : isError ? (
-                <p className="col-span-full py-12 text-center text-sm text-stone-500">
-                  {isEnglish ? 'Failed to load designs.' : '디자인을 불러오지 못했어요.'}
-                </p>
-              ) : nails.length === 0 ? (
-                <p className="col-span-full py-12 text-center text-sm text-stone-500">
-                  {isEnglish ? 'No designs yet.' : '아직 등록된 디자인이 없어요.'}
-                </p>
-              ) : (
-                nails.map((item) => {
-                  const title = nailDisplayTitle(item, isEnglish)
-                  const imageUrl = String(item.image_url ?? '').trim()
-                  const isSelected = selectedIds.includes(item.id)
-                  const cardClassName = `flex cursor-pointer flex-col ${isEditing && isSelected ? 'rounded-xl ring-2 ring-stone-800 ring-offset-2 md:rounded-2xl' : ''}`
-                  const cardContent = (
-                    <>
-                      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={buildNailImageSeoAlt(item, isEnglish)}
-                            className={`h-full w-full object-cover transition-transform ${isEditing ? '' : 'hover:scale-105'}`}
-                          />
-                        ) : null}
-                        {isEditing ? (
-                          <span
-                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center"
-                            aria-hidden
-                          >
-                            {isSelected ? (
-                              <CheckCircle2
-                                className="h-7 w-7 fill-stone-800 text-white drop-shadow-md"
-                                strokeWidth={2}
-                              />
-                            ) : (
-                              <span className="h-6 w-6 rounded-full border-2 border-white bg-black/25 shadow-sm" />
-                            )}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-2 w-full truncate text-center text-[13px] font-semibold text-stone-800">
-                        {title}
-                      </div>
-                    </>
-                  )
-
-                  if (isEditing) {
-                    return (
-                      <article
-                        key={item.id}
-                        className={cardClassName}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleSelect(item.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            handleSelect(item.id)
-                          }
-                        }}
-                      >
-                        {cardContent}
-                      </article>
-                    )
-                  }
-
-                  return (
-                    <Link
-                      key={item.id}
-                      to={`/detail/${item.id}`}
-                      state={{
-                        initialNailData: {
-                          id: item.id,
-                          imageUrl,
-                          title,
-                          color: '',
-                          mood: '',
-                        },
-                      }}
-                      className={cardClassName}
-                    >
-                      {cardContent}
-                    </Link>
-                  )
-                })
-              )}
-              {isFetchingNextPage
-                ? [0, 1, 2, 3, 4].map((index) => (
-                    <article key={`my-nail-list-next-skel-${index}`} className="flex flex-col" aria-hidden>
-                      <div className="aspect-[4/5] w-full animate-pulse overflow-hidden rounded-xl border border-black/5 bg-gray-100 shadow-sm md:rounded-2xl" />
-                      <div className="mx-auto mt-2 h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
-                    </article>
-                  ))
-                : null}
-            </div>
-            <div ref={observerRef} className="h-10 pb-4" aria-hidden />
-          </>
-        )}
+              : null}
+          </div>
+          <div ref={observerRef} className="h-10 pb-4" aria-hidden />
+        </>
+        {/* )} */}
       </main>
     </div>
   )
