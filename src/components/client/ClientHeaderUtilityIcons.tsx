@@ -1,7 +1,8 @@
-import { Search, Settings, User } from 'lucide-react'
+import { Heart, Search, Settings } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import LanguageToggle from '@/components/LanguageToggle'
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import { isAdminEmail } from '@/shared/constants/auth'
 
@@ -12,6 +13,8 @@ type ClientHeaderUtilityIconsProps = {
 export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeaderUtilityIconsProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
   const [isAdminUser, setIsAdminUser] = useState(false)
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeade
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
           onClick={() => navigate('/search')}
-          aria-label="검색"
+          aria-label={isEnglish ? 'Search' : '검색'}
         >
           <Search size={18} className="text-foreground" />
         </button>
@@ -55,7 +58,7 @@ export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeade
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground transition-opacity hover:opacity-90 sm:h-10 sm:w-10"
           onClick={() => navigate('/admin')}
-          aria-label="관리자 페이지"
+          aria-label={isEnglish ? 'Admin' : '관리자 페이지'}
         >
           <Settings size={18} className="text-foreground" strokeWidth={2} />
         </button>
@@ -64,9 +67,9 @@ export default function ClientHeaderUtilityIcons({ className = '' }: ClientHeade
         type="button"
         className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary sm:h-10 sm:w-10"
         onClick={() => navigate('/my')}
-        aria-label="마이페이지"
+        aria-label={isEnglish ? 'My Collection' : '내 컬렉션'}
       >
-        <User size={18} className="text-foreground" />
+        <Heart size={18} className="text-foreground" strokeWidth={2} />
       </button>
     </div>
   )

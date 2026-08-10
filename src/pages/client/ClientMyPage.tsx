@@ -14,7 +14,6 @@ import {
 } from '@/shared/lib/recentViewedStorage'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { useQuery } from '@tanstack/react-query'
-// import { Bell, Camera, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -79,15 +78,11 @@ export default function ClientMyPage() {
   const previewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
   // const folderPreviewGridClass = 'grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5'
 
-  const statButtonClass = (isActive: boolean) =>
-    `flex cursor-pointer flex-col items-center gap-0.5 px-3 py-2 transition-colors md:items-end md:px-4 ${
-      isActive ? 'rounded-xl bg-stone-100' : ''
-    }`
+  const pillTabActiveClass =
+    'flex-1 py-3.5 text-[14px] font-semibold text-stone-900 bg-white rounded-full shadow-md transition-all text-center tracking-wide'
+  const pillTabIdleClass =
+    'flex-1 py-3.5 text-[14px] font-medium text-stone-500 hover:text-stone-700 transition-all text-center tracking-wide'
 
-  const statNumberClass = (isActive: boolean) =>
-    `text-[24px] font-black tabular-nums leading-none ${
-      isActive ? 'text-orange-600' : 'text-stone-900'
-    }`
   const activeTabLabel = isEnglish ? tabLabels[activeTab].en : tabLabels[activeTab].ko
   // const defaultNickname = isEnglish ? 'Nailiever' : '네일리버'
 
@@ -160,7 +155,7 @@ export default function ClientMyPage() {
       <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between bg-white px-5 border-b border-gray-50">
         <div className="w-8" />
         <h1 className="text-lg font-bold text-gray-900 whitespace-nowrap">
-          {isEnglish ? 'My Vault' : '내 서랍장'}
+          {isEnglish ? 'My Collection' : '내 컬렉션'}
         </h1>
         <div className="w-8" />
         {/* 638: 회원 전용 알림 버튼 숨김
@@ -177,46 +172,25 @@ export default function ClientMyPage() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-5 pb-12 pt-6 md:px-8 lg:px-10">
-        {/* 638: 회원 전용 프로필 카드 숨김 — 스탯만 유지
-        <div className="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm md:flex md:items-center md:justify-between md:p-8">
-          <div className="flex items-center gap-5">
-            ... profile avatar / nickname ...
-          </div>
-        */}
-        <div className="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm md:p-8">
-          <div className="flex w-full justify-between md:justify-end md:gap-2">
-            <button
-              type="button"
-              className={statButtonClass(activeTab === 'recent')}
-              onClick={() => handleTabChange('recent')}
-            >
-              <span className={statNumberClass(activeTab === 'recent')}>{recentCount}</span>
-              <span className="text-[14px] font-semibold text-stone-700">
-                {isEnglish ? 'Recently Viewed' : '최근 본 디자인'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className={statButtonClass(activeTab === 'liked')}
-              onClick={() => handleTabChange('liked')}
-            >
-              <span className={statNumberClass(activeTab === 'liked')}>{likedCount}</span>
-              <span className="text-[14px] font-semibold text-stone-700">
-                {isEnglish ? 'Liked Nails' : '좋아요 한 네일'}
-              </span>
-            </button>
-
-            {/* 638: 내 컬렉션 보관함(Saved) 탭 숨김
-            <button
-              type="button"
-              className={statButtonClass(activeTab === 'saved')}
-              onClick={() => handleTabChange('saved')}
-            >
-              ...
-            </button>
-            */}
-          </div>
+        <div className="flex items-center p-1 mb-8 mx-auto max-w-sm bg-stone-100 rounded-full shadow-inner">
+          <button
+            type="button"
+            className={activeTab === 'recent' ? pillTabActiveClass : pillTabIdleClass}
+            onClick={() => handleTabChange('recent')}
+            aria-pressed={activeTab === 'recent'}
+          >
+            {isEnglish ? 'Recently Viewed' : '최근 본 디자인'}
+            <span className="ml-1 opacity-60 font-light tabular-nums">({recentCount})</span>
+          </button>
+          <button
+            type="button"
+            className={activeTab === 'liked' ? pillTabActiveClass : pillTabIdleClass}
+            onClick={() => handleTabChange('liked')}
+            aria-pressed={activeTab === 'liked'}
+          >
+            {isEnglish ? 'Liked Nails' : '좋아요 한 네일'}
+            <span className="ml-1 opacity-60 font-light tabular-nums">({likedCount})</span>
+          </button>
         </div>
 
         <section className="mb-12 md:mb-16">
@@ -227,7 +201,7 @@ export default function ClientMyPage() {
               className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
               onClick={() => navigate(`/my/list/${activeTab}`)}
             >
-              {isEnglish ? 'View All >' : '전체보기 >'}
+              {isEnglish ? 'See All >' : '전체보기 >'}
             </button>
           </div>
 
