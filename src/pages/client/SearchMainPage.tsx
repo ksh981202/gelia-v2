@@ -4,7 +4,7 @@ import { useLanguageContext } from '@/contexts/LanguageContext'
 import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { supabase } from '@/shared/api/supabaseClient'
 import { ALLOWED_NAIL_KEYWORDS } from '@/shared/constants/allowedNailKeywords'
-import { NAIL_KEYWORD_EN_DICTIONARY } from '@/shared/constants/nailKeywords'
+import { displayNailKeyword } from '@/shared/constants/nailKeywords'
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -67,10 +67,6 @@ export default function SearchMainPage() {
   const [suggestedStyles, setSuggestedStyles] = useState<string[]>([])
 
   const showResultHeader = !isEditing && q.length > 0
-  const displaySearchTerm = (term: string) => {
-    if (!term) return ''
-    return isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[term] || term) : term
-  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -209,7 +205,7 @@ export default function SearchMainPage() {
               {showResultHeader ? (
                 <div className="mt-8 flex items-baseline gap-3">
                   <h1 className="text-2xl font-extrabold tracking-tight text-stone-900">
-                    {isEnglish ? `"${displaySearchTerm(q)}"` : `'${q}'`}
+                    {isEnglish ? `"${displayNailKeyword(q, isEnglish)}"` : `'${q}'`}
                     <span className="ml-1 text-lg font-medium text-stone-500">
                       {isEnglish ? 'Search Results' : '검색 결과'}
                     </span>
@@ -244,7 +240,7 @@ export default function SearchMainPage() {
                     <ChevronLeft size={26} strokeWidth={2.5} />
                   </button>
                   <h1 className="truncate text-[24px] font-extrabold tracking-tight text-stone-900">
-                    {isEnglish ? `"${displaySearchTerm(q)}"` : `'${q}'`}{' '}
+                    {isEnglish ? `"${displayNailKeyword(q, isEnglish)}"` : `'${q}'`}{' '}
                     {isEnglish ? 'Results' : '검색 결과'}
                   </h1>
                   <span className="shrink-0 text-[16px] font-medium text-stone-500">
@@ -284,7 +280,7 @@ export default function SearchMainPage() {
             ) : results.length === 0 ? (
               <p className="col-span-full py-12 text-center text-sm text-gray-500">
                 {isEnglish
-                  ? `No designs found for "${displaySearchTerm(q)}".`
+                  ? `No designs found for "${displayNailKeyword(q, isEnglish)}".`
                   : `'${q}'에 맞는 디자인을 찾지 못했어요.`}
               </p>
             ) : (
@@ -421,7 +417,7 @@ export default function SearchMainPage() {
                     onClick={() => submitSearch(term)}
                     className="rounded-full bg-gray-100 px-3.5 py-1.5 text-[13px] font-medium text-gray-700"
                   >
-                    {displaySearchTerm(term)}
+                    {displayNailKeyword(term, isEnglish)}
                   </button>
                 ))}
               </div>
@@ -484,7 +480,7 @@ export default function SearchMainPage() {
                           {rank}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-gray-800">
-                          {displaySearchTerm(keyword)}
+                          {displayNailKeyword(keyword, isEnglish)}
                         </span>
                       </span>
                       <PopularTrendStatusIcon index={index} />
@@ -507,7 +503,7 @@ export default function SearchMainPage() {
                   onClick={() => submitSearch(keyword)}
                   className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[13px] text-gray-600 shadow-sm"
                 >
-                  #{isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[keyword] || keyword) : keyword}
+                  #{displayNailKeyword(keyword, isEnglish)}
                 </button>
               ))}
             </div>

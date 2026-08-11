@@ -6,7 +6,7 @@ import {
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
 import { usePopularSearchTrends } from "@/entities/nail-design/api/usePopularSearchTrends";
-import { NAIL_KEYWORD_EN_DICTIONARY } from "@/shared/constants/nailKeywords";
+import { displayNailKeyword } from "@/shared/constants/nailKeywords";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
@@ -177,7 +177,7 @@ export default function SearchTrendListPage() {
               const keyword = normalizeKeyword(trend.keyword);
               if (!keyword) return null;
               const isActive = activeKeyword === keyword;
-              const displayKeyword = isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[keyword] || keyword) : keyword;
+              const displayKeyword = displayNailKeyword(keyword, isEnglish);
               return (
                 <button
                   ref={isActive ? activeTabButtonRef : undefined}
@@ -200,7 +200,7 @@ export default function SearchTrendListPage() {
 
         <GalleryListTypographyHeader
           breadcrumb={isEnglish ? "Popular Search Trends" : "인기 검색어 트렌드"}
-          mainTitle={isEnglish ? (NAIL_KEYWORD_EN_DICTIONARY[activeKeyword] || activeKeyword) : activeKeyword}
+          mainTitle={displayNailKeyword(activeKeyword, isEnglish)}
           totalCount={totalCount}
           isEnglish={isEnglish}
           className="mb-0 md:mb-0 px-4 pb-3 pt-2"

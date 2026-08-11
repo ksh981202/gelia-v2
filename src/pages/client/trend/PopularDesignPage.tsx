@@ -9,6 +9,7 @@ import { NailImage } from "@/shared/ui/NailImage";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { displayNailKeyword } from "@/shared/constants/nailKeywords";
 import { ChevronLeft, Search, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 // 공통 썸네일 클래스
@@ -366,7 +367,9 @@ export default function PopularDesignPage() {
                     <span className={`w-8 text-center text-lg font-bold ${rank <= 3 ? 'text-[#FF7E67]' : 'text-gray-400'}`}>
                       {rank}
                     </span>
-                    <span className="flex-1 ml-3 truncate text-[15px] font-medium text-gray-800">{keyword}</span>
+                    <span className="flex-1 ml-3 truncate text-[15px] font-medium text-gray-800">
+                      {displayNailKeyword(keyword, isEnglish)}
+                    </span>
                     <PopularTrendStatusIcon index={index} />
                   </button>
                 );

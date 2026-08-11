@@ -166,3 +166,17 @@ export const NAIL_KEYWORD_EN_DICTIONARY: Record<string, string> = {
   졸업: 'Graduation',
   입학: 'School Entrance',
 }
+
+/** EN 모드 표시용 — 검색 URL/쿼리에는 원문 키워드를 유지하고 UI 라벨만 변환 */
+export function displayNailKeyword(term: string, isEnglish: boolean): string {
+  const trimmed = String(term ?? '').trim()
+  if (!trimmed || !isEnglish) return trimmed
+
+  const exact = NAIL_KEYWORD_EN_DICTIONARY[trimmed]
+  if (exact) return exact
+
+  return trimmed
+    .split(/\s+/)
+    .map((token) => NAIL_KEYWORD_EN_DICTIONARY[token] || token)
+    .join(' ')
+}
