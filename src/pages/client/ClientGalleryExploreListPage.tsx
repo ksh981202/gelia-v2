@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { THEME_TAB_LABELS, type ThemeTabLabel } from './themeTabs'
 
-const SORT_VALUES = ['인기순', '최신순', '저장 많은 순'] as const
+const SORT_VALUES = ['인기순', '최신순'] as const
 type SortValue = (typeof SORT_VALUES)[number]
 
 function isSortValue(value: string): value is SortValue {
@@ -109,8 +109,7 @@ export default function ClientGalleryExploreListPage() {
 
   const sortLabel = (value: SortValue) => {
     if (value === '인기순') return isEnglish ? 'Popular' : '인기순'
-    if (value === '최신순') return isEnglish ? 'Newest' : '최신순'
-    return isEnglish ? 'Most Saved' : '저장 많은 순'
+    return isEnglish ? 'Newest' : '최신순'
   }
 
   useEffect(() => {

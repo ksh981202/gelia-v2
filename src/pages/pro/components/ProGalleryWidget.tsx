@@ -177,8 +177,8 @@ export default function ProGalleryWidget({
   }, [isRankingActive, themeFilter, colorFilter, moodFilter, shapeFilter, pointFilter, debouncedSearchKeyword]);
 
   const gallerySort = isRankingActive
-    ? mapRankingFilterToGallerySort(rankingFilter) ?? "최신순"
-    : "최신순";
+    ? mapRankingFilterToGallerySort(rankingFilter) ?? "인기순"
+    : "인기순";
 
   const {
     galleryItems,

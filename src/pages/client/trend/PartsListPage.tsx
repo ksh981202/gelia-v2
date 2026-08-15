@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router-dom";
 
 const PARTS_TAB_LABELS = ['전체', '💎 스톤/큐빅', '🎀 리본', '⚪ 진주', '⛓️ 메탈/체인', '🦋 나비'] as const;
-const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
+const SORT_OPTIONS = ['인기순', '최신순'] as const;
 const PARTS_LIST_SCROLL_Y_KEY = 'gelia_parts_list_scroll_y';
 const PARTS_LIST_SCROLL_ITEMS_KEY = 'gelia_parts_list_scroll_items';
 type SortValue = (typeof SORT_OPTIONS)[number];
@@ -32,7 +32,6 @@ const PARTS_TAB_LABEL_EN: Record<(typeof PARTS_TAB_LABELS)[number], string> = {
 const SORT_LABEL_EN: Record<SortValue, string> = {
   인기순: 'Popular',
   최신순: 'Newest',
-  '저장 많은 순': 'Most Saved',
 };
 
 function extractPureThemeKeyword(raw: string): string {

@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
 
 const PATTERN_TAB_LABELS = ['전체', '🌙 프렌치', '🖌️ 마블', '🏁 체크', '🎨 그라데이션', '🧶 트위드'] as const;
-const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
+const SORT_OPTIONS = ['인기순', '최신순'] as const;
 const PATTERN_LIST_SCROLL_Y_KEY = 'gelia_pattern_list_scroll_y';
 const PATTERN_LIST_SCROLL_ITEMS_KEY = 'gelia_pattern_list_scroll_items';
 type SortValue = (typeof SORT_OPTIONS)[number];
@@ -41,7 +41,6 @@ const PATTERN_KEYWORD_MAPPING: Record<string, string> = {
 const SORT_LABEL_EN: Record<SortValue, string> = {
   인기순: 'Popular',
   최신순: 'Newest',
-  '저장 많은 순': 'Most Saved',
 };
 
 function extractPureThemeKeyword(raw: string): string {

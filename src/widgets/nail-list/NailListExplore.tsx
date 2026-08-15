@@ -20,7 +20,7 @@ export type NailListExploreProps = {
   tabs: readonly string[]
   tabsSectionLabel: string
   queryScope: NailListQueryScope
-  /** 랭킹: 첫 줄 버튼이 `sort`(인기순/저장순)만 바꿈 */
+  /** 랭킹: 첫 줄 버튼이 `sort`(인기순)만 바꿈 */
   rankingSortTabs?: boolean
   /** 순위 배지(1, 2, 3…) */
   showRankBadge?: boolean
@@ -29,7 +29,6 @@ export type NailListExploreProps = {
 const SORT_MENU_OPTIONS = [
   { value: '인기순', label: '인기순' },
   { value: '최신순', label: '최신순' },
-  { value: '저장순', label: '저장 많은 순' },
 ] as const
 
 const DUMMY_ITEMS = Array.from({ length: 12 }, (_, index) => ({

@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const SYRUP_BEST_TABS = ['전체', '🤍 누드/여리', '🍑 과즙/생기', '🧊 얼음/물방울', '✨ 시럽그라데이션', '💎 포인트/파츠'] as const;
-const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
+const SORT_OPTIONS = ['인기순', '최신순'] as const;
 type SortValue = (typeof SORT_OPTIONS)[number];
 
 const SYRUP_BEST_TAB_LABEL_EN: Record<(typeof SYRUP_BEST_TABS)[number], string> = {
@@ -29,7 +29,6 @@ const SYRUP_BEST_TAB_LABEL_EN: Record<(typeof SYRUP_BEST_TABS)[number], string> 
 const SORT_LABEL_EN: Record<SortValue, string> = {
   인기순: 'Popular',
   최신순: 'Newest',
-  '저장 많은 순': 'Most Saved',
 };
 
 const SYRUP_KEYWORD_MAPPING: Record<string, string> = {

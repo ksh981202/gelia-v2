@@ -15,6 +15,12 @@ import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
 import {
+  buildPhotoCombinationKey,
+  fetchUsedMagazinePhotoData,
+  fetchUsedTitles,
+  normalizeGceTitleKey,
+} from '@/features/gce/gceIdeaFilters';
+import {
   EMPTY_MAGAZINE_GCE_INSIGHT,
   fetchMagazineGceInsight,
   normalizeMagazineGceInsight,
@@ -380,18 +386,49 @@ const pickDominantHookKeyword = (
   return themeKeys[0] ?? '네일';
 };
 
-const pickMagazineIdeaTitle = (category: string, keyword: string) => {
-  const pool =
-    THEME_SPECIFIC_TITLE_TEMPLATES[category as FactoryCategory] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
-  const template = pool[Math.floor(Math.random() * pool.length)] ?? pool[0] ?? '{theme} 네일 룩북';
+const buildMagazineIdeaTitleFromTemplate = (category: string, keyword: string, template: string) => {
   const safeKeyword = String(keyword ?? '').trim() || '네일';
-  // '계절/톤', '키치/하이틴' 등 → 제목용으로 '/' 를 공백으로 정제
   const safeTheme =
     String(category ?? '')
       .trim()
       .replace(/\//g, ' ')
       .replace(/\s+/g, ' ') || '네일';
   return template.replace(/\{keyword\}/g, safeKeyword).replace(/\{theme\}/g, safeTheme);
+};
+
+/** Strict Title Filter — DB·배치 내 중복 제목 원천 차단 */
+const pickUniqueMagazineIdeaTitle = (
+  category: string,
+  keyword: string,
+  images: GceIdeaImage[],
+  reservedTitles: Set<string>,
+): string | null => {
+  const pool =
+    THEME_SPECIFIC_TITLE_TEMPLATES[category as FactoryCategory] ?? IDEA_TITLE_FALLBACK_TEMPLATES;
+  const templates = shuffleArray([...pool, ...IDEA_TITLE_FALLBACK_TEMPLATES]);
+
+  const keywordCandidates = shuffleArray([
+    keyword,
+    ...images.flatMap((img) =>
+      String(img.tags ?? '')
+        .split(/[,，/|·•]/)
+        .map((t) => t.trim())
+        .filter((t) => t.length >= 2 && !HOOK_KEYWORD_STOP.has(t.toLowerCase())),
+    ),
+    ...(FACTORY_CATEGORY_KEYWORDS[category as FactoryCategory] ?? []),
+  ]);
+
+  for (const kw of keywordCandidates) {
+    for (const template of templates) {
+      const title = buildMagazineIdeaTitleFromTemplate(category, kw, template);
+      const key = normalizeGceTitleKey(title);
+      if (!key || reservedTitles.has(key)) continue;
+      reservedTitles.add(key);
+      return title;
+    }
+  }
+
+  return null;
 };
 
 /** DB source_filename 규칙: GL- + 숫자 7자리 (예: GL-0005520) */
@@ -436,11 +473,19 @@ const joinIdeaTagParts = (...parts: Array<string | string[] | null | undefined>)
 
 type GceIdeaPoolItem = {
   glId: string;
+  nailUuid: string;
   concept: string;
   tags: string;
   image_url: string;
   matchText: string;
 };
+
+type BuildIdeasFromNailDesignsOptions = {
+  usedTitles: Set<string>;
+  usedPhotoCombinations: Set<string>;
+};
+
+const MAX_PHOTO_COMBO_RETRIES = 24;
 
 const nailMatchesCategoryKeywords = (item: GceIdeaPoolItem, keywords: string[]) => {
   const haystack = item.matchText;
@@ -461,7 +506,11 @@ const buildIdeasFromNailDesigns = (
     mood?: string | null;
     nail_length?: string | null;
   }>,
+  options: BuildIdeasFromNailDesignsOptions,
 ): GceGeneratedIdea[] => {
+  const { usedTitles, usedPhotoCombinations } = options;
+  const reservedTitles = new Set(usedTitles);
+  const sessionPhotoCombinations = new Set(usedPhotoCombinations);
   const usable = rows
     .map((row) => {
       const glId = formatGlAssetId(row.id, row.source_filename);
@@ -487,6 +536,7 @@ const buildIdeasFromNailDesigns = (
         .toLowerCase();
       return {
         glId,
+        nailUuid: String(row.id ?? '').trim().toLowerCase(),
         concept,
         tags,
         image_url: String(row.image_url ?? '').trim(),
@@ -537,7 +587,20 @@ const buildIdeasFromNailDesigns = (
 
     if (filteredNails.length < 5) break;
 
-    const chunk = shuffleArray(filteredNails).slice(0, 5);
+    // 5장 동일 조합 Hard block — 과거 발행·동일 배치 모두 거부
+    let chunk: GceIdeaPoolItem[] = [];
+    for (let attempt = 0; attempt < MAX_PHOTO_COMBO_RETRIES; attempt += 1) {
+      const candidate = shuffleArray(filteredNails).slice(0, 5);
+      const uuidKey = buildPhotoCombinationKey(candidate.map((item) => item.nailUuid));
+      const glKey = `gl:${[...candidate.map((item) => item.glId)].sort().join('|')}`;
+      if (sessionPhotoCombinations.has(uuidKey) || sessionPhotoCombinations.has(glKey)) continue;
+      chunk = candidate;
+      sessionPhotoCombinations.add(uuidKey);
+      sessionPhotoCombinations.add(glKey);
+      break;
+    }
+    if (chunk.length < 5) continue;
+
     for (const item of chunk) usedGlIds.add(item.glId);
 
     const images: GceIdeaImage[] = chunk.map((item) => ({
@@ -548,10 +611,13 @@ const buildIdeasFromNailDesigns = (
       image_url: item.image_url,
     }));
     const keyword = pickDominantHookKeyword(images, category);
+    const title = pickUniqueMagazineIdeaTitle(category, keyword, images, reservedTitles);
+    if (!title) continue;
+
     ideas.push({
-      id: i + 1,
+      id: ideas.length + 1,
       category,
-      title: pickMagazineIdeaTitle(category, keyword),
+      title,
       images,
     });
   }
@@ -2041,13 +2107,25 @@ export default function AdminGceDashboardPage() {
         mergedById.set(id, row);
       }
       const mergedPool = Array.from(mergedById.values());
-      const shuffledPool = shuffleArray(mergedPool);
+
+      const [usedTitles, photoData] = await Promise.all([
+        fetchUsedTitles(),
+        fetchUsedMagazinePhotoData(),
+      ]);
+
+      // Soft Photo Filter — 미사용 사진 우선, 부족 시 기발행 사진도 자연스럽게 혼합
+      const unusedRows = mergedPool.filter((row) => !photoData.usedNailIds.has(String(row.id ?? '').trim().toLowerCase()));
+      const usedRows = mergedPool.filter((row) => photoData.usedNailIds.has(String(row.id ?? '').trim().toLowerCase()));
+      const softSortedPool = [...shuffleArray(unusedRows), ...shuffleArray(usedRows)];
 
       console.log(
-        `[handleGenerateIdeas] mix A=${latestRes.data?.length ?? 0} + B@${pastOffset}=${pastRes.data?.length ?? 0} → unique ${shuffledPool.length} / total ${totalCount}`,
+        `[handleGenerateIdeas] mix A=${latestRes.data?.length ?? 0} + B@${pastOffset}=${pastRes.data?.length ?? 0} → unique ${softSortedPool.length} / total ${totalCount} | unused=${unusedRows.length} used=${usedRows.length} | reservedTitles=${usedTitles.size}`,
       );
 
-      const ideas = buildIdeasFromNailDesigns(shuffledPool);
+      const ideas = buildIdeasFromNailDesigns(softSortedPool, {
+        usedTitles,
+        usedPhotoCombinations: photoData.usedPhotoCombinations,
+      });
       if (ideas.length === 0) {
         toast.error('기획안을 만들 수 있는 네일 데이터가 부족합니다. (최소 5컷 필요)');
         setGeneratedIdeas([]);

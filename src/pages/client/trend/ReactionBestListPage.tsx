@@ -10,17 +10,17 @@ import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListT
 import { GalleryListMobileHeaderTitle } from '@/widgets/gallery-list/GalleryListMobileHeaderTitle';
 
 const TAB_ITEMS = [
-  { id: "save", name: "📌 압도적 저장", period: "압도적 저장" },
+  // { id: "save", name: "📌 압도적 저장", period: "압도적 저장" },
   { id: "like", name: "❤️ 독보적 하트", period: "독보적 하트" },
 ] as const;
 const REACTION_SCROLL_Y_KEY = "gelia_reaction_best_scroll_y";
 const REACTION_BEST_COLUMNS =
   "id,created_at,title,title_en,image_url,category,tags,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements,popularity,views,saves,likes";
 
-type ReactionBestSortColumn = "saves" | "likes";
+type ReactionBestSortColumn = "likes";
 
 const TAB_LABEL_EN: Record<(typeof TAB_ITEMS)[number]["id"], string> = {
-  save: "📌 Most Saved",
+  // save: "📌 Most Saved",
   like: "❤️ Most Liked",
 };
 
@@ -77,7 +77,7 @@ export default function ReactionBestListPage() {
 
   const activeTab = useMemo(() => resolveActiveTab(searchParams.get("tab")), [searchParams]);
   const maxLimit = 30;
-  const sortBy: ReactionBestSortColumn = activeTab.id === "like" ? "likes" : "saves";
+  const sortBy: ReactionBestSortColumn = "likes";
   const { data = [], isLoading, isError } = useReactionBestQuery(sortBy, maxLimit);
   const top1 = data[0];
   const remainingList = data.slice(1);

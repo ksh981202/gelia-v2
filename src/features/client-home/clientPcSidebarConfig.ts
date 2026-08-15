@@ -157,7 +157,6 @@ export const PC_SIDEBAR_DEFAULT_OPEN_IDS: readonly PcSidebarCategoryId[] = ["ran
 export const PC_GALLERY_SORT_TABS = [
   { id: "인기순", label: "인기순" },
   { id: "최신순", label: "최신순" },
-  { id: "추천순", label: "추천순" },
 ] as const;
 
 export type PcGallerySortTab = (typeof PC_GALLERY_SORT_TABS)[number]["id"];
@@ -172,13 +171,12 @@ export const PC_QUICK_TREND_CHIP_FALLBACK = [
 
 export function mapPcGallerySortToQuery(sort: PcGallerySortTab): string {
   if (sort === "최신순") return "최신순";
-  if (sort === "추천순") return "저장 많은 순";
   return "인기순";
 }
 
 export function mapRankingFilterToGallerySort(rankingFilter: string): string | null {
   if (rankingFilter === "ranking_weekly") return "인기순";
-  if (rankingFilter === "ranking_saves") return "저장 많은 순";
+  if (rankingFilter === "ranking_saves") return "인기순";
   return null;
 }
 

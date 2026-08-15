@@ -14,8 +14,6 @@ function orderedNailDesignsQuery(sort: string) {
   let q = supabase.from('nail_designs').select(NAIL_DESIGN_COLUMNS)
   if (sort === '최신순') {
     q = q.order('created_at', { ascending: false })
-  } else if (sort === '저장순') {
-    q = q.order('saves', { ascending: false })
   } else {
     q = q.order('popularity', { ascending: false })
   }

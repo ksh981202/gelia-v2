@@ -19,7 +19,6 @@ import { SITUATION_TAB_LABELS, type SituationTabLabel } from './situationTabs'
 const SORT_MENU_OPTIONS = [
   { value: '인기순', label: '인기순' },
   { value: '최신순', label: '최신순' },
-  { value: '저장 많은 순', label: '저장 많은 순' },
 ] as const
 
 type SortValue = (typeof SORT_MENU_OPTIONS)[number]['value']
@@ -99,7 +98,6 @@ function displaySituationTabLabel(label: SituationTabLabel, isEnglish: boolean):
 function displaySortLabel(label: SortValue, isEnglish: boolean): string {
   if (!isEnglish) return label
   if (label === '최신순') return 'Newest'
-  if (label === '저장 많은 순') return 'Most Saved'
   return 'Popular'
 }
 

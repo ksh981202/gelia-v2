@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 
 export const GALLERY_PAGE_SIZE = 20
 export const DEFAULT_GALLERY_TAB = '전체'
-export const DEFAULT_GALLERY_SORT = '최신순'
+export const DEFAULT_GALLERY_SORT = '인기순'
 
 export const GALLERY_COLUMNS =
   'id,created_at,title,title_en,image_url,category,tags,tags_en,popularity,saves,views,situations,styles,styles_en,nail_length,length_en,color,color_en,mood,design_elements'
@@ -347,12 +347,6 @@ export function applyGallerySort<
   if (sort === '최신순') {
     return query.order('created_at', { ascending: false }).order('id', { ascending: false })
   }
-  if (sort === '저장 많은 순') {
-    return query.gt('saves', 0).order('saves', { ascending: false }).order('id', { ascending: false })
-  }
-  if (sort === '조회 많은 순') {
-    return query.gt('popularity', 0).order('popularity', { ascending: false }).order('id', { ascending: false })
-  }
   let next = query
   if (options?.enforcePopularityThreshold) {
     next = next.gt('popularity', 0)
@@ -388,7 +382,7 @@ export function normalizeGallerySort(raw: string | null): string {
   if (raw === 'realtime' || raw === 'weekly' || raw === 'monthly' || raw === 'alltime') {
     return raw
   }
-  if (raw === '최신순' || raw === '저장 많은 순' || raw === '조회 많은 순' || raw === '인기순') return raw
+  if (raw === '최신순') return '최신순'
   return DEFAULT_GALLERY_SORT
 }
 

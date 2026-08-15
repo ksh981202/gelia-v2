@@ -21,7 +21,7 @@ const POPULAR_MOOD_TABS = [
   { label: '🌿 단아/청순' },
   { label: '😎 힙/스트릿' },
 ] as const;
-const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
+const SORT_OPTIONS = ['인기순', '최신순'] as const;
 const POPULAR_MOOD_LIST_SCROLL_Y_KEY = 'gelia_popular_mood_list_scroll_y';
 const POPULAR_MOOD_LIST_SCROLL_ITEMS_KEY = 'gelia_popular_mood_list_scroll_items';
 
@@ -47,7 +47,6 @@ const POPULAR_MOOD_TAB_LABEL_EN: Record<PopularMoodTabLabel, string> = {
 const SORT_LABEL_EN: Record<SortValue, string> = {
   인기순: 'Popular',
   최신순: 'Newest',
-  '저장 많은 순': 'Most Saved',
 };
 
 function extractPureThemeKeyword(raw: string): string {

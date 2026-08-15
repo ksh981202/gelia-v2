@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useNavigationType, useSearchParams } from 'react-router-dom';
 
 const TEXTURE_LIST_TABS = ['전체', '💧 시럽', '☁️ 무광', '✨ 글리터', '🧲 자석', '🪞 미러파우더'] as const;
-const SORT_OPTIONS = ['인기순', '최신순', '저장 많은 순'] as const;
+const SORT_OPTIONS = ['인기순', '최신순'] as const;
 const TEXTURE_LIST_SCROLL_Y_KEY = 'gelia_texture_list_scroll_y';
 const TEXTURE_LIST_SCROLL_ITEMS_KEY = 'gelia_texture_list_scroll_items';
 type SortValue = (typeof SORT_OPTIONS)[number];
@@ -31,7 +31,6 @@ const TEXTURE_TAB_LABEL_EN: Record<(typeof TEXTURE_LIST_TABS)[number], string> =
 const SORT_LABEL_EN: Record<SortValue, string> = {
   인기순: 'Popular',
   최신순: 'Newest',
-  '저장 많은 순': 'Most Saved',
 };
 
 function extractPureTextureKeyword(raw: string): string {
