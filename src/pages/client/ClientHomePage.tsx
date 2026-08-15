@@ -1,5 +1,5 @@
 import { useClientHomeFeed } from "@/features/client-home/useClientHomeFeed";
-import { mapPcGallerySortToQuery, mapRankingFilterToGallerySort, findActivePcSidebarFilter, resolveSidebarLabel } from "@/features/client-home/clientPcSidebarConfig";
+import { mapRankingFilterToGallerySort, findActivePcSidebarFilter, resolveSidebarLabel } from "@/features/client-home/clientPcSidebarConfig";
 import { GalleryListTypographyHeader } from "@/widgets/gallery-list/GalleryListTypographyHeader";
 import {
   useClientPcFilterStore,
@@ -266,7 +266,6 @@ export default function ClientHomePage() {
   const { data: feed, isLoading, isError: isFeedError, refetch: refetchFeed } = useClientHomeFeed();
   const { language } = useLanguageContext();
   const isEnglish = language === "en";
-  const gallerySort = useClientPcFilterStore((state) => state.gallerySort);
   const searchKeyword = useClientPcFilterStore((state) => state.searchKeyword);
   const themeFilter = useClientPcFilterStore((state) => state.themeFilter);
   const colorFilter = useClientPcFilterStore((state) => state.colorFilter);
@@ -288,8 +287,8 @@ export default function ClientHomePage() {
     quickChipKeyword !== null;
 
   const pcGallerySortQuery = useMemo(
-    () => mapRankingFilterToGallerySort(rankingFilter) ?? mapPcGallerySortToQuery(gallerySort),
-    [rankingFilter, gallerySort],
+    () => mapRankingFilterToGallerySort(rankingFilter) ?? '최신순',
+    [rankingFilter],
   );
 
   const isPcRankingMode = rankingFilter !== "전체";

@@ -112,7 +112,7 @@ export const useClientPcFilterStore = create<ClientPcFilterState>((set) => ({
 
   rankingFilter: "전체",
 
-  gallerySort: "인기순",
+  gallerySort: "최신순",
 
   searchKeyword: "",
 
@@ -152,7 +152,7 @@ export const useClientPcFilterStore = create<ClientPcFilterState>((set) => ({
 
       rankingFilter: "전체",
 
-      gallerySort: "인기순",
+      gallerySort: "최신순",
 
       searchKeyword: "",
 
