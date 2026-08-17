@@ -10,6 +10,7 @@ import {
   displayItemTitle,
 } from '@/entities/nail-design/lib/nailDisplayText'
 import { useLanguageContext } from '@/contexts/LanguageContext'
+import { SeoHead } from '@/shared/ui/SeoHead'
 import { ChevronDown, ChevronLeft, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -135,6 +136,15 @@ export default function ClientGalleryPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-white text-slate-900">
+      <SeoHead
+        title={isEnglish ? 'Nail Gallery | GELIA' : '네일 갤러리 | GELIA'}
+        description={
+          isEnglish
+            ? 'Browse curated nail designs on GELIA. Filter by style, texture, and trend.'
+            : '젤리아 네일 갤러리에서 스타일·텍스처·트렌드별 네일 디자인을 둘러보세요.'
+        }
+        canonical="/gallery"
+      />
       <div className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white shadow-sm">
         <header className="relative flex h-14 w-full items-center justify-between bg-white px-5">
           <button

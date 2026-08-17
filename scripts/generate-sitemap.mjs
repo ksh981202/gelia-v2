@@ -14,17 +14,17 @@ const SITE_URL = (process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 const PAGE_SIZE = 1000
-const MAGAZINE_POST_TYPES = ['magazine', 'magazine_editor', 'magazine_brand', 'magazine_shopping']
+const MAGAZINE_POST_TYPES = ['magazine', 'magazine_editor', 'Magazine', 'magazine_curation']
+const MAGAZINE_LOCALE_PREFIXES = ['', '/en', '/jp', '/vn', '/th']
 
 const staticRoutes = [
   '/',
   '/category',
   '/recommend',
   '/gallery',
-  '/ranking',
   '/magazine',
+  '/en/magazine',
   '/search',
-  '/my',
   '/theme',
   '/theme-list',
   '/situation-list',
@@ -142,7 +142,7 @@ async function fetchAllMagazinePosts() {
     const to = from + PAGE_SIZE - 1
     const { data, error } = await supabase
       .from('board_posts')
-      .select('id,created_at')
+      .select('id, slug, created_at')
       .in('post_type', MAGAZINE_POST_TYPES)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -156,9 +156,16 @@ async function fetchAllMagazinePosts() {
   return rows
     .map((row) => ({
       id: String(row.id ?? '').trim(),
+      slug: String(row.slug ?? '').trim(),
       created_at: row.created_at,
     }))
-    .filter((row) => row.id)
+    .filter((row) => row.slug || row.id)
+}
+
+function magazinePathKey(post) {
+  const slug = String(post?.slug ?? '').trim()
+  const id = String(post?.id ?? '').trim()
+  return encodeURIComponent(slug || id)
 }
 
 function generateSitemapXml(nails, magazines) {
@@ -167,8 +174,8 @@ function generateSitemapXml(nails, magazines) {
     buildUrlEntry({
       loc: `${SITE_URL}${route === '/' ? '' : route}`,
       lastmod: today,
-      changefreq: route === '/' || route === '/gallery' || route === '/ranking' ? 'daily' : 'weekly',
-      priority: route === '/' ? '1.0' : route === '/gallery' || route === '/ranking' ? '0.9' : '0.7',
+      changefreq: route === '/' || route === '/gallery' || route === '/trend' ? 'daily' : 'weekly',
+      priority: route === '/' ? '1.0' : route === '/gallery' || route === '/trend' ? '0.9' : '0.7',
     }),
   )
 
@@ -181,14 +188,18 @@ function generateSitemapXml(nails, magazines) {
     }),
   )
 
-  const magazineEntries = magazines.map((post) =>
-    buildUrlEntry({
-      loc: `${SITE_URL}/magazine/${encodeURIComponent(post.id)}`,
-      lastmod: normalizeLastmod(post.created_at),
-      changefreq: 'monthly',
-      priority: '0.6',
-    }),
-  )
+  const magazineEntries = magazines.flatMap((post) => {
+    const key = magazinePathKey(post)
+    if (!key) return []
+    return MAGAZINE_LOCALE_PREFIXES.map((prefix) =>
+      buildUrlEntry({
+        loc: `${SITE_URL}${prefix}/magazine/${key}`,
+        lastmod: normalizeLastmod(post.created_at),
+        changefreq: 'monthly',
+        priority: prefix === '' ? '0.6' : '0.5',
+      }),
+    )
+  })
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',

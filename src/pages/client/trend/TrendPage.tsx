@@ -2,6 +2,7 @@ import { useRecommendHubQuery } from '@/entities/nail-design/api/useRecommendHub
 import { useLanguageContext } from '@/contexts/LanguageContext';
 import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText';
 import type { NailDesignRow } from '@/shared/types/database.types';
+import { SeoHead } from '@/shared/ui/SeoHead';
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
@@ -142,6 +143,15 @@ export default function TrendPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-gray-50 text-gray-900">
+      <SeoHead
+        title={isEnglish ? 'Nail Trends | GELIA' : '네일 트렌드 | GELIA'}
+        description={
+          isEnglish
+            ? 'Explore texture, parts, pattern, and mood nail trends curated by GELIA.'
+            : '젤리아에서 텍스처·파츠·패턴·무드별 네일 트렌드를 한눈에 살펴보세요.'
+        }
+        canonical="/trend"
+      />
       {/* 상단 헤더 */}
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between border-b border-[#F2E8DA]/40 bg-gray-50 px-5">
         <button

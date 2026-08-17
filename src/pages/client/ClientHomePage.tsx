@@ -18,6 +18,7 @@ import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText
 import { ADMIN_EMAILS } from "@/shared/constants/auth";
 import { getOptimizedNailImageUrl } from "@/shared/lib/nailImageUrl";
 import { NailImage } from "@/shared/ui/NailImage";
+import { SeoHead } from "@/shared/ui/SeoHead";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
@@ -403,6 +404,15 @@ export default function ClientHomePage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fdfaf7] pb-4 md:overflow-x-visible md:bg-white md:pb-0">
+      <SeoHead
+        title={isEnglish ? "GELIA - Find nails that fit your hands" : "젤리아 (GELIA) - 내 손에 찰떡인 네일 찾기"}
+        description={
+          isEnglish
+            ? "Discover your next nail design on GELIA. Curated nail looks, trends, and styling guides."
+            : "젤리아에서 나만의 인생 네일을 찾아보세요. 트렌디한 네일 큐레이션 서비스"
+        }
+        canonical="/"
+      />
       {isFeedError ? (
         <div className="mx-5 mt-4 rounded-2xl border border-rose-100 bg-rose-50/80 px-4 py-4 text-center md:mx-auto md:max-w-3xl">
           <p className="text-[14px] font-medium text-stone-700">

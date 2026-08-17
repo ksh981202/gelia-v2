@@ -4,6 +4,7 @@ import { useLanguageContext } from '@/contexts/LanguageContext'
 import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import type { NailDesignRow } from '@/shared/types/database.types'
 import { CurationFallback } from '@/shared/ui/CurationFallback'
+import { SeoHead } from '@/shared/ui/SeoHead'
 import { ChevronLeft, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams, type To } from 'react-router-dom'
@@ -274,6 +275,15 @@ export default function ClientColorCurationPage() {
 
   return (
     <div className="relative w-full bg-[#FDFBF7]">
+      <SeoHead
+        title={isEnglish ? 'Color Nails | GELIA' : '컬러 네일 | GELIA'}
+        description={
+          isEnglish
+            ? 'Find color nail designs on GELIA, from pink and nude to glitter and black.'
+            : '핑크·누드·글리터까지, 젤리아에서 컬러별 네일 디자인을 모아보세요.'
+        }
+        canonical="/color-curation"
+      />
       <header className="sticky top-0 z-50 flex h-14 w-full shrink-0 items-center justify-between bg-white/95 px-5 backdrop-blur-md">
         <button
           type="button"

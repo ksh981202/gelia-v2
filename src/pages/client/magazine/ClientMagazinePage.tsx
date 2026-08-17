@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import ClientGlobalHeader from '@/widgets/layout/ClientGlobalHeader'
+import { SeoHead } from '@/shared/ui/SeoHead'
 import BrandPickTab from './components/BrandPickTab'
 import EditorPickTab from './components/EditorPickTab'
 import ShoppingTab from './components/ShoppingTab'
@@ -36,6 +37,15 @@ export default function ClientMagazinePage() {
 
   return (
     <>
+    <SeoHead
+      title="GELIA Magazine"
+      description={
+        isEnglish
+          ? 'Read GELIA Magazine for nail trends, editor picks, and styling stories.'
+          : '젤리아 매거진에서 네일 트렌드, 에디터 픽, 스타일링 이야기를 만나보세요.'
+      }
+      canonical="/magazine"
+    />
     <ClientGlobalHeader showBackButton={true} />
 
     <div className="mx-auto min-h-screen w-full max-w-6xl bg-background px-5 py-8 md:px-8">

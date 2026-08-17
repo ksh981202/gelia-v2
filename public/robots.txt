@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /pro
+Disallow: /my
+Disallow: /login
 
 Sitemap: https://gelia.app/sitemap.xml
