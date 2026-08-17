@@ -1,7 +1,7 @@
 import {
   // Bookmark, // 611: 저장수 메타 숨김 — 복구 시 주석 해제
   Brush,
-  // ChevronDown, // 624: TS6133 — 레시피 UI 주석 후 미사용
+  ChevronDown,
   ChevronLeft,
   Circle,
   Droplets,
@@ -330,13 +330,10 @@ function expandTagTokensFromChips(chips: string[]): string[] {
   });
 }
 
-// 624: TS6133 — 시술 가이드 UI 숨김 후 미사용 (복구 시 주석 해제)
-/*
 type ProcedureSection = {
   title: string;
   content: string;
 };
-*/
 
 function safeTrimText(value: unknown): string {
   if (typeof value === "string") return value.trim();
@@ -344,8 +341,6 @@ function safeTrimText(value: unknown): string {
   return "";
 }
 
-// 624: TS6133 — procedureSteps 주석 후 미사용 (복구 시 주석 해제)
-/*
 function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "en"): ProcedureSection[] {
   try {
     const s = raw != null && typeof raw === "string" ? raw : "";
@@ -413,7 +408,6 @@ function splitProcedureSteps(raw: string | null | undefined, language: "ko" | "e
     ];
   }
 }
-*/
 
 const Detail = () => {
   const { language, setLanguage } = useLanguageContext();
@@ -437,8 +431,7 @@ const Detail = () => {
     () => (nailRow ? normalizeNailRow(nailRow) : null),
     [nailRow],
   );
-  // 624: TS6133 — 레시피 아코디언 UI 숨김 후 미사용
-  // const [isRecipeOpen, setIsRecipeOpen] = useState(false);
+  const [isRecipeOpen, setIsRecipeOpen] = useState(false);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const currentUserId = useCurrentUserId();
@@ -522,11 +515,10 @@ const Detail = () => {
     () => splitDesignElements(pickLocalized(displayRow?.design_elements, displayRow?.design_point_en)),
     [displayRow?.design_elements, displayRow?.design_point_en, pickLocalized],
   );
-  // 624: TS6133 — 시술 가이드 UI 숨김 후 미사용
-  // const procedureSteps = useMemo(
-  //   () => splitProcedureSteps(pickLocalized(displayRow?.procedure_guide, displayRow?.guide_en), language),
-  //   [displayRow?.procedure_guide, displayRow?.guide_en, pickLocalized, language],
-  // );
+  const procedureSteps = useMemo(
+    () => splitProcedureSteps(pickLocalized(displayRow?.procedure_guide, displayRow?.guide_en), language),
+    [displayRow?.procedure_guide, displayRow?.guide_en, pickLocalized, language],
+  );
   const formattedDescription = useMemo(() => {
     const raw = pickLocalized(displayRow?.description, displayRow?.description_en);
     if (!raw) return isEnglish ? "No description has been provided yet." : "등록된 상세 설명이 없어요.";
@@ -1349,7 +1341,6 @@ const Detail = () => {
         )}
       </section>
 
-      {/* 610: PRO 시술 가이드 임시 숨김 — 복구 시 주석 해제
       <div className="mt-10 w-full font-sans antialiased">
         <button
           type="button"
@@ -1358,9 +1349,9 @@ const Detail = () => {
         >
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-bold text-gray-900">
-              {isEnglish ? "Pro Styling Guide" : "네일원장님을 위한 시술 가이드"}
+              {isEnglish ? "Styling Guide for Nail Artists" : "네일원장님을 위한 시술 가이드"}
             </h3>
-            <span className="rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold text-white">PRO</span>
+            <span className="rounded-md bg-slate-900 px-2 py-1 text-[10px] font-bold text-white">PRO</span>
           </div>
           <span
             className={`text-gray-400 transition-transform duration-300 ${isRecipeOpen ? "rotate-180" : ""}`}
@@ -1369,52 +1360,49 @@ const Detail = () => {
           </span>
         </button>
 
-        {isRecipeOpen && (
-          <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
-            {procedureSteps.length > 0 ? (
-              <>
-                <div className="space-y-5">
-                  {procedureSteps.map((step, idx) => {
-                    return (
-                      <div key={`step-${idx}`}>
-                        {idx > 0 && <div className="mb-5 h-px w-full bg-gray-200" />}
-                        <div className="flex gap-3">
-                          <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-                            {idx + 1}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-base font-bold tracking-tight text-gray-900">{step.title}</h4>
-                            <p className="mt-1.5 break-keep whitespace-pre-line text-[15px] leading-relaxed tracking-tight text-gray-600">
-                              {step.content}
-                            </p>
-                          </div>
+        <div className={`mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-5 ${isRecipeOpen ? "block" : "hidden"}`}>
+          {procedureSteps.length > 0 ? (
+            <>
+              <div className="space-y-5">
+                {procedureSteps.map((step, idx) => {
+                  return (
+                    <div key={`step-${idx}`}>
+                      {idx > 0 && <div className="mb-5 h-px w-full bg-gray-200" />}
+                      <div className="flex gap-3">
+                        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+                          {idx + 1}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-base font-bold tracking-tight text-gray-900">{step.title}</h4>
+                          <p className="mt-1.5 break-keep whitespace-pre-line text-[15px] leading-relaxed tracking-tight text-gray-600">
+                            {step.content}
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-5 border-t border-gray-200 pt-4">
+                <div className="flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-400">
+                  <span className="shrink-0" aria-hidden>
+                    💡
+                  </span>
+                  <span>
+                    {isEnglish
+                      ? "This guide is a design reference and may differ from actual salon procedures."
+                      : "본 가이드는 참고용 디자인 레퍼런스로, 실제 시술 방식과 다를 수 있습니다."}
+                  </span>
                 </div>
-                <div className="mt-5 border-t border-gray-200 pt-4">
-                  <div className="flex items-start gap-1.5 text-[12px] leading-relaxed text-gray-400">
-                    <span className="shrink-0" aria-hidden>
-                      💡
-                    </span>
-                    <span>
-                      {isEnglish
-                        ? "This guide is a design reference and may differ from actual salon procedures."
-                        : "본 가이드는 참고용 디자인 레퍼런스로, 실제 시술 방식과 다를 수 있습니다."}
-                    </span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-sm text-gray-500">
-                {isEnglish ? "No styling guide has been added yet." : "등록된 시술 가이드가 없어요."}
-              </p>
-            )}
-          </div>
-        )}
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-sm text-gray-500">
+              {isEnglish ? "No styling guide has been added yet." : "등록된 시술 가이드가 없어요."}
+            </p>
+          )}
+        </div>
       </div>
-      */}
 
       <section className="mt-10">
         <div className="mb-4 flex items-center justify-between">
