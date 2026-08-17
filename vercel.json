@@ -6,7 +6,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/og-handler?route=collection&id=:id"
@@ -17,7 +17,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/og-handler?route=proposal&id=:id"
@@ -28,7 +28,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/og-handler?route=lookbook&id=:id"
@@ -39,7 +39,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/seo-bot-handler"
@@ -50,7 +50,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/seo-bot-handler"
@@ -61,7 +61,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/seo-bot-handler"
@@ -72,7 +72,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
+          "value": "(?i).*(bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless).*"
         }
       ],
       "destination": "/api/seo-bot-handler"

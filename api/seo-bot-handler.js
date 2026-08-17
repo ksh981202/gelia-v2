@@ -148,12 +148,178 @@ async function fetchMagazinePost(slug) {
   return post
 }
 
+const NAIL_DETAIL_SELECT = [
+  'id',
+  'title',
+  'title_en',
+  'description',
+  'description_en',
+  'image_url',
+  'procedure_guide',
+  'guide_en',
+  'design_elements',
+  'design_point_en',
+].join(',')
+
+function safeTrimText(value) {
+  if (typeof value === 'string') return value.replace(/\r\n/g, '\n').trim()
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim()
+  return ''
+}
+
+function paragraphsFromText(raw) {
+  const plain = stripHtmlToPlainText(raw)
+  if (!plain) return ''
+  return plain
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join('\n      ')
+}
+
+function designPointsListHtml(raw) {
+  const plain = stripHtmlToPlainText(raw)
+  if (!plain) return ''
+  const items = plain
+    .split(/[,|·•;/\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+  if (items.length <= 1) return `<p>${escapeHtml(plain)}</p>`
+  return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+}
+
+function markerToStepIndex(markerRaw) {
+  const m = String(markerRaw ?? '').trim().toLowerCase()
+  if (m === '베이스' || m === 'base') return 0
+  if (m === '아트' || m === 'art') return 1
+  if (m === '마무리' || m === 'finishing' || m === 'finish' || m === 'final') return 2
+  return null
+}
+
+function splitProcedureSteps(raw, language) {
+  const s = safeTrimText(raw)
+  if (!s) return []
+  const markerPattern = /\[\s*(베이스|base|아트|art|마무리|finishing|finish|final)\s*\]/gi
+  const matches = Array.from(s.matchAll(markerPattern))
+  const stepTitles = language === 'en' ? ['Base', 'Art', 'Finish'] : ['베이스', '아트', '마무리']
+  const stepContents = ['', '', '']
+
+  if (matches.length > 0) {
+    const firstStart = matches[0]?.index ?? 0
+    const preface = s.slice(0, firstStart).trim()
+    if (preface) stepContents[0] = preface
+
+    for (let i = 0; i < matches.length; i += 1) {
+      const current = matches[i]
+      const next = matches[i + 1]
+      const stepIdx = markerToStepIndex(current[1] ?? '')
+      if (stepIdx == null) continue
+      const sectionStart = (current.index ?? 0) + current[0].length
+      const sectionEnd = next?.index ?? s.length
+      const content = s.slice(sectionStart, sectionEnd).trim()
+      if (!content) continue
+      stepContents[stepIdx] = stepContents[stepIdx]
+        ? `${stepContents[stepIdx]}\n${content}`.trim()
+        : content
+    }
+  } else {
+    const fallbackByLine = s.split(/\n+/).map((x) => String(x ?? '').trim()).filter(Boolean)
+    stepContents[0] = fallbackByLine[0] ?? s
+    stepContents[1] = fallbackByLine[1] ?? ''
+    stepContents[2] = fallbackByLine.slice(2).join('\n').trim()
+  }
+
+  return [
+    { title: stepTitles[0], content: stepContents[0] ?? '' },
+    { title: stepTitles[1], content: stepContents[1] ?? '' },
+    { title: stepTitles[2], content: stepContents[2] ?? '' },
+  ].filter((step) => step.content)
+}
+
+function procedureGuideHtml(raw, language) {
+  const steps = splitProcedureSteps(raw, language)
+  if (steps.length === 0) return paragraphsFromText(raw)
+  return steps
+    .map(
+      (step) => `<section>
+        <h3>${escapeHtml(step.title)}</h3>
+        ${paragraphsFromText(step.content)}
+      </section>`,
+    )
+    .join('\n      ')
+}
+
+function preferEnglishFromHeaders(headers = {}) {
+  const accept = String(headers['accept-language'] || headers['Accept-Language'] || '').toLowerCase()
+  if (!accept) return false
+  const first = accept.split(',')[0]?.trim() || ''
+  return first.startsWith('en') && !first.startsWith('ko')
+}
+
+export function buildNailArticleHtml(nail, options = {}) {
+  const preferEn = Boolean(options.preferEnglish)
+  const title = String(nail.title || nail.title_en || '네일 디자인').trim()
+  const ogImage = toAbsoluteSeoUrl(nail.image_url)
+  const imgTag = ogImage
+    ? `<img src="${escapeHtml(ogImage)}" alt="${escapeHtml(title)}" width="600" height="750" />`
+    : ''
+
+  const descKo = stripHtmlToPlainText(nail.description)
+  const descEn = stripHtmlToPlainText(nail.description_en)
+  const guideKo = safeTrimText(nail.procedure_guide)
+  const guideEn = safeTrimText(nail.guide_en)
+  const pointsKo = safeTrimText(nail.design_elements || nail.design_point)
+  const pointsEn = safeTrimText(nail.design_point_en)
+
+  const ordered = (koHtml, enHtml) => (preferEn ? [enHtml, koHtml] : [koHtml, enHtml]).filter(Boolean)
+
+  const descriptionBlocks = ordered(
+    descKo ? `<div lang="ko">${paragraphsFromText(descKo)}</div>` : '',
+    descEn ? `<div lang="en">${paragraphsFromText(descEn)}</div>` : '',
+  ).join('\n      ')
+
+  const guideBlocks = ordered(
+    guideKo ? `<div lang="ko">${procedureGuideHtml(guideKo, 'ko')}</div>` : '',
+    guideEn ? `<div lang="en">${procedureGuideHtml(guideEn, 'en')}</div>` : '',
+  ).join('\n      ')
+
+  const guideSection = guideBlocks
+    ? `<section>
+      <h2>시술 가이드 (Styling Guide)</h2>
+      ${guideBlocks}
+    </section>`
+    : ''
+
+  const pointsBlocks = ordered(
+    pointsKo ? `<div lang="ko">${designPointsListHtml(pointsKo)}</div>` : '',
+    pointsEn ? `<div lang="en">${designPointsListHtml(pointsEn)}</div>` : '',
+  ).join('\n      ')
+
+  const pointsSection = pointsBlocks
+    ? `<section>
+      <h2>디자인 포인트 (Design Points)</h2>
+      ${pointsBlocks}
+    </section>`
+    : ''
+
+  return `<main>
+    <article>
+      <h1>${escapeHtml(title)}</h1>
+      ${imgTag}
+      ${descriptionBlocks}
+      ${guideSection}
+      ${pointsSection}
+    </article>
+  </main>`
+}
+
 async function fetchNailDetail(nailId) {
   const id = String(nailId || '').trim()
   if (!UUID_PATTERN.test(id)) return null
 
   const rows = await supabaseRequest(
-    `/nail_designs?id=eq.${encodeURIComponent(id)}&select=id,title,title_en,description,description_en,image_url&limit=1`,
+    `/nail_designs?id=eq.${encodeURIComponent(id)}&select=${NAIL_DETAIL_SELECT}&limit=1`,
   )
   return Array.isArray(rows) ? rows[0] : null
 }
@@ -231,7 +397,7 @@ async function renderHome(pageUrl) {
   })
 }
 
-async function renderNailDetail(id, pageUrl) {
+async function renderNailDetail(id, pageUrl, headers = {}) {
   const nail = await fetchNailDetail(id)
   if (!nail) {
     return buildSeoHtmlDocument({
@@ -250,26 +416,16 @@ async function renderNailDetail(id, pageUrl) {
   const description =
     buildSeoDescription(rawDesc, 150) || `${title} 네일 디자인 | 젤리아에서 찾아보세요`
   const ogImage = toAbsoluteSeoUrl(nail.image_url) || DEFAULT_OG.image
-  const imgTag = ogImage
-    ? `<img src="${escapeHtml(ogImage)}" alt="${escapeHtml(title)}" width="600" height="750" />`
-    : ''
-  const bodyPlain = stripHtmlToPlainText(rawDesc)
-
-  const bodyHtml = `<main>
-    <article>
-      <h1>${escapeHtml(title)}</h1>
-      ${imgTag}
-      ${bodyPlain ? `<p>${escapeHtml(bodyPlain.slice(0, 500))}</p>` : ''}
-    </article>
-  </main>`
+  const preferEnglish = preferEnglishFromHeaders(headers)
+  const bodyHtml = buildNailArticleHtml(nail, { preferEnglish })
 
   return buildSeoHtmlDocument({
-    htmlLang: 'ko',
+    htmlLang: preferEnglish ? 'en' : 'ko',
     title: pageTitle,
     description,
     canonicalUrl: pageUrl,
     ogImage,
-    ogLocale: 'ko_KR',
+    ogLocale: preferEnglish ? 'en_US' : 'ko_KR',
     bodyHtml,
   })
 }
@@ -361,7 +517,7 @@ export default async function handler(req, res) {
       return
     }
     if (route.kind === 'detail') {
-      sendHtml(res, await renderNailDetail(route.id, pageUrl))
+      sendHtml(res, await renderNailDetail(route.id, pageUrl, req.headers || {}))
       return
     }
     if (route.kind === 'magazine') {

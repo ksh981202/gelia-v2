@@ -8,7 +8,7 @@ export const DEFAULT_OG = {
 }
 
 export const BOT_UA_PATTERN =
-  /bot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless/i
+  /bot|mediapartners-google|adsbot-google|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegram|kakaotalk-scrap|applebot|googlebot|bingbot|yandex|baiduspider|embedly|pinterest|preview|ia_archiver|curl|wget|python-requests|headless/i
 
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
