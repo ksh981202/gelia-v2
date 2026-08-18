@@ -418,12 +418,15 @@ async function renderNailDetail(id, pageUrl, headers = {}) {
   const ogImage = toAbsoluteSeoUrl(nail.image_url) || DEFAULT_OG.image
   const preferEnglish = preferEnglishFromHeaders(headers)
   const bodyHtml = buildNailArticleHtml(nail, { preferEnglish })
+  const canonicalUrl = preferEnglish
+    ? `${pageUrl}${pageUrl.includes('?') ? '&' : '?'}lang=en`
+    : pageUrl
 
   return buildSeoHtmlDocument({
     htmlLang: preferEnglish ? 'en' : 'ko',
     title: pageTitle,
     description,
-    canonicalUrl: pageUrl,
+    canonicalUrl,
     ogImage,
     ogLocale: preferEnglish ? 'en_US' : 'ko_KR',
     bodyHtml,

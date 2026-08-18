@@ -23,6 +23,15 @@ function readStoredLanguage(): Language | null {
   return null;
 }
 
+function mapLangParamToLanguage(raw: string | null): Language | null {
+  const v = String(raw ?? "").toLowerCase().trim();
+  if (!v) return null;
+  if (v === "ko") return "ko";
+  // gelia i18n(네일 상세)는 ko/en만 있으므로 jp/vn/th는 en으로 매핑
+  if (v === "en" || v === "jp" || v === "vn" || v === "th") return "en";
+  return null;
+}
+
 function detectBrowserLanguage(): Language {
   try {
     const raw =
@@ -37,11 +46,53 @@ function detectBrowserLanguage(): Language {
   return "en";
 }
 
-/** Provider 마운트 시 1회 — LocalStorage 우선, 없으면 브라우저 언어 → Non-KR은 en */
+/** Provider 마운트 시 1회 — URL 쿼리 > URL 경로 > localStorage > 브라우저 */
 function resolveInitialLanguage(): Language {
+  if (typeof window === "undefined") return "en";
+
+  // 1) URL 쿼리 우선: ?lang=en|ko|jp|vn|th
+  try {
+    const url = new URL(window.location.href);
+    const fromQuery = mapLangParamToLanguage(url.searchParams.get("lang"));
+    if (fromQuery) {
+      try {
+        localStorage.setItem(STORAGE_KEY, fromQuery);
+      } catch {
+        // ignore
+      }
+      return fromQuery;
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2) URL 경로 감지: /en/... (그 외 로케일은 en으로 처리)
+  try {
+    const pathname = window.location.pathname;
+    const fromPath = pathname.startsWith("/en/")
+      ? "en"
+      : pathname.startsWith("/ko/")
+        ? "ko"
+        : pathname.startsWith("/jp/") || pathname.startsWith("/vn/") || pathname.startsWith("/th/")
+          ? "en"
+          : null;
+    if (fromPath === "en" || fromPath === "ko") {
+      try {
+        localStorage.setItem(STORAGE_KEY, fromPath);
+      } catch {
+        // ignore
+      }
+      return fromPath;
+    }
+  } catch {
+    // ignore
+  }
+
+  // 3) localStorage
   const stored = readStoredLanguage();
   if (stored) return stored;
 
+  // 4) 브라우저 기본 언어
   const detected = detectBrowserLanguage();
   try {
     localStorage.setItem(STORAGE_KEY, detected);
