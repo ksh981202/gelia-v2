@@ -11,6 +11,7 @@ import {
   Rocket, CalendarClock, Download,
 } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import CardNewsEditorModal from '@/widgets/gce/CardNewsEditorModal';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { supabase } from '@/shared/api/supabaseClient';
@@ -1442,6 +1443,8 @@ export default function AdminGceDashboardPage() {
   const [ideaImageUrlByGl, setIdeaImageUrlByGl] = useState<Record<string, string>>({});
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
   const [isStep1Expanded, setIsStep1Expanded] = useState(true);
+  const [cardNewsEditorOpen, setCardNewsEditorOpen] = useState(false);
+  const [cardNewsEditorIdea, setCardNewsEditorIdea] = useState<GceGeneratedIdea | null>(null);
   const [editorTitles, setEditorTitles] = useState({
     KR: '',
     EN: '',
@@ -2506,6 +2509,17 @@ export default function AdminGceDashboardPage() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => {
+                              setCardNewsEditorIdea(idea);
+                              setCardNewsEditorOpen(true);
+                            }}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-purple-300 bg-purple-50 px-4 py-3 text-[13px] font-black text-purple-700 hover:bg-purple-100 transition-colors"
+                          >
+                            <PenTool className="h-4 w-4" />
+                            🎨 썸네일 제작
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => void handleCopyIdeaPrompt(idea)}
                             className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-900 px-4 py-3 text-[13px] font-black text-white hover:bg-stone-800 transition-colors"
                           >
@@ -3347,6 +3361,17 @@ export default function AdminGceDashboardPage() {
           </div>
         )}
       </div>
+
+      <CardNewsEditorModal
+        open={cardNewsEditorOpen}
+        onClose={() => setCardNewsEditorOpen(false)}
+        imageUrls={
+          cardNewsEditorIdea?.images
+            .map((img) => img.image_url ?? ideaImageUrlByGl[img.id] ?? "")
+            .filter(Boolean) ?? []
+        }
+        ideaTitle={cardNewsEditorIdea?.title ?? ""}
+      />
     </div>
   );
 }
