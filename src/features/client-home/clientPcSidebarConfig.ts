@@ -175,8 +175,8 @@ export function mapPcGallerySortToQuery(sort: PcGallerySortTab): string {
 }
 
 export function mapRankingFilterToGallerySort(rankingFilter: string): string | null {
-  if (rankingFilter === "ranking_weekly") return "인기순";
-  if (rankingFilter === "ranking_saves") return "인기순";
+  if (rankingFilter === "ranking_weekly") return "weekly";
+  if (rankingFilter === "ranking_saves") return "reaction";
   return null;
 }
 

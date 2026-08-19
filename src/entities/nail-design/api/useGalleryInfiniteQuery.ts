@@ -372,6 +372,23 @@ async function fetchWeeklyRankingGalleryPage(
   const allItems = filterNonZeroRankingRpcRows((data ?? []) as (NailDesignRow & { ranking_score?: number })[])
   const from = (page - 1) * GALLERY_PAGE_SIZE
 
+  if (allItems.length === 0) {
+    const { data: fallback, error: fbErr } = await supabase
+      .from('nail_designs')
+      .select(GALLERY_COLUMNS)
+      .gt('popularity', 0)
+      .order('popularity', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(RANKING_WEEKLY_LIMIT)
+      .abortSignal(signal)
+    if (fbErr) throw fbErr
+    const fbItems = (fallback ?? []) as NailDesignRow[]
+    return {
+      items: fbItems.slice(from, from + GALLERY_PAGE_SIZE),
+      totalCount: fbItems.length,
+    }
+  }
+
   return {
     items: allItems.slice(from, from + GALLERY_PAGE_SIZE),
     totalCount: allItems.length,
@@ -379,7 +396,7 @@ async function fetchWeeklyRankingGalleryPage(
 }
 
 export function normalizeGallerySort(raw: string | null): string {
-  if (raw === 'realtime' || raw === 'weekly' || raw === 'monthly' || raw === 'alltime') {
+  if (raw === 'realtime' || raw === 'weekly' || raw === 'monthly' || raw === 'alltime' || raw === 'reaction') {
     return raw
   }
   if (raw === '최신순') return '최신순'
@@ -468,6 +485,24 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
         return fetchWeeklyRankingGalleryPage(page, signal)
       }
 
+      if (normalizedSort === 'reaction') {
+        const from = (page - 1) * GALLERY_PAGE_SIZE
+        const to = page * GALLERY_PAGE_SIZE - 1
+        const { data, error, count } = await supabase
+          .from('nail_designs')
+          .select(GALLERY_COLUMNS, { count: 'estimated' })
+          .gt('likes', 0)
+          .order('likes', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to)
+          .abortSignal(signal)
+        if (error) throw error
+        return {
+          items: (data ?? []) as NailDesignRow[],
+          totalCount: page === 1 ? (count ?? null) : null,
+        } satisfies GalleryInfinitePage
+      }
+
       const from = (page - 1) * GALLERY_PAGE_SIZE
       const to = page * GALLERY_PAGE_SIZE - 1
 
@@ -504,6 +539,11 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
         const totalLoaded = allPages.reduce((sum, galleryPage) => sum + galleryPage.items.length, 0)
         const totalCount = allPages[0]?.totalCount ?? 0
         if (totalLoaded >= totalCount || lastPage.items.length < GALLERY_PAGE_SIZE) return undefined
+        return (lastPageParam as number) + 1
+      }
+
+      if (normalizedSort === 'reaction') {
+        if (lastPage.items.length < GALLERY_PAGE_SIZE) return undefined
         return (lastPageParam as number) + 1
       }
 
