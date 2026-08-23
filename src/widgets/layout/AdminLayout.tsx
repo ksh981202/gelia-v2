@@ -39,6 +39,18 @@ export default function AdminLayout() {
               </span>
               GCE 마케팅 엔진
             </NavLink>
+            <NavLink to="/admin/sns-cardnews" className={sidebarLink}>
+              <span className="h-4 w-4 shrink-0 text-center leading-4" aria-hidden>
+                📱
+              </span>
+              SNS 카드뉴스
+            </NavLink>
+            <NavLink to="/admin/insta-studio" className={sidebarLink}>
+              <span className="h-4 w-4 shrink-0 text-center leading-4" aria-hidden>
+                📱
+              </span>
+              인스타 스튜디오
+            </NavLink>
           </nav>
         </div>
       </aside>

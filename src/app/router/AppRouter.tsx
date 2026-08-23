@@ -15,6 +15,8 @@ const AdminUploadPage = lazy(() => import('../../pages/admin/AdminUploadPage'))
 const AdminBoard = lazy(() => import('../../pages/admin/AdminBoard'))
 const AdminManagePage = lazy(() => import('../../pages/admin/AdminManagePage'))
 const AdminGceDashboardPage = lazy(() => import('../../pages/admin/gce/AdminGceDashboardPage'))
+const AdminSnsCardNewsPage = lazy(() => import('../../pages/admin/sns/AdminSnsCardNewsPage'))
+const AdminInstaStudioPage = lazy(() => import('../../pages/admin/sns/AdminInstaStudioPage'))
 const ClientNailDetailPage = lazy(() => import('../../pages/client/ClientNailDetailPage'))
 const ClientGalleryPage = lazy(() => import('../../pages/client/ClientGalleryPage'))
 const ClientMagazinePage = lazy(() => import('../../pages/client/magazine/ClientMagazinePage'))
@@ -243,6 +245,8 @@ const router = createBrowserRouter([
           { path: 'board', element: <AdminBoard /> },
           { path: 'manage', element: <AdminManagePage /> },
           { path: 'gce', element: <AdminGceDashboardPage /> },
+          { path: 'sns-cardnews', element: <AdminSnsCardNewsPage /> },
+          { path: 'insta-studio', element: <AdminInstaStudioPage /> },
         ],
       },
     ],
