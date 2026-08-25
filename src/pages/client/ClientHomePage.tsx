@@ -10,8 +10,10 @@ import {
   RANKING_WEEKLY_LIMIT,
   useGalleryInfiniteQuery,
 } from "@/entities/nail-design/api/useGalleryInfiniteQuery";
+/* 회원가입 숨김 처리 — PcHomeGalleryCard 저장 버튼 복구 시 주석 해제
 import FolderSelectModal from "@/features/collection/components/FolderSelectModal";
 import { useUserStore } from "@/features/user-actions/useUserStore";
+*/
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useLanguageContext } from "@/contexts/LanguageContext";
 import { buildNailImageSeoAlt } from "@/entities/nail-design/lib/nailDisplayText";
@@ -22,7 +24,7 @@ import { SeoHead } from "@/shared/ui/SeoHead";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import type { NailDesignRow } from "@/shared/types/database.types";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react"; // 회원가입 숨김: 저장 복구 시 type MouseEvent 재추가
 import { Link, useNavigate } from "react-router-dom";
 
 type HomeNailCard = {
@@ -164,6 +166,7 @@ function PcHomeGalleryCard({
   isEnglish: boolean;
 }) {
   const card = toHomeNailCard(item);
+  /* 회원가입 숨김 처리 — 저장 버튼/모달 복구 시 주석 해제
   const savedNails = useUserStore((state) => state.savedNails);
   const isSaved = savedNails.includes(item.id);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -173,6 +176,7 @@ function PcHomeGalleryCard({
     event.stopPropagation();
     setIsFolderModalOpen(true);
   };
+  */
 
   return (
     <>
@@ -193,6 +197,7 @@ function PcHomeGalleryCard({
           className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/55 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           aria-hidden
         />
+        {/* 회원가입 숨김 처리 — [❤️ 저장] 버튼만 핀셋 숨김 (그라데이션/레이아웃 보존)
         <button
           type="button"
           onClick={handleSaveClick}
@@ -206,16 +211,19 @@ function PcHomeGalleryCard({
           <span aria-hidden>❤️</span>
           <span>{isEnglish ? "Save" : "저장"}</span>
         </button>
+        */}
       </div>
       <p className="mt-3 truncate px-2 text-center text-[14px] font-semibold text-stone-800">
         {homeNailTitle(card, isEnglish)}
       </p>
     </Link>
+    {/* 회원가입 숨김 처리 — FolderSelectModal (복구 시 주석 해제)
     <FolderSelectModal
       isOpen={isFolderModalOpen}
       onClose={() => setIsFolderModalOpen(false)}
       nailId={item.id}
     />
+    */}
     </>
   );
 }
