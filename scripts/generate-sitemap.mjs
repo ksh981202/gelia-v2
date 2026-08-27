@@ -69,6 +69,7 @@ const staticRoutes = [
   '/notice',
   '/terms',
   '/privacy',
+  '/about',
 ]
 
 function assertEnv() {

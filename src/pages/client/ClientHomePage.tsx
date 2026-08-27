@@ -693,13 +693,17 @@ export default function ClientHomePage() {
             </div>
           )}
         </div>
-        <div className="mb-4 flex items-center gap-3 text-[13px] text-gray-500">
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-[13px] text-gray-500">
           <Link to="/terms" className="font-semibold text-gray-500 hover:underline">
             {isEnglish ? "Terms of Service" : "이용약관"}
           </Link>
           <span className="text-gray-300">|</span>
-          <Link to="/privacy" className="font-bold text-gray-800 hover:underline">
+          <Link to="/privacy" className="font-semibold text-gray-500 hover:underline">
             {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
+          </Link>
+          <span className="text-gray-300">|</span>
+          <Link to="/about" className="font-semibold text-gray-500 hover:underline">
+            {isEnglish ? "About Us" : "회사소개"}
           </Link>
         </div>
         <p className="text-[11px] font-medium text-gray-400">&copy; 2026 GELIA Studio. All rights reserved.</p>

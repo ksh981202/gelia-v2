@@ -86,6 +86,7 @@ function isPcResizeSafeRoute(pathname: string): boolean {
     pathname === '/account' ||
     pathname === '/terms' ||
     pathname === '/privacy' ||
+    pathname === '/about' ||
     pathname === '/support' ||
     pathname === '/faq' ||
     pathname === '/notice' ||
@@ -511,16 +512,17 @@ function ClientLayoutContent() {
                   </>
                 )}
               </div>
-              <div className="mb-3 flex items-center gap-2 text-[13px] text-stone-500">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px] text-stone-500">
                 <Link to="/terms" className="transition-colors hover:text-stone-800">
                   {isEnglish ? 'Terms of Service' : '이용약관'}
                 </Link>
                 <span className="text-[10px] text-stone-300">|</span>
-                <Link
-                  to="/privacy"
-                  className="font-bold text-stone-700 transition-colors hover:text-stone-900"
-                >
+                <Link to="/privacy" className="transition-colors hover:text-stone-800">
                   {isEnglish ? 'Privacy Policy' : '개인정보처리방침'}
+                </Link>
+                <span className="text-[10px] text-stone-300">|</span>
+                <Link to="/about" className="transition-colors hover:text-stone-800">
+                  {isEnglish ? 'About Us' : '젤리아 소개'}
                 </Link>
               </div>
               <div className="flex flex-col gap-0.5 break-keep text-[12px] text-stone-400">

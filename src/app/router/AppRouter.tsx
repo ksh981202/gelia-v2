@@ -57,6 +57,7 @@ const ClientSupportPage = lazy(() => import('../../pages/client/ClientSupportPag
 const ClientFaqPage = lazy(() => import('../../pages/client/ClientFaqPage'))
 const ClientTermsPage = lazy(() => import('../../pages/client/ClientTermsPage'))
 const ClientPrivacyPage = lazy(() => import('../../pages/client/ClientPrivacyPage'))
+const ClientAboutPage = lazy(() => import('../../pages/client/ClientAboutPage'))
 const ClientMyPage = lazy(() => import('../../pages/client/ClientMyPage'))
 const ClientMyNailListPage = lazy(() => import('../../pages/client/ClientMyNailListPage'))
 const ClientCollectionPage = lazy(() => import('../../pages/client/ClientCollectionPage'))
@@ -163,6 +164,7 @@ const router = createBrowserRouter([
       { path: 'faq', element: <ClientFaqPage /> },
       { path: 'terms', element: <ClientTermsPage /> },
       { path: 'privacy', element: <ClientPrivacyPage /> },
+      { path: 'about', element: <ClientAboutPage /> },
       { path: 'notice', element: <ClientNoticePage /> },
       { path: 'account', element: <ClientAccountSettingsPage /> },
       { path: 'my', element: <ClientMyPage /> },
