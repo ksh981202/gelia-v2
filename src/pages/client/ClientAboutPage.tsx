@@ -1,6 +1,9 @@
+import { useLanguageContext } from '@/contexts/LanguageContext'
 import { SeoHead } from '@/shared/ui/SeoHead'
 import { supabase } from '@/shared/api/supabaseClient'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const montserratStyle = { fontFamily: "'Montserrat', sans-serif" } as const
 
@@ -53,6 +56,9 @@ function FramedEditorialImage({
 }
 
 export default function ClientAboutPage() {
+  const { language } = useLanguageContext()
+  const isEnglish = language === 'en'
+  const navigate = useNavigate()
   const { data: images = [] } = useAboutEditorialImages()
 
   return (
@@ -63,11 +69,22 @@ export default function ClientAboutPage() {
         canonical="/about"
       />
 
+      <header className="fixed top-0 left-0 right-0 z-50 mx-auto flex h-14 w-full max-w-md items-center border-b border-gray-100 bg-white px-4 md:static md:mb-6 md:max-w-full md:border-b-0 md:bg-transparent md:px-0">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-800 transition-colors hover:bg-gray-50"
+          aria-label={isEnglish ? 'Go back' : '뒤로 가기'}
+        >
+          <ChevronLeft className="h-6 w-6" strokeWidth={2} />
+        </button>
+        <h1 className="min-w-0 flex-1 text-center text-[17px] font-bold text-gray-900 pr-10">
+          {isEnglish ? 'About GELIA' : '젤리아 소개'}
+        </h1>
+      </header>
+
       {/* 1. Header Area */}
-      <div className="mx-auto max-w-4xl break-keep px-6 pb-6 pt-24 text-center md:pb-12">
-        <p className="mb-6 text-[10px] font-light uppercase tracking-[0.4em] text-stone-400 md:text-xs">
-          Gelia Studio
-        </p>
+      <div className="mx-auto max-w-4xl break-keep px-6 pb-6 pt-[72px] text-center md:pb-12 md:pt-24">
         <h1
           className="mb-8 text-4xl font-normal leading-tight tracking-tight text-stone-800 md:text-6xl"
           style={montserratStyle}
@@ -77,9 +94,19 @@ export default function ClientAboutPage() {
           Nail Curation
         </h1>
         <p className="mx-auto max-w-xl text-base font-normal leading-relaxed text-gray-700">
-          하이엔드 네일 아트의 새로운 기준.
-          <br className="hidden md:block" />
-          수천 개의 영감이 당신의 손끝에서 조용히 완성되기를 기다립니다.
+          {isEnglish ? (
+            <>
+              The new standard of high-end nail art.
+              <br className="hidden md:block" />
+              Thousands of inspirations silently await at your fingertips.
+            </>
+          ) : (
+            <>
+              하이엔드 네일 아트의 새로운 기준.
+              <br className="hidden md:block" />
+              수천 개의 영감이 당신의 손끝에서 조용히 완성되기를 기다립니다.
+            </>
+          )}
         </p>
       </div>
 
@@ -109,9 +136,9 @@ export default function ClientAboutPage() {
               </h2>
               <div className="border-l border-stone-300 py-2 pl-6">
                 <p className="text-base font-normal leading-relaxed text-gray-700">
-                  GELIA의 모든 디자인은 AI의 무한한 상상력에서 출발하여, 하이엔드 뷰티
-                  큐레이터의 엄격한 시선으로 정제됩니다. 수만 개의 데이터 속에서 오직
-                  가장 아름답고 트렌디한 감각만을 선별하여 당신의 손끝에 제안합니다.
+                  {isEnglish
+                    ? 'Every GELIA design begins with the boundless imagination of AI and is refined through the strict aesthetic standards of professional beauty curators. From vast amounts of data, we curate only the most exquisite and trendy designs for you.'
+                    : 'GELIA의 모든 디자인은 AI의 무한한 상상력에서 출발하여, 하이엔드 뷰티 큐레이터의 엄격한 시선으로 정제됩니다. 수만 개의 데이터 속에서 오직 가장 아름답고 트렌디한 감각만을 선별하여 당신의 손끝에 제안합니다.'}
                 </p>
               </div>
             </div>
@@ -143,9 +170,9 @@ export default function ClientAboutPage() {
               </h2>
               <div className="border-l border-stone-300 py-2 pl-6 md:border-l-0 md:border-r md:pl-0 md:pr-6">
                 <p className="text-base font-normal leading-relaxed text-gray-700">
-                  우리는 네일을 단순한 컬러링이 아닌, 개인의 취향과 계절의 무드를
-                  표현하는 하나의 패션 아이템으로 바라봅니다. 쉐입, 텍스처, 컬러의
-                  미세한 변주를 통해 당신만의 독보적인 분위기를 완성하세요.
+                  {isEnglish
+                    ? "We perceive nail art not merely as coloring, but as a definitive fashion statement expressing your personal taste and the season's mood. Complete your unrivaled aura through subtle variations in shape, texture, and color."
+                    : '우리는 네일을 단순한 컬러링이 아닌, 개인의 취향과 계절의 무드를 표현하는 하나의 패션 아이템으로 바라봅니다. 쉐입, 텍스처, 컬러의 미세한 변주를 통해 당신만의 독보적인 분위기를 완성하세요.'}
                 </p>
               </div>
             </div>
@@ -177,9 +204,9 @@ export default function ClientAboutPage() {
               </h2>
               <div className="border-l border-stone-300 py-2 pl-6">
                 <p className="text-base font-normal leading-relaxed text-gray-700">
-                  눈으로 보기에만 아름다운 아트를 넘어, 실제 살롱에서 구현 가능한
-                  디테일을 고민합니다. 네일 원장님과 고객 모두가 만족할 수 있도록, 뷰티
-                  레퍼런스의 새로운 기준과 실무적인 스타일링 가이드를 제공합니다.
+                  {isEnglish
+                    ? 'Beyond visually striking art, we meticulously consider the details applicable in actual salons. We provide a new benchmark for beauty references and practical styling guides to satisfy both professional nail artists and clients.'
+                    : '눈으로 보기에만 아름다운 아트를 넘어, 실제 살롱에서 구현 가능한 디테일을 고민합니다. 네일 원장님과 고객 모두가 만족할 수 있도록, 뷰티 레퍼런스의 새로운 기준과 실무적인 스타일링 가이드를 제공합니다.'}
                 </p>
               </div>
             </div>
@@ -198,8 +225,9 @@ export default function ClientAboutPage() {
           Contact GELIA
         </h3>
         <p className="mb-10 text-base font-normal leading-relaxed text-gray-700">
-          하이엔드 네일 아트의 새로운 기준, GELIA. 서비스 이용 중 궁금하신 내용은 언제든
-          하단 연락처로 편하게 연락주세요.
+          {isEnglish
+            ? 'The new standard of high-end nail art, GELIA. If you have any inquiries regarding our service, please feel free to reach out to us at any time.'
+            : '하이엔드 네일 아트의 새로운 기준, GELIA. 서비스 이용 중 궁금하신 내용은 언제든 하단 연락처로 편하게 연락주세요.'}
         </p>
         <a
           href="mailto:k981202@naver.com"

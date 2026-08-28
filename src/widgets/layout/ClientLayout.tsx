@@ -393,6 +393,7 @@ function ClientLayoutContent() {
     pathname === '/faq' ||
     pathname === '/terms' ||
     pathname === '/privacy' ||
+    pathname === '/about' ||
     pathname === '/notice' ||
     pathname === '/account' ||
     pathname === '/recommend' ||
