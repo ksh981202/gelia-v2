@@ -703,7 +703,7 @@ export default function ClientHomePage() {
           </Link>
           <span className="text-gray-300">|</span>
           <Link to="/about" className="font-semibold text-gray-500 hover:underline">
-            {isEnglish ? "About Us" : "회사소개"}
+            {isEnglish ? "About Us" : "젤리아 소개"}
           </Link>
         </div>
         <p className="text-[11px] font-medium text-gray-400">&copy; 2026 GELIA Studio. All rights reserved.</p>

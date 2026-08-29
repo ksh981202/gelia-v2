@@ -64,7 +64,7 @@ export default function ClientAboutPage() {
   return (
     <div className="w-full overflow-hidden bg-white pb-6 font-sans text-stone-900 selection:bg-stone-200 md:pb-16">
       <SeoHead
-        title="회사소개 — GELIA | The Art of Nail Curation"
+        title={isEnglish ? 'About GELIA | GELIA' : '젤리아 소개 | GELIA'}
         description="하이엔드 네일 아트의 새로운 기준. 수천 개의 영감이 당신의 손끝에서 조용히 완성되기를 기다립니다."
         canonical="/about"
       />
