@@ -14,16 +14,25 @@ export const RANKING_WEEKLY_LIMIT = 100
 /** 탭 필터 ilike 대상 스칼라 컬럼 */
 const TAB_FILTER_ILIKE_COLUMNS = [
   'title',
+  'title_en',
   'category',
   'color',
   'mood',
+  'mood_en',
   'nail_length',
   'design_technique',
   'design_elements',
 ] as const
 /** 탭 필터 배열 포함(cs) 대상 — text[] 전용 */
-const TAB_FILTER_ARRAY_CS_COLUMNS = ['situations', 'styles'] as const
-const MAX_TAB_FILTER_TOKENS = 20
+const TAB_FILTER_ARRAY_CS_COLUMNS = [
+  'situations',
+  'styles',
+  'styles_en',
+  'occasion_en',
+  'tags',
+  'tags_en',
+] as const
+const MAX_TAB_FILTER_TOKENS = 30
 const NAIL_SYNONYMS: Record<string, string[]> = {
   형광: ['네온', '비비드', '팝', '원색', 'neon', 'vivid', 'fluorescent', '형광'],
   올드머니: ['고급스러운', '클래식', '우아한', '심플한', '단정한', 'old money', '올드머니'],
@@ -207,15 +216,31 @@ function buildArrayCsOrCondition(column: string, token: string): string {
   return `${column}.cs.{${csToken}}`
 }
 
+/** NAIL_SYNONYMS 값(동의어) → 부모 키(표준 탭 토큰) 역매핑. 예: "결혼" → "웨딩" */
+export function resolveKoSynonymParentKey(term: string): string | null {
+  const trimmed = term.trim()
+  if (!trimmed) return null
+
+  if (NAIL_SYNONYMS[trimmed]) return trimmed
+
+  for (const [parentKey, synonyms] of Object.entries(NAIL_SYNONYMS)) {
+    if (synonyms.some((synonym) => synonym.trim() === trimmed)) return parentKey
+  }
+
+  return null
+}
+
 function collectTabFilterTokens(tab: string): string[] {
   const trimmed = tab.trim()
   if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return []
 
-  if (NAIL_SYNONYMS[trimmed]) {
-    return expandSynonymTokens(trimmed, [trimmed])
+  const canonicalTab = resolveKoSynonymParentKey(trimmed) ?? trimmed
+
+  if (NAIL_SYNONYMS[canonicalTab]) {
+    return expandSynonymTokens(canonicalTab, [canonicalTab])
   }
 
-  const normalizedSpace = trimmed
+  const normalizedSpace = canonicalTab
     .replace(/\//g, ' ')
     .replace(/,/g, ' ')
     .replace(/\s+/g, ' ')
@@ -229,6 +254,7 @@ function collectTabFilterTokens(tab: string): string[] {
     .split(' ')
     .map((part) => part.trim())
     .filter((part) => part.length > 0 && part !== DEFAULT_GALLERY_TAB)
+    .map((part) => resolveKoSynonymParentKey(part) ?? part)
 
   return expandSynonymTokens(normalizedSpace, baseTokens)
 }
@@ -565,6 +591,40 @@ export function useGalleryInfiniteQuery(tab: string, sort: string, options?: Gal
   )
 
   return { ...query, galleryItems, totalCount }
+}
+
+/** 통합 검색 화이트리스트 — NAIL_SYNONYMS 키·값·토큰 일치 여부 */
+export function isRecognizedNailSynonymTerm(term: string): boolean {
+  const trimmed = term.trim()
+  if (!trimmed) return false
+
+  if (NAIL_SYNONYMS[trimmed]) return true
+
+  const normalizedSpace = trimmed
+    .replace(/\//g, ' ')
+    .replace(/,/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (NAIL_SYNONYMS[normalizedSpace]) return true
+
+  const tokens = normalizedSpace
+    .split(' ')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+
+  for (const token of tokens) {
+    if (NAIL_SYNONYMS[token]) return true
+
+    const stripped = stripNailKeywordSuffix(token)
+    if (stripped !== token && NAIL_SYNONYMS[stripped]) return true
+
+    for (const synonyms of Object.values(NAIL_SYNONYMS)) {
+      if (synonyms.some((synonym) => synonym === token || synonym === stripped)) return true
+    }
+  }
+
+  return false
 }
 
 export function useGalleryCountQuery(tab: string, options?: GalleryQueryOptions) {

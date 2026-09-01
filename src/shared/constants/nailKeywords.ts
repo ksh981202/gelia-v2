@@ -1,3 +1,5 @@
+import { resolveKoSynonymParentKey } from '@/entities/nail-design/api/useGalleryInfiniteQuery'
+
 export const NAIL_KEYWORD_EN_DICTIONARY: Record<string, string> = {
   네일: 'Nail',
   페디: 'Pedi',
@@ -165,6 +167,104 @@ export const NAIL_KEYWORD_EN_DICTIONARY: Record<string, string> = {
   명절: 'Holiday',
   졸업: 'Graduation',
   입학: 'School Entrance',
+}
+
+/** 검색 전용 EN 동의어 → KO 표준 토큰 (NAIL_KEYWORD_EN_DICTIONARY 보완) */
+export const EN_SEARCH_ALIAS_TO_KO: Record<string, string> = {
+  marriage: '웨딩',
+  bridal: '웨딩',
+  bride: '신부',
+  groom: '웨딩',
+  wedding: '웨딩',
+  guest: '하객',
+}
+
+/** 런타임 역매핑 실패 대비 — 핵심 EN 검색어 직접 KO 부모 키 매핑 */
+const EN_DIRECT_MAP: Record<string, string> = {
+  wedding: '웨딩',
+  bridal: '웨딩',
+  marriage: '웨딩',
+  bride: '신부',
+  groom: '웨딩',
+  guest: '하객',
+}
+
+function normalizeEnglishLookupKey(token: string): string {
+  return token.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+/** KO 토큰 → NAIL_SYNONYMS 부모 키(표준 탭 토큰) 보장 */
+function toGalleryParentKey(koToken: string): string {
+  const trimmed = koToken.trim()
+  if (!trimmed) return ''
+  return resolveKoSynonymParentKey(trimmed) ?? trimmed
+}
+
+/** EN 라벨 → KO 토큰 역매핑 (검색 쿼리 정규화용) */
+const EN_TO_KO_REVERSE_MAP: Record<string, string[]> = (() => {
+  const map: Record<string, string[]> = {}
+  const add = (enKey: string, ko: string) => {
+    const normalized = enKey.trim().toLowerCase()
+    if (!normalized) return
+    if (!map[normalized]) map[normalized] = []
+    if (!map[normalized].includes(ko)) map[normalized].push(ko)
+  }
+
+  for (const [ko, en] of Object.entries(NAIL_KEYWORD_EN_DICTIONARY)) {
+    add(en, ko)
+    for (const word of en.split(/\s+/)) {
+      add(word, ko)
+    }
+  }
+
+  for (const [enAlias, ko] of Object.entries(EN_SEARCH_ALIAS_TO_KO)) {
+    add(enAlias, ko)
+  }
+
+  return map
+})()
+
+function lookupKoTokensFromEnglish(token: string): string[] {
+  const normalized = normalizeEnglishLookupKey(token)
+  if (!normalized) return []
+
+  const directKo = EN_DIRECT_MAP[normalized]
+  if (directKo) return [directKo]
+
+  return EN_TO_KO_REVERSE_MAP[normalized] ?? []
+}
+
+/**
+ * 통합 검색 → 갤러리 엔진 탭 토큰 정규화.
+ * - KO: NAIL_SYNONYMS 값(예: "결혼") → 부모 키("웨딩") 역매핑
+ * - EN: 사전/별칭(예: "wedding") → KO 토큰 → resolveKoSynonymParentKey로 부모 키 보장
+ */
+export function resolveSearchQueryForGallery(raw: string): string {
+  const trimmed = String(raw ?? '').trim().replace(/\s+/g, ' ')
+  if (!trimmed) return ''
+
+  if (/[가-힣]/.test(trimmed)) {
+    const parentKey = resolveKoSynonymParentKey(trimmed)
+    if (parentKey) return parentKey
+
+    const tokens = trimmed.split(/\s+/).filter(Boolean)
+    if (tokens.length > 1) {
+      return tokens.map((token) => toGalleryParentKey(token)).join(' ')
+    }
+
+    return trimmed
+  }
+
+  const exactKo = lookupKoTokensFromEnglish(trimmed)
+  if (exactKo.length > 0) return toGalleryParentKey(exactKo[0])
+
+  const tokens = trimmed.split(/\s+/).filter(Boolean)
+  const resolved = tokens.map((token) => {
+    const koCandidates = lookupKoTokensFromEnglish(token)
+    if (koCandidates.length > 0) return toGalleryParentKey(koCandidates[0])
+    return token
+  })
+  return resolved.join(' ')
 }
 
 /** EN 모드 표시용 — 검색 URL/쿼리에는 원문 키워드를 유지하고 UI 라벨만 변환 */

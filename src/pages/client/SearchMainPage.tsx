@@ -1,19 +1,23 @@
-import { fetchNailDesignsBySearch } from '@/entities/nail-design/api/fetchNailDesignsBySearch'
+import {
+  DEFAULT_GALLERY_SORT,
+  useGalleryCountQuery,
+  useGalleryInfiniteQuery,
+} from '@/entities/nail-design/api/useGalleryInfiniteQuery'
+import { displayItemTitle, buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { usePopularSearchTrends } from '@/entities/nail-design/api/usePopularSearchTrends'
+import { isAllowedSearchKeyword } from '@/features/search/lib/searchKeywordGuard'
 import { useLanguageContext } from '@/contexts/LanguageContext'
-import { buildNailImageSeoAlt } from '@/entities/nail-design/lib/nailDisplayText'
 import { supabase } from '@/shared/api/supabaseClient'
 import { ALLOWED_NAIL_KEYWORDS } from '@/shared/constants/allowedNailKeywords'
-import { displayNailKeyword } from '@/shared/constants/nailKeywords'
+import { displayNailKeyword, resolveSearchQueryForGallery } from '@/shared/constants/nailKeywords'
 import {
   addRecentSearch,
   clearRecentSearches,
   getRecentSearches,
 } from '@/shared/lib/recentSearchStorage'
-import { useQuery } from '@tanstack/react-query'
 import ClientHeaderUtilityIcons from '@/components/client/ClientHeaderUtilityIcons'
 import { ChevronLeft, Search, TrendingDown, TrendingUp } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 const TREND_SKELETON_ROWS = 5
@@ -65,8 +69,12 @@ export default function SearchMainPage() {
   const [isEditing, setIsEditing] = useState(!q)
   const [recentSearches, setRecentSearches] = useState(() => getRecentSearches())
   const [suggestedStyles, setSuggestedStyles] = useState<string[]>([])
+  const observerRef = useRef<HTMLDivElement>(null)
 
   const showResultHeader = !isEditing && q.length > 0
+  const gallerySearchToken = useMemo(() => resolveSearchQueryForGallery(q), [q])
+  const isSearchAllowed = useMemo(() => isAllowedSearchKeyword(q), [q])
+  const isGalleryEnabled = hasQuery && isSearchAllowed
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -112,12 +120,42 @@ export default function SearchMainPage() {
     [draft, setSearchParams],
   )
 
-  const { data: results = [], isLoading, isError } = useQuery({
-    queryKey: ['nail-designs', 'search', q],
-    queryFn: () => fetchNailDesignsBySearch(q),
-    enabled: hasQuery,
-    staleTime: 30_000,
+  const {
+    galleryItems: results,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    totalCount,
+  } = useGalleryInfiniteQuery(gallerySearchToken, DEFAULT_GALLERY_SORT, {
+    enabled: isGalleryEnabled,
   })
+  const { data: galleryTotalCount } = useGalleryCountQuery(gallerySearchToken, {
+    enabled: isGalleryEnabled,
+  })
+  const resultCountLabel =
+    galleryTotalCount != null
+      ? galleryTotalCount.toLocaleString()
+      : totalCount != null
+        ? totalCount.toLocaleString()
+        : String(results.length)
+
+  useEffect(() => {
+    const target = observerRef.current
+    if (!target || !hasNextPage || !isGalleryEnabled) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || isFetchingNextPage) return
+        void fetchNextPage()
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isGalleryEnabled, gallerySearchToken])
 
   const {
     data: popularTrends = [],
@@ -210,16 +248,16 @@ export default function SearchMainPage() {
                       {isEnglish ? 'Search Results' : '검색 결과'}
                     </span>
                   </h1>
-                  {!isLoading ? (
+                  {!isLoading && isSearchAllowed ? (
                     <span className="shrink-0 text-base font-medium text-stone-500">
                       {isEnglish ? (
                         <>
                           (Total{' '}
-                          <span className="font-semibold text-orange-500">{results.length}</span>)
+                          <span className="font-semibold text-orange-500">{resultCountLabel}</span>)
                         </>
                       ) : (
                         <>
-                          (총 <span className="font-semibold text-orange-500">{results.length}</span>개)
+                          (총 <span className="font-semibold text-orange-500">{resultCountLabel}</span>개)
                         </>
                       )}
                     </span>
@@ -244,15 +282,17 @@ export default function SearchMainPage() {
                     {isEnglish ? 'Results' : '검색 결과'}
                   </h1>
                   <span className="shrink-0 text-[16px] font-medium text-stone-500">
-                    {isEnglish ? (
-                      <>
-                        (Total <span className="font-semibold text-orange-500">{results.length}</span>)
-                      </>
-                    ) : (
-                      <>
-                        (총 <span className="font-semibold text-orange-500">{results.length}</span>개)
-                      </>
-                    )}
+                    {isSearchAllowed ? (
+                      isEnglish ? (
+                        <>
+                          (Total <span className="font-semibold text-orange-500">{resultCountLabel}</span>)
+                        </>
+                      ) : (
+                        <>
+                          (총 <span className="font-semibold text-orange-500">{resultCountLabel}</span>개)
+                        </>
+                      )
+                    ) : null}
                   </span>
                 </div>
                 <button
@@ -269,7 +309,13 @@ export default function SearchMainPage() {
               </div>
             ) : null}
             <div className="grid w-full min-w-0 grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {isLoading ? (
+            {!isSearchAllowed ? (
+              <p className="col-span-full py-12 text-center text-sm text-gray-500">
+                {isEnglish
+                  ? `No designs found for "${displayNailKeyword(q, isEnglish)}".`
+                  : `'${q}'에 맞는 디자인을 찾지 못했어요.`}
+              </p>
+            ) : isLoading ? (
               <SearchResultSkeleton />
             ) : isError ? (
               <p className="col-span-full py-12 text-center text-sm text-gray-500">
@@ -284,13 +330,9 @@ export default function SearchMainPage() {
                   : `'${q}'에 맞는 디자인을 찾지 못했어요.`}
               </p>
             ) : (
-              results.map((item) => {
-              const koTitle = String(item.title ?? '').trim()
-              const enTitle = String(item.title_en ?? '').trim()
-              const title =
-                isEnglish && enTitle
-                  ? enTitle
-                  : koTitle || enTitle || (isEnglish ? 'Nail Design' : '네일 디자인')
+              <>
+              {results.map((item, index) => {
+              const title = displayItemTitle(item, isEnglish)
               const imageUrl = String(item.image_url ?? '').trim()
               return (
                 <Link
@@ -301,8 +343,8 @@ export default function SearchMainPage() {
                       id: item.id,
                       imageUrl,
                       title,
-                      color: '',
-                      mood: '',
+                      color: item.color ?? '',
+                      mood: item.mood ?? '',
                     },
                   }}
                   className="flex cursor-pointer flex-col gap-2"
@@ -313,7 +355,8 @@ export default function SearchMainPage() {
                         src={imageUrl}
                         alt={buildNailImageSeoAlt(item, isEnglish)}
                         className="h-full w-full min-h-0 rounded-xl object-cover object-center"
-                        loading="lazy"
+                        loading={index < 4 ? 'eager' : 'lazy'}
+                        fetchPriority={index < 4 ? 'high' : undefined}
                         decoding="async"
                       />
                     ) : null}
@@ -323,7 +366,12 @@ export default function SearchMainPage() {
                   </p>
                 </Link>
               )
-              })
+              })}
+              {isFetchingNextPage ? (
+                <SearchResultSkeleton />
+              ) : null}
+              <div ref={observerRef} className="col-span-full h-10" aria-hidden />
+              </>
             )}
             </div>
           </div>
