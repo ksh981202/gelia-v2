@@ -32,6 +32,22 @@ const TAB_FILTER_ARRAY_CS_COLUMNS = [
   'tags',
   'tags_en',
 ] as const
+/** 사전 미등록 EN literal 전용 ilike — 스칼라 + text[] (PostgREST가 배열을 text로 캐스팅해 부분 일치) */
+const TAB_FILTER_EN_LITERAL_ILIKE_COLUMNS = [
+  'title_en',
+  'mood_en',
+  'design_point_en',
+  'color_en',
+  'length_en',
+  'technique_en',
+  'hand_type_en',
+  'design_elements',
+  'design_technique',
+  'description_en',
+  'tags_en',
+  'styles_en',
+  'occasion_en',
+] as const
 const MAX_TAB_FILTER_TOKENS = 30
 const NAIL_SYNONYMS: Record<string, string[]> = {
   형광: ['네온', '비비드', '팝', '원색', 'neon', 'vivid', 'fluorescent', '형광'],
@@ -320,6 +336,12 @@ function limitTabFilterTokens(tab: string, tokens: string[]): string[] {
   return limited
 }
 
+function isEnglishLiteralTab(tab: string): boolean {
+  const trimmed = tab.trim()
+  if (!trimmed || /[가-힣]/.test(trimmed)) return false
+  return /^[a-zA-Z\s]+$/.test(trimmed)
+}
+
 export function buildTabOrFilter(tab: string): string | null {
   const trimmed = tab.trim()
   if (!trimmed || trimmed === DEFAULT_GALLERY_TAB) return null
@@ -334,6 +356,13 @@ export function buildTabOrFilter(tab: string): string | null {
 
   if (tokens.length === 0) return null
 
+  const englishLiteralMode =
+    isEnglishLiteralTab(trimmed) && tokens.length === 1 && tokens[0].toLowerCase() === trimmed.toLowerCase()
+
+  const ilikeColumns = englishLiteralMode ? TAB_FILTER_EN_LITERAL_ILIKE_COLUMNS : TAB_FILTER_ILIKE_COLUMNS
+  // EN literal: 배열은 대소문자·분할 토큰 불일치로 .cs 단독 사용 시 0건 → ilike만 사용
+  const csColumns = englishLiteralMode ? [] : TAB_FILTER_ARRAY_CS_COLUMNS
+
   const conditions: string[] = []
   for (const token of tokens) {
     const trimmedToken = token.trim()
@@ -341,12 +370,12 @@ export function buildTabOrFilter(tab: string): string | null {
 
     const escaped = escapePostgrestIlikePattern(trimmedToken)
     if (escaped) {
-      for (const column of TAB_FILTER_ILIKE_COLUMNS) {
+      for (const column of ilikeColumns) {
         conditions.push(buildIlikeOrCondition(column, escaped))
       }
     }
 
-    for (const column of TAB_FILTER_ARRAY_CS_COLUMNS) {
+    for (const column of csColumns) {
       const csCondition = buildArrayCsOrCondition(column, trimmedToken)
       if (csCondition) conditions.push(csCondition)
     }
