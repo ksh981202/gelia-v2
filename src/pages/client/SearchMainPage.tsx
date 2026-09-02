@@ -9,7 +9,7 @@ import { isAllowedSearchKeyword } from '@/features/search/lib/searchKeywordGuard
 import { useLanguageContext } from '@/contexts/LanguageContext'
 import { supabase } from '@/shared/api/supabaseClient'
 import { ALLOWED_NAIL_KEYWORDS } from '@/shared/constants/allowedNailKeywords'
-import { displayNailKeyword, resolveSearchQueryForGallery } from '@/shared/constants/nailKeywords'
+import { displayNailKeyword, inferUiLanguageFromSearchTerm, resolveSearchQueryForGallery } from '@/shared/constants/nailKeywords'
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -57,7 +57,7 @@ function SearchResultSkeleton() {
 }
 
 export default function SearchMainPage() {
-  const { language } = useLanguageContext()
+  const { language, setLanguage } = useLanguageContext()
   const isEnglish = language === 'en'
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -93,6 +93,19 @@ export default function SearchMainPage() {
     setDraft(q)
   }, [q])
 
+  const syncLanguageFromSearchTerm = useCallback(
+    (term: string) => {
+      const inferred = inferUiLanguageFromSearchTerm(term)
+      if (inferred) setLanguage(inferred)
+    },
+    [setLanguage],
+  )
+
+  useEffect(() => {
+    if (!q) return
+    syncLanguageFromSearchTerm(q)
+  }, [q, syncLanguageFromSearchTerm])
+
   const submitSearch = useCallback(
     (keyword?: string) => {
       const term = (keyword ?? draft).trim()
@@ -102,6 +115,7 @@ export default function SearchMainPage() {
         setIsEditing(true)
         return
       }
+      syncLanguageFromSearchTerm(term)
       addRecentSearch(term)
       setRecentSearches(getRecentSearches())
       setDraft(term)
@@ -117,7 +131,7 @@ export default function SearchMainPage() {
 
       setIsEditing(false)
     },
-    [draft, setSearchParams],
+    [draft, setSearchParams, syncLanguageFromSearchTerm],
   )
 
   const {

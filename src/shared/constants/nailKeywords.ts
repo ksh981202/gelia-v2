@@ -267,6 +267,20 @@ export function resolveSearchQueryForGallery(raw: string): string {
   return resolved.join(' ')
 }
 
+/** 검색어 언어 → UI 언어 추론 (한글 우선, 순수 영문만 en) */
+export function inferUiLanguageFromSearchTerm(term: string): 'en' | 'ko' | null {
+  const trimmed = String(term ?? '').trim()
+  if (!trimmed) return null
+  if (/[가-힣]/.test(trimmed)) return 'ko'
+  if (/^[a-zA-Z\s]+$/.test(trimmed)) return 'en'
+  return null
+}
+
+function capitalizeEnglishDisplayToken(token: string): string {
+  if (!/^[a-zA-Z]+$/.test(token)) return token
+  return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase()
+}
+
 /** EN 모드 표시용 — 검색 URL/쿼리에는 원문 키워드를 유지하고 UI 라벨만 변환 */
 export function displayNailKeyword(term: string, isEnglish: boolean): string {
   const trimmed = String(term ?? '').trim()
@@ -277,6 +291,11 @@ export function displayNailKeyword(term: string, isEnglish: boolean): string {
 
   return trimmed
     .split(/\s+/)
-    .map((token) => NAIL_KEYWORD_EN_DICTIONARY[token] || token)
+    .map((token) => {
+      const fromDictionary = NAIL_KEYWORD_EN_DICTIONARY[token]
+      if (fromDictionary) return fromDictionary
+      if (/^[a-zA-Z]+$/.test(token)) return capitalizeEnglishDisplayToken(token)
+      return token
+    })
     .join(' ')
 }
