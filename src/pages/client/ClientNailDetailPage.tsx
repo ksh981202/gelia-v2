@@ -36,6 +36,7 @@ import {
   toAbsoluteSeoUrl,
 } from "@/shared/lib/seoMeta";
 import { useLanguageContext } from "@/contexts/LanguageContext";
+import { isPremiumCurationTag } from "@/pages/client/lib/isPremiumCurationTag";
 import ClientGlobalHeader from "@/widgets/layout/ClientGlobalHeader";
 import { useTranslation } from "react-i18next";
 
@@ -494,25 +495,38 @@ const Detail = () => {
   );
   const displayTags = useMemo(() => {
     if (!displayRow) return [];
-    if (!isEnglish) return displayTagTokens;
 
-    const enChips = [
-      safeTrimText(displayRow.color_en),
-      safeTrimText(displayRow.length_en),
-      safeTrimText(displayRow.hand_type_en),
-      safeTrimText(displayRow.mood_en),
-      ...splitLooseTokens(displayRow.occasion_en),
-      ...splitLooseTokens(displayRow.styles_en),
-      ...splitLooseTokens(displayRow.technique_en),
-      ...splitLooseTokens(displayRow.design_point_en),
-    ].filter(Boolean);
+    let rawTags: string[];
+    if (!isEnglish) {
+      rawTags = displayTagTokens;
+    } else {
+      const enChips = [
+        safeTrimText(displayRow.color_en),
+        safeTrimText(displayRow.length_en),
+        safeTrimText(displayRow.hand_type_en),
+        safeTrimText(displayRow.mood_en),
+        ...splitLooseTokens(displayRow.occasion_en),
+        ...splitLooseTokens(displayRow.styles_en),
+        ...splitLooseTokens(displayRow.technique_en),
+        ...splitLooseTokens(displayRow.design_point_en),
+      ].filter(Boolean);
 
-    if (enChips.length === 0) return displayTagTokens;
-    const enTokens = prioritizeTagTokens(expandTagTokensFromChips(enChips), sourceTag);
-    return enTokens.length > 0 ? enTokens : displayTagTokens;
+      if (enChips.length === 0) {
+        rawTags = displayTagTokens;
+      } else {
+        const enTokens = prioritizeTagTokens(expandTagTokensFromChips(enChips), sourceTag);
+        rawTags = enTokens.length > 0 ? enTokens : displayTagTokens;
+      }
+    }
+
+    // sourceTag 재주입 이후 최종 단계에서 프리미엄 사전만 통과
+    return rawTags.filter((token) => isPremiumCurationTag(token));
   }, [displayRow, isEnglish, displayTagTokens, sourceTag]);
   const designPoints = useMemo(
-    () => splitDesignElements(pickLocalized(displayRow?.design_elements, displayRow?.design_point_en)),
+    () =>
+      splitDesignElements(pickLocalized(displayRow?.design_elements, displayRow?.design_point_en)).filter(
+        (token) => isPremiumCurationTag(token),
+      ),
     [displayRow?.design_elements, displayRow?.design_point_en, pickLocalized],
   );
   const procedureSteps = useMemo(
@@ -1286,60 +1300,52 @@ const Detail = () => {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2.5">
-        {displayTags.length > 0 ? (
-          displayTags.map((token, chipIdx) => {
-            const bare = token.replace(/^#/, "").trim();
-            const label = bare ? `#${bare}` : "#";
-            return (
-              <button
-                key={`${token}-${chipIdx}`}
-                type="button"
-                onClick={() => handleTagClick(token)}
-                className="cursor-pointer rounded-full bg-gray-100 px-3.5 py-1.5 text-sm font-medium tracking-tight text-gray-700 transition-colors hover:bg-gray-200"
-              >
-                {label}
-              </button>
-            );
-          })
-        ) : (
-          <p className="text-sm text-gray-400">
-            {isEnglish ? "No tags to display." : "표시할 태그가 없어요."}
-          </p>
-        )}
-      </div>
+          {displayTags.length > 0 ? (
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              {displayTags.map((token, chipIdx) => {
+                const bare = token.replace(/^#/, "").trim();
+                const label = bare ? `#${bare}` : "#";
+                return (
+                  <button
+                    key={`${token}-${chipIdx}`}
+                    type="button"
+                    onClick={() => handleTagClick(token)}
+                    className="cursor-pointer rounded-full bg-gray-100 px-3.5 py-1.5 text-sm font-medium tracking-tight text-gray-700 transition-colors hover:bg-gray-200"
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
-      <section className="mt-10 font-sans">
-        <h3 className="mb-4 text-lg font-bold text-slate-900">
-          {isEnglish ? "Design Points" : "디자인 포인트"}
-        </h3>
-        {designPoints.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
-            {designPoints.map((text, idx) => {
-              const Icon = DESIGN_ICONS[idx % DESIGN_ICONS.length];
-              return (
-                <div
-                  key={`dp-${idx}-${text.slice(0, 24)}`}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-4"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF7D66]/10 text-[#FF7D66]">
-                    <Icon className="h-5 w-5" aria-hidden />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-sans break-keep text-sm font-medium leading-snug tracking-tight text-gray-800">
-                      {text}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="rounded-2xl border border-dashed border-slate-200 bg-white/80 p-6 text-center text-sm text-slate-500">
-            {isEnglish ? "No design points have been added yet." : "등록된 디자인 요소가 없어요."}
-          </p>
-        )}
-      </section>
+          {designPoints.length > 0 ? (
+            <section className="mt-10 font-sans">
+              <h3 className="mb-4 text-lg font-bold text-slate-900">
+                {isEnglish ? "Design Points" : "디자인 포인트"}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {designPoints.map((text, idx) => {
+                  const Icon = DESIGN_ICONS[idx % DESIGN_ICONS.length];
+                  return (
+                    <div
+                      key={`dp-${idx}-${text.slice(0, 24)}`}
+                      className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-4"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FF7D66]/10 text-[#FF7D66]">
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-sans break-keep text-sm font-medium leading-snug tracking-tight text-gray-800">
+                          {text}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
       <div className="mt-10 w-full font-sans antialiased">
         <button
