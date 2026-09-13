@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, Info, Loader2, Share2, User } from 'lucide-react'
+import DOMPurify from 'dompurify'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import '@/shared/i18n/i18n'
@@ -425,7 +426,10 @@ export default function MagazineDetailPage() {
         <h1 className="text-3xl md:text-4xl font-extrabold text-black mb-8 break-words whitespace-pre-wrap">
           {title || 'Untitled'}
         </h1>
-        <div className={`${MAGAZINE_ARTICLE_BODY_CLASS} text-gray-800`} dangerouslySetInnerHTML={{ __html: content || '' }} />
+        <div
+          className={`${MAGAZINE_ARTICLE_BODY_CLASS} text-gray-800`}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content || '') }}
+        />
         <div
           className="mt-16 mb-8 p-5 bg-stone-50/80 rounded-2xl border border-stone-100 flex items-start gap-3 w-full"
           role="note"

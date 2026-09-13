@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import Papa from 'papaparse'
 import {
@@ -15,6 +16,7 @@ export type UploadPhase = 'idle' | 'uploading' | 'complete' | 'error'
 export type CsvParseState = 'idle' | 'parsing' | 'done' | 'error'
 
 export function useAdminUpload() {
+  const queryClient = useQueryClient()
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [csvRows, setCsvRows] = useState<CsvDesignRow[]>([])
   const [csvError, setCsvError] = useState<string | null>(null)
@@ -152,6 +154,8 @@ export function useAdminUpload() {
         await insertToSupabase(payload)
         setProgress(Math.round(((i + 1) / jobs.length) * 100))
       }
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'nail-designs', 'list'] })
+      await queryClient.invalidateQueries({ queryKey: ['nail-designs'] })
       setPhase('complete')
       return true
     } catch (e) {
@@ -161,7 +165,7 @@ export function useAdminUpload() {
       setPhase('error')
       return false
     }
-  }, [eligibleRows])
+  }, [eligibleRows, queryClient])
 
   return {
     imageFiles,

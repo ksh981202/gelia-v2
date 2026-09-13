@@ -95,7 +95,6 @@ export function useAdminDashboard({ searchQuery, page, pageSize = 12 }: AdminDas
       let query = supabase
         .from('nail_designs')
         .select(NAIL_DESIGN_COLUMNS, { count: 'exact' })
-        .order('source_filename', { ascending: false })
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
 
