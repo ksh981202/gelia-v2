@@ -32,7 +32,7 @@ const TAB_FILTER_ARRAY_CS_COLUMNS = [
   'tags',
   'tags_en',
 ] as const
-/** 사전 미등록 EN literal 전용 ilike — 스칼라 + text[] (PostgREST가 배열을 text로 캐스팅해 부분 일치) */
+/** 사전 미등록 EN literal 전용 ilike — 스칼라 text만 (text[]에 ilike 시 PostgREST 400) */
 const TAB_FILTER_EN_LITERAL_ILIKE_COLUMNS = [
   'title_en',
   'mood_en',
@@ -44,10 +44,9 @@ const TAB_FILTER_EN_LITERAL_ILIKE_COLUMNS = [
   'design_elements',
   'design_technique',
   'description_en',
-  'tags_en',
-  'styles_en',
-  'occasion_en',
 ] as const
+/** 사전 미등록 EN literal 전용 array cs */
+const TAB_FILTER_EN_LITERAL_ARRAY_CS_COLUMNS = ['tags_en', 'styles_en', 'occasion_en'] as const
 const MAX_TAB_FILTER_TOKENS = 30
 const NAIL_SYNONYMS: Record<string, string[]> = {
   형광: ['네온', '비비드', '팝', '원색', 'neon', 'vivid', 'fluorescent', '형광'],
@@ -360,8 +359,7 @@ export function buildTabOrFilter(tab: string): string | null {
     isEnglishLiteralTab(trimmed) && tokens.length === 1 && tokens[0].toLowerCase() === trimmed.toLowerCase()
 
   const ilikeColumns = englishLiteralMode ? TAB_FILTER_EN_LITERAL_ILIKE_COLUMNS : TAB_FILTER_ILIKE_COLUMNS
-  // EN literal: 배열은 대소문자·분할 토큰 불일치로 .cs 단독 사용 시 0건 → ilike만 사용
-  const csColumns = englishLiteralMode ? [] : TAB_FILTER_ARRAY_CS_COLUMNS
+  const csColumns = englishLiteralMode ? TAB_FILTER_EN_LITERAL_ARRAY_CS_COLUMNS : TAB_FILTER_ARRAY_CS_COLUMNS
 
   const conditions: string[] = []
   for (const token of tokens) {
